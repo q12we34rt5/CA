@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "Pattern.v||Pattern": {
+      "sum": "測試環境 module：產生 clk/reset、載入 vmh 程式、算效能、判定 PASSED/FAILED",
+      "naming": [["Pattern", "test pattern", "測試樣式 / 測試環境"]],
+      "desc": "`Testbench` 底下唯一的測試環境 module（instance 名 `pattern`），把舊版 `riscvstall-sim.v` 裡那一堆 testbench 邏輯抽出來變成可參數化的元件。它做四件事：(1) 用 `always #5 clk = ~clk;` 產生時脈，並在 `p_reset_cycles` 個 negedge 之後放掉 `reset_proc` / `reset_mem`；(2) 內含一顆 `vc_TestDualPortRandDelayMem`（instance 名 `mem`），port 0 給取指、port 1 給 load/store，並用 `$readmemh` 把 `+exe=` 指定的 vmh 程式載進去；(3) 用 `retire_valid` 與 clk 累計 `num_inst` / `num_cycles`；(4) 在 negedge 檢查 `status`，非 0 就印 PASSED / FAILED 與 STATS 再 `$finish`，或在 `num_cycles > max_cycles` 時印 timeout。四個 parameter 由 `Testbench` 以 `PATTERN_MAX_DELAY` 等 macro 傳入，一般模擬和隨機延遲模擬共用同一份程式碼。"
+    },
+    "Pattern.v|Pattern|p_max_delay": {
+      "sum": "傳給測試記憶體的隨機延遲上限參數（0 = 不延遲）",
+      "naming": [["p_", "parameter", "module 參數"], ["max", "maximum", "上限"], ["delay", "delay", "延遲 cycle 數"]],
+      "desc": "parameter，預設 0，由 `Testbench` 以 macro `PATTERN_MAX_DELAY` 傳入（Makefile 對一般模擬傳 0、對 randdelay 模擬傳 4）。它直接往下接給 `mem` 這顆 `vc_TestDualPortRandDelayMem` 的 `p_max_delay`，再由裡面的 `vc_TestRandDelay` 用 `$random % p_max_delay` 決定每筆請求 / 回應要拖 0 到 p_max_delay-1 個 cycle。為 0 時完全不延遲。"
+    },
+    "Pattern.v|Pattern|p_reset_cycles": {
+      "sum": "reset 要維持幾個 negedge 才放掉",
+      "naming": [["p_", "parameter", "module 參數"], ["reset", "reset", "重置"], ["cycles", "cycles", "時脈週期數"]],
+      "desc": "parameter，預設 2，由 `Testbench` 以 macro `PATTERN_RESET_CYCLES` 傳入（一般模擬 2、randdelay 模擬 6）。用在 `initial` 區塊：先把 `reset_proc` / `reset_mem` 設成 1，`repeat (p_reset_cycles) @(negedge clk);` 之後同時放掉。隨機延遲版設得比較大，是為了讓記憶體的延遲邏輯有足夠時間初始化。"
+    },
+    "Pattern.v|Pattern|p_default_max_cycles": {
+      "sum": "命令列沒給 +max-cycles= 時使用的 timeout 上限",
+      "naming": [["p_", "parameter", "module 參數"], ["default", "default", "預設值"], ["max", "maximum", "上限"], ["cycles", "cycles", "時脈週期數"]],
+      "desc": "parameter，預設 100000，由 `Testbench` 以 macro `PATTERN_DEFAULT_MAX_CYCLES` 傳入（一般模擬 100000、randdelay 模擬 500000）。在 `initial` 裡若 `$value$plusargs(\"max-cycles=%d\", max_cycles)` 失敗，就用它填進 `max_cycles`。"
+    },
+    "Pattern.v|Pattern|p_is_rand_delay": {
+      "sum": "標記這是不是隨機延遲版，只用來決定 VCD 檔名",
+      "naming": [["p_", "parameter", "module 參數"], ["is", "is", "是不是"], ["rand", "random", "隨機"], ["delay", "delay", "延遲"]],
+      "desc": "parameter，預設 0，由 `Testbench` 以 macro `PATTERN_IS_RAND_DELAY` 傳入。它唯一的用途是在要 dump 波形時決定檔名：為 1 時 `vcd_filename` 結尾是 \"-rand.vcd\"，為 0 時是 \".vcd\"，避免同一支測試程式的兩種模擬互相蓋掉波形檔。它不影響任何硬體行為，真正的延遲大小是由 `p_max_delay` 控制。"
+    },
+    "Pattern.v|Pattern|clk": {
+      "sum": "Pattern 產生並輸出給整個 Testbench 使用的時脈",
+      "naming": [["clk", "clock", "時脈"]],
+      "desc": "`output reg`：時脈是由這個測試環境產生而不是接進來的。`initial` 先把它設成 0，再由 `always #5 clk = ~clk;` 每 5 個時間單位翻轉，週期 10。它往上接到 `Testbench` 的 `clk` 再給 `proc`，同時也驅動內部的 `mem`、效能計數器（posedge）與結果判斷（negedge）。"
+    },
+    "Pattern.v|Pattern|reset_proc": {
+      "sum": "Pattern 產生、送給處理器的 reset 訊號",
+      "naming": [["reset", "reset", "重置"], ["proc", "processor", "處理器"]],
+      "desc": "`output reg`。在 `initial` 裡先設 1'b1，等 `p_reset_cycles` 個 negedge 後設回 0。除了往上接給 `proc` 的 `reset`，它在 Pattern 內部還有兩個用途：效能計數器在它為 1 時把 `num_cycles` / `num_inst` 清 0；結果判斷區塊用 `if (!reset_proc)` 包住，避免 reset 期間就誤判測試結束。"
+    },
+    "Pattern.v|Pattern|reset_mem": {
+      "sum": "Pattern 產生、送給內部測試記憶體的 reset 訊號",
+      "naming": [["reset", "reset", "重置"], ["mem", "memory", "測試記憶體"]],
+      "desc": "`output reg`，和 `reset_proc` 在同一個 `initial` 裡同時拉高、同時放掉。它接到內部 `mem`（`vc_TestDualPortRandDelayMem`）的 `reset`，主要是清掉記憶體的請求 / 回應佇列與隨機延遲狀態（記憶體內容不會被清，是由 `$readmemh` 載入的）。它雖然宣告成 output，但在 `Testbench` 那一層只是接出來放著，沒有別的使用者。"
+    },
+    "Pattern.v|Pattern|status": {
+      "sum": "從 CPU csr_status 接進來的測試結果碼，Pattern 用它判定通過與否",
+      "naming": [["status", "status", "狀態 / 測試結果碼"]],
+      "desc": "32-bit 輸入，來自 `Testbench` 的 `status`（也就是 `proc` 的 `csr_status`）。0 代表測試還在跑；等於 1 印 `*** PASSED ***`；大於 1 印 `*** FAILED *** (status = N)`，N 通常就是第幾個子測試失敗。判斷放在 `always @(negedge clk)`，刻意選下降緣是為了讓上升緣才更新的 `status` 與計數器都穩定之後再取樣。"
+    },
+    "Pattern.v|Pattern|retire_valid": {
+      "sum": "CPU 每完成一條指令就拉高的訊號，Pattern 用它累加 num_inst",
+      "naming": [["retire", "retire", "指令完成退休（走出 pipeline）"], ["valid", "valid", "這個 cycle 真的有指令完成"]],
+      "desc": "1-bit 輸入，來自 `proc` 的 `retire_valid`（在 `riscv_CoreCtrl` 裡是 `inst_val_Whl && !stall_Whl`）。效能計數器的 `always @(posedge clk)` 只要看到它為 1，就把 `num_inst` 加 1。有了它，效能統計完全在 testbench 這邊做，不需要像舊的 `riscvstall-sim.v` 那樣用階層路徑去窺看 CPU 內部的計數器。"
+    },
+    "Pattern.v|Pattern|memreq0_val": {
+      "sum": "port 0（取指）請求的 valid，從 CPU 傳進來再轉給內部記憶體",
+      "naming": [["memreq", "memory request", "記憶體請求"], ["0", "port 0", "第 0 個埠（給取指用）"], ["val", "valid", "有效"]],
+      "desc": "輸入，來自 `Testbench` 的 `imemreq_val`。Pattern 不做任何處理，直接接給內部 `mem` 的 `memreq0_val`。"
+    },
+    "Pattern.v|Pattern|memreq0_rdy": {
+      "sum": "port 0（取指）請求的 ready，由內部記憶體產生後送回 CPU",
+      "naming": [["memreq", "memory request", "記憶體請求"], ["0", "port 0", "第 0 個埠（給取指用）"], ["rdy", "ready", "可以接收"]],
+      "desc": "輸出，直接由內部 `mem` 的 `memreq0_rdy` 驅動，往上接到 `Testbench` 的 `imemreq_rdy`。`p_max_delay` 不為 0 時，它會被隨機壓低幾個 cycle。"
+    },
+    "Pattern.v|Pattern|memreq0_msg": {
+      "sum": "port 0（取指）請求的訊息內容，從 CPU 轉給內部記憶體",
+      "naming": [["memreq", "memory request", "記憶體請求"], ["0", "port 0", "第 0 個埠（給取指用）"], ["msg", "message", "打包成 bits 的訊息"]],
+      "desc": "輸入，寬度 `VC_MEM_REQ_MSG_SZ`(32,32)，來自 `Testbench` 的 `imemreq_msg`，直接接到 `mem` 的 `memreq0_msg`。內容是讀取指令用的 request（type = read、addr = PC、len = 0 代表整個 word）。"
+    },
+    "Pattern.v|Pattern|memresp0_val": {
+      "sum": "port 0（取指）回應的 valid，由內部記憶體產生後送回 CPU",
+      "naming": [["memresp", "memory response", "記憶體回應"], ["0", "port 0", "第 0 個埠（給取指用）"], ["val", "valid", "有效"]],
+      "desc": "輸出，由內部 `mem` 的 `memresp0_val` 驅動，往上接 `Testbench` 的 `imemresp_val`，告訴 CPU 這個 cycle 指令回來了。"
+    },
+    "Pattern.v|Pattern|memresp0_rdy": {
+      "sum": "port 0（取指）回應的 ready，由 CPU 傳進來再轉給內部記憶體",
+      "naming": [["memresp", "memory response", "記憶體回應"], ["0", "port 0", "第 0 個埠（給取指用）"], ["rdy", "ready", "可以接收"]],
+      "desc": "輸入，來自 CPU 的 `imemresp_rdy`（也就是 `!stall_Dhl`），接到 `mem` 的 `memresp0_rdy`。D 階段 stall 時它為 0，記憶體就得把指令回應留著不放。這是新版 testbench 比舊 sim 檔完整的地方，舊檔是把這條綁死成 1'b1。"
+    },
+    "Pattern.v|Pattern|memresp0_msg": {
+      "sum": "port 0（取指）回應的訊息內容，也就是讀回來的指令",
+      "naming": [["memresp", "memory response", "記憶體回應"], ["0", "port 0", "第 0 個埠（給取指用）"], ["msg", "message", "打包成 bits 的訊息"]],
+      "desc": "輸出，寬度 `VC_MEM_RESP_MSG_SZ`(32)，由內部 `mem` 的 `memresp0_msg` 驅動、往上送到 CPU 的 `imemresp_msg`。data 欄位就是 32-bit 指令。"
+    },
+    "Pattern.v|Pattern|memreq1_val": {
+      "sum": "port 1（load/store）請求的 valid，從 CPU 傳進來再轉給內部記憶體",
+      "naming": [["memreq", "memory request", "記憶體請求"], ["1", "port 1", "第 1 個埠（給 load/store 用）"], ["val", "valid", "有效"]],
+      "desc": "輸入，來自 `Testbench` 的 `dmemreq_val`，直接接到 `mem` 的 `memreq1_val`。只有 load / store 指令進到 M 階段時才會是 1。"
+    },
+    "Pattern.v|Pattern|memreq1_rdy": {
+      "sum": "port 1（load/store）請求的 ready，由內部記憶體產生後送回 CPU",
+      "naming": [["memreq", "memory request", "記憶體請求"], ["1", "port 1", "第 1 個埠（給 load/store 用）"], ["rdy", "ready", "可以接收"]],
+      "desc": "輸出，由 `mem` 的 `memreq1_rdy` 驅動、往上接 `Testbench` 的 `dmemreq_rdy`。它為 0 時 CPU 的 M 階段必須 stall。"
+    },
+    "Pattern.v|Pattern|memreq1_msg": {
+      "sum": "port 1（load/store）請求的訊息內容，從 CPU 轉給內部記憶體",
+      "naming": [["memreq", "memory request", "記憶體請求"], ["1", "port 1", "第 1 個埠（給 load/store 用）"], ["msg", "message", "打包成 bits 的訊息"]],
+      "desc": "輸入，寬度 `VC_MEM_REQ_MSG_SZ`(32,32)，來自 `Testbench` 的 `dmemreq_msg`。裡面的 type 欄位 0 = read（load）、1 = write（store），len 決定存取幾個 byte（0 表示整個 word），addr 是 ALU 算出的位址，data 是 store 要寫的值。"
+    },
+    "Pattern.v|Pattern|memresp1_val": {
+      "sum": "port 1（load/store）回應的 valid，由內部記憶體產生後送回 CPU",
+      "naming": [["memresp", "memory response", "記憶體回應"], ["1", "port 1", "第 1 個埠（給 load/store 用）"], ["val", "valid", "有效"]],
+      "desc": "輸出，由 `mem` 的 `memresp1_val` 驅動、往上接 `Testbench` 的 `dmemresp_val`。store 也會有回應，用來告訴 CPU 這筆存取完成了。"
+    },
+    "Pattern.v|Pattern|memresp1_rdy": {
+      "sum": "port 1（load/store）回應的 ready，由 CPU 傳進來再轉給內部記憶體",
+      "naming": [["memresp", "memory response", "記憶體回應"], ["1", "port 1", "第 1 個埠（給 load/store 用）"], ["rdy", "ready", "可以接收"]],
+      "desc": "輸入，來自 CPU 的 `dmemresp_rdy`（也就是 `!stall_Mhl`），接到 `mem` 的 `memresp1_rdy`。M 階段被 stall 時它為 0，記憶體必須保留回應資料。"
+    },
+    "Pattern.v|Pattern|memresp1_msg": {
+      "sum": "port 1（load/store）回應的訊息內容，也就是 load 讀回來的資料",
+      "naming": [["memresp", "memory response", "記憶體回應"], ["1", "port 1", "第 1 個埠（給 load/store 用）"], ["msg", "message", "打包成 bits 的訊息"]],
+      "desc": "輸出，寬度 `VC_MEM_RESP_MSG_SZ`(32)，由 `mem` 的 `memresp1_msg` 驅動、往上送到 CPU 的 `dmemresp_msg`。CPU 取出 data 欄位後依 lb / lh / lbu / lhu / lw 做 sign 或 zero extend 再寫回 regfile。"
+    },
+    "Pattern.v|Pattern|c_mem_sz": {
+      "sum": "測試記憶體的大小常數，1<<20 = 1 MB",
+      "naming": [["c_", "constant", "localparam 常數"], ["mem", "memory", "記憶體"], ["sz", "size", "大小（byte 數）"]],
+      "desc": "`localparam c_mem_sz = (1 << 20);`，也就是 1 MB（位址只用得到低 20 bit）。它傳給 `mem` 的 `p_mem_sz` 決定記憶體陣列大小，也用來算 `c_mem_num_words`。"
+    },
+    "Pattern.v|Pattern|c_mem_num_words": {
+      "sum": "測試記憶體有幾個 32-bit word，供 $readmemh 限定載入範圍",
+      "naming": [["c_", "constant", "localparam 常數"], ["mem", "memory", "記憶體"], ["num", "number of", "數量"], ["words", "words", "32-bit 字"]],
+      "desc": "`localparam c_mem_num_words = c_mem_sz / 4;`，因為每個 word 是 4 個 byte，所以是 262144。它只用在 `$readmemh(exe_filename, mem.mem.m, 0, c_mem_num_words-1)` 的位址範圍參數上——明確指定起訖位址可以避免 vmh 檔比記憶體大時 iverilog 一直噴警告或寫爆陣列（舊的 `riscvstall-sim.v` 沒有給範圍）。"
+    },
+    "Pattern.v|Pattern|mem": {
+      "sum": "Pattern 內部的 vc_TestDualPortRandDelayMem 實例：程式與資料共用的測試記憶體",
+      "naming": [["mem", "memory", "記憶體"]],
+      "desc": "參數為 `p_mem_sz` = `c_mem_sz`、`p_addr_sz` = 32、`p_data_sz` = 32、`p_max_delay` = `p_max_delay`。port 0 接 CPU 的取指通道、port 1 接 load/store 通道，四條 val / rdy 都完整接上（含 response 的 rdy）。程式是用 `$readmemh(exe_filename, mem.mem.m, 0, c_mem_num_words-1)` 載入——路徑裡第二個 `mem` 是它內部的 `vc_TestDualPortMem` 實例，`m` 是那顆記憶體的 `reg [p_data_sz-1:0] m[...]` 陣列。"
+    },
+    "Pattern.v|Pattern|fh": {
+      "sum": "檢查 vmh 檔是否存在用的檔案握把",
+      "naming": [["f", "file", "檔案"], ["h", "handle", "握把 / 開檔代號"]],
+      "desc": "integer，`fh = $fopen(exe_filename, \"r\")`。為 0 表示開不起來，就印 \"Could not open vmh file\" 並 `$finish`；成功則立刻 `$fclose(fh)`，真正把程式讀進記憶體的是後面的 `$readmemh`。先開一次只是為了給出比較好懂的錯誤訊息。"
+    },
+    "Pattern.v|Pattern|exe_filename": {
+      "sum": "由命令列 +exe= 指定的 vmh 測試程式檔名",
+      "naming": [["exe", "executable", "可執行檔 / 測試程式"], ["filename", "file name", "檔名"]],
+      "desc": "`reg [1023:0]`，用 `$value$plusargs(\"exe=%s\", exe_filename)` 取得，沒給就印錯誤並 `$finish`。Makefile 跑測試時是用 `+exe=riscv-add.vmh` 這種形式傳進來。它接著被用來 `$fopen` 檢查、`$readmemh` 載入記憶體，以及切成 `exe_filename[1023:32]` 當成 VCD 檔名的前半段。"
+    },
+    "Pattern.v|Pattern|vcd_filename": {
+      "sum": "由 exe 檔名改出來的波形檔名（.vcd 或 -rand.vcd）",
+      "naming": [["vcd", "value change dump", "波形檔格式"], ["filename", "file name", "檔名"]],
+      "desc": "`reg [1023:0]`，只有在 `+vcd=` 存在且值為真時才組出來。`exe_filename[1023:32]` 等於丟掉檔名最後 4 個字元（.vmh），再依 `p_is_rand_delay` 接上 \"-rand.vcd\" 或 \".vcd\"，然後交給 `$dumpfile`，並以 `$dumpvars(0, Testbench)` 從頂層開始錄整棵階層的波形。"
+    },
+    "Pattern.v|Pattern|max_cycles": {
+      "sum": "這次模擬允許的最大 cycle 數，超過就判 timeout",
+      "naming": [["max", "maximum", "上限"], ["cycles", "cycles", "時脈週期數"]],
+      "desc": "`reg [31:0]`，優先取命令列的 `+max-cycles=`，沒給就用 parameter `p_default_max_cycles`。結果判斷區塊在 `status` 還是 0 的情況下，若 `num_cycles > max_cycles` 就印 \"*** FAILED *** (timeout)\" 並結束模擬。注意它比較的是 reset 之後才開始數的 `num_cycles`，不像舊 sim 檔是從模擬一開始就數的 `cycle_count`。"
+    },
+    "Pattern.v|Pattern|verbose": {
+      "sum": "是否在結束時印出 STATS 區塊的旗標",
+      "naming": [["verbose", "verbose", "詳細輸出"]],
+      "desc": "1-bit reg，初值 0。若命令列有 `+stats=` 就直接把 `stats` 的值抄過來（`verbose = stats;`），否則看 `+verbose=`，兩者都沒給就維持 0。只有它為 1 時，測試結束才會計算 `ipc` 並印出 status / num_cycles / num_inst / ipc 四行。Makefile 的組合語言測試傳 `+stats=1`、benchmark 傳 `+verbose=1`。"
+    },
+    "Pattern.v|Pattern|stats": {
+      "sum": "接收 +stats= 命令列參數的旗標，決定要不要印效能統計",
+      "naming": [["stats", "statistics", "效能統計"]],
+      "desc": "1-bit reg，初值 0，由 `$value$plusargs(\"stats=%d\", stats)` 填入。和舊的 `riscvstall-sim.v` 不同，這裡會真的看它的值：有給 `+stats=` 時就 `verbose = stats`，所以 `+stats=0` 不會開啟統計輸出。CPU 那邊沒有對應的開關（新版設計把計數器搬到 `Pattern` 自己做了）。"
+    },
+    "Pattern.v|Pattern|vcd": {
+      "sum": "接收 +vcd= 參數、決定要不要錄波形的旗標",
+      "naming": [["vcd", "value change dump", "波形檔"]],
+      "desc": "1-bit reg，初值 0。條件是 `$value$plusargs(\"vcd=%d\", vcd) && vcd`，也就是參數要存在「而且」值為真才會 dump，所以 `+vcd=0`（Makefile 的預設 `VCD ?= 0`）不會產生波形檔——這點比舊 sim 檔只檢查參數存在與否更正確。"
+    },
+    "Pattern.v|Pattern|num_cycles": {
+      "sum": "reset 之後 CPU 跑了幾個 cycle，用於 IPC 與 timeout 判斷",
+      "naming": [["num", "number of", "數量"], ["cycles", "cycles", "時脈週期數"]],
+      "desc": "`reg [31:0]`，在 `always @(posedge clk)` 裡：`reset_proc` 為 1 時清成 0，否則每個 cycle 加 1。它是 IPC 的分母，也被結果判斷拿來和 `max_cycles` 比較判定 timeout。因為 reset 期間會歸零，統計到的是真正執行程式的 cycle 數。"
+    },
+    "Pattern.v|Pattern|num_inst": {
+      "sum": "reset 之後 CPU 完成了幾條指令，用於計算 IPC",
+      "naming": [["num", "number of", "數量"], ["inst", "instructions", "指令"]],
+      "desc": "`reg [31:0]`，和 `num_cycles` 在同一個 `always @(posedge clk)` 裡：`reset_proc` 時清 0，否則只要 `retire_valid` 為 1 就加 1。它是 IPC 的分子，也會在 verbose 時單獨印出來。這裡數的是「真正走完 W 階段且沒被 stall 的指令」，bubble 與被 squash 的指令都不算。"
+    },
+    "Pattern.v|Pattern|ipc": {
+      "sum": "結束時算出的 IPC（num_inst / num_cycles）",
+      "naming": [["ipc", "instructions per cycle", "每週期指令數"]],
+      "desc": "`real` 型別，在測試結束且 `verbose` 為 1 時計算：`num_inst / $itor(num_cycles)`，並且先檢查 `num_cycles != 0` 才做除法（否則設 0.0），避免除以零。用 `$itor` 是為了強迫做浮點除法，不然整數相除會被截成 0。它是這個 lab 比較 stall / bypass / long 三種 pipeline 效能的主要數字。"
+    },
+    "`RISCV_PATTERN_V": {
+      "sum": "Pattern.v 的 include guard",
+      "naming": [["RISCV", "RISC-V", "處理器相關"], ["PATTERN", "pattern", "測試環境 Pattern"], ["V", "Verilog file guard", "檔名 .v 的 include guard 後綴"]],
+      "desc": "標準的 include guard：檔頭 `` `ifndef RISCV_PATTERN_V `` / `` `define RISCV_PATTERN_V ``，檔尾 `` `endif ``。`Pattern.v` 會被 `Testbench.v` `` `include ``，而 `Testbench.v` 本身也可能被重複 include，有了它就不會出現 `Pattern` 重複定義的編譯錯誤。"
+    }
+  }
+}

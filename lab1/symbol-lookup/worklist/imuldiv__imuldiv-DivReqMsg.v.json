@@ -1,0 +1,399 @@
+[
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToBits|func",
+  "name": "func",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToBits",
+  "kind": "input",
+  "decl": "input [`IMULDIV_DIVREQ_MSG_FUNC_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:50",
+   "imuldiv/imuldiv-DivReqMsg.v:59"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToBits|a",
+  "name": "a",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToBits",
+  "kind": "input",
+  "decl": "input [`IMULDIV_DIVREQ_MSG_A_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:51",
+   "imuldiv/imuldiv-DivReqMsg.v:60"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToBits|b",
+  "name": "b",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToBits",
+  "kind": "input",
+  "decl": "input [`IMULDIV_DIVREQ_MSG_B_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:52",
+   "imuldiv/imuldiv-DivReqMsg.v:61"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToBits|bits",
+  "name": "bits",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToBits",
+  "kind": "output",
+  "decl": "output [`IMULDIV_DIVREQ_MSG_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:56",
+   "imuldiv/imuldiv-DivReqMsg.v:59",
+   "imuldiv/imuldiv-DivReqMsg.v:60",
+   "imuldiv/imuldiv-DivReqMsg.v:61"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgFromBits|bits",
+  "name": "bits",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgFromBits",
+  "kind": "input",
+  "decl": "input [`IMULDIV_DIVREQ_MSG_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:73",
+   "imuldiv/imuldiv-DivReqMsg.v:82",
+   "imuldiv/imuldiv-DivReqMsg.v:83",
+   "imuldiv/imuldiv-DivReqMsg.v:84",
+   "imuldiv/imuldiv-IntDivIterative.t.v:49"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgFromBits|func",
+  "name": "func",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgFromBits",
+  "kind": "output",
+  "decl": "output [`IMULDIV_DIVREQ_MSG_FUNC_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:77",
+   "imuldiv/imuldiv-DivReqMsg.v:82",
+   "imuldiv/imuldiv-IntDivIterative.t.v:50"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgFromBits|a",
+  "name": "a",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgFromBits",
+  "kind": "output",
+  "decl": "output [`IMULDIV_DIVREQ_MSG_A_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:78",
+   "imuldiv/imuldiv-DivReqMsg.v:83",
+   "imuldiv/imuldiv-IntDivIterative.t.v:51"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgFromBits|b",
+  "name": "b",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgFromBits",
+  "kind": "output",
+  "decl": "output [`IMULDIV_DIVREQ_MSG_B_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:79",
+   "imuldiv/imuldiv-DivReqMsg.v:84",
+   "imuldiv/imuldiv-IntDivIterative.t.v:52"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|msg",
+  "name": "msg",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToStr",
+  "kind": "input",
+  "decl": "input [`IMULDIV_DIVREQ_MSG_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:100",
+   "imuldiv/imuldiv-DivReqMsg.v:101",
+   "imuldiv/imuldiv-DivReqMsg.v:102",
+   "imuldiv/imuldiv-DivReqMsg.v:114",
+   "imuldiv/imuldiv-DivReqMsg.v:131",
+   "imuldiv/imuldiv-DivReqMsg.v:95"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|func",
+  "name": "func",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToStr",
+  "kind": "wire",
+  "decl": "wire [`IMULDIV_DIVREQ_MSG_FUNC_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:100",
+   "imuldiv/imuldiv-DivReqMsg.v:117",
+   "imuldiv/imuldiv-DivReqMsg.v:134"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|a",
+  "name": "a",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToStr",
+  "kind": "wire",
+  "decl": "wire [`IMULDIV_DIVREQ_MSG_A_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:101",
+   "imuldiv/imuldiv-DivReqMsg.v:118",
+   "imuldiv/imuldiv-DivReqMsg.v:119"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|b",
+  "name": "b",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToStr",
+  "kind": "wire",
+  "decl": "wire [`IMULDIV_DIVREQ_MSG_B_SZ-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:102",
+   "imuldiv/imuldiv-DivReqMsg.v:118",
+   "imuldiv/imuldiv-DivReqMsg.v:119"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|fn_unsigned",
+  "name": "fn_unsigned",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToStr",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:106",
+   "imuldiv/imuldiv-DivReqMsg.v:119",
+   "imuldiv/imuldiv-DivReqMsg.v:136"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|fn_signed",
+  "name": "fn_signed",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToStr",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:107",
+   "imuldiv/imuldiv-DivReqMsg.v:118",
+   "imuldiv/imuldiv-DivReqMsg.v:135"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|full_str",
+  "name": "full_str",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToStr",
+  "kind": "reg",
+  "decl": "reg [20*8-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:54",
+   "imuldiv/imuldiv-DivReqMsg.v:111",
+   "imuldiv/imuldiv-DivReqMsg.v:115",
+   "imuldiv/imuldiv-DivReqMsg.v:118",
+   "imuldiv/imuldiv-DivReqMsg.v:119",
+   "imuldiv/imuldiv-DivReqMsg.v:120"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|tiny_str",
+  "name": "tiny_str",
+  "cat": "signal",
+  "module": "imuldiv_DivReqMsgToStr",
+  "kind": "reg",
+  "decl": "reg [2*8-1:0]",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:104",
+   "imuldiv/imuldiv-DivReqMsg.v:128",
+   "imuldiv/imuldiv-DivReqMsg.v:132",
+   "imuldiv/imuldiv-DivReqMsg.v:135",
+   "imuldiv/imuldiv-DivReqMsg.v:136",
+   "imuldiv/imuldiv-DivReqMsg.v:137"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`IMULDIV_DIVREQ_MSG_FUNC_SIGNED",
+  "name": "IMULDIV_DIVREQ_MSG_FUNC_SIGNED",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:15",
+   "imuldiv/imuldiv-DivReqMsg.v:107",
+   "imuldiv/imuldiv-DivReqMsg.v:31",
+   "imuldiv/imuldiv-IntDivIterative.v:392",
+   "imuldiv/imuldiv-IntDivIterative.v:395",
+   "imuldiv/imuldiv-IntDivIterative.v:396"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`IMULDIV_DIVREQ_MSG_FUNC_UNSIGNED",
+  "name": "IMULDIV_DIVREQ_MSG_FUNC_UNSIGNED",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:16",
+   "imuldiv/imuldiv-DivReqMsg.v:106",
+   "imuldiv/imuldiv-DivReqMsg.v:30"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`IMULDIV_DIVREQ_MSG_SZ",
+  "name": "IMULDIV_DIVREQ_MSG_SZ",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:22",
+   "imuldiv/imuldiv-DivReqMsg.t.v:23",
+   "imuldiv/imuldiv-DivReqMsg.v:114",
+   "imuldiv/imuldiv-DivReqMsg.v:131",
+   "imuldiv/imuldiv-DivReqMsg.v:25",
+   "imuldiv/imuldiv-DivReqMsg.v:56",
+   "imuldiv/imuldiv-DivReqMsg.v:73",
+   "imuldiv/imuldiv-DivReqMsg.v:95"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v||imuldiv_DivReqMsgToStr",
+  "name": "imuldiv_DivReqMsgToStr",
+  "cat": "module",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:25",
+   "imuldiv/imuldiv-DivReqMsg.v:93"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "`IMULDIV_DIVREQ_MSG_FUNC_SZ",
+  "name": "IMULDIV_DIVREQ_MSG_FUNC_SZ",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:35",
+   "imuldiv/imuldiv-DivReqMsg.t.v:85",
+   "imuldiv/imuldiv-DivReqMsg.v:100",
+   "imuldiv/imuldiv-DivReqMsg.v:29",
+   "imuldiv/imuldiv-DivReqMsg.v:50",
+   "imuldiv/imuldiv-DivReqMsg.v:77"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`IMULDIV_DIVREQ_MSG_A_SZ",
+  "name": "IMULDIV_DIVREQ_MSG_A_SZ",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:36",
+   "imuldiv/imuldiv-DivReqMsg.t.v:86",
+   "imuldiv/imuldiv-DivReqMsg.v:101",
+   "imuldiv/imuldiv-DivReqMsg.v:33",
+   "imuldiv/imuldiv-DivReqMsg.v:51",
+   "imuldiv/imuldiv-DivReqMsg.v:78"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`IMULDIV_DIVREQ_MSG_B_SZ",
+  "name": "IMULDIV_DIVREQ_MSG_B_SZ",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:37",
+   "imuldiv/imuldiv-DivReqMsg.t.v:87",
+   "imuldiv/imuldiv-DivReqMsg.v:102",
+   "imuldiv/imuldiv-DivReqMsg.v:34",
+   "imuldiv/imuldiv-DivReqMsg.v:52",
+   "imuldiv/imuldiv-DivReqMsg.v:79"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`IMULDIV_DIVREQ_MSG_FUNC_FIELD",
+  "name": "IMULDIV_DIVREQ_MSG_FUNC_FIELD",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:43",
+   "imuldiv/imuldiv-DivReqMsg.t.v:93",
+   "imuldiv/imuldiv-DivReqMsg.v:100",
+   "imuldiv/imuldiv-DivReqMsg.v:38",
+   "imuldiv/imuldiv-DivReqMsg.v:59",
+   "imuldiv/imuldiv-DivReqMsg.v:82"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`IMULDIV_DIVREQ_MSG_A_FIELD",
+  "name": "IMULDIV_DIVREQ_MSG_A_FIELD",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:44",
+   "imuldiv/imuldiv-DivReqMsg.t.v:94",
+   "imuldiv/imuldiv-DivReqMsg.v:101",
+   "imuldiv/imuldiv-DivReqMsg.v:39",
+   "imuldiv/imuldiv-DivReqMsg.v:60",
+   "imuldiv/imuldiv-DivReqMsg.v:83"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`IMULDIV_DIVREQ_MSG_B_FIELD",
+  "name": "IMULDIV_DIVREQ_MSG_B_FIELD",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:45",
+   "imuldiv/imuldiv-DivReqMsg.t.v:95",
+   "imuldiv/imuldiv-DivReqMsg.v:102",
+   "imuldiv/imuldiv-DivReqMsg.v:40",
+   "imuldiv/imuldiv-DivReqMsg.v:61",
+   "imuldiv/imuldiv-DivReqMsg.v:84"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`IMULDIV_DIVREQ_MSG_V",
+  "name": "IMULDIV_DIVREQ_MSG_V",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:16",
+   "imuldiv/imuldiv-DivReqMsg.v:17"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v||imuldiv_DivReqMsgToBits",
+  "name": "imuldiv_DivReqMsgToBits",
+  "cat": "module",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:46"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "imuldiv/imuldiv-DivReqMsg.v||imuldiv_DivReqMsgFromBits",
+  "name": "imuldiv_DivReqMsgFromBits",
+  "cat": "module",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:69",
+   "imuldiv/imuldiv-IntDivIterative.t.v:47"
+  ],
+  "n_occ": 2
+ }
+]

@@ -1,0 +1,1156 @@
+[
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|p_mem_sz",
+  "name": "p_mem_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:20",
+   "vc/vc-TestDualPortMem.v:62",
+   "vc/vc-TestDualPortMem.v:70"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|p_addr_sz",
+  "name": "p_addr_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:107",
+   "vc/vc-TestDualPortMem.v:123",
+   "vc/vc-TestDualPortMem.v:21",
+   "vc/vc-TestDualPortMem.v:25",
+   "vc/vc-TestDualPortMem.v:87",
+   "vc/vc-TestDualPortMem.v:88",
+   "vc/vc-TestDualPortMem.v:89",
+   "vc/vc-TestDualPortMem.v:90"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|p_data_sz",
+  "name": "p_data_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:107",
+   "vc/vc-TestDualPortMem.v:123",
+   "vc/vc-TestDualPortMem.v:193",
+   "vc/vc-TestDualPortMem.v:22",
+   "vc/vc-TestDualPortMem.v:239",
+   "vc/vc-TestDualPortMem.v:242",
+   "vc/vc-TestDualPortMem.v:25",
+   "vc/vc-TestDualPortMem.v:26",
+   "vc/vc-TestDualPortMem.v:308",
+   "vc/vc-TestDualPortMem.v:316",
+   "vc/vc-TestDualPortMem.v:66",
+   "vc/vc-TestDualPortMem.v:87"
+  ],
+  "n_occ": 18
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_req_msg_sz",
+  "name": "c_req_msg_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:25",
+   "vc/vc-TestDualPortMem.v:35",
+   "vc/vc-TestDualPortMem.v:47"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_resp_msg_sz",
+  "name": "c_resp_msg_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:26",
+   "vc/vc-TestDualPortMem.v:41",
+   "vc/vc-TestDualPortMem.v:53"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:148",
+   "vc/vc-TestDualPortMem.v:276",
+   "vc/vc-TestDualPortMem.v:28",
+   "vc/vc-TestDualPortMem.v:330",
+   "vc/vc-TestDualPortMem.v:331",
+   "vc/vc-TestDualPortMem.v:332",
+   "vc/vc-TestDualPortMem.v:333",
+   "vc/vc-TestDualPortRandDelayMem.v:69"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:152",
+   "vc/vc-TestDualPortMem.v:29",
+   "vc/vc-TestDualPortRandDelayMem.v:70"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_val",
+  "name": "memreq0_val",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:157",
+   "vc/vc-TestDualPortMem.v:33",
+   "vc/vc-TestDualPortMem.v:330",
+   "vc/vc-TestDualPortRandDelayMem.v:72"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_rdy",
+  "name": "memreq0_rdy",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:186",
+   "vc/vc-TestDualPortMem.v:34",
+   "vc/vc-TestDualPortRandDelayMem.v:73"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg",
+  "name": "memreq0_msg",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "input",
+  "decl": "input [c_req_msg_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:109",
+   "vc/vc-TestDualPortMem.v:35",
+   "vc/vc-TestDualPortRandDelayMem.v:74"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_val",
+  "name": "memresp0_val",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:301",
+   "vc/vc-TestDualPortMem.v:39",
+   "vc/vc-TestDualPortRandDelayMem.v:76"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_rdy",
+  "name": "memresp0_rdy",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:156",
+   "vc/vc-TestDualPortMem.v:164",
+   "vc/vc-TestDualPortMem.v:186",
+   "vc/vc-TestDualPortMem.v:331",
+   "vc/vc-TestDualPortMem.v:40",
+   "vc/vc-TestDualPortRandDelayMem.v:77"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_msg",
+  "name": "memresp0_msg",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "output",
+  "decl": "output [c_resp_msg_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:313",
+   "vc/vc-TestDualPortMem.v:41",
+   "vc/vc-TestDualPortRandDelayMem.v:78"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_val",
+  "name": "memreq1_val",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:159",
+   "vc/vc-TestDualPortMem.v:332",
+   "vc/vc-TestDualPortMem.v:45",
+   "vc/vc-TestDualPortRandDelayMem.v:80"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_rdy",
+  "name": "memreq1_rdy",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:187",
+   "vc/vc-TestDualPortMem.v:46",
+   "vc/vc-TestDualPortRandDelayMem.v:81"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg",
+  "name": "memreq1_msg",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "input",
+  "decl": "input [c_req_msg_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:125",
+   "vc/vc-TestDualPortMem.v:47",
+   "vc/vc-TestDualPortRandDelayMem.v:82"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_val",
+  "name": "memresp1_val",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:302",
+   "vc/vc-TestDualPortMem.v:51",
+   "vc/vc-TestDualPortRandDelayMem.v:84"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_rdy",
+  "name": "memresp1_rdy",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:158",
+   "vc/vc-TestDualPortMem.v:171",
+   "vc/vc-TestDualPortMem.v:187",
+   "vc/vc-TestDualPortMem.v:333",
+   "vc/vc-TestDualPortMem.v:52",
+   "vc/vc-TestDualPortRandDelayMem.v:85"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_msg",
+  "name": "memresp1_msg",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "output",
+  "decl": "output [c_resp_msg_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:321",
+   "vc/vc-TestDualPortMem.v:53",
+   "vc/vc-TestDualPortRandDelayMem.v:86"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_physical_addr_sz",
+  "name": "c_physical_addr_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:214",
+   "vc/vc-TestDualPortMem.v:215",
+   "vc/vc-TestDualPortMem.v:217",
+   "vc/vc-TestDualPortMem.v:218",
+   "vc/vc-TestDualPortMem.v:62"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_data_byte_sz",
+  "name": "c_data_byte_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:228",
+   "vc/vc-TestDualPortMem.v:231",
+   "vc/vc-TestDualPortMem.v:66",
+   "vc/vc-TestDualPortMem.v:70",
+   "vc/vc-TestDualPortMem.v:78"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_num_blocks",
+  "name": "c_num_blocks",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:193",
+   "vc/vc-TestDualPortMem.v:70",
+   "vc/vc-TestDualPortMem.v:74"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_physical_block_addr_sz",
+  "name": "c_physical_block_addr_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:227",
+   "vc/vc-TestDualPortMem.v:230",
+   "vc/vc-TestDualPortMem.v:74"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_block_offset_sz",
+  "name": "c_block_offset_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:233",
+   "vc/vc-TestDualPortMem.v:234",
+   "vc/vc-TestDualPortMem.v:236",
+   "vc/vc-TestDualPortMem.v:237",
+   "vc/vc-TestDualPortMem.v:78"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_read",
+  "name": "c_read",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:82"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_write",
+  "name": "c_write",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:270",
+   "vc/vc-TestDualPortMem.v:271",
+   "vc/vc-TestDualPortMem.v:83"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_req_msg_type_sz",
+  "name": "c_req_msg_type_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:102",
+   "vc/vc-TestDualPortMem.v:118",
+   "vc/vc-TestDualPortMem.v:137",
+   "vc/vc-TestDualPortMem.v:143",
+   "vc/vc-TestDualPortMem.v:87"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_req_msg_addr_sz",
+  "name": "c_req_msg_addr_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:103",
+   "vc/vc-TestDualPortMem.v:119",
+   "vc/vc-TestDualPortMem.v:138",
+   "vc/vc-TestDualPortMem.v:144",
+   "vc/vc-TestDualPortMem.v:88"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_req_msg_len_sz",
+  "name": "c_req_msg_len_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:104",
+   "vc/vc-TestDualPortMem.v:120",
+   "vc/vc-TestDualPortMem.v:139",
+   "vc/vc-TestDualPortMem.v:145",
+   "vc/vc-TestDualPortMem.v:202",
+   "vc/vc-TestDualPortMem.v:206",
+   "vc/vc-TestDualPortMem.v:89"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_req_msg_data_sz",
+  "name": "c_req_msg_data_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:105",
+   "vc/vc-TestDualPortMem.v:121",
+   "vc/vc-TestDualPortMem.v:140",
+   "vc/vc-TestDualPortMem.v:146",
+   "vc/vc-TestDualPortMem.v:203",
+   "vc/vc-TestDualPortMem.v:207",
+   "vc/vc-TestDualPortMem.v:90"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_resp_msg_type_sz",
+  "name": "c_resp_msg_type_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:291",
+   "vc/vc-TestDualPortMem.v:295",
+   "vc/vc-TestDualPortMem.v:92"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_resp_msg_len_sz",
+  "name": "c_resp_msg_len_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:292",
+   "vc/vc-TestDualPortMem.v:296",
+   "vc/vc-TestDualPortMem.v:93"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_resp_msg_data_sz",
+  "name": "c_resp_msg_data_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:245",
+   "vc/vc-TestDualPortMem.v:248",
+   "vc/vc-TestDualPortMem.v:293",
+   "vc/vc-TestDualPortMem.v:297",
+   "vc/vc-TestDualPortMem.v:94"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_type",
+  "name": "memreq0_msg_type",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_req_msg_type_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:102",
+   "vc/vc-TestDualPortMem.v:110",
+   "vc/vc-TestDualPortMem.v:165"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_addr",
+  "name": "memreq0_msg_addr",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_req_msg_addr_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:103",
+   "vc/vc-TestDualPortMem.v:111",
+   "vc/vc-TestDualPortMem.v:166"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_len",
+  "name": "memreq0_msg_len",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_req_msg_len_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:104",
+   "vc/vc-TestDualPortMem.v:112",
+   "vc/vc-TestDualPortMem.v:167"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_data",
+  "name": "memreq0_msg_data",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_req_msg_data_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:105",
+   "vc/vc-TestDualPortMem.v:113",
+   "vc/vc-TestDualPortMem.v:168"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_from_bits",
+  "name": "memreq0_msg_from_bits",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "instance",
+  "decl": "vc_MemReqMsgFromBits memreq0_msg_from_bits ( ... );",
+  "instance_of": "vc_MemReqMsgFromBits",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:107"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_type",
+  "name": "memreq1_msg_type",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_req_msg_type_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:118",
+   "vc/vc-TestDualPortMem.v:126",
+   "vc/vc-TestDualPortMem.v:172"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_addr",
+  "name": "memreq1_msg_addr",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_req_msg_addr_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:119",
+   "vc/vc-TestDualPortMem.v:127",
+   "vc/vc-TestDualPortMem.v:173"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_len",
+  "name": "memreq1_msg_len",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_req_msg_len_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:120",
+   "vc/vc-TestDualPortMem.v:128",
+   "vc/vc-TestDualPortMem.v:174"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_data",
+  "name": "memreq1_msg_data",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_req_msg_data_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:121",
+   "vc/vc-TestDualPortMem.v:129",
+   "vc/vc-TestDualPortMem.v:175"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_from_bits",
+  "name": "memreq1_msg_from_bits",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "instance",
+  "decl": "vc_MemReqMsgFromBits memreq1_msg_from_bits ( ... );",
+  "instance_of": "vc_MemReqMsgFromBits",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:123"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_val_M",
+  "name": "memreq0_val_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:136",
+   "vc/vc-TestDualPortMem.v:153",
+   "vc/vc-TestDualPortMem.v:157",
+   "vc/vc-TestDualPortMem.v:270",
+   "vc/vc-TestDualPortMem.v:301"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_type_M",
+  "name": "memreq0_msg_type_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg [c_req_msg_type_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:137",
+   "vc/vc-TestDualPortMem.v:165",
+   "vc/vc-TestDualPortMem.v:270",
+   "vc/vc-TestDualPortMem.v:291"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_addr_M",
+  "name": "memreq0_msg_addr_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg [c_req_msg_addr_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:138",
+   "vc/vc-TestDualPortMem.v:166",
+   "vc/vc-TestDualPortMem.v:215"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_len_M",
+  "name": "memreq0_msg_len_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg [c_req_msg_len_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:139",
+   "vc/vc-TestDualPortMem.v:167",
+   "vc/vc-TestDualPortMem.v:203",
+   "vc/vc-TestDualPortMem.v:204",
+   "vc/vc-TestDualPortMem.v:292"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_data_M",
+  "name": "memreq0_msg_data_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg [c_req_msg_data_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:140",
+   "vc/vc-TestDualPortMem.v:168",
+   "vc/vc-TestDualPortMem.v:279"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_val_M",
+  "name": "memreq1_val_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:142",
+   "vc/vc-TestDualPortMem.v:154",
+   "vc/vc-TestDualPortMem.v:159",
+   "vc/vc-TestDualPortMem.v:271",
+   "vc/vc-TestDualPortMem.v:302"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_type_M",
+  "name": "memreq1_msg_type_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg [c_req_msg_type_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:143",
+   "vc/vc-TestDualPortMem.v:172",
+   "vc/vc-TestDualPortMem.v:271",
+   "vc/vc-TestDualPortMem.v:295"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_addr_M",
+  "name": "memreq1_msg_addr_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg [c_req_msg_addr_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:144",
+   "vc/vc-TestDualPortMem.v:173",
+   "vc/vc-TestDualPortMem.v:218"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_len_M",
+  "name": "memreq1_msg_len_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg [c_req_msg_len_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:145",
+   "vc/vc-TestDualPortMem.v:174",
+   "vc/vc-TestDualPortMem.v:207",
+   "vc/vc-TestDualPortMem.v:208",
+   "vc/vc-TestDualPortMem.v:296"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_data_M",
+  "name": "memreq1_msg_data_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg [c_req_msg_data_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:146",
+   "vc/vc-TestDualPortMem.v:175",
+   "vc/vc-TestDualPortMem.v:284"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|m",
+  "name": "m",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "reg",
+  "decl": "reg [p_data_sz-1:0]",
+  "lines": [
+   "Pattern.v:122",
+   "riscvstall/riscvstall-randdelay-sim.v:154",
+   "riscvstall/riscvstall-sim.v:154",
+   "vc/vc-TestDualPortMem.v:193",
+   "vc/vc-TestDualPortMem.v:240",
+   "vc/vc-TestDualPortMem.v:243",
+   "vc/vc-TestDualPortMem.v:279",
+   "vc/vc-TestDualPortMem.v:284"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_len_modified_M",
+  "name": "memreq0_msg_len_modified_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_req_msg_len_sz:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:202",
+   "vc/vc-TestDualPortMem.v:278"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_len_modified_M",
+  "name": "memreq1_msg_len_modified_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_req_msg_len_sz:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:206",
+   "vc/vc-TestDualPortMem.v:283"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|physical_byte_addr0_M",
+  "name": "physical_byte_addr0_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_physical_addr_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:214",
+   "vc/vc-TestDualPortMem.v:228",
+   "vc/vc-TestDualPortMem.v:234"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|physical_byte_addr1_M",
+  "name": "physical_byte_addr1_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_physical_addr_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:217",
+   "vc/vc-TestDualPortMem.v:231",
+   "vc/vc-TestDualPortMem.v:237"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|physical_block_addr0_M",
+  "name": "physical_block_addr0_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_physical_block_addr_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:227",
+   "vc/vc-TestDualPortMem.v:240",
+   "vc/vc-TestDualPortMem.v:279"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|physical_block_addr1_M",
+  "name": "physical_block_addr1_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_physical_block_addr_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:230",
+   "vc/vc-TestDualPortMem.v:243",
+   "vc/vc-TestDualPortMem.v:284"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|block_offset0_M",
+  "name": "block_offset0_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_block_offset_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:233",
+   "vc/vc-TestDualPortMem.v:246",
+   "vc/vc-TestDualPortMem.v:279"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|block_offset1_M",
+  "name": "block_offset1_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_block_offset_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:236",
+   "vc/vc-TestDualPortMem.v:249",
+   "vc/vc-TestDualPortMem.v:284"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|read_block0_M",
+  "name": "read_block0_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [p_data_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:239",
+   "vc/vc-TestDualPortMem.v:246"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|read_block1_M",
+  "name": "read_block1_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [p_data_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:242",
+   "vc/vc-TestDualPortMem.v:249"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|read_data0_M",
+  "name": "read_data0_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_resp_msg_data_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:245",
+   "vc/vc-TestDualPortMem.v:293"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|read_data1_M",
+  "name": "read_data1_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_resp_msg_data_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:248",
+   "vc/vc-TestDualPortMem.v:297"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|write_en0_M",
+  "name": "write_en0_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:270",
+   "vc/vc-TestDualPortMem.v:277"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|write_en1_M",
+  "name": "write_en1_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:271",
+   "vc/vc-TestDualPortMem.v:282"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|wr0_i",
+  "name": "wr0_i",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "integer",
+  "decl": "integer",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:273",
+   "vc/vc-TestDualPortMem.v:278",
+   "vc/vc-TestDualPortMem.v:279"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|wr1_i",
+  "name": "wr1_i",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "integer",
+  "decl": "integer",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:274",
+   "vc/vc-TestDualPortMem.v:283",
+   "vc/vc-TestDualPortMem.v:284"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_msg_type_M",
+  "name": "memresp0_msg_type_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_resp_msg_type_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:291",
+   "vc/vc-TestDualPortMem.v:310"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_msg_len_M",
+  "name": "memresp0_msg_len_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_resp_msg_len_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:292",
+   "vc/vc-TestDualPortMem.v:311"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_msg_data_M",
+  "name": "memresp0_msg_data_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_resp_msg_data_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:293",
+   "vc/vc-TestDualPortMem.v:312"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_msg_type_M",
+  "name": "memresp1_msg_type_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_resp_msg_type_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:295",
+   "vc/vc-TestDualPortMem.v:318"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_msg_len_M",
+  "name": "memresp1_msg_len_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_resp_msg_len_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:296",
+   "vc/vc-TestDualPortMem.v:319"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_msg_data_M",
+  "name": "memresp1_msg_data_M",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "wire",
+  "decl": "wire [c_resp_msg_data_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:297",
+   "vc/vc-TestDualPortMem.v:320"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_msg_to_bits",
+  "name": "memresp0_msg_to_bits",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "instance",
+  "decl": "vc_MemRespMsgToBits memresp0_msg_to_bits ( ... );",
+  "instance_of": "vc_MemRespMsgToBits",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:308"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_msg_to_bits",
+  "name": "memresp1_msg_to_bits",
+  "cat": "signal",
+  "module": "vc_TestDualPortMem",
+  "kind": "instance",
+  "decl": "vc_MemRespMsgToBits memresp1_msg_to_bits ( ... );",
+  "instance_of": "vc_MemRespMsgToBits",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:316"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_TEST_DUAL_PORT_MEM_V",
+  "name": "VC_TEST_DUAL_PORT_MEM_V",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:7",
+   "vc/vc-TestDualPortMem.v:8"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-TestDualPortMem.v||vc_TestDualPortMem",
+  "name": "vc_TestDualPortMem",
+  "cat": "module",
+  "lines": [
+   "vc/vc-TestDualPortMem.v:18",
+   "vc/vc-TestDualPortRandDelayMem.v:67"
+  ],
+  "n_occ": 2
+ }
+]

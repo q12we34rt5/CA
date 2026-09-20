@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Verilog 電路圖解課</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#F3F7F6; --surface:#FFFFFF; --ink:#13272C; --muted:#56696D; --line:#D2DDDB;
+  --accent:#0E7767; --accent-soft:#DDEEEA;
+  --seq:#AE5A1B; --seq-fill:#FBEBDD;
+  --ctl:#3556C4; --blk:#E8F0EE; --code-bg:#E9EFEE; --warn:#B3261E; --warn-soft:#FBE9E7;
+  --sans:"IBM Plex Sans","Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D191C; --surface:#132327; --ink:#DBE7E5; --muted:#8AA1A4; --line:#24383D;
+    --accent:#4FC4B0; --accent-soft:#16332F;
+    --seq:#E69C5A; --seq-fill:#38281A;
+    --ctl:#93ABFF; --blk:#1A2E33; --code-bg:#0A1416; --warn:#FF8A80; --warn-soft:#3A1D1B;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D191C; --surface:#132327; --ink:#DBE7E5; --muted:#8AA1A4; --line:#24383D;
+  --accent:#4FC4B0; --accent-soft:#16332F;
+  --seq:#E69C5A; --seq-fill:#38281A;
+  --ctl:#93ABFF; --blk:#1A2E33; --code-bg:#0A1416; --warn:#FF8A80; --warn-soft:#3A1D1B;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:16px}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.75;margin:0}
+.shell{display:grid;grid-template-columns:264px minmax(0,1fr);gap:48px;max-width:1180px;margin:0 auto;padding-inline:24px;padding-block:32px 96px}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---- nav ---- */
+.side{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 24px);align-self:start;max-height:calc(100vh - 48px);overflow-y:auto;font-size:14px}
+.side .brand{font-weight:700;font-size:15px;letter-spacing:.02em;margin:0 0 4px}
+.side .brand span{color:var(--accent)}
+.side .sub{color:var(--muted);font-size:12.5px;margin:0 0 20px;line-height:1.5}
+.side summary{display:none}
+.toc{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.toc .part{font-size:11.5px;letter-spacing:.08em;color:var(--muted);margin:14px 0 4px;font-weight:600}
+.toc a{display:flex;gap:10px;padding:4px 10px;border-radius:4px;color:var(--ink);text-decoration:none;line-height:1.45}
+.toc a .n{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:1.6em;padding-top:1px}
+.toc a:hover{background:var(--accent-soft)}
+.toc a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.toc a.on .n{color:var(--accent)}
+
+/* ---- content ---- */
+main{min-width:0}
+.hero{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:8px}
+.hero h1{font-size:clamp(28px,4.2vw,40px);line-height:1.2;margin:0 0 14px;letter-spacing:-.01em;text-wrap:balance}
+.hero p{max-width:40em;margin:0 0 12px}
+.ch{padding-top:56px}
+.eyebrow{font-family:var(--mono);font-size:12.5px;color:var(--accent);letter-spacing:.06em;margin:0 0 6px}
+h2{font-size:27px;line-height:1.3;margin:0 0 16px;text-wrap:balance}
+h3{font-size:18.5px;line-height:1.4;margin:40px 0 10px;text-wrap:balance}
+p,ul,ol{max-width:42em}
+p{margin:0 0 14px}
+ul,ol{padding-left:1.3em;margin:0 0 14px}
+li{margin-bottom:4px}
+code{font-family:var(--mono);font-size:.88em;background:var(--code-bg);padding:1px 5px;border-radius:3px}
+.ex{margin:22px 0 30px}
+.src{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:6px}
+.src.mine{color:var(--ctl)}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin:0 0 12px;overflow-x:auto;font-size:13.5px;line-height:1.6;tab-size:2}
+pre code{background:none;padding:0;font-size:inherit;display:block;white-space:pre}
+.hljs-keyword,.hljs-type{color:var(--accent);font-weight:600}
+.hljs-number,.hljs-literal{color:var(--seq)}
+.hljs-comment{color:var(--muted);font-style:italic}
+.hljs-meta,.hljs-built_in{color:var(--ctl)}
+.hljs-string{color:var(--seq)}
+
+figure{margin:0 0 12px;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.fig-scroll{overflow-x:auto;padding:10px 12px 0}
+figure svg{display:block;width:100%;height:auto;margin:0 auto}
+figcaption{font-size:13.5px;line-height:1.6;color:var(--muted);padding:8px 16px 12px;border-top:1px dashed var(--line);margin-top:8px}
+figcaption b{color:var(--ink);font-weight:600}
+figure svg text{font:12px var(--mono);fill:var(--ink)}
+figure svg text.zh{font-family:var(--sans);font-size:12.5px}
+figure svg text.s{font-size:10.5px}
+figure svg text.mut{fill:var(--muted)}
+figure svg text.cb{fill:var(--ctl)}
+figure svg text.sq{fill:var(--seq)}
+figure svg text.ac{fill:var(--accent)}
+figure svg text.wr{fill:var(--warn)}
+figure svg text.hd{font:600 13px var(--sans)}
+.w{fill:none;stroke:var(--ink);stroke-width:1.5}
+.wm{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-dasharray:3 3}
+.c{fill:none;stroke:var(--ctl);stroke-width:1.5;stroke-dasharray:5 3}
+.k{fill:var(--blk);stroke:var(--ink);stroke-width:1.5}
+.r{fill:var(--seq-fill);stroke:var(--seq);stroke-width:2}
+.rl{fill:none;stroke:var(--seq);stroke-width:1.5}
+.re{fill:none;stroke:var(--seq);stroke-width:1;stroke-dasharray:4 4}
+.d{fill:var(--ink);stroke:none}
+.dc{fill:var(--ctl);stroke:none}
+.x{fill:none;stroke:var(--warn);stroke-width:2}
+.a{fill:none;stroke:var(--accent);stroke-width:2}
+.af{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.gh{fill:var(--bg);stroke:var(--line);stroke-width:1}
+.grp{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:6 4}
+
+.note,.trap{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;margin:18px 0;border-radius:0 6px 6px 0;max-width:44em;font-size:15px}
+.trap{border-left-color:var(--warn);background:var(--warn-soft)}
+.note>b:first-child,.trap>b:first-child{display:block;font-size:12.5px;letter-spacing:.06em;margin-bottom:2px}
+.note>b:first-child{color:var(--accent)} .trap>b:first-child{color:var(--warn)}
+.note p:last-child,.trap p:last-child{margin-bottom:0}
+
+.tbl{overflow-x:auto;margin:16px 0 22px}
+table{border-collapse:collapse;font-size:14.5px;width:100%;min-width:520px}
+th,td{text-align:left;padding:7px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12.5px;letter-spacing:.05em;color:var(--muted);font-weight:600;border-bottom:1.5px solid var(--ink)}
+td code{white-space:nowrap}
+td.num{white-space:nowrap}
+#mulTbl{min-width:780px}
+td.num,th.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px}
+tr.hi td{background:var(--accent-soft)}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:13.5px;color:var(--muted);margin:18px 0 0;padding:0;list-style:none;max-width:none}
+.legend li{display:flex;align-items:center;gap:8px;margin:0}
+.legend svg{width:38px;height:16px;flex:none}
+
+.sim{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;margin:0 0 12px}
+.sim label{display:flex;flex-direction:column;font-size:12.5px;color:var(--muted);gap:4px}
+.sim input{font:15px var(--mono);width:7em;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)}
+.sim output{font-family:var(--mono);font-size:14px}
+
+@media (max-width: 900px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:16px;padding-inline:16px;padding-block:16px 72px}
+  .side{position:static;max-height:none;border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:0}
+  .side .brand,.side .sub{display:none}
+  .side summary{display:block;cursor:pointer;padding:10px 14px;font-weight:600}
+  .side details:not([open]) .toc{display:none}
+  .side .toc{padding:0 8px 10px}
+  figure svg{min-width:560px}
+  figure svg.narrow{min-width:380px}
+  .ch{padding-top:40px}
+  h2{font-size:23px}
+}
+</style>
+
+<!-- shared symbol library: logic gates + arrowheads -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="g-and"><path class="k" d="M0 0H20A15 15 0 0 1 20 30H0Z"/></g>
+    <g id="g-or"><path class="k" d="M0 0C15 0 30 5 40 15C30 25 15 30 0 30C6 20 6 10 0 0Z"/></g>
+    <g id="g-nor"><path class="k" d="M0 0C15 0 30 5 40 15C30 25 15 30 0 30C6 20 6 10 0 0Z"/><circle class="k" cx="44" cy="15" r="4"/></g>
+    <g id="g-xor"><path class="k" d="M0 0C15 0 30 5 40 15C30 25 15 30 0 30C6 20 6 10 0 0Z"/><path class="w" d="M-6 0C0 10 0 20 -6 30"/></g>
+    <g id="g-not"><path class="k" d="M0 0L26 15L0 30Z"/><circle class="k" cx="30" cy="15" r="4"/></g>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d" d="M0 0L10 5L0 10Z"/></marker>
+    <marker id="ahc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="dc" d="M0 0L10 5L0 10Z"/></marker>
+  </defs>
+</svg>
+
+<div class="shell">
+<nav class="side" aria-label="章節">
+  <p class="brand">Verilog <span>電路圖解課</span></p>
+  <p class="sub">用 lab1 的真實程式碼，看每一種語法合成出來的電路</p>
+  <details open id="tocbox"><summary>章節目錄</summary><ul class="toc" id="toc"></ul></details>
+</nav>
+
+<main>
+<header class="hero">
+  <h1>每一行 Verilog，都是一塊電路</h1>
+  <p>這份課程的範例全部取自你的 <code>lab1</code>（RISC-V 五級管線處理器 + 迭代式乘除法器）。每個語法都先看原始碼，再看它「合成」(synthesize) 之後會變成什麼硬體。讀完之後，你應該能打開 <code>riscvstall-CoreDpath.v</code>，在腦中把它畫成一張電路圖。</p>
+  <p>標示 <code>示意範例</code> 的程式碼是我為了說明而另外寫的，其餘都附上原始檔名與行號。</p>
+  <ul class="legend" aria-label="圖例">
+    <li><svg viewBox="0 0 38 16"><path class="w" d="M0 8H38"/></svg>資料線</li>
+    <li><svg viewBox="0 0 38 16"><path class="w" d="M0 8H38M14 14l8 -12"/></svg>斜線＋數字 = 多位元匯流排</li>
+    <li><svg viewBox="0 0 38 16"><path class="c" d="M0 8H38"/></svg>控制訊號（select / enable）</li>
+    <li><svg viewBox="0 0 38 16"><rect class="r" x="6" y="1" width="26" height="14"/></svg>暫存器（有 clk，會記住值）</li>
+    <li><svg viewBox="0 0 38 16"><rect class="k" x="6" y="1" width="26" height="14"/></svg>組合邏輯（沒有記憶）</li>
+  </ul>
+</header>
+<!-- ============================================================ ch0 -->
+<section class="ch" id="ch0" data-part="基礎" data-nav="先換腦袋：這不是程式">
+<p class="eyebrow">第 0 章 · 基礎</p>
+<h2>先換腦袋：Verilog 不是「程式」，是「電路的文字版」</h2>
+<p>寫 C 或 Python 時，你在描述<b>一連串要依序執行的步驟</b>。寫 Verilog 時，你在描述<b>一堆同時存在的元件，以及它們之間怎麼接線</b>。Verilog 屬於 HDL（Hardware Description Language，硬體描述語言），合成工具會把它翻譯成邏輯閘和正反器。</p>
+
+<div class="ex">
+<div class="src mine">示意範例</div>
+<pre><code class="language-verilog">assign x = a &amp; b;
+assign y = x | c;
+assign z = ~y;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 210" role="img" style="max-width:828px" aria-label="左邊：軟體依序執行三行程式。右邊：同樣三行在硬體中是 AND、OR、NOT 三個同時存在的邏輯閘串接。">
+  <text class="hd" x="30" y="28">軟體：CPU 一次做一行</text>
+  <rect class="k" x="40" y="45" width="200" height="30"/><text x="52" y="65">x = a &amp; b;</text>
+  <rect class="k" x="40" y="95" width="200" height="30"/><text x="52" y="115">y = x | c;</text>
+  <rect class="k" x="40" y="145" width="200" height="30"/><text x="52" y="165">z = ~y;</text>
+  <path class="w" d="M140 75V94" marker-end="url(#ah)"/><path class="w" d="M140 125V144" marker-end="url(#ah)"/>
+  <path class="w" d="M275 50V170" marker-end="url(#ah)"/><text class="zh mut" x="284" y="114">時間</text>
+  <path class="wm" d="M340 15V195"/>
+  <text class="hd" x="370" y="28">硬體：三個元件同時存在、同時運作</text>
+  <path class="w" d="M392 68H440M392 82H440"/><text x="378" y="72">a</text><text x="378" y="86">b</text>
+  <use href="#g-and" x="440" y="60"/>
+  <path class="w" d="M470 75H535"/><text x="496" y="69">x</text>
+  <path class="w" d="M392 130H510V89H535"/><text x="378" y="134">c</text>
+  <use href="#g-or" x="530" y="67"/>
+  <path class="w" d="M570 82H610"/><text x="584" y="76">y</text>
+  <use href="#g-not" x="610" y="67"/>
+  <path class="w" d="M644 82H688"/><text x="694" y="86">z</text>
+  <text class="zh mut" x="370" y="180">三行 assign 的順序可以任意調換，電路完全一樣</text>
+</svg>
+</div>
+<figcaption><b>同樣三行字，兩種意義。</b>在硬體裡沒有「先執行第一行」這回事：<code>a</code> 一改變，訊號就沿著導線穿過三個閘，<code>z</code> 在幾奈秒後跟著變。</figcaption>
+</figure>
+</div>
+
+<p>整份課程只需要記住兩種硬體：</p>
+<ul>
+  <li><b>組合邏輯 (combinational logic)</b>：輸出只由「現在的輸入」決定，沒有記憶。邏輯閘、加法器、多工器 (mux) 都是。</li>
+  <li><b>循序邏輯 (sequential logic)</b>：有 <code>clk</code>，會在時脈邊緣把值「記住」。就是正反器 (flip-flop) 與由它組成的暫存器。</li>
+</ul>
+<p>lab1 裡所有可合成的程式碼，最後都只會變成這兩種東西加上導線。後面每一章就是在回答：「這個語法會變成哪一種？長什麼樣子？」</p>
+</section>
+
+<!-- ============================================================ ch1 -->
+<section class="ch" id="ch1" data-part="基礎" data-nav="module 與 port">
+<p class="eyebrow">第 1 章 · 基礎</p>
+<h2><code>module</code> 與 port：一顆有接腳的黑盒子</h2>
+<p><code>module</code> 是 Verilog 的基本單位，對應到硬體就是一顆 IC 或電路板上的一個方塊。括號裡列出的是它的接腳 (port)：<code>input</code> 是訊號進來的腳，<code>output</code> 是訊號出去的腳。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 120–135 行</div>
+<pre><code class="language-verilog">module riscv_CoreDpathAluLogical
+(
+  input  [1:0]  logical_fn, // 00 = and, 01 = or, 10 = xor, 11 = nor
+  input  [31:0] alu_a,
+  input  [31:0] alu_b,
+  output [31:0] result
+);
+
+  assign result = ... ;     // 內部電路，第 4 章會打開來看
+
+endmodule</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 600 190" role="img" style="max-width:690px" aria-label="riscv_CoreDpathAluLogical 模組畫成一個方塊：左邊三個輸入 logical_fn 2 位元、alu_a 32 位元、alu_b 32 位元，右邊一個輸出 result 32 位元。">
+  <text class="s mut" x="60" y="28">input</text><text class="s mut" x="480" y="28">output</text>
+  <rect class="k" x="200" y="40" width="220" height="120"/>
+  <text x="310" y="104" text-anchor="middle">riscv_CoreDpathAluLogical</text>
+  <path class="c" d="M60 70H200"/><path class="c" d="M156 76l8 -12" style="stroke-dasharray:none"/><text class="s cb" x="166" y="62">2</text><text class="cb" x="60" y="62">logical_fn</text>
+  <path class="w" d="M60 100H200M156 106l8 -12"/><text class="s" x="166" y="92">32</text><text x="60" y="92">alu_a</text>
+  <path class="w" d="M60 130H200M156 136l8 -12"/><text class="s" x="166" y="122">32</text><text x="60" y="122">alu_b</text>
+  <path class="w" d="M420 100H540M476 106l8 -12"/><text class="s" x="486" y="92">32</text><text x="508" y="92">result</text>
+</svg>
+</div>
+<figcaption><b>module = 方塊，port = 接腳。</b><code>[31:0]</code> 代表這不是一條線，而是 32 條線綁成一束（匯流排）；圖上用一條線加斜線和數字表示。</figcaption>
+</figure>
+</div>
+<p><code>module … endmodule</code> 只是「設計圖」。真的要用到這顆電路時，要在別的 module 裡把它<b>例化 (instantiate)</b>，這在<a href="#ch10">第 10 章</a>說明。</p>
+</section>
+
+<!-- ============================================================ ch2 -->
+<section class="ch" id="ch2" data-part="基礎" data-nav="wire、reg、位寬、常數">
+<p class="eyebrow">第 2 章 · 基礎</p>
+<h2><code>wire</code>、<code>reg</code>、位元寬度與數字常數</h2>
+
+<h3>匯流排：<code>[高:低]</code></h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 15、24、106 行</div>
+<pre><code class="language-verilog">input  [31:0] alu_a;                       // 32 條線，編號 31 到 0
+wire diffSigns = alu_a[31] ^ alu_b[31];    // [31]   取出一條線
+... signed_alu_b &gt;&gt;&gt; alu_a[4:0];           // [4:0]  取出最低的五條線</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 600 112" role="img" style="max-width:690px" aria-label="32 位元匯流排 alu_a，最左邊第 31 位元是正負號位元，最右邊第 4 到第 0 位元被取出當位移量。">
+  <rect class="k" x="44" y="40" width="512" height="24"/>
+  <rect class="af" x="44" y="40" width="16" height="24"/>
+  <rect class="af" x="476" y="40" width="80" height="24"/>
+  <path class="w" style="stroke-width:1" d="M60 40v24M76 40v24M92 40v24M108 40v24M124 40v24M140 40v24M156 40v24M172 40v24M188 40v24M204 40v24M220 40v24M236 40v24M252 40v24M268 40v24M284 40v24M300 40v24M316 40v24M332 40v24M348 40v24M364 40v24M380 40v24M396 40v24M412 40v24M428 40v24M444 40v24M460 40v24M476 40v24M492 40v24M508 40v24M524 40v24M540 40v24"/>
+  <text class="s" x="52" y="33" text-anchor="middle">31</text><text class="s" x="484" y="33" text-anchor="middle">4</text><text class="s" x="548" y="33" text-anchor="middle">0</text>
+  <text class="s mut" x="70" y="33">MSB</text><text class="s mut" x="518" y="33" text-anchor="middle">LSB</text>
+  <path class="a" d="M52 64V80M516 64V80"/>
+  <text class="ac" x="44" y="96">alu_a[31]</text><text class="zh mut" x="116" y="96">正負號位元</text>
+  <text class="ac" x="556" y="96" text-anchor="end">alu_a[4:0]</text><text class="zh mut" x="478" y="96" text-anchor="end">位移量 0–31</text>
+</svg>
+</div>
+<figcaption><b>位元選取不花任何硬體。</b>它只是從一束線裡挑出其中幾條接出去。</figcaption>
+</figure>
+</div>
+
+<h3><code>wire</code> vs <code>reg</code>：最容易誤會的名字</h3>
+<p><code>wire</code> 就是導線，用 <code>assign</code> 驅動。<code>reg</code> <b>不等於暫存器</b>，它只是語法規定：「在 <code>always</code> 區塊裡被賦值的訊號，必須宣告成 <code>reg</code>」。它最後變成什麼硬體，要看 <code>always</code> 的寫法：</p>
+<div class="tbl"><table>
+<thead><tr><th>宣告</th><th>在哪裡被賦值</th><th>合成結果</th><th>lab1 的例子</th></tr></thead>
+<tbody>
+<tr><td><code>wire</code></td><td><code>assign</code></td><td>組合邏輯的輸出線</td><td><code>wire [31:0] sum = alu_a + xB;</code></td></tr>
+<tr><td><code>reg</code></td><td><code>always @(*)</code></td><td>還是組合邏輯（沒有正反器！）</td><td>AddSub 的 <code>output reg [31:0] result</code></td></tr>
+<tr><td><code>reg</code></td><td><code>always @(posedge clk)</code></td><td>真正的 D 正反器</td><td><code>reg [31:0] pc_Fhl;</code></td></tr>
+</tbody></table></div>
+<p>另外，<code>wire [31:0] sum = alu_a + xB;</code> 這種「宣告時順便給值」的寫法，等同於先 <code>wire [31:0] sum;</code> 再 <code>assign sum = alu_a + xB;</code>，lab1 大量使用。</p>
+
+<h3>數字常數：<code>寬度'進位 數值</code></h3>
+<div class="tbl"><table>
+<thead><tr><th>寫法</th><th>意思</th><th>出處</th></tr></thead>
+<tbody>
+<tr><td><code>2'b01</code></td><td>2 位元，二進位 01</td><td>ALU 的 function code</td></tr>
+<tr><td><code>4'd10</code></td><td>4 位元，十進位 10（= 1010）</td><td><code>case (fn)</code> 的 SRA</td></tr>
+<tr><td><code>32'h00080000</code></td><td>32 位元，十六進位</td><td>CoreDpath 的 <code>reset_vector</code></td></tr>
+<tr><td><code>32'b0</code></td><td>32 位元全 0（不足的高位自動補 0）</td><td>Regfile 的 x0</td></tr>
+<tr><td><code>32'bx</code></td><td>32 位元「不在乎」(don't care)。模擬時顯示 x；合成時工具可以挑最省電路的值</td><td>每個 mux 的最後一個分支</td></tr>
+<tr><td><code>32'b???????_?????_…_0110111</code></td><td><code>?</code> 是 <code>casez</code> 用的萬用字元；<code>_</code> 只是方便閱讀的分隔</td><td>InstMsg 的指令編碼</td></tr>
+<tr><td><code>31</code>（沒寫寬度）</td><td>預設 32 位元十進位。能用，但寬度不明確時容易有警告</td><td>乘法器 counter 的初值</td></tr>
+</tbody></table></div>
+<div class="note"><b>為什麼每個 mux 最後都接 32'bx？</b><p>像 <code>( sel == 2'd0 ) ? a : ( sel == 2'd1 ) ? b : 32'bx</code>。這是 lab1 作者的習慣：如果 <code>sel</code> 出現了不該出現的值，模擬波形上會立刻冒出紅色的 x，幫你抓 bug；對合成工具來說 x 表示「隨便」，讓它有更多化簡空間。</p></div>
+</section>
+<!-- ============================================================ ch3 -->
+<section class="ch" id="ch3" data-part="組合邏輯" data-nav="assign 與運算子">
+<p class="eyebrow">第 3 章 · 組合邏輯</p>
+<h2><code>assign</code> 與運算子：直接長出邏輯閘</h2>
+<p><code>assign</code> 的意思是「把右邊這坨電路的輸出，<b>永久焊在</b>左邊這條線上」。它不是「執行一次的賦值」，右邊任何輸入一變，左邊就跟著變。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 24 行</div>
+<pre><code class="language-verilog">wire diffSigns = alu_a[31] ^ alu_b[31];</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg class="narrow" viewBox="0 0 460 96" role="img" style="max-width:529px" aria-label="alu_a 第 31 位元與 alu_b 第 31 位元接到一個 XOR 閘，輸出為 diffSigns。">
+  <text x="144" y="42" text-anchor="end">alu_a[31]</text><text x="144" y="56" text-anchor="end">alu_b[31]</text>
+  <path class="w" d="M150 38H204M150 52H204"/>
+  <use href="#g-xor" x="200" y="30"/>
+  <path class="w" d="M240 45H320"/><text x="328" y="49">diffSigns</text>
+</svg>
+</div>
+<figcaption><b>一個 <code>^</code> 就是一個 XOR 閘。</b>兩數正負號不同時輸出 1。</figcaption>
+</figure>
+</div>
+
+<h3>對多位元做位元運算：一次長出 N 個閘</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 129 行</div>
+<pre><code class="language-verilog">( alu_a &amp; alu_b )      // alu_a、alu_b 都是 [31:0]</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg class="narrow" viewBox="0 0 520 215" role="img" style="max-width:598px" aria-label="32 位元的 AND 運算等於 32 個獨立的 AND 閘，每個閘處理同一個位置的一對位元。">
+  <text x="144" y="42" text-anchor="end">alu_a[31]</text><text x="144" y="56" text-anchor="end">alu_b[31]</text>
+  <path class="w" d="M150 38H240M150 52H240"/><use href="#g-and" x="240" y="30"/><path class="w" d="M270 45H350"/><text x="358" y="49">result[31]</text>
+  <text x="144" y="102" text-anchor="end">alu_a[30]</text><text x="144" y="116" text-anchor="end">alu_b[30]</text>
+  <path class="w" d="M150 98H240M150 112H240"/><use href="#g-and" x="240" y="90"/><path class="w" d="M270 105H350"/><text x="358" y="109">result[30]</text>
+  <text class="mut" x="252" y="148">⋮</text>
+  <text x="144" y="182" text-anchor="end">alu_a[0]</text><text x="144" y="196" text-anchor="end">alu_b[0]</text>
+  <path class="w" d="M150 178H240M150 192H240"/><use href="#g-and" x="240" y="170"/><path class="w" d="M270 185H350"/><text x="358" y="189">result[0]</text>
+</svg>
+</div>
+<figcaption><b><code>&amp;</code> 作用在 32 位元上 = 32 個並排的 AND 閘。</b>之後的圖為了簡潔，會用一個閘符號加上「32」的匯流排來代表這一整排。</figcaption>
+</figure>
+</div>
+
+<h3>運算子對照表</h3>
+<div class="tbl"><table>
+<thead><tr><th>運算子</th><th>合成出來的硬體</th><th>成本</th></tr></thead>
+<tbody>
+<tr><td><code>&amp;</code> <code>|</code> <code>^</code> <code>~</code></td><td>逐位元的 AND / OR / XOR / NOT 閘</td><td>每位元一個閘</td></tr>
+<tr><td><code>&amp;&amp;</code> <code>||</code> <code>!</code></td><td>邏輯運算，結果只有 1 位元（運算元先被壓成「是否非零」）</td><td>很小</td></tr>
+<tr><td><code>==</code> <code>!=</code></td><td>比較器：逐位元 XNOR 再全部 AND 起來</td><td>小</td></tr>
+<tr><td><code>+</code> <code>-</code></td><td>加法器（進位鏈）</td><td>中</td></tr>
+<tr><td><code>&lt;&lt; 1</code>、<code>&gt;&gt; 1</code>（固定量）</td><td>純接線，見<a href="#ch5">第 5 章</a></td><td>零</td></tr>
+<tr><td><code>&lt;&lt; alu_a[4:0]</code>（可變量）</td><td>桶式移位器 (barrel shifter)：5 層 mux，分別決定要不要移 1、2、4、8、16 位</td><td>中</td></tr>
+<tr><td><code>&gt;&gt;&gt;</code></td><td>算術右移，左邊補正負號位元。運算元必須是 <code>signed</code> 才有效，所以 Shifter 特地宣告 <code>wire signed [31:0]</code></td><td>同上</td></tr>
+<tr><td><code>*</code> <code>/</code> <code>%</code></td><td>整顆組合式乘法器／除法器。ALU 的 MulDiv 單元用了，面積非常大、延遲非常長</td><td>很大</td></tr>
+<tr><td><code>? :</code></td><td>多工器，見<a href="#ch4">第 4 章</a></td><td>小</td></tr>
+</tbody></table></div>
+<div class="note"><b>面積 vs 時間</b><p>寫 <code>alu_a * alu_b</code> 只要一行，但會合成出幾千個閘，而且一個時脈週期內要算完。lab1 的重點——<code>imuldiv-IntMulIterative.v</code>——就是改用「一個加法器 + 32 個週期」慢慢算，拿時間換面積。<a href="#ch14">第 14 章</a>會完整畫出來。</p></div>
+
+<h3>真實範例：一個加法器同時做加法和減法</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 20–22 行</div>
+<pre><code class="language-verilog">// We use one adder to perform both additions and subtractions
+wire [31:0] xB  = ( addsub_fn != 2'b00 ) ? ( ~alu_b + 1 ) : alu_b;
+wire [31:0] sum = alu_a + xB;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 250" role="img" style="max-width:759px" aria-label="alu_b 分成兩路：一路直接進 mux 的 0 輸入，一路經過反相和加一之後進 mux 的 1 輸入。addsub_fn 不等於 00 時選擇負的 alu_b。mux 輸出 xB 與 alu_a 一起進加法器得到 sum。">
+  <text x="30" y="34">alu_a</text><path class="w" d="M30 40H420V80H450M236 46l8 -12"/><text class="s" x="246" y="32">32</text>
+  <text x="30" y="144">alu_b</text><path class="w" d="M30 150H330"/><circle class="d" cx="90" cy="150" r="3"/>
+  <path class="w" d="M90 150V90H120"/>
+  <rect class="k" x="120" y="72" width="60" height="36"/><text x="150" y="94" text-anchor="middle">~</text>
+  <path class="w" d="M180 90H210"/>
+  <rect class="k" x="210" y="72" width="60" height="36"/><text x="240" y="94" text-anchor="middle">+ 1</text>
+  <path class="w" d="M270 90H330"/>
+  <text class="zh mut" x="120" y="62">~alu_b + 1 就是 −alu_b（二補數）</text>
+  <path class="k" d="M330 70L356 80V160L330 170Z"/><text class="s" x="335" y="94">1</text><text class="s" x="335" y="154">0</text>
+  <path class="w" d="M356 120H450"/><text x="392" y="112">xB</text>
+  <rect class="k" x="450" y="60" width="70" height="90"/><text x="485" y="112" text-anchor="middle" style="font-size:20px">+</text>
+  <path class="w" d="M520 105H610M556 111l8 -12"/><text class="s" x="566" y="97">32</text><text x="584" y="97">sum</text>
+  <text class="cb" x="30" y="209">addsub_fn</text><path class="c" d="M30 215H180"/>
+  <rect class="k" x="180" y="198" width="90" height="34"/><text x="225" y="219" text-anchor="middle">!= 2'b00</text>
+  <path class="c" d="M270 215H343V166"/>
+</svg>
+</div>
+<figcaption><b>兩行程式 = 反相器 + 加一 + 比較器 + mux + 加法器。</b>a − b 等於 a + (−b)，所以減法只是「先把 b 變號再送進同一個加法器」。</figcaption>
+</figure>
+</div>
+</section>
+
+<!-- ============================================================ ch4 -->
+<section class="ch" id="ch4" data-part="組合邏輯" data-nav="? : 就是 MUX">
+<p class="eyebrow">第 4 章 · 組合邏輯</p>
+<h2><code>? :</code> 三元運算子：就是多工器 (MUX)</h2>
+<p>多工器是 lab1 裡出現最多次的元件：幾個輸入、一個選擇訊號、一個輸出，選擇訊號決定哪個輸入「通過」。在 Verilog 裡最直接的寫法就是 <code>條件 ? 真的時候 : 假的時候</code>。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 114–115 行</div>
+<pre><code class="language-verilog">wire [31:0] pc_mux_out_Phl_final
+  = pc_redirect_pending ? pc_redirect_targ : pc_mux_out_Phl;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg class="narrow" viewBox="0 0 560 170" role="img" style="max-width:644px" aria-label="二選一多工器：pc_redirect_pending 為 1 時輸出 pc_redirect_targ，為 0 時輸出 pc_mux_out_Phl。">
+  <text x="60" y="47">pc_redirect_targ</text><path class="w" d="M60 55H250"/>
+  <text x="60" y="97">pc_mux_out_Phl</text><path class="w" d="M60 105H250"/>
+  <path class="k" d="M250 30L276 40V120L250 130Z"/><text class="s" x="255" y="59">1</text><text class="s" x="255" y="109">0</text>
+  <path class="w" d="M276 80H440"/><text x="290" y="72">pc_mux_out_Phl_final</text>
+  <path class="c" d="M263 126V155"/><text class="cb" x="272" y="159">pc_redirect_pending</text>
+</svg>
+</div>
+<figcaption><b>梯形 = mux。</b>資料從寬邊進、窄邊出；選擇訊號（藍色虛線）從側面進來。</figcaption>
+</figure>
+</div>
+
+<h3>串接的 <code>? :</code> → 多選一</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 128–133 行</div>
+<pre><code class="language-verilog">assign result
+  = ( logical_fn == 2'b00 ) ?  ( alu_a &amp; alu_b ) :
+    ( logical_fn == 2'b01 ) ?  ( alu_a | alu_b ) :
+    ( logical_fn == 2'b10 ) ?  ( alu_a ^ alu_b ) :
+    ( logical_fn == 2'b11 ) ? ~( alu_a | alu_b ) :
+                               ( 32'bx );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 640 300" role="img" style="max-width:736px" aria-label="alu_a 和 alu_b 同時接到 AND、OR、XOR、NOR 四組閘，四個結果都算出來，再由 logical_fn 控制的四選一多工器挑出其中一個當 result。">
+  <text x="100" y="16" text-anchor="end">alu_a</text><text x="120" y="16">alu_b</text>
+  <path class="w" d="M90 24V228M130 24V242"/>
+  <path class="w" d="M90 48H220M130 62H220M90 108H224M130 122H224M90 168H224M130 182H224M90 228H224M130 242H224"/>
+  <circle class="d" cx="90" cy="48" r="3"/><circle class="d" cx="90" cy="108" r="3"/><circle class="d" cx="90" cy="168" r="3"/>
+  <circle class="d" cx="130" cy="62" r="3"/><circle class="d" cx="130" cy="122" r="3"/><circle class="d" cx="130" cy="182" r="3"/>
+  <use href="#g-and" x="220" y="40"/><use href="#g-or" x="220" y="100"/><use href="#g-xor" x="220" y="160"/><use href="#g-nor" x="220" y="220"/>
+  <path class="w" d="M250 55H420M260 115H420M260 175H420M268 235H420"/>
+  <text class="s mut" x="300" y="49">a &amp; b</text><text class="s mut" x="300" y="109">a | b</text><text class="s mut" x="300" y="169">a ^ b</text><text class="s mut" x="300" y="229">~(a | b)</text>
+  <path class="k" d="M420 30L446 42V248L420 260Z"/>
+  <text class="s" x="424" y="59">00</text><text class="s" x="424" y="119">01</text><text class="s" x="424" y="179">10</text><text class="s" x="424" y="239">11</text>
+  <path class="w" d="M446 145H580M506 151l8 -12"/><text class="s" x="516" y="137">32</text><text x="536" y="137">result</text>
+  <path class="c" d="M433 255V284"/><text class="cb" x="442" y="288">logical_fn</text>
+</svg>
+</div>
+<figcaption><b>四種運算「全部同時算」，mux 只是挑一個。</b>這和軟體的 if/else 不同：硬體不會「跳過」沒被選到的分支，那些閘一直都在、一直在運作。每個閘符號代表 32 個並排的閘。</figcaption>
+</figure>
+</div>
+<p>嚴格照字面，這段程式是四層串接的二選一 mux（有優先順序）。但因為四個條件互斥，合成工具會自動化簡成上圖的四選一。同樣的寫法在 <code>CoreDpath.v</code> 出現十幾次：<code>pc_mux</code>、<code>op0_mux</code>、<code>op1_mux</code>、<code>wb_mux</code>……看到這個排版就直接在腦中畫一個梯形。</p>
+</section>
+
+<!-- ============================================================ ch5 -->
+<section class="ch" id="ch5" data-part="組合邏輯" data-nav="{ } 拼接與複製">
+<p class="eyebrow">第 5 章 · 組合邏輯</p>
+<h2><code>{ }</code> 拼接與 <code>{n{ }}</code> 複製：只是重新整理電線</h2>
+<p><code>{a, b}</code> 把兩束線併成更寬的一束（<code>a</code> 在高位）。<code>{24{x}}</code> 把 <code>x</code> 複製 24 份。兩者都<b>不產生任何邏輯閘</b>，純粹是接線。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 315–316 行（load byte 的符號擴展）</div>
+<pre><code class="language-verilog">wire [31:0] dmemresp_lb_Mhl
+  = { {24{dmemresp_msg_data[7]}}, dmemresp_msg_data[7:0] };</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 640 215" role="img" style="max-width:736px" aria-label="符號擴展的接線：來源的第 7 到 0 位元直接接到輸出的第 7 到 0 位元；來源的第 7 位元同時被複製 24 份，接到輸出的第 31 到 8 位元；來源的第 31 到 8 位元沒有被使用。">
+  <text x="30" y="20">dmemresp_msg_data</text><text x="440" y="20">dmemresp_lb_Mhl</text>
+  <rect class="gh" x="70" y="30" width="30" height="100"/><rect class="k" x="70" y="130" width="30" height="60"/>
+  <text x="62" y="84" text-anchor="end">[31:8]</text><text x="62" y="164" text-anchor="end">[7:0]</text>
+  <text class="zh mut" x="108" y="60">沒用到</text>
+  <rect class="af" x="500" y="30" width="30" height="100"/><rect class="k" x="500" y="130" width="30" height="60"/>
+  <text x="538" y="84">[31:8]</text><text x="538" y="164">[7:0]</text>
+  <path class="w" d="M100 165H500M296 171l8 -12"/><text class="s" x="306" y="157">8</text>
+  <circle class="d" cx="180" cy="165" r="3"/>
+  <path class="a" d="M180 165V92H330"/><text class="ac s" x="186" y="130">[7]</text>
+  <text class="ac" x="190" y="84">{24{data[7]}}</text>
+  <circle cx="330" cy="92" r="3" style="fill:var(--accent)"/>
+  <path class="a" d="M330 92L500 40M330 92L500 60M330 92L500 80M330 92L500 100M330 92L500 120"/>
+  <text class="zh ac" x="490" y="148" text-anchor="end">同一條線分岔 24 次</text>
+</svg>
+</div>
+<figcaption><b>符號擴展 = 把正負號位元那條線拉去填滿高位。</b>8 位元的 <code>0xFF</code>（−1）因此變成 32 位元的 <code>0xFFFFFFFF</code>（還是 −1）。<code>lbu</code> 版本則是 <code>{24{1'b0}}</code>，高位全部接地。</figcaption>
+</figure>
+</div>
+
+<p>指令解碼裡更誇張的「重新排線」也是同一招。RISC-V 的 branch 立即值在指令裡被拆成四段，<code>riscvstall-InstMsg.v</code> 第 290–294 行把它拼回來：</p>
+<div class="ex">
+<pre><code class="language-verilog">assign imm_sb = { {20{msg[31]}},   // 正負號複製 20 份
+                  msg[7],          // imm[11]
+                  msg[30:25],      // imm[10:5]
+                  msg[11:8],       // imm[4:1]
+                  1'b0 };          // 最低位固定是 0（位址一定是偶數）</code></pre>
+</div>
+<p>原始碼用 <code>`RISCV_INST_MSG_IMM_SIGN</code> 這類巨集代替數字，<a href="#ch11">第 11 章</a>會解釋；這裡我先把巨集展開成數字方便閱讀。</p>
+
+<h3>固定量的移位也是純接線</h3>
+<div class="ex">
+<div class="src">imuldiv/imuldiv-IntMulIterative.v · 第 202 行（圖中縮成 8 位元示意）</div>
+<pre><code class="language-verilog">wire [63:0] a_shift_out = a_reg &lt;&lt; 1;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg class="narrow" viewBox="0 0 480 190" role="img" style="max-width:552px" aria-label="左移一位的接線：輸入的每個位元斜接到輸出的高一位，輸出最低位接 0，輸入最高位被丟棄。">
+  <text x="92" y="52" text-anchor="end">a_reg</text><text x="92" y="158" text-anchor="end">a_reg &lt;&lt; 1</text>
+  <rect class="k" x="100" y="34" width="288" height="26"/><rect class="k" x="100" y="140" width="288" height="26"/>
+  <path class="w" style="stroke-width:1" d="M136 34v26M172 34v26M208 34v26M244 34v26M280 34v26M316 34v26M352 34v26M136 140v26M172 140v26M208 140v26M244 140v26M280 140v26M316 140v26M352 140v26"/>
+  <g class="s" text-anchor="middle">
+  <text class="s" x="118" y="51">7</text><text class="s" x="154" y="51">6</text><text class="s" x="190" y="51">5</text><text class="s" x="226" y="51">4</text><text class="s" x="262" y="51">3</text><text class="s" x="298" y="51">2</text><text class="s" x="334" y="51">1</text><text class="s" x="370" y="51">0</text>
+  <text class="s" x="118" y="157">7</text><text class="s" x="154" y="157">6</text><text class="s" x="190" y="157">5</text><text class="s" x="226" y="157">4</text><text class="s" x="262" y="157">3</text><text class="s" x="298" y="157">2</text><text class="s" x="334" y="157">1</text><text class="s" x="370" y="157">0</text>
+  </g>
+  <path class="w" d="M154 60L118 140M190 60L154 140M226 60L190 140M262 60L226 140M298 60L262 140M334 60L298 140M370 60L334 140"/>
+  <path class="wm" d="M118 60L96 104"/><text class="zh mut" x="50" y="118">丟棄</text>
+  <path class="a" d="M408 104L370 140"/><text class="ac" x="398" y="98">1'b0</text>
+</svg>
+</div>
+<figcaption><b>移位固定量不需要任何閘</b>，每條線只是接到隔壁的位置。</figcaption>
+</figure>
+</div>
+</section>
+
+<!-- ============================================================ ch6 -->
+<section class="ch" id="ch6" data-part="組合邏輯" data-nav="always @(*)、if、case">
+<p class="eyebrow">第 6 章 · 組合邏輯</p>
+<h2><code>always @(*)</code>：用 <code>if</code> / <code>case</code> 寫組合邏輯</h2>
+<p>邏輯一複雜，用 <code>assign</code> 加一長串 <code>? :</code> 會很難讀。<code>always @(*)</code> 讓你改用 <code>if</code>、<code>case</code> 來描述<b>同樣的組合邏輯</b>。<code>@(*)</code> 的意思是「裡面用到的任何訊號一變，就重新計算」——這正是組合邏輯的行為。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 199–226 行（節錄）</div>
+<pre><code class="language-verilog">reg [10:0] cs;
+
+always @(*)
+begin
+  cs = 11'bx;                       // ① 預設值
+  case ( fn )
+    4'd0  : cs = { 2'd0, 2'b00, 2'bxx, 2'bxx, 3'bxx  }; // ADD
+    4'd1  : cs = { 2'd0, 2'b01, 2'bxx, 2'bxx, 3'bxx  }; // SUB
+    4'd2  : cs = { 2'd1, 2'bxx, 2'b00, 2'bxx, 3'bxx  }; // SLL
+    // ...
+    4'd15 : cs = { 2'd3, 2'bxx, 2'bxx, 2'bxx, 3'b100 }; // REMU
+  endcase
+
+  { out_mux_sel, fn_addsub, fn_shifter, fn_logical, fn_muldiv } = cs;  // ② 拆包
+end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 240" role="img" style="max-width:759px" aria-label="case 敘述合成為一個查表電路：4 位元的 fn 進去，11 位元的 cs 出來，再用接線拆成 out_mux_sel、fn_addsub、fn_shifter、fn_logical、fn_muldiv 五組控制訊號。">
+  <text x="30" y="112">fn</text><path class="w" d="M30 120H130M76 126l8 -12"/><text class="s" x="86" y="112">4</text>
+  <rect class="k" x="130" y="60" width="170" height="120"/>
+  <text x="215" y="112" text-anchor="middle">case ( fn )</text><text class="zh mut" x="215" y="134" text-anchor="middle">16 列 × 11 位元的查表</text>
+  <path class="w" d="M300 120H380M336 126l8 -12"/><text class="s" x="346" y="112">11</text><text x="312" y="112">cs</text>
+  <path class="w" d="M380 40V200"/>
+  <path class="c" d="M380 40H440M380 80H440M380 120H440M380 160H440M380 200H440"/>
+  <text class="cb" x="448" y="44">cs[10:9] → out_mux_sel</text>
+  <text class="cb" x="448" y="84">cs[8:7]  → fn_addsub</text>
+  <text class="cb" x="448" y="124">cs[6:5]  → fn_shifter</text>
+  <text class="cb" x="448" y="164">cs[4:3]  → fn_logical</text>
+  <text class="cb" x="448" y="204">cs[2:0]  → fn_muldiv</text>
+</svg>
+</div>
+<figcaption><b><code>case</code> = 查表 (lookup table)。</b>合成後是一小團閘，功能等同一顆唯讀的表格。②那行把 <code>{ }</code> 寫在等號<b>左邊</b>，意思是把 11 條線依序拆給五個訊號——同樣只是接線。</figcaption>
+</figure>
+</div>
+
+<p>這種「把一整列控制訊號打包成一個向量 <code>cs</code>，再一次拆開」的寫法，是 lab1 的招牌風格。<code>riscvstall-CoreCtrl.v</code> 第 411 行開始那張巨大的指令解碼表，就是同一個模式的放大版（39 位元寬）。</p>
+
+<h3>組合 <code>always</code> 的三條規則</h3>
+<ol>
+  <li>敏感列表寫 <code>@(*)</code>。</li>
+  <li>裡面用 <code>=</code>（blocking）賦值。（<code>&lt;=</code> 留給時脈區塊，見<a href="#ch8">第 8 章</a>。）</li>
+  <li><b>每一條路徑都要給每個輸出一個值。</b>最保險的做法就是像上面 ① 那樣，一進來先給預設值。</li>
+</ol>
+
+<h3>違反第 3 條會怎樣：意外的 latch</h3>
+<div class="ex">
+<div class="src">左：示意範例　右：vc/vc-StateElements.v · 第 134–135 行</div>
+<pre><code class="language-verilog">always @(*)                    always @(*)
+  if ( s ) y = a;                if ( clk ) q_np &lt;= d_n;
+  else     y = b;                // 沒有 else：clk = 0 時 q_np 要維持原值</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 225" role="img" style="max-width:805px" aria-label="左邊：if 和 else 都寫，合成為普通的二選一多工器。右邊：少了 else，多工器的 0 輸入被接回自己的輸出形成回授迴路，這就是 latch。">
+  <text class="hd" x="30" y="24">if、else 都有 → 單純的 mux</text>
+  <text x="48" y="79">a</text><text x="48" y="129">b</text><path class="w" d="M62 75H150M62 125H150"/>
+  <path class="k" d="M150 50L176 60V140L150 150Z"/><text class="s" x="155" y="79">1</text><text class="s" x="155" y="129">0</text>
+  <path class="w" d="M176 100H260"/><text x="268" y="104">y</text>
+  <path class="c" d="M163 146V180"/><text class="cb" x="172" y="184">s</text>
+  <path class="wm" d="M350 10V215"/>
+  <text class="hd" x="380" y="24">沒有 else → 必須記住舊值 → latch</text>
+  <text x="380" y="79">d_n</text><path class="w" d="M410 75H500"/>
+  <path class="k" d="M500 50L526 60V140L500 150Z"/><text class="s" x="505" y="79">1</text><text class="s" x="505" y="129">0</text>
+  <path class="w" d="M526 100H630"/><text x="638" y="104">q_np</text>
+  <circle class="d" cx="580" cy="100" r="3"/>
+  <path class="x" d="M580 100V195H460V125H500"/>
+  <path class="c" d="M513 146V180"/><text class="cb" x="522" y="184">clk</text>
+  <text class="zh wr" x="592" y="199">回授迴路</text>
+</svg>
+</div>
+<figcaption><b>少寫一個 <code>else</code>，電路就多了記憶。</b>右邊在 <code>vc_Latch_hl</code> 裡是<b>故意</b>的（它就是要做 latch）。但如果你只是想寫組合邏輯卻漏掉分支，合成工具一樣會默默生出 latch，這是初學者最常見的 bug 來源。</figcaption>
+</figure>
+</div>
+<div class="trap"><b>陷阱</b><p>lab1 的 FSM 在 <code>always @(*)</code> 開頭寫 <code>state_next = state_reg;</code>、ALU 寫 <code>cs = 11'bx;</code>，都是為了避開這個問題。你自己寫的時候請養成同樣的習慣。</p></div>
+
+<h3>巢狀 <code>if</code> → 串接的 mux</h3>
+<p><code>riscv_CoreDpathAluAddSub</code>（第 26–88 行）用多層 <code>if / else if</code> 實作 SLT（小於比較）。不需要另外畫圖：每一層 <code>if</code> 就是一顆二選一 mux，外層條件的 mux 接在比較靠近輸出的位置。條件 <code>addsub_fn == 2'b10</code>、<code>diffSigns</code>、<code>sum[31] == 1'b0</code> 分別成為三層 mux 的選擇訊號。</p>
+</section>
+<!-- ============================================================ ch7 -->
+<section class="ch" id="ch7" data-part="循序邏輯" data-nav="posedge clk → 正反器">
+<p class="eyebrow">第 7 章 · 循序邏輯</p>
+<h2><code>always @(posedge clk)</code>：長出 D 正反器</h2>
+<p>到目前為止的電路都沒有記憶。要「記住」東西，需要 <b>D 正反器 (D flip-flop)</b>：它只在 <code>clk</code> 從 0 變 1 的那一瞬間（上升緣，posedge）看一眼輸入 <code>D</code>，把值抄到輸出 <code>Q</code>，其餘時間 <code>Q</code> 完全不動。</p>
+
+<div class="ex">
+<div class="src">vc/vc-StateElements.v · 第 14–24 行</div>
+<pre><code class="language-verilog">module vc_DFF_pf #( parameter W = 1 )
+(
+  input              clk,
+  input      [W-1:0] d_p,
+  output reg [W-1:0] q_np
+);
+  always @( posedge clk )
+    q_np &lt;= d_p;
+endmodule</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 222" role="img" style="max-width:828px" aria-label="左：D 正反器符號。右：時序圖，q_np 只在每個 clk 上升緣更新成當時 d_p 的值，d_p 在兩個上升緣之間的短暫脈衝不會被取樣到。">
+  <text x="30" y="77">d_p</text><path class="w" d="M30 85H90"/>
+  <rect class="r" x="90" y="60" width="80" height="90"/><text x="98" y="89">D</text><text x="153" y="89">Q</text>
+  <path class="rl" d="M90 122l10 8l-10 8"/>
+  <path class="w" d="M170 85H240"/><text x="200" y="77">q_np</text>
+  <text class="cb" x="30" y="122">clk</text><path class="c" d="M30 130H90"/>
+  <text class="zh sq" x="130" y="172" text-anchor="middle">W 顆 D 正反器</text>
+
+  <text class="cb" x="292" y="67" text-anchor="end">clk</text><text x="292" y="127" text-anchor="end">d_p</text><text class="sq" x="292" y="187" text-anchor="end">q_np</text>
+  <path class="re" d="M340 40V204M420 40V204M500 40V204M580 40V204M660 40V204"/>
+  <path class="c" style="stroke-dasharray:none" d="M300 75H340V50H380V75H420V50H460V75H500V50H540V75H580V50H620V75H660V50H700"/>
+  <path class="w" d="M300 135H360V110H440V135H470V110H490V135H550V110H700"/>
+  <path class="wm" d="M300 170H340M300 195H340"/><text class="s mut" x="316" y="186">x</text>
+  <path class="rl" style="stroke-width:2" d="M340 195H420V170H500V195H580V170H700"/>
+  <circle class="r" cx="340" cy="135" r="3.5"/><circle class="r" cx="420" cy="110" r="3.5"/><circle class="r" cx="500" cy="135" r="3.5"/><circle class="r" cx="580" cy="110" r="3.5"/><circle class="r" cx="660" cy="110" r="3.5"/>
+  <text class="zh s mut" x="480" y="102" text-anchor="middle">沒被取樣到</text>
+  <text class="zh s sq" x="340" y="216" text-anchor="middle">↑ 上升緣</text>
+</svg>
+</div>
+<figcaption><b>正反器只在上升緣（銅色虛線）「拍照」。</b>圓點是每次拍到的值。<code>d_p</code> 在兩個上升緣之間的短脈衝完全不影響 <code>q_np</code>。第一個上升緣之前 <code>q_np</code> 是未知值 x。</figcaption>
+</figure>
+</div>
+<p>這就是為什麼同步電路好設計：組合邏輯在兩個上升緣之間可以亂跳、慢慢算，只要在下一個上升緣前穩定下來就好。</p>
+
+<h3>reset 和 enable：只是在 D 前面多一顆 mux</h3>
+<div class="ex">
+<div class="src">vc/vc-StateElements.v · 第 38–39 行、第 55–56 行</div>
+<pre><code class="language-verilog">// vc_RDFF_pf                             // vc_EDFF_pf
+always @( posedge clk )                   always @( posedge clk )
+  q_np &lt;= reset_p ? RESET_VALUE : d_p;      if ( en_p ) q_np &lt;= d_p;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 190" role="img" style="max-width:828px" aria-label="左：同步 reset 是在 D 前面放一顆 mux，reset_p 為 1 時選 RESET_VALUE。右：enable 是在 D 前面放一顆 mux，en_p 為 0 時把 Q 接回 D 保持原值，en_p 為 1 時載入 d_p。">
+  <text class="hd" x="20" y="22">vc_RDFF_pf：同步 reset</text>
+  <text x="20" y="64">RESET_VALUE</text><path class="w" d="M20 72H110"/><text x="20" y="110">d_p</text><path class="w" d="M20 118H110"/>
+  <path class="k" d="M110 50L136 60V130L110 140Z"/><text class="s" x="115" y="76">1</text><text class="s" x="115" y="122">0</text>
+  <path class="w" d="M136 95H190"/>
+  <rect class="r" x="190" y="60" width="70" height="80"/><text x="197" y="99">D</text><text x="244" y="99">Q</text><path class="rl" d="M190 118l10 7l-10 7"/>
+  <path class="c" d="M170 125H190"/><text class="s cb" x="166" y="129" text-anchor="end">clk</text>
+  <path class="w" d="M260 95H330"/><text x="290" y="87">q_np</text>
+  <path class="c" d="M123 136V166"/><text class="cb" x="132" y="170">reset_p</text>
+  <path class="wm" d="M355 10V180"/>
+  <text class="hd" x="375" y="22">vc_EDFF_pf：enable</text>
+  <text x="390" y="110">d_p</text><path class="w" d="M390 118H470"/>
+  <path class="k" d="M470 50L496 60V130L470 140Z"/><text class="s" x="475" y="76">0</text><text class="s" x="475" y="122">1</text>
+  <path class="w" d="M496 95H550"/>
+  <rect class="r" x="550" y="60" width="70" height="80"/><text x="557" y="99">D</text><text x="604" y="99">Q</text><path class="rl" d="M550 118l10 7l-10 7"/>
+  <path class="c" d="M530 125H550"/><text class="s cb" x="526" y="129" text-anchor="end">clk</text>
+  <path class="w" d="M620 95H700"/><text x="664" y="87">q_np</text>
+  <circle class="d" cx="650" cy="95" r="3"/><path class="w" d="M650 95V40H440V72H470"/>
+  <path class="c" d="M483 136V166"/><text class="cb" x="492" y="170">en_p</text>
+</svg>
+</div>
+<figcaption><b>在時脈區塊裡，「沒寫 else」是合法而且常用的。</b>右邊 <code>if ( en_p )</code> 沒有 else，意思是「en 為 0 時保持原值」，硬體上就是把 Q 繞回來餵給自己。（對比<a href="#ch6">第 6 章</a>：同樣少寫 else，在 <code>@(*)</code> 裡是 bug，在 <code>@(posedge clk)</code> 裡是 enable。）</figcaption>
+</figure>
+</div>
+
+<p>lab1 的 datapath 把兩者合在一起用。下面這段就是「有 reset、有 enable 的 32 位元暫存器」，<code>!stall_Fhl</code> 扮演 enable 的角色：</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 126–135 行</div>
+<pre><code class="language-verilog">reg  [31:0] pc_Fhl;
+
+always @ (posedge clk) begin
+  if( reset ) begin
+    pc_Fhl &lt;= reset_vector;            // reset 優先
+  end
+  else if( !stall_Fhl ) begin
+    pc_Fhl &lt;= pc_mux_out_Phl_final;    // 沒 stall 才更新
+  end                                  // 否則：保持原值
+end</code></pre>
+</div>
+<div class="note"><b>同步 vs 非同步 reset</b><p>lab1 全部使用<b>同步</b> reset：敏感列表只有 <code>posedge clk</code>，reset 只是 D 前面的一顆 mux，要等到上升緣才生效。你在別處可能看到 <code>always @(posedge clk or posedge reset)</code>，那是非同步 reset，會用到正反器上專用的 reset 腳。</p></div>
+<p><b>Latch 與 flip-flop 的差別：</b><code>vc-StateElements.v</code> 後半的 <code>vc_Latch_hl</code> 是 latch——只要 <code>clk</code> 為高，輸出就一路跟著輸入變（透明）；flip-flop 只在邊緣那一瞬間取樣。lab1 的處理器本體只用 flip-flop。</p>
+</section>
+
+<!-- ============================================================ ch8 -->
+<section class="ch" id="ch8" data-part="循序邏輯" data-nav="= 與 &lt;= 的差別">
+<p class="eyebrow">第 8 章 · 循序邏輯</p>
+<h2><code>=</code> 與 <code>&lt;=</code>：blocking 與 non-blocking</h2>
+<p>Verilog 有兩種賦值符號，差別只在同一個 <code>always</code> 區塊裡有多行的時候才看得出來：</p>
+<ul>
+  <li><code>=</code>（blocking）：像軟體一樣，<b>這行做完才做下一行</b>，下一行看到的是新值。</li>
+  <li><code>&lt;=</code>（non-blocking）：所有右邊的值在時脈邊緣<b>同時取樣</b>，然後全部<b>一起更新</b>。這正是一排真實正反器的行為。</li>
+</ul>
+
+<div class="ex">
+<div class="src mine">示意範例</div>
+<pre><code class="language-verilog">always @(posedge clk) begin        always @(posedge clk) begin
+  b &lt;= a;                            b = a;
+  c &lt;= b;   // 用的是「舊的」b        c = b;    // 用的是「剛更新的」b，也就是 a
+end                                end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 200" role="img" style="max-width:828px" aria-label="左：使用 non-blocking 賦值，a 進入正反器 b，b 的輸出再進入正反器 c，形成兩級移位暫存器。右：使用 blocking 賦值，a 同時直接接到 b 和 c 兩個正反器，兩者永遠相同。">
+  <text class="hd" x="20" y="22">&lt;= ：兩顆串接，資料每個週期前進一格</text>
+  <text x="30" y="87">a</text><path class="w" d="M30 95H90"/>
+  <rect class="r" x="90" y="60" width="70" height="70"/><text x="125" y="99" text-anchor="middle">b</text><path class="rl" d="M90 110l9 6l-9 6"/>
+  <path class="w" d="M160 95H220"/>
+  <rect class="r" x="220" y="60" width="70" height="70"/><text x="255" y="99" text-anchor="middle">c</text><path class="rl" d="M220 110l9 6l-9 6"/>
+  <path class="w" d="M290 95H335"/>
+  <path class="wm" d="M355 10V190"/>
+  <text class="hd" x="375" y="22">= ：c 直接拿到 a</text>
+  <text x="390" y="102">a</text><path class="w" d="M390 110H430"/><circle class="d" cx="430" cy="110" r="3"/>
+  <path class="w" d="M430 110V75H470M430 110V150H470"/>
+  <rect class="r" x="470" y="50" width="70" height="50"/><text x="505" y="79" text-anchor="middle">b</text><path class="rl" d="M470 84l8 5l-8 5"/>
+  <rect class="r" x="470" y="125" width="70" height="50"/><text x="505" y="154" text-anchor="middle">c</text><path class="rl" d="M470 159l8 5l-8 5"/>
+  <path class="w" d="M540 75H600M540 150H600"/>
+  <text class="zh wr" x="560" y="117">b、c 永遠相同</text>
+</svg>
+</div>
+<figcaption><b>只差一個符號，電路結構完全不同。</b>左邊是管線暫存器 (pipeline register) 的基本形狀；右邊通常不是你要的。</figcaption>
+</figure>
+</div>
+
+<div class="note"><b>lab1 遵守的鐵則（你也照做就對了）</b>
+<p><code>always @(posedge clk)</code> 裡面一律用 <code>&lt;=</code>；<code>always @(*)</code> 裡面一律用 <code>=</code>。不要在同一個區塊混用。</p></div>
+<p>你可以在 <code>riscvstall-CoreDpath.v</code> 驗證：<code>pc_Dhl &lt;= pc_Fhl;</code>（第 156 行）與 <code>pc_Xhl &lt;= pc_Dhl;</code>（第 244 行）寫在不同的 <code>always</code> 區塊，但因為都用 <code>&lt;=</code>，在同一個上升緣，<code>pc_Xhl</code> 拿到的一定是 <code>pc_Dhl</code> 的<b>舊值</b>——PC 才會乖乖地每個週期往下一級管線移動一格。</p>
+</section>
+
+<!-- ============================================================ ch9 -->
+<section class="ch" id="ch9" data-part="循序邏輯" data-nav="陣列：Register File">
+<p class="eyebrow">第 9 章 · 循序邏輯</p>
+<h2>記憶體陣列：Register File</h2>
+<p><code>reg [31:0] registers[31:0];</code> 有兩個範圍：名字<b>前面</b>的 <code>[31:0]</code> 是每一格的寬度，名字<b>後面</b>的 <code>[31:0]</code> 是有幾格。所以這是 32 個 32 位元暫存器，也就是 RISC-V 的 x0–x31。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathRegfile.v · 第 20–32 行</div>
+<pre><code class="language-verilog">reg [31:0] registers[31:0];
+
+// Combinational read ports
+assign rdata0 = ( raddr0 == 0 ) ? 32'b0 : registers[raddr0];
+assign rdata1 = ( raddr1 == 0 ) ? 32'b0 : registers[raddr1];
+
+// Write port is active only when wen is asserted
+always @( posedge clk )
+begin
+  if ( wen_p &amp;&amp; (waddr_p != 5'b0) )
+    registers[waddr_p] &lt;= wdata_p;
+end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 335" role="img" style="max-width:874px" aria-label="Register file 的結構：寫入位址經過解碼器產生每個暫存器各自的 enable；寫入資料同時接到所有暫存器；所有暫存器的輸出接到兩個 32 選 1 多工器，分別由 raddr0 和 raddr1 選擇；位址為 0 時再用一顆 mux 強制輸出 0。">
+  <text x="20" y="62">waddr_p</text><path class="w" d="M20 70H110M82 76l8 -12"/><text class="s" x="92" y="62">5</text>
+  <text class="cb" x="20" y="122">wen_p</text><path class="c" d="M20 130H110"/>
+  <rect class="k" x="110" y="40" width="90" height="120"/><text class="zh" x="155" y="98" text-anchor="middle">解碼器</text><text class="s mut" x="155" y="116" text-anchor="middle">5 → 32</text>
+  <path class="c" d="M200 70H300M200 130H300M200 150H220V240H300"/>
+  <text x="232" y="16">wdata_p</text><path class="w" d="M260 24V222H300M260 52H300M260 112H300"/><circle class="d" cx="260" cy="52" r="3"/><circle class="d" cx="260" cy="112" r="3"/>
+  <rect class="r" x="300" y="40" width="90" height="40"/><text x="345" y="58" text-anchor="middle">reg[1]</text>
+  <rect class="r" x="300" y="100" width="90" height="40"/><text x="345" y="118" text-anchor="middle">reg[2]</text>
+  <rect class="r" x="300" y="210" width="90" height="40"/><text x="345" y="228" text-anchor="middle">reg[31]</text>
+  <text class="s cb" x="304" y="76">en</text><text class="s cb" x="304" y="136">en</text><text class="s cb" x="304" y="246">en</text>
+  <text class="mut" x="341" y="182">⋮</text>
+  <path class="w" d="M390 60H430M390 120H430M390 230H430"/>
+  <path class="w" style="stroke-width:4" d="M430 40V300"/>
+  <text class="zh s mut" x="438" y="174">所有暫存器的輸出</text>
+  <path class="w" d="M430 60H500M430 90H500M430 120H500M430 220H500M430 250H500M430 280H500"/>
+  <path class="k" d="M500 40L526 52V128L500 140Z"/><path class="k" d="M500 200L526 212V288L500 300Z"/>
+  <text class="s mut" x="513" y="94" text-anchor="middle" style="font-size:9px">32:1</text><text class="s mut" x="513" y="254" text-anchor="middle" style="font-size:9px">32:1</text>
+  <path class="c" d="M513 46V24"/><text class="cb" x="478" y="16">raddr0</text>
+  <path class="c" d="M513 294V316"/><text class="cb" x="522" y="322">raddr1</text>
+  <path class="w" d="M526 90H560V102H590M572 68H590"/><text class="s" x="534" y="72">32'b0</text>
+  <path class="k" d="M590 50L612 58V112L590 120Z"/>
+  <path class="w" d="M612 85H710"/><text x="660" y="77">rdata0</text>
+  <path class="c" d="M601 54V30"/><text class="s cb" x="608" y="30">raddr0 == 0</text>
+  <path class="w" d="M526 250H560V262H590M572 228H590"/><text class="s" x="534" y="232">32'b0</text>
+  <path class="k" d="M590 210L612 218V272L590 280Z"/>
+  <path class="w" d="M612 245H710"/><text x="660" y="237">rdata1</text>
+  <path class="c" d="M601 276V300"/><text class="s cb" x="608" y="306">raddr1 == 0</text>
+</svg>
+</div>
+<figcaption><b>用變數當索引「讀」陣列 = 一顆大 mux；用變數當索引「寫」陣列 = 解碼器 + 每格各自的 enable。</b>讀取走 <code>assign</code>，所以是組合的（位址一變資料就出來）；寫入在 <code>posedge clk</code>，要等上升緣。<code>waddr_p != 5'b0</code> 讓 x0 永遠寫不進去，讀的時候又強制回傳 0，這就是 RISC-V「x0 恆為零」的硬體實作。</figcaption>
+</figure>
+</div>
+<p>小型陣列會像上圖一樣用正反器實作。大型記憶體（例如 <code>vc-TestDualPortMem.v</code> 裡 1 MB 的測試記憶體）在真實晶片上會換成專用的 SRAM 區塊；在 lab1 裡它只用於模擬，不需要合成。</p>
+</section>
+<!-- ============================================================ ch10 -->
+<section class="ch" id="ch10" data-part="組織大型設計" data-nav="例化、parameter">
+<p class="eyebrow">第 10 章 · 組織大型設計</p>
+<h2>模組例化、<code>parameter</code> 與 <code>localparam</code></h2>
+<p>定義好 module 之後，在別的 module 裡「放一顆」就叫<b>例化 (instantiate)</b>。語法是 <code>模組名 實例名 ( .port名(接到哪條線), … );</code>。這不是函式呼叫——每例化一次，晶片上就<b>多一份實體電路</b>。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 230–276 行（節錄）</div>
+<pre><code class="language-verilog">wire [31:0] addsub_out;
+
+riscv_CoreDpathAluAddSub addsub     // 模組名  實例名
+(
+  .addsub_fn  (fn_addsub),          // .模組內的 port 名 (外面的線)
+  .alu_a      (in0),
+  .alu_b      (in1),
+  .result     (addsub_out)
+);
+
+riscv_CoreDpathAluShifter shifter
+(
+  .shift_fn   (fn_shifter),
+  .alu_a      (in1),                // 注意：shifter 的 a、b 接法是反的
+  .alu_b      (in0),
+  .result     (shifter_out)
+);
+// ... logical、muldiv 同理 ...
+
+assign out = ( out_mux_sel == 2'd0 ) ? addsub_out
+           : ( out_mux_sel == 2'd1 ) ? shifter_out
+           : ( out_mux_sel == 2'd2 ) ? logical_out
+           : ( out_mux_sel == 2'd3 ) ? muldiv_out
+           :                           32'bx;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 372" role="img" style="max-width:874px" aria-label="ALU 的內部結構：in0 和 in1 同時接到 addsub、shifter、logical、muldiv 四個子模組，四個結果進入四選一輸出多工器。fn 經過解碼器產生各子模組的功能選擇訊號以及輸出多工器的選擇訊號。shifter 的 alu_a 接 in1、alu_b 接 in0，與其他三個相反。">
+  <rect class="grp" x="14" y="28" width="640" height="334" rx="6"/><text class="s mut" x="24" y="22">module riscv_CoreDpathAlu</text>
+  <text x="200" y="46" text-anchor="middle">in0</text><text x="240" y="46" text-anchor="middle">in1</text>
+  <path class="w" d="M200 52V284M240 52V300"/>
+  <!-- addsub -->
+  <rect class="k" x="320" y="56" width="170" height="56"/><text x="478" y="88" text-anchor="end">addsub</text>
+  <text class="s mut" x="326" y="72">.alu_a</text><text class="s mut" x="326" y="88">.alu_b</text><text class="s cb" x="326" y="105">.addsub_fn</text>
+  <path class="w" d="M200 68H320M240 84H320"/><circle class="d" cx="200" cy="68" r="3"/><circle class="d" cx="240" cy="84" r="3"/>
+  <!-- shifter (swapped) -->
+  <rect class="k" x="320" y="128" width="170" height="56"/><text x="478" y="160" text-anchor="end">shifter</text>
+  <text class="s ac" x="326" y="144">.alu_a</text><text class="s ac" x="326" y="160">.alu_b</text><text class="s cb" x="326" y="177">.shift_fn</text>
+  <path class="a" d="M240 140H320M200 156H320"/><circle cx="240" cy="140" r="3" style="fill:var(--accent)"/><circle cx="200" cy="156" r="3" style="fill:var(--accent)"/>
+  <!-- logical -->
+  <rect class="k" x="320" y="200" width="170" height="56"/><text x="478" y="232" text-anchor="end">logical</text>
+  <text class="s mut" x="326" y="216">.alu_a</text><text class="s mut" x="326" y="232">.alu_b</text><text class="s cb" x="326" y="249">.logical_fn</text>
+  <path class="w" d="M200 212H320M240 228H320"/><circle class="d" cx="200" cy="212" r="3"/><circle class="d" cx="240" cy="228" r="3"/>
+  <!-- muldiv -->
+  <rect class="k" x="320" y="272" width="170" height="56"/><text x="478" y="304" text-anchor="end">muldiv</text>
+  <text class="s mut" x="326" y="288">.alu_a</text><text class="s mut" x="326" y="304">.alu_b</text><text class="s cb" x="326" y="321">.muldiv_fn</text>
+  <path class="w" d="M200 284H320M240 300H320"/>
+  <!-- outputs to mux -->
+  <path class="w" d="M490 84H580M490 156H580M490 228H580M490 300H580"/>
+  <path class="k" d="M580 56L606 68V316L580 328Z"/>
+  <text class="s" x="585" y="88">0</text><text class="s" x="585" y="160">1</text><text class="s" x="585" y="232">2</text><text class="s" x="585" y="304">3</text>
+  <path class="w" d="M606 192H730M676 198l8 -12"/><text class="s" x="686" y="184">32</text><text x="706" y="184">out</text>
+  <!-- decoder + control -->
+  <text x="24" y="330">fn</text><path class="w" d="M24 338H50"/>
+  <rect class="k" x="50" y="320" width="120" height="34"/><text class="zh" x="110" y="342" text-anchor="middle">解碼器 (case)</text>
+  <path class="c" d="M170 346H593V323"/>
+  <path class="c" d="M285 346V101H320M285 173H320M285 245H320M285 317H320"/>
+  <circle class="dc" cx="285" cy="346" r="3"/>
+  <text class="s cb" x="600" y="350">out_mux_sel</text>
+</svg>
+</div>
+<figcaption><b>這就是 ALU 的完整結構。</b>四個子模組各例化一次 → 四塊獨立電路同時運算，最後由 mux 挑一個。綠色標出的 shifter 說明了「具名連接」的好處：<code>.alu_a(in1)</code> 把 port 名和線名明確配對，順序無關，要反接也一目了然。</figcaption>
+</figure>
+</div>
+<p>port 也可以故意不接：<code>CoreDpath.v</code> 第 386 行的 <code>.opcode ()</code> 括號裡是空的，表示這個輸出懸空不用，合成工具會把產生它的邏輯一併刪掉。</p>
+
+<h3><code>parameter</code>：可調整的設計圖</h3>
+<div class="ex">
+<div class="src">定義：vc/vc-StateElements.v 第 30 行　使用：Testbench.v 第 87–94 行</div>
+<pre><code class="language-verilog">// 定義時：#( ) 裡列出參數和預設值
+module vc_RDFF_pf #( parameter W = 1, parameter RESET_VALUE = 0 )
+( input clk, input reset_p, input [W-1:0] d_p, output reg [W-1:0] q_np );
+
+// 例化時：在模組名和實例名之間，用 #( .參數名(值) ) 覆寫
+Pattern
+#(
+  .p_max_delay    (`PATTERN_MAX_DELAY),
+  .p_reset_cycles (`PATTERN_RESET_CYCLES)
+)
+pattern
+( .clk (clk), ... );</code></pre>
+</div>
+<p><code>parameter</code> 在合成<b>之前</b>就被代換成常數，所以 <code>vc_RDFF_pf #(.W(32))</code> 和 <code>#(.W(5))</code> 會產生兩種不同大小的電路。這無法畫成一張圖——它決定的是「圖要畫多大」。</p>
+<p><code>localparam</code> 是不能從外面覆寫的常數，lab1 用它來幫「魔術數字」取名字，讓控制表格讀得懂：</p>
+<div class="ex">
+<div class="src">imuldiv/imuldiv-IntMulIterative.v · 第 276–278、330–335 行</div>
+<pre><code class="language-verilog">localparam STATE_IDLE = 2'd0;
+localparam STATE_CALC = 2'd1;
+localparam STATE_SIGN = 2'd2;
+
+localparam n = 1'd0;        localparam op_x    = 1'dx;
+localparam y = 1'd1;        localparam op_load = 1'd0;
+                            localparam op_next = 1'd1;</code></pre>
+</div>
+</section>
+
+<!-- ============================================================ ch11 -->
+<section class="ch" id="ch11" data-part="組織大型設計" data-nav="`define、`include、casez">
+<p class="eyebrow">第 11 章 · 組織大型設計</p>
+<h2><code>`define</code>、<code>`include</code>、<code>`ifndef</code> 與 <code>casez</code></h2>
+<p>反引號 <code>`</code> 開頭的是<b>編譯器指令</b>，和 C 的 <code>#define</code>、<code>#include</code>、<code>#ifndef</code> 幾乎一模一樣：在真正解析 Verilog 之前做純文字代換。它們<b>本身不產生任何電路</b>，所以這一節沒有電路圖，只有被代換之後的結果才有。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-InstMsg.v · 第 57–68 行、第 277 行</div>
+<pre><code class="language-verilog">`ifndef RISCV_INST_MSG_V        // include guard：避免同一個檔案被引入兩次
+`define RISCV_INST_MSG_V
+
+`define RISCV_INST_MSG_OPCODE   6:0       // 巨集可以是任何文字，連 "6:0" 都行
+`define RISCV_INST_MSG_RD       11:7
+
+assign opcode = msg[ `RISCV_INST_MSG_OPCODE ];   // 展開後就是 msg[6:0]
+assign rd     = msg[ `RISCV_INST_MSG_RD ];       //             msg[11:7]
+...
+`endif</code></pre>
+</div>
+<div class="tbl"><table>
+<thead><tr><th>指令</th><th>作用</th><th>注意</th></tr></thead>
+<tbody>
+<tr><td><code>`define NAME 文字</code></td><td>定義巨集。也可以帶參數，如 <code>`define VC_MEM_REQ_MSG_SZ(a,d)</code></td><td><b>使用時也要加反引號</b>：<code>`NAME</code></td></tr>
+<tr><td><code>`include "file.v"</code></td><td>把另一個檔案的內容整個貼進來</td><td>lab1 每個檔案頂端都靠它引入相依模組</td></tr>
+<tr><td><code>`ifndef</code> / <code>`ifdef</code> / <code>`elsif</code> / <code>`else</code> / <code>`endif</code></td><td>條件編譯</td><td><code>Testbench.v</code> 用它在三種處理器實作之間切換</td></tr>
+<tr><td><code>`ifndef SYNTHESIS</code></td><td>只在模擬時存在的程式碼（反組譯器、assertion）</td><td>合成時會定義 <code>SYNTHESIS</code> 把它們排除</td></tr>
+</tbody></table></div>
+<p><b><code>`define</code> 與 <code>parameter</code> 怎麼選？</b> <code>`define</code> 是全域的純文字代換，跨檔案共用（例如指令編碼）；<code>parameter</code> / <code>localparam</code> 屬於某個 module、有型別、每個實例可以不同。</p>
+
+<h3><code>casez</code>：帶萬用字元的 <code>case</code></h3>
+<p>處理器要從 32 位元的指令判斷「這是哪一道指令」。不同指令要看的位元不一樣，<code>casez</code> 允許用 <code>?</code> 表示「這一位不用比」。</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-InstMsg.v 第 122 行 ＋ riscvstall-CoreCtrl.v 第 411–418 行</div>
+<pre><code class="language-verilog">`define RISCV_INST_MSG_ADDI  32'b???????_?????_?????_000_?????_0010011
+
+casez ( ir_Dhl )
+  `RISCV_INST_MSG_LUI  : cs = { y, n, br_none, pm_p, am_0,    n, bm_imm_u, ... };
+  `RISCV_INST_MSG_ADDI : cs = { y, n, br_none, pm_p, am_rdat, y, bm_imm_i, ... };
+  ...
+endcase</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 680 150" role="img" style="max-width:782px" aria-label="ADDI 指令的比對樣式：32 位元分成 funct7、rs2、rs1、funct3、rd、opcode 六個欄位，只有 funct3 等於 000 和 opcode 等於 0010011 這十個位元需要比對，其餘欄位是問號不參與比對。">
+  <g class="s mut"><text class="s mut" x="20" y="28">31</text><text class="s mut" x="160" y="28">24</text><text class="s mut" x="260" y="28">19</text><text class="s mut" x="360" y="28">14</text><text class="s mut" x="420" y="28">11</text><text class="s mut" x="520" y="28">6</text><text class="s mut" x="660" y="28" text-anchor="end">0</text></g>
+  <rect class="gh" x="20" y="34" width="140" height="34"/><rect class="gh" x="160" y="34" width="100" height="34"/><rect class="gh" x="260" y="34" width="100" height="34"/>
+  <rect class="af" x="360" y="34" width="60" height="34"/><rect class="gh" x="420" y="34" width="100" height="34"/><rect class="af" x="520" y="34" width="140" height="34"/>
+  <text class="mut" x="90" y="56" text-anchor="middle">???????</text><text class="mut" x="210" y="56" text-anchor="middle">?????</text><text class="mut" x="310" y="56" text-anchor="middle">?????</text>
+  <text class="ac" x="390" y="56" text-anchor="middle">000</text><text class="mut" x="470" y="56" text-anchor="middle">?????</text><text class="ac" x="590" y="56" text-anchor="middle">0010011</text>
+  <text class="s mut" x="90" y="84" text-anchor="middle">imm[11:5]</text><text class="s mut" x="210" y="84" text-anchor="middle">imm[4:0]</text><text class="s mut" x="310" y="84" text-anchor="middle">rs1</text>
+  <text class="s ac" x="390" y="84" text-anchor="middle">funct3</text><text class="s mut" x="470" y="84" text-anchor="middle">rd</text><text class="s ac" x="590" y="84" text-anchor="middle">opcode</text>
+  <path class="a" d="M390 92V112H590V92M490 112V126"/>
+  <text class="zh ac" x="490" y="142" text-anchor="middle">只有這 10 條線接到「是不是 ADDI」的比較器</text>
+</svg>
+</div>
+<figcaption><b><code>?</code> 的位元根本不接線。</b>整個 <code>casez</code> 合成後就是一組平行的樣式比較器，加上<a href="#ch6">第 6 章</a>那種查表，輸出 39 位元的控制訊號 <code>cs</code>。</figcaption>
+</figure>
+</div>
+</section>
+
+<!-- ============================================================ ch12 -->
+<section class="ch" id="ch12" data-part="組織大型設計" data-nav="generate for">
+<p class="eyebrow">第 12 章 · 組織大型設計</p>
+<h2><code>generate for</code>：複製貼上電路的迴圈</h2>
+<p>這裡的 <code>for</code> 和軟體迴圈完全不同：它<b>不會在執行時跑 N 次</b>，而是在合成前被展開，把迴圈本體<b>複製 N 份</b>，每份的 <code>i</code> 是不同的常數。迴圈變數要用 <code>genvar</code> 宣告。</p>
+
+<div class="ex">
+<div class="src">vc/vc-RAMs.v · 第 71–81 行</div>
+<pre><code class="language-verilog">genvar i;
+generate
+  for ( i = 0; i &lt; ENTRIES; i = i+1 )
+  begin : wport                          // 每一份複本的名字：wport[0]、wport[1]…
+    always @( posedge clk )
+      if ( reset_p )
+        mem[i] &lt;= RESET_VALUE;
+      else if ( wen_p &amp;&amp; (i == waddr_p) )
+        mem[i] &lt;= wdata_p;
+  end
+endgenerate</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 290" role="img" style="max-width:759px" aria-label="generate for 展開後的樣子：wport[0]、wport[1] 一直到 wport[N-1]，每一份複本裡有一個把 waddr_p 和常數 i 比較的比較器、一個與 wen_p 相與的 AND 閘，以及一個暫存器 mem[i]。">
+  <text x="20" y="20">waddr_p</text><text class="cb" x="20" y="275">wen_p</text><text x="560" y="20">wdata_p</text>
+  <path class="w" d="M90 28V230M586 28V222"/><path class="c" d="M70 270H130V52"/>
+  <!-- copy 0 -->
+  <rect class="grp" x="150" y="28" width="400" height="66" rx="6"/><text class="s mut" x="158" y="42">wport[0]</text>
+  <rect class="k" x="180" y="50" width="70" height="30"/><text x="215" y="70" text-anchor="middle">== 0</text>
+  <path class="w" d="M90 72H180"/><circle class="d" cx="90" cy="72" r="3"/>
+  <use href="#g-and" x="300" y="50"/><path class="c" d="M250 72H300M130 58H300"/><circle class="dc" cx="130" cy="58" r="3"/>
+  <path class="c" d="M330 65H420"/><text class="s cb" x="396" y="60">en</text>
+  <rect class="r" x="420" y="46" width="100" height="38"/><text x="470" y="70" text-anchor="middle">mem[0]</text>
+  <path class="w" d="M586 56H520"/><circle class="d" cx="586" cy="56" r="3"/>
+  <!-- copy 1 -->
+  <rect class="grp" x="150" y="106" width="400" height="66" rx="6"/><text class="s mut" x="158" y="120">wport[1]</text>
+  <rect class="k" x="180" y="128" width="70" height="30"/><text x="215" y="148" text-anchor="middle">== 1</text>
+  <path class="w" d="M90 150H180"/><circle class="d" cx="90" cy="150" r="3"/>
+  <use href="#g-and" x="300" y="128"/><path class="c" d="M250 150H300M130 136H300"/><circle class="dc" cx="130" cy="136" r="3"/>
+  <path class="c" d="M330 143H420"/><text class="s cb" x="396" y="138">en</text>
+  <rect class="r" x="420" y="124" width="100" height="38"/><text x="470" y="148" text-anchor="middle">mem[1]</text>
+  <path class="w" d="M586 134H520"/><circle class="d" cx="586" cy="134" r="3"/>
+  <text class="mut" x="346" y="192">⋮</text>
+  <!-- copy N-1 -->
+  <rect class="grp" x="150" y="200" width="400" height="66" rx="6"/><text class="s mut" x="158" y="214">wport[ENTRIES-1]</text>
+  <rect class="k" x="180" y="222" width="70" height="30"/><text x="215" y="242" text-anchor="middle">== N-1</text>
+  <path class="w" d="M90 230V244H180"/>
+  <use href="#g-and" x="300" y="222"/><path class="c" d="M250 244H300M130 230H300"/><circle class="dc" cx="130" cy="230" r="3"/>
+  <path class="c" d="M330 237H420"/><text class="s cb" x="396" y="232">en</text>
+  <rect class="r" x="420" y="218" width="100" height="38"/><text x="470" y="242" text-anchor="middle">mem[N-1]</text>
+  <path class="w" d="M586 222V228H520"/>
+</svg>
+</div>
+<figcaption><b>迴圈跑完之後，留下的是 N 份一模一樣的電路</b>，差別只有比較器裡那個常數。（為了版面，圖中省略 reset 的 mux。）把這些 <code>== i</code> 比較器合起來看，其實就是<a href="#ch9">第 9 章</a> Register File 裡的那顆「解碼器」——兩種寫法，同一種硬體。</figcaption>
+</figure>
+</div>
+<p><code>generate</code> 裡的迴圈上限必須是合成時就知道的常數（<code>parameter</code> 或數字），因為電路的份數不可能在晶片做好之後才決定。</p>
+</section>
+<!-- ============================================================ ch13 -->
+<section class="ch" id="ch13" data-part="完整設計" data-nav="有限狀態機 FSM">
+<p class="eyebrow">第 13 章 · 完整設計</p>
+<h2>有限狀態機 (FSM)：正反器 + 兩塊組合邏輯</h2>
+<p>需要「分好幾個步驟做事」的硬體，都靠狀態機控制。lab1 的迭代乘法器有三個狀態：<code>IDLE</code>（等請求）→ <code>CALC</code>（算 32 輪）→ <code>SIGN</code>（修正正負號、等對方把結果收走）。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 640 250" role="img" style="max-width:736px" aria-label="乘法器控制器的狀態圖：reset 進入 IDLE；mulreq_go 時從 IDLE 到 CALC；CALC 在 counter 不為 0 時留在原地，counter 等於 0 時到 SIGN；mulresp_go 時從 SIGN 回到 IDLE。">
+  <path class="w" d="M20 120H75" marker-end="url(#ah)"/><text x="22" y="110">reset</text>
+  <circle class="k" cx="120" cy="120" r="44"/><text x="120" y="118" text-anchor="middle">IDLE</text><text class="zh s mut" x="120" y="137" text-anchor="middle">等請求</text>
+  <circle class="k" cx="320" cy="120" r="44"/><text x="320" y="118" text-anchor="middle">CALC</text><text class="zh s mut" x="320" y="137" text-anchor="middle">移位＋累加</text>
+  <circle class="k" cx="520" cy="120" r="44"/><text x="520" y="118" text-anchor="middle">SIGN</text><text class="zh s mut" x="520" y="137" text-anchor="middle">等結果被收走</text>
+  <path class="w" d="M164 120H275" marker-end="url(#ah)"/><text x="220" y="110" text-anchor="middle">mulreq_go</text>
+  <path class="w" d="M364 120H475" marker-end="url(#ah)"/><text x="420" y="110" text-anchor="middle">counter == 0</text>
+  <path class="w" d="M300 81C280 30 360 30 340 81" marker-end="url(#ah)"/><text class="mut" x="320" y="30" text-anchor="middle">counter != 0</text>
+  <path class="w" d="M496 157C420 235 220 235 144 157" marker-end="url(#ah)"/><text x="320" y="238" text-anchor="middle">mulresp_go</text>
+</svg>
+</div>
+<figcaption><b>狀態圖是「規格」</b>，箭頭上是轉移條件。沒畫出來的情況一律留在原狀態。</figcaption>
+</figure>
+
+<p>寫成 Verilog 時，標準做法是拆成三個區塊，各自對應一塊硬體：</p>
+<div class="ex">
+<div class="src">imuldiv/imuldiv-IntMulIterative.v · 第 284–358 行（節錄）</div>
+<pre><code class="language-verilog">// ① 狀態暫存器 —— 循序邏輯
+reg [1:0] state_reg;
+always @ ( posedge clk ) begin
+  if ( reset ) state_reg &lt;= STATE_IDLE;
+  else         state_reg &lt;= state_next;
+end
+
+// ② 次態邏輯 —— 組合邏輯
+reg [1:0] state_next;
+always @ ( * ) begin
+  state_next = state_reg;                         // 預設：留在原地（也避免 latch）
+  case ( state_reg )
+    STATE_IDLE: if ( mulreq_go )    state_next = STATE_CALC;
+    STATE_CALC: if ( is_calc_done ) state_next = STATE_SIGN;
+    STATE_SIGN: if ( mulresp_go )   state_next = STATE_IDLE;
+  endcase
+end
+
+// ③ 輸出邏輯 —— 組合邏輯：每個狀態該送出哪些控制訊號
+always @ ( * ) begin
+  case ( state_reg )
+    //                 req  resp sign res  cntr     a        b        result
+    //                 rdy  val  en   en   mux_sel  mux_sel  mux_sel  mux_sel
+    STATE_IDLE: cs = { y,   n,   y,   y,   op_load, op_load, op_load, op_load };
+    STATE_CALC: cs = { n,   n,   n,   y,   op_next, op_next, op_next, op_next };
+    STATE_SIGN: cs = { n,   y,   n,   n,   op_x,    op_x,    op_x,    op_x    };
+  endcase
+end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 205" role="img" style="max-width:874px" aria-label="狀態機的硬體結構：次態邏輯的輸出 state_next 進入狀態暫存器，暫存器輸出 state_reg 同時送給輸出邏輯產生控制訊號 cs，並回授給次態邏輯。">
+  <text class="zh" x="30" y="72">轉移條件</text><path class="w" d="M30 80H150"/>
+  <rect class="k" x="150" y="55" width="160" height="80"/><text x="230" y="90" text-anchor="middle">② always @(*)</text><text class="zh mut" x="230" y="110" text-anchor="middle">次態邏輯</text>
+  <path class="w" d="M310 95H400"/><text x="355" y="87" text-anchor="middle">state_next</text>
+  <rect class="r" x="400" y="65" width="80" height="60"/><text class="s" x="440" y="92" text-anchor="middle">① state_reg</text><path class="rl" d="M400 106l9 6l-9 6"/>
+  <path class="c" d="M440 125V150"/><text class="cb" x="448" y="156">reset</text>
+  <path class="w" d="M480 95H560"/><circle class="d" cx="520" cy="95" r="3"/>
+  <rect class="k" x="560" y="55" width="130" height="80"/><text x="625" y="90" text-anchor="middle">③ always @(*)</text><text class="zh mut" x="625" y="110" text-anchor="middle">輸出邏輯</text>
+  <path class="c" d="M690 95H745"/><text class="cb" x="708" y="87">cs</text>
+  <path class="w" d="M520 95V185H120V112H150"/><text class="zh mut" x="320" y="178" text-anchor="middle">目前狀態回授</text>
+</svg>
+</div>
+<figcaption><b>整個 FSM 只有一個 2 位元暫存器是「記憶」</b>，其餘都是<a href="#ch6">第 6 章</a>的查表。程式碼的三個區塊一對一對應到圖上的三個方塊。</figcaption>
+</figure>
+</div>
+<p>③ 那張表值得細看：每一<b>列</b>是一個狀態，每一<b>欄</b>是一條控制線。用 <code>y</code>/<code>n</code>/<code>op_load</code> 這些 <code>localparam</code> 取代 0 和 1，整張表就像規格書一樣能直接閱讀。</p>
+</section>
+
+<!-- ============================================================ ch14 -->
+<section class="ch" id="ch14" data-part="完整設計" data-nav="綜合：迭代乘法器">
+<p class="eyebrow">第 14 章 · 完整設計</p>
+<h2>綜合範例：迭代乘法器的 Control + Datapath</h2>
+<p><code>imuldiv-IntMulIterative.v</code> 是 lab1 的核心，也用到了前面幾乎所有語法。它的頂層只做一件事：例化一個 <b>datapath</b>（資料怎麼流、怎麼運算）和一個 <b>control</b>（上一章的 FSM），再用 11 條線把兩者接起來。這種「control 指揮 datapath」的切法是數位設計最常見的架構，整顆處理器（<code>CoreCtrl.v</code> + <code>CoreDpath.v</code>）也是這樣切的。</p>
+
+<h3>演算法：直式乘法的二進位版</h3>
+<p>每一輪看乘數 <code>b</code> 的最低位：是 1 就把 <code>a</code> 加進結果。然後 <code>a</code> 左移一位（相當於直式乘法往左錯開一格）、<code>b</code> 右移一位（換看下一位）。32 輪之後結果就是 a × b。負數先轉成正數運算，最後再依正負號補回來。</p>
+
+<div class="ex">
+<div class="src">imuldiv/imuldiv-IntMulIterative.v · 第 158–227 行（節錄）</div>
+<pre><code class="language-verilog">wire [63:0] a_mux_out
+  = ( a_mux_sel == op_load ) ? { 32'b0, unsigned_a }
+  : ( a_mux_sel == op_next ) ? a_shift_out
+  :                            64'bx;
+
+always @ ( posedge clk ) begin
+  if ( sign_en )   sign_reg   &lt;= sign_next;
+  if ( result_en ) result_reg &lt;= result_mux_out;
+  counter_reg  &lt;= counter_mux_out;
+  a_reg        &lt;= a_mux_out;
+  b_reg        &lt;= b_mux_out;
+end
+
+assign b_lsb = b_reg[0];
+wire [63:0] a_shift_out = a_reg &lt;&lt; 1;
+wire [31:0] b_shift_out = b_reg &gt;&gt; 1;
+wire [63:0] add_out     = result_reg + a_reg;
+
+wire [63:0] add_mux_out
+  = ( add_mux_sel == add_old )  ? result_reg
+  : ( add_mux_sel == add_next ) ? add_out
+  :                               64'bx;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="-34 0 864 500" role="img" style="max-width:994px" aria-label="迭代乘法器的 datapath。三個迴路：a_reg 經過左移一位再回到自己；b_reg 經過右移一位再回到自己，其最低位 b_lsb 成為控制訊號；result_reg 與 a_reg 相加，由 b_lsb 控制的 mux 決定要不要採用相加的結果，再回到 result_reg。最後由 sign_reg 控制的 mux 決定輸出 result_reg 或其負值。">
+  <!-- row A -->
+  <text x="-26" y="94">{32'b0, unsigned_a}</text><path class="w" d="M-26 102H150"/>
+  <path class="k" d="M150 50L176 60V110L150 120Z"/><text class="s" x="155" y="72">1</text><text class="s" x="155" y="106">0</text>
+  <path class="w" d="M176 85H220"/>
+  <rect class="r" x="220" y="60" width="90" height="50"/><text x="265" y="82" text-anchor="middle">a_reg</text><text class="s sq" x="265" y="99" text-anchor="middle">64</text>
+  <path class="w" d="M310 85H380"/><circle class="d" cx="350" cy="85" r="3"/>
+  <path class="a" d="M350 85V118" marker-end="url(#ah)"/><text class="zh s ac" x="358" y="124">到加法器</text>
+  <rect class="k" x="380" y="67" width="70" height="36"/><text x="415" y="89" text-anchor="middle">&lt;&lt; 1</text>
+  <path class="w" d="M450 85H480V28H135V68H150"/>
+  <path class="c" d="M163 116V138"/><text class="s cb" x="170" y="144">a_mux_sel</text>
+  <!-- row B -->
+  <text x="-26" y="224">unsigned_b</text><path class="w" d="M-26 232H150"/>
+  <path class="k" d="M150 180L176 190V240L150 250Z"/><text class="s" x="155" y="202">1</text><text class="s" x="155" y="236">0</text>
+  <path class="w" d="M176 215H220"/>
+  <rect class="r" x="220" y="190" width="90" height="50"/><text x="265" y="212" text-anchor="middle">b_reg</text><text class="s sq" x="265" y="229" text-anchor="middle">32</text>
+  <path class="w" d="M310 215H380"/><circle class="d" cx="340" cy="215" r="3"/>
+  <rect class="k" x="380" y="197" width="70" height="36"/><text x="415" y="219" text-anchor="middle">&gt;&gt; 1</text>
+  <path class="w" d="M450 215H480V158H135V198H150"/>
+  <path class="c" d="M163 246V266"/><text class="s cb" x="170" y="274">b_mux_sel</text>
+  <path class="c" d="M340 215V272H593V325"/><text class="cb" x="350" y="265">b_reg[0] = b_lsb → add_mux_sel</text>
+  <!-- row R -->
+  <text x="-26" y="364">64'b0</text><path class="w" d="M-26 372H150"/>
+  <path class="k" d="M150 320L176 330V380L150 390Z"/><text class="s" x="155" y="342">1</text><text class="s" x="155" y="376">0</text>
+  <path class="w" d="M176 355H220"/>
+  <rect class="r" x="220" y="330" width="90" height="50"/><text x="265" y="352" text-anchor="middle">result_reg</text><text class="s sq" x="265" y="369" text-anchor="middle">64</text>
+  <path class="c" d="M265 330V308"/><text class="s cb" x="272" y="314">result_en</text>
+  <path class="w" d="M310 355H400"/><circle class="d" cx="335" cy="355" r="3"/>
+  <path class="a" d="M368 330H400"/><text class="ac" x="364" y="334" text-anchor="end">a_reg</text>
+  <rect class="k" x="400" y="315" width="60" height="60"/><text x="430" y="352" text-anchor="middle" style="font-size:20px">+</text>
+  <path class="w" d="M460 345H580"/><text class="s mut" x="520" y="338" text-anchor="middle">add_out</text>
+  <path class="k" d="M580 320L606 330V390L580 400Z"/><text class="s" x="585" y="349">1</text><text class="s" x="585" y="382">0</text>
+  <path class="w" d="M335 355V415H555V378H580"/>
+  <path class="w" d="M606 360H640V292H135V338H150"/>
+  <path class="c" d="M163 386V406"/><text class="s cb" x="170" y="414">result_mux_sel</text>
+  <!-- sign stage -->
+  <circle class="d" cx="555" cy="415" r="3"/><path class="w" d="M555 415H740"/>
+  <circle class="d" cx="625" cy="415" r="3"/><path class="w" d="M625 415V451H650"/>
+  <rect class="k" x="650" y="435" width="60" height="32"/><text x="680" y="455" text-anchor="middle">~x + 1</text>
+  <path class="w" d="M710 451H740"/>
+  <path class="k" d="M740 393L766 403V463L740 473Z"/><text class="s" x="745" y="419">0</text><text class="s" x="745" y="455">1</text>
+  <path class="w" d="M766 433H818"/><text x="818" y="384" text-anchor="end">mulresp_msg_result</text>
+  <path class="c" d="M753 469V488"/><text class="s cb" x="746" y="494" text-anchor="end">sign_reg</text>
+  <!-- notes -->
+  <text class="zh mut" x="520" y="66">counter_reg 的迴路和 b 相同，圖中省略：</text>
+  <text class="mut" x="520" y="86">mux(31, counter − 1) → counter_reg</text>
+  <text class="zh s mut" x="520" y="118">mux 標示：1 = op_next（繼續算）</text>
+  <text class="zh s mut" x="520" y="134">　　　　　0 = op_load（載入新運算元）</text>
+</svg>
+</div>
+<figcaption><b>每個暫存器都是一個「mux → 暫存器 → 運算 → 回到 mux」的迴路。</b>時脈每響一次，三個迴路各轉一圈：<code>a</code> 左移、<code>b</code> 右移、<code>result</code> 視 <code>b_lsb</code> 決定要不要加上 <code>a</code>。注意 <code>b_lsb</code> 從資料（黑線）變成了控制訊號（藍線）——datapath 回報狀態給 control，就是這個意思。整顆乘法器只用了<b>一個</b>加法器。</figcaption>
+</figure>
+</div>
+
+<h3>自己算一次看看</h3>
+<p>下表模擬這個電路每個時脈週期的暫存器內容。為了好讀，寬度縮成 8 位元（<code>counter</code> 從 7 數到 0，真實電路是 31 到 0）。</p>
+<div class="sim">
+  <label for="mulA">a（−127 到 127）<input id="mulA" type="number" min="-127" max="127" value="13"></label>
+  <label for="mulB">b（−127 到 127）<input id="mulB" type="number" min="-127" max="127" value="-11"></label>
+  <output id="mulOut" for="mulA mulB"></output>
+</div>
+<div class="tbl"><table id="mulTbl">
+<thead><tr><th>週期</th><th>state_reg</th><th>counter</th><th>a_reg</th><th>b_reg</th><th>b_lsb</th><th>result_reg</th><th>這個週期結束時會發生</th></tr></thead>
+<tbody id="mulRows"></tbody></table></div>
+
+<h3>val / rdy 握手：模組之間怎麼交接資料</h3>
+<p>乘法器要 34 個週期才算完，外面的處理器怎麼知道何時可以送新的請求、何時結果好了？lab1 全部使用 <b>val/rdy</b> 協定：送方舉 <code>val</code>（我有資料）、收方舉 <code>rdy</code>（我能收），<b>兩者在同一個上升緣都是 1，資料就算交接成功</b>。</p>
+<div class="ex">
+<div class="src">imuldiv/imuldiv-IntMulIterative.v · 第 375–377 行</div>
+<pre><code class="language-verilog">wire mulreq_go     = mulreq_val  &amp;&amp; mulreq_rdy;
+wire mulresp_go    = mulresp_val &amp;&amp; mulresp_rdy;
+wire is_calc_done  = ( counter == 5'b0 );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 290" role="img" style="max-width:828px" aria-label="val/rdy 握手時序圖：mulreq_val 和 mulreq_rdy 同時為 1 的上升緣，請求成交，狀態從 IDLE 進入 CALC，mulreq_rdy 降為 0。計算完成後進入 SIGN，mulresp_val 升為 1，在 mulresp_rdy 也為 1 的上升緣回應成交，回到 IDLE。">
+  <g text-anchor="end"><text class="cb" x="150" y="44">clk</text><text x="150" y="89">mulreq_val</text><text x="150" y="134">mulreq_rdy</text><text class="sq" x="150" y="177">state_reg</text><text x="150" y="223">mulresp_val</text><text x="150" y="268">mulresp_rdy</text></g>
+  <path class="re" d="M160 24V280M240 24V280M400 24V280M480 24V280M640 24V280"/>
+  <path class="a" d="M320 22V282M560 22V282"/>
+  <text class="zh ac" x="320" y="14" text-anchor="middle">請求成交</text><text class="zh ac" x="560" y="14" text-anchor="middle">回應成交</text>
+  <path class="c" style="stroke-dasharray:none" d="M160 50V30H200V50H240V30H280V50H320V30H360V50H400V30H440V50H480V30H520V50H560V30H600V50H640V30H680V50H700"/>
+  <path class="w" d="M160 95H240V75H320V95H700"/>
+  <path class="w" d="M160 120H320V140H560V120H700"/>
+  <rect class="k" x="160" y="160" width="160" height="26"/><text x="240" y="178" text-anchor="middle">IDLE</text>
+  <rect class="r" x="320" y="160" width="160" height="26"/><text x="400" y="178" text-anchor="middle">CALC ⋯ ×32 週期</text>
+  <rect class="k" x="480" y="160" width="80" height="26"/><text x="520" y="178" text-anchor="middle">SIGN</text>
+  <rect class="k" x="560" y="160" width="140" height="26"/><text x="630" y="178" text-anchor="middle">IDLE</text>
+  <path class="w" d="M160 229H480V209H560V229H700"/>
+  <path class="w" d="M160 274H400V254H700"/>
+</svg>
+</div>
+<figcaption><b>綠線是兩次「成交」的上升緣。</b>對照<a href="#ch13">第 13 章</a>的輸出表：<code>mulreq_rdy</code> 只在 IDLE 為 1、<code>mulresp_val</code> 只在 SIGN 為 1，波形就是那張表的直接結果。</figcaption>
+</figure>
+</div>
+</section>
+
+<!-- ============================================================ ch15 -->
+<section class="ch" id="ch15" data-part="完整設計" data-nav="管線暫存器與 stall">
+<p class="eyebrow">第 15 章 · 完整設計</p>
+<h2>讀懂 <code>CoreDpath.v</code>：管線暫存器與 stall</h2>
+<p>有了前面的基礎，整個 444 行的 <code>riscvstall-CoreDpath.v</code> 其實只由三種東西反覆組成：<b>mux</b>（<code>? :</code> 鏈）、<b>少量運算</b>（<code>+</code>、<code>{ }</code>）、以及把管線一級一級隔開的<b>帶 enable 的暫存器</b>。</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 154–159、242–250 行</div>
+<pre><code class="language-verilog">// D &lt;- F
+always @ (posedge clk) begin
+  if( !stall_Dhl ) begin
+    pc_Dhl       &lt;= pc_Fhl;
+    pc_plus4_Dhl &lt;= pc_plus4_Fhl;
+  end
+end
+
+// X &lt;- D
+always @ (posedge clk) begin
+  if( !stall_Xhl ) begin
+    pc_Xhl          &lt;= pc_Dhl;
+    op0_mux_out_Xhl &lt;= op0_mux_out_Dhl;
+    ...
+  end
+end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 190" role="img" style="max-width:874px" aria-label="管線暫存器串成一列：pc_Fhl、pc_Dhl、pc_Xhl、pc_Mhl，中間夾著各級的組合邏輯。每個暫存器的 enable 分別接到對應級的 stall 訊號的反相。">
+  <rect class="r" x="40" y="50" width="70" height="70"/><text class="s" x="75" y="89" text-anchor="middle">pc_Fhl</text><path class="rl" d="M40 100l9 6l-9 6"/>
+  <rect class="k" x="130" y="62" width="80" height="46" rx="18"/><text class="zh s" x="170" y="89" text-anchor="middle">F 級邏輯</text>
+  <rect class="r" x="230" y="50" width="70" height="70"/><text class="s" x="265" y="89" text-anchor="middle">pc_Dhl</text><path class="rl" d="M230 100l9 6l-9 6"/>
+  <rect class="k" x="320" y="62" width="80" height="46" rx="18"/><text class="zh s" x="360" y="89" text-anchor="middle">D 級邏輯</text>
+  <rect class="r" x="420" y="50" width="70" height="70"/><text class="s" x="455" y="89" text-anchor="middle">pc_Xhl</text><path class="rl" d="M420 100l9 6l-9 6"/>
+  <rect class="k" x="510" y="62" width="80" height="46" rx="18"/><text class="zh s" x="550" y="89" text-anchor="middle">X 級邏輯</text>
+  <rect class="r" x="610" y="50" width="70" height="70"/><text class="s" x="645" y="89" text-anchor="middle">pc_Mhl</text><path class="rl" d="M610 100l9 6l-9 6"/>
+  <path class="w" d="M10 85H40M110 85H130M210 85H230M300 85H320M400 85H420M490 85H510M590 85H610M680 85H740"/>
+  <path class="c" d="M75 120V150M265 120V150M455 120V150M645 120V150"/>
+  <g text-anchor="middle"><text class="s cb" x="75" y="164">en = !stall_Fhl</text><text class="s cb" x="265" y="164">en = !stall_Dhl</text><text class="s cb" x="455" y="164">en = !stall_Xhl</text><text class="s cb" x="645" y="164">en = !stall_Mhl</text></g>
+  <text class="zh s mut" x="40" y="36">每個上升緣，每道指令的資料往右移一級</text>
+</svg>
+</div>
+<figcaption><b>Stall = 把某一級暫存器的 enable 關掉。</b>該級的指令就「卡」在原地一個週期。當乘法器還在 CALC，control 會把 <code>stall_Xhl</code> 拉高，讓 X 級（以及它前面的級）等它算完。</figcaption>
+</figure>
+</div>
+
+<h3>lab1 的命名慣例</h3>
+<div class="tbl"><table>
+<thead><tr><th>後綴</th><th>意思</th></tr></thead>
+<tbody>
+<tr><td><code>_Phl</code> <code>_Fhl</code> <code>_Dhl</code> <code>_Xhl</code> <code>_Mhl</code> <code>_Whl</code></td><td>這個訊號屬於哪一級管線：PC 選擇、Fetch、Decode、eXecute、Memory、Writeback。看到 <code>pc_Xhl &lt;= pc_Dhl</code> 就知道這是 D→X 的管線暫存器</td></tr>
+<tr><td><code>_p</code>（如 <code>d_p</code>、<code>wen_p</code>）</td><td>原始碼註解：「sampled on rising clk edge」——這個輸入會在上升緣被取樣</td></tr>
+<tr><td><code>_mux_sel</code>、<code>_en</code>、<code>_fn</code></td><td>分別是 mux 選擇線、暫存器 enable、運算單元的功能選擇——全都是 control → datapath 的控制線（圖中的藍色虛線）</td></tr>
+<tr><td><code>_val</code> / <code>_rdy</code> / <code>_msg</code></td><td>val/rdy 握手的三條線：有效、就緒、資料本體</td></tr>
+</tbody></table></div>
+<p>讀 datapath 的建議順序：先找所有 <code>always @(posedge clk)</code>，把暫存器畫成一排；再看每個暫存器的輸入來自哪個 <code>wire</code>，往回追就是該級的組合邏輯。</p>
+</section>
+<!-- ============================================================ ch16 -->
+<section class="ch" id="ch16" data-part="模擬與測試" data-nav="Testbench：不會變成電路的語法">
+<p class="eyebrow">第 16 章 · 模擬與測試</p>
+<h2>Testbench：<b>不會</b>變成電路的那一半 Verilog</h2>
+<p>Verilog 其實是兩種語言混在一起：一半描述硬體（前面 15 章），另一半是<b>只給模擬器執行的測試程式</b>。後者有延遲、有印字、能讀檔，行為就像一般的軟體程式——因此<b>無法合成、也畫不出電路圖</b>。<code>Testbench.v</code>、<code>Pattern.v</code> 和所有 <code>*.t.v</code> 檔都屬於這一類。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 250" role="img" style="max-width:805px" aria-label="Testbench 模組的結構：裡面例化了待測的處理器 riscv_Core 和測試用的 Pattern。Pattern 提供 clk 與 reset，並扮演指令記憶體與資料記憶體回應處理器的請求，最後從 csr_status 判定測試通過或失敗。">
+  <rect class="grp" x="14" y="28" width="672" height="208" rx="6"/><text class="s mut" x="24" y="22">module Testbench;　← 沒有任何 port，它就是整個模擬世界</text>
+  <rect class="k" x="50" y="60" width="200" height="158"/><text x="150" y="132" text-anchor="middle">riscv_Core  proc</text><text class="zh s mut" x="150" y="152" text-anchor="middle">待測電路（可合成）</text>
+  <rect class="gh" x="450" y="60" width="200" height="158"/><text x="550" y="112" text-anchor="middle">Pattern  pattern</text>
+  <text class="zh s mut" x="550" y="136" text-anchor="middle">產生 clk / reset</text><text class="zh s mut" x="550" y="154" text-anchor="middle">內含測試用記憶體</text><text class="zh s mut" x="550" y="172" text-anchor="middle">判定 PASSED / FAILED</text>
+  <path class="c" d="M450 85H253" marker-end="url(#ahc)"/><text class="s cb" x="350" y="79" text-anchor="middle">clk, reset_proc</text>
+  <path class="w" d="M250 115H447" marker-end="url(#ah)"/><text class="s" x="350" y="109" text-anchor="middle">imemreq (val/rdy/msg)</text>
+  <path class="w" d="M450 145H253" marker-end="url(#ah)"/><text class="s" x="350" y="139" text-anchor="middle">imemresp</text>
+  <path class="w" d="M253 175H447" marker-start="url(#ah)" marker-end="url(#ah)"/><text class="s" x="350" y="169" text-anchor="middle">dmemreq / dmemresp</text>
+  <path class="w" d="M250 203H447" marker-end="url(#ah)"/><text class="s" x="350" y="197" text-anchor="middle">csr_status, retire_valid</text>
+</svg>
+</div>
+<figcaption><b>這張是方塊圖，不是電路圖。</b>左邊是會被做成晶片的部分；右邊的 <code>Pattern</code> 只存在於模擬器裡，用軟體的方式假扮時脈產生器、記憶體和裁判。</figcaption>
+</figure>
+
+<h3>產生時脈與 reset</h3>
+<div class="ex">
+<div class="src">Pattern.v · 第 47–61 行</div>
+<pre><code class="language-verilog">initial begin
+  clk = 1'b0;                 // initial：模擬開始時執行一次
+end
+
+always #5 clk = ~clk;         // 每過 5 個時間單位反相一次 → 週期 10
+
+initial begin
+  reset_proc = 1'b1;
+  reset_mem  = 1'b1;
+
+  repeat ( p_reset_cycles ) @( negedge clk );   // 等 2 個下降緣
+
+  reset_proc = 1'b0;
+  reset_mem  = 1'b0;
+end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 172" role="img" style="max-width:759px" aria-label="Pattern.v 產生的波形：clk 從 0 開始，每 5 個時間單位反相一次；reset_proc 從時間 0 保持為 1，直到第二個 clk 下降緣也就是時間 20 才降為 0。">
+  <text class="cb" x="90" y="64" text-anchor="end">clk</text><text x="90" y="119" text-anchor="end">reset_proc</text>
+  <path class="re" d="M230 36V132M360 36V132"/>
+  <text class="s sq" x="230" y="28" text-anchor="middle">negedge ①</text><text class="s sq" x="360" y="28" text-anchor="middle">negedge ②</text>
+  <path class="a" style="stroke-width:1.5" d="M100 42V36H165V42"/><text class="s ac" x="132" y="28" text-anchor="middle">#5</text>
+  <path class="c" style="stroke-dasharray:none" d="M100 70H165V50H230V70H295V50H360V70H425V50H490V70H555V50H620V70"/>
+  <path class="w" d="M100 105H360V125H620"/>
+  <path class="w" style="stroke-width:1" d="M100 145H620M100 145v5M165 145v5M230 145v5M295 145v5M360 145v5M425 145v5M490 145v5M555 145v5M620 145v5"/>
+  <g text-anchor="middle"><text class="s mut" x="100" y="164">0</text><text class="s mut" x="165" y="164">5</text><text class="s mut" x="230" y="164">10</text><text class="s mut" x="295" y="164">15</text><text class="s mut" x="360" y="164">20</text><text class="s mut" x="425" y="164">25</text><text class="s mut" x="490" y="164">30</text><text class="s mut" x="555" y="164">35</text><text class="s mut" x="620" y="164">40</text></g>
+</svg>
+</div>
+<figcaption><b>能畫的是「時間軸」而不是電路。</b><code>#5</code> 是「等 5 個時間單位」，真實硬體裡沒有這種東西（時脈來自石英振盪器或 PLL），所以帶 <code>#</code> 的程式碼只能模擬。</figcaption>
+</figure>
+</div>
+
+<h3>模擬專用語法速查</h3>
+<div class="tbl"><table>
+<thead><tr><th>語法</th><th>作用</th><th>lab1 出處</th></tr></thead>
+<tbody>
+<tr><td><code>initial begin … end</code></td><td>模擬時間 0 開始，從上到下執行<b>一次</b></td><td>Pattern.v 47、53、109 行</td></tr>
+<tr><td><code>#5</code>、<code>#20 $finish;</code></td><td>延遲若干時間單位再往下做</td><td>Pattern.v 51、210 行</td></tr>
+<tr><td><code>@( negedge clk )</code></td><td>當作敘述使用時：<b>停在這裡等</b>下一個下降緣</td><td>Pattern.v 57 行</td></tr>
+<tr><td><code>repeat ( n ) 敘述</code></td><td>重複 n 次（真的迴圈，會隨模擬時間執行）</td><td>Pattern.v 57 行</td></tr>
+<tr><td><code>$display( "fmt", … )</code></td><td>就是 <code>printf</code>。<code>%d</code> <code>%x</code> <code>%s</code> <code>%f</code>；<code>%m</code> 印出目前模組的階層路徑</td><td>Pattern.v 186–206 行</td></tr>
+<tr><td><code>$finish</code></td><td>結束模擬</td><td>Pattern.v 118 行</td></tr>
+<tr><td><code>$time</code></td><td>目前的模擬時間</td><td>vc-Assert.v</td></tr>
+<tr><td><code>$value$plusargs( "exe=%s", var )</code></td><td>讀命令列的 <code>+exe=檔名</code> 參數；有給就回傳 1</td><td>Pattern.v 114 行</td></tr>
+<tr><td><code>$readmemh( file, mem.mem.m, … )</code></td><td>把十六進位文字檔（<code>.vmh</code>）載入記憶體陣列。<code>mem.mem.m</code> 是<b>階層式參照</b>：直接伸手進子模組的子模組拿訊號，只有 testbench 能這樣做</td><td>Pattern.v 122 行</td></tr>
+<tr><td><code>$fopen</code> / <code>$fclose</code></td><td>開關檔案；這裡只用來檢查檔案存不存在</td><td>Pattern.v 115–120 行</td></tr>
+<tr><td><code>$dumpfile</code> / <code>$dumpvars( 0, Testbench )</code></td><td>把 <code>Testbench</code> 以下所有訊號的波形寫進 <code>.vcd</code> 檔，之後用 GTKWave 觀看</td><td>Pattern.v 148–149 行</td></tr>
+<tr><td><code>integer</code>、<code>real</code>、<code>$itor()</code></td><td>軟體式的整數、浮點數變數與型別轉換。用來算 IPC = 指令數 ÷ 週期數</td><td>Pattern.v 101、178、195 行</td></tr>
+<tr><td><code>reg [1023:0] exe_filename;</code></td><td>Verilog 沒有字串型別：字串就是很寬的 <code>reg</code>，每個字元 8 位元。所以 <code>{ exe_filename[1023:32], ".vcd" }</code> 是「砍掉最後 4 個字元 <code>.vmh</code>，接上 <code>.vcd</code>」</td><td>Pattern.v 102、145 行</td></tr>
+<tr><td><code>task … endtask</code></td><td>可重複呼叫的測試程序（像沒有回傳值的函式），裡面可以有延遲</td><td>imuldiv-*ReqMsg.t.v</td></tr>
+<tr><td><code>===</code>、<code>!==</code></td><td>連 x 和 z 都逐位元比對的「全等」。一般 <code>==</code> 碰到 x 結果就是 x；要判斷「這個訊號是不是 x」只能用 <code>===</code></td><td>InstMsg.v 352 行：<code>msg === 32'bx</code></td></tr>
+</tbody></table></div>
+
+<p><code>Pattern.v</code> 裡也有看起來像硬體的部分：第 160–173 行的 <code>num_cycles</code>、<code>num_inst</code> 計數器用的是標準的 <code>always @(posedge clk)</code> + <code>&lt;=</code>，就是<a href="#ch7">第 7 章</a>的暫存器加上 <code>+ 1</code>。它只是剛好住在 testbench 裡而已。</p>
+
+<h3>執行模擬時可用的參數</h3>
+<p>這些都是 <code>Pattern.v</code> 用 <code>$value$plusargs</code> 讀取的：</p>
+<div class="ex">
+<pre><code>./riscvstall-sim +exe=riscv-add.vmh +stats=1 +vcd=1
+
+  +exe=&lt;檔名&gt;        要執行的程式（必填，.vmh 格式）
+  +max-cycles=&lt;N&gt;    超過 N 個週期就判定 timeout（預設 100000）
+  +verbose=1         結束時印出 num_cycles / num_inst / ipc
+  +stats=1           效果相同（會把 verbose 一併打開）
+  +vcd=1             輸出波形檔 riscv-add.vcd</code></pre>
+</div>
+<div class="note"><b>強烈建議</b><p>用 <code>+vcd=1</code> 產生波形，用 GTKWave 打開，把 <code>state_reg</code>、<code>a_reg</code>、<code>b_reg</code>、<code>result_reg</code> 拉出來看，對照<a href="#ch14">第 14 章</a>的模擬表格。看過一次真實波形，「每個上升緣所有暫存器同時更新」這件事就會變成直覺。</p></div>
+</section>
+
+<!-- ============================================================ ch17 -->
+<section class="ch" id="ch17" data-part="模擬與測試" data-nav="速查：語法 → 硬體">
+<p class="eyebrow">第 17 章 · 總整理</p>
+<h2>速查表：看到這個語法，腦中要浮現什麼</h2>
+<div class="tbl"><table>
+<thead><tr><th>你看到</th><th>腦中畫出</th><th>章</th></tr></thead>
+<tbody>
+<tr><td><code>module</code> / <code>input</code> / <code>output</code></td><td>有接腳的方塊</td><td class="num"><a href="#ch1">1</a></td></tr>
+<tr><td><code>wire [31:0] x</code></td><td>32 條線的匯流排</td><td class="num"><a href="#ch2">2</a></td></tr>
+<tr><td><code>x[7:0]</code>、<code>{a, b}</code>、<code>{24{s}}</code>、<code>&lt;&lt; 1</code></td><td>純接線，零成本</td><td class="num"><a href="#ch5">5</a></td></tr>
+<tr><td><code>assign y = a &amp; b;</code></td><td>邏輯閘（多位元就是一排）</td><td class="num"><a href="#ch3">3</a></td></tr>
+<tr><td><code>+</code>、<code>-</code>、<code>==</code></td><td>加法器、比較器</td><td class="num"><a href="#ch3">3</a></td></tr>
+<tr><td><code>*</code>、<code>/</code>、<code>%</code></td><td>很大很慢的一坨組合邏輯</td><td class="num"><a href="#ch3">3</a></td></tr>
+<tr><td><code>s ? a : b</code>、串接的 <code>? :</code></td><td>梯形的 mux</td><td class="num"><a href="#ch4">4</a></td></tr>
+<tr><td><code>always @(*)</code> + <code>if</code> / <code>case</code> + <code>=</code></td><td>mux 或查表（記得給預設值，否則長出 latch）</td><td class="num"><a href="#ch6">6</a></td></tr>
+<tr><td><code>always @(posedge clk)</code> + <code>&lt;=</code></td><td>D 正反器</td><td class="num"><a href="#ch7">7</a></td></tr>
+<tr><td>時脈區塊裡的 <code>if (reset)</code> / <code>if (en)</code></td><td>正反器前面的 mux；沒寫 else = 保持原值</td><td class="num"><a href="#ch7">7</a></td></tr>
+<tr><td><code>reg [31:0] r[31:0]</code></td><td>一疊暫存器；讀 = 大 mux，寫 = 解碼器 + enable</td><td class="num"><a href="#ch9">9</a></td></tr>
+<tr><td><code>ModName inst ( .p(w) );</code></td><td>放一顆子電路，把腳接到線上</td><td class="num"><a href="#ch10">10</a></td></tr>
+<tr><td><code>parameter</code> / <code>localparam</code> / <code>`define</code></td><td>沒有硬體——只是合成前的常數代換</td><td class="num"><a href="#ch10">10</a>, <a href="#ch11">11</a></td></tr>
+<tr><td><code>casez</code> 與 <code>?</code></td><td>只比對部分位元的樣式比較器</td><td class="num"><a href="#ch11">11</a></td></tr>
+<tr><td><code>generate for</code></td><td>同一塊電路複製 N 份</td><td class="num"><a href="#ch12">12</a></td></tr>
+<tr><td><code>state_reg</code> + <code>state_next</code> + 兩個 <code>case</code></td><td>狀態機：一個暫存器夾在兩塊查表中間</td><td class="num"><a href="#ch13">13</a></td></tr>
+<tr><td><code>initial</code>、<code>#5</code>、<code>$display</code>…</td><td>沒有硬體——只給模擬器跑的軟體</td><td class="num"><a href="#ch16">16</a></td></tr>
+</tbody></table></div>
+
+<h3>下一步</h3>
+<ol>
+  <li>打開 <code>imuldiv-IntMulIterative.v</code>，不看<a href="#ch14">第 14 章</a>的圖，自己在紙上把 datapath 畫出來，再對答案。</li>
+  <li>對 <code>imuldiv-IntDivIterative.v</code>（除法器）做同樣的事。它的結構和乘法器幾乎對稱，是最好的練習題。</li>
+  <li>讀 <code>riscvstall-CoreDpath.v</code>：先圈出所有 <code>always @(posedge clk)</code>，其中 F、D、X、M、W 五個就是管線的分界線。</li>
+  <li>最後再看 <code>riscvstall-CoreCtrl.v</code>。它很長，但 80% 是 <code>localparam</code> 定義和那張 <code>casez</code> 控制表。</li>
+</ol>
+</section>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/verilog.min.js"></script>
+<script>
+(function () {
+  // ---- table of contents, built from the chapter sections ----
+  var toc = document.getElementById('toc');
+  var box = document.getElementById('tocbox');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.ch'));
+  var links = {};
+  var lastPart = null;
+  sections.forEach(function (sec) {
+    var part = sec.getAttribute('data-part');
+    if (part !== lastPart) {
+      var p = document.createElement('li');
+      p.className = 'part';
+      p.textContent = part;
+      toc.appendChild(p);
+      lastPart = part;
+    }
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    a.href = '#' + sec.id;
+    var n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = sec.id.replace('ch', '');
+    a.appendChild(n);
+    a.appendChild(document.createTextNode(sec.getAttribute('data-nav')));
+    li.appendChild(a);
+    toc.appendChild(li);
+    links[sec.id] = a;
+  });
+
+  var narrow = window.matchMedia('(max-width: 900px)');
+  function syncToc() { box.open = !narrow.matches; }
+  syncToc();
+  if (narrow.addEventListener) narrow.addEventListener('change', syncToc);
+  toc.addEventListener('click', function (e) {
+    if (narrow.matches && e.target.closest('a')) box.open = false;
+  });
+
+  // ---- highlight the chapter currently in view ----
+  if ('IntersectionObserver' in window) {
+    var current = null;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        if (current) current.classList.remove('on');
+        current = links[en.target.id];
+        current.classList.add('on');
+      });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+
+  // ---- syntax highlighting (page still reads fine if the CDN is unreachable) ----
+  if (window.hljs) {
+    document.querySelectorAll('pre code.language-verilog').forEach(function (el) {
+      window.hljs.highlightElement(el);
+    });
+  }
+
+  // ---- chapter 14: cycle-by-cycle simulation of the iterative multiplier (8-bit) ----
+  var inA = document.getElementById('mulA');
+  var inB = document.getElementById('mulB');
+  var rowsEl = document.getElementById('mulRows');
+  var outEl = document.getElementById('mulOut');
+  var W = 8;
+
+  function bin(v, width) {
+    var s = (v >>> 0).toString(2);
+    while (s.length < width) s = '0' + s;
+    return s.slice(-width).replace(/(.{4})(?=.)/g, '$1 ');
+  }
+  function clamp(el) {
+    var v = parseInt(el.value, 10);
+    if (isNaN(v)) v = 0;
+    return Math.max(-127, Math.min(127, v));
+  }
+  function cell(tr, text, cls) {
+    var td = document.createElement('td');
+    if (cls) td.className = cls;
+    td.textContent = text;
+    tr.appendChild(td);
+  }
+  function simulate() {
+    var a = clamp(inA), b = clamp(inB);
+    var negative = (a < 0) !== (b < 0);
+    var A = Math.abs(a), B = Math.abs(b), R = 0, c = W - 1, cycle = 0;
+    rowsEl.textContent = '';
+
+    var tr = document.createElement('tr');
+    cell(tr, cycle++, 'num'); cell(tr, 'IDLE', 'num'); cell(tr, '–', 'num'); cell(tr, '–', 'num'); cell(tr, '–', 'num'); cell(tr, '–', 'num'); cell(tr, '–', 'num');
+    cell(tr, 'mulreq_go：載入 |a| = ' + A + '、|b| = ' + B + '，result 清 0，sign_reg = ' + (negative ? 1 : 0));
+    rowsEl.appendChild(tr);
+
+    for (;;) {
+      var lsb = B & 1;
+      tr = document.createElement('tr');
+      if (lsb) tr.className = 'hi';
+      cell(tr, cycle++, 'num'); cell(tr, 'CALC', 'num'); cell(tr, c, 'num');
+      cell(tr, bin(A, 16), 'num'); cell(tr, bin(B, 8), 'num'); cell(tr, lsb, 'num'); cell(tr, R, 'num');
+      var done = (c === 0);
+      cell(tr, (lsb ? 'result ← ' + R + ' + ' + A + ' = ' + (R + A) : 'result 不變') + '；a 左移、b 右移' + (done ? '；counter == 0 → SIGN' : ''));
+      rowsEl.appendChild(tr);
+      if (lsb) R += A;
+      A = (A << 1) & 0xffff;
+      B = B >> 1;
+      if (done) break;
+      c -= 1;
+    }
+
+    var out = negative ? -R : R;
+    tr = document.createElement('tr');
+    cell(tr, cycle, 'num'); cell(tr, 'SIGN', 'num'); cell(tr, '–', 'num');
+    cell(tr, bin(A, 16), 'num'); cell(tr, bin(B, 8), 'num'); cell(tr, '–', 'num'); cell(tr, R, 'num');
+    cell(tr, 'sign_reg = ' + (negative ? '1 → 輸出 ~result + 1 = ' : '0 → 輸出 result = ') + out + '；mulresp_go → IDLE');
+    rowsEl.appendChild(tr);
+
+    outEl.textContent = a + ' × ' + b + ' = ' + out;
+  }
+  if (inA && inB) {
+    inA.addEventListener('input', simulate);
+    inB.addEventListener('input', simulate);
+    simulate();
+  }
+})();
+</script>
+</body>
+</html>

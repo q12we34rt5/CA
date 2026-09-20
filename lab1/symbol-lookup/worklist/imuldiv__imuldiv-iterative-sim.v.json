@@ -1,0 +1,256 @@
+[
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:107",
+   "imuldiv/imuldiv-iterative-sim.v:22",
+   "imuldiv/imuldiv-iterative-sim.v:24",
+   "imuldiv/imuldiv-iterative-sim.v:47"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|src_msg_fn",
+  "name": "src_msg_fn",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "reg",
+  "decl": "reg [2:0]",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:119",
+   "imuldiv/imuldiv-iterative-sim.v:29",
+   "imuldiv/imuldiv-iterative-sim.v:49",
+   "imuldiv/imuldiv-iterative-sim.v:75",
+   "imuldiv/imuldiv-iterative-sim.v:76",
+   "imuldiv/imuldiv-iterative-sim.v:77",
+   "imuldiv/imuldiv-iterative-sim.v:78",
+   "imuldiv/imuldiv-iterative-sim.v:79"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|src_msg_a",
+  "name": "src_msg_a",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:120",
+   "imuldiv/imuldiv-iterative-sim.v:121",
+   "imuldiv/imuldiv-iterative-sim.v:122",
+   "imuldiv/imuldiv-iterative-sim.v:123",
+   "imuldiv/imuldiv-iterative-sim.v:124",
+   "imuldiv/imuldiv-iterative-sim.v:30",
+   "imuldiv/imuldiv-iterative-sim.v:50",
+   "imuldiv/imuldiv-iterative-sim.v:88"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|src_msg_b",
+  "name": "src_msg_b",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:120",
+   "imuldiv/imuldiv-iterative-sim.v:121",
+   "imuldiv/imuldiv-iterative-sim.v:122",
+   "imuldiv/imuldiv-iterative-sim.v:123",
+   "imuldiv/imuldiv-iterative-sim.v:124",
+   "imuldiv/imuldiv-iterative-sim.v:31",
+   "imuldiv/imuldiv-iterative-sim.v:51",
+   "imuldiv/imuldiv-iterative-sim.v:92"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|src_val",
+  "name": "src_val",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:134",
+   "imuldiv/imuldiv-iterative-sim.v:135",
+   "imuldiv/imuldiv-iterative-sim.v:32",
+   "imuldiv/imuldiv-iterative-sim.v:39",
+   "imuldiv/imuldiv-iterative-sim.v:52",
+   "imuldiv/imuldiv-iterative-sim.v:98"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|src_rdy",
+  "name": "src_rdy",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:33",
+   "imuldiv/imuldiv-iterative-sim.v:39",
+   "imuldiv/imuldiv-iterative-sim.v:53"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|sink_msg",
+  "name": "sink_msg",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "wire",
+  "decl": "wire [63:0]",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:120",
+   "imuldiv/imuldiv-iterative-sim.v:121",
+   "imuldiv/imuldiv-iterative-sim.v:122",
+   "imuldiv/imuldiv-iterative-sim.v:123",
+   "imuldiv/imuldiv-iterative-sim.v:124",
+   "imuldiv/imuldiv-iterative-sim.v:35",
+   "imuldiv/imuldiv-iterative-sim.v:54"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|sink_val",
+  "name": "sink_val",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:36",
+   "imuldiv/imuldiv-iterative-sim.v:40",
+   "imuldiv/imuldiv-iterative-sim.v:55"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|sink_rdy",
+  "name": "sink_rdy",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:37",
+   "imuldiv/imuldiv-iterative-sim.v:40",
+   "imuldiv/imuldiv-iterative-sim.v:56"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|muldivreq_go",
+  "name": "muldivreq_go",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:111",
+   "imuldiv/imuldiv-iterative-sim.v:143",
+   "imuldiv/imuldiv-iterative-sim.v:39"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|muldivresp_go",
+  "name": "muldivresp_go",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:117",
+   "imuldiv/imuldiv-iterative-sim.v:40"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:42",
+   "imuldiv/imuldiv-iterative-sim.v:48",
+   "imuldiv/imuldiv-iterative-sim.v:65"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|op_type",
+  "name": "op_type",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "reg",
+  "decl": "reg [1023:0]",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:43",
+   "imuldiv/imuldiv-iterative-sim.v:69",
+   "imuldiv/imuldiv-iterative-sim.v:73"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|imuldiv",
+  "name": "imuldiv",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "instance",
+  "decl": "imuldiv_IntMulDivIterative imuldiv ( ... );",
+  "instance_of": "imuldiv_IntMulDivIterative",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:45"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|busy",
+  "name": "busy",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:104",
+   "imuldiv/imuldiv-iterative-sim.v:112",
+   "imuldiv/imuldiv-iterative-sim.v:143"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v|sim|cycle_count",
+  "name": "cycle_count",
+  "cat": "signal",
+  "module": "sim",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:105",
+   "imuldiv/imuldiv-iterative-sim.v:127",
+   "imuldiv/imuldiv-iterative-sim.v:144"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "imuldiv/imuldiv-iterative-sim.v||sim",
+  "name": "sim",
+  "cat": "module",
+  "lines": [
+   "imuldiv/imuldiv-iterative-sim.v:12"
+  ],
+  "n_occ": 1
+ }
+]

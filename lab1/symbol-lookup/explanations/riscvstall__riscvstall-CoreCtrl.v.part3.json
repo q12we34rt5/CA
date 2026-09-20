@@ -1,0 +1,254 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_x": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼常數：don't care（4'bx）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam alu_x = 4'bx;`，填在解碼表的 alu fn 欄位，表示這條指令不用 ALU。不過目前解碼表每一行都給了具體的功能碼（連分支指令也要用 ALU 做比較），所以這個常數尚未被使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_add": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：加法（4'd0）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["add", "add", "加法"]],
+      "desc": "`localparam alu_add = 4'd0;`。解碼表裡用得最多的功能碼：LUI、AUIPC、ADDI、ADD、LW/SW（算位址）、JAL（算 PC+4）、CSRW 都用它。值經 `alu_fn_Dhl` → `alu_fn_Xhl` 送到 `riscv_CoreDpathAlu` 的 `fn` port。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_sub": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：減法（4'd1）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["sub", "subtract", "減法"]],
+      "desc": "`localparam alu_sub = 4'd1;`。解碼表裡目前只有 BLT 用它：dpath 的 `branch_cond_lt_Xhl` 是看 `alu_out_Xhl[31]`（減法結果的正負號）來判斷有號大小，所以 BLT 必須讓 ALU 做減法。補 SUB 指令時也會用到這個值。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_sll": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：邏輯左移（4'd2）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["sll", "shift left logical", "邏輯左移"]],
+      "desc": "`localparam alu_sll = 4'd2;`，對應 `riscv_CoreDpathAlu` 裡的左移運算。給 SLL / SLLI 使用；這兩行在解碼表中被註解掉，所以目前尚未被用到。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_or": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：位元 OR（4'd3）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["or", "bitwise or", "位元或"]],
+      "desc": "`localparam alu_or = 4'd3;`。解碼表裡 ORI 用它（op0 = rs1、op1 = I-type immediate）。補 OR 指令時也是填這個值。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_lt": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：有號小於比較（4'd4）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["lt", "less than", "小於（有號）"]],
+      "desc": "`localparam alu_lt = 4'd4;`，讓 ALU 直接輸出 0 或 1 的比較結果。給 SLT / SLTI 使用；這些指令在解碼表中被註解掉，所以目前沒有用到（BLT 走的是 `alu_sub` 加上 dpath 的 `branch_cond_lt_Xhl` 那條路）。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_ltu": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：無號小於比較（4'd5）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["ltu", "less than, unsigned", "小於（無號）"]],
+      "desc": "`localparam alu_ltu = 4'd5;`。給 SLTU / SLTIU 使用；這兩行在解碼表中被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_and": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：位元 AND（4'd6）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["and", "bitwise and", "位元且"]],
+      "desc": "`localparam alu_and = 4'd6;`。給 AND / ANDI 使用；這兩行在解碼表中被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_xor": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：位元 XOR（4'd7）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["xor", "bitwise exclusive or", "位元互斥或"]],
+      "desc": "`localparam alu_xor = 4'd7;`。解碼表裡 BNE 用它：兩個運算元 xor 後若為 0 就代表相等，dpath 的 `branch_cond_eq_Xhl = ( alu_out_Xhl == 32'd0 )` 正是這樣判斷，`branch_cond_ne_Xhl` 則是它的反相。補 XOR / XORI 指令時也用這個值。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_nor": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：位元 NOR（4'd8）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["nor", "bitwise nor", "位元或非"]],
+      "desc": "`localparam alu_nor = 4'd8;`。這是從 MIPS 版課程程式碼沿用下來的功能碼；RISC-V 基本指令集裡沒有 NOR 指令，所以解碼表中沒有任何一行使用它。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_srl": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：邏輯右移（4'd9）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["srl", "shift right logical", "邏輯右移（補 0）"]],
+      "desc": "`localparam alu_srl = 4'd9;`。給 SRL / SRLI 使用；這兩行在解碼表中被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|alu_sra": {
+      "sum": "riscv_CoreCtrl 的 ALU 功能碼：算術右移（4'd10）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["sra", "shift right arithmetic", "算術右移（補符號位元）"]],
+      "desc": "`localparam alu_sra = 4'd10;`，是這個 4-bit 欄位目前定義的最大值。給 SRA / SRAI 使用；這兩行在解碼表中被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|md_x": {
+      "sum": "riscv_CoreCtrl 的乘除法功能碼：don't care（3'bx）",
+      "naming": [["md", "mul/div", "乘除法"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam md_x = 3'bx;`。解碼表裡每一行（因為目前沒有任何乘除法指令被啟用）的 md fn 欄位都填它，搭配 md en 欄位填 `n`。它經 `muldivreq_msg_fn_Dhl` → `muldivreq_msg_fn_Xhl` 送給乘除法器，但因為 `muldivreq_val` 為 0，這個 x 值不會造成影響。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|md_mul": {
+      "sum": "riscv_CoreCtrl 的乘除法功能碼：乘法（3'd0）",
+      "naming": [["md", "mul/div", "乘除法"], ["mul", "multiply", "乘法"]],
+      "desc": "`localparam md_mul = 3'd0;`，對應 `imuldiv` 乘除法器的乘法功能。給 MUL / MULH 等指令使用；這些行在解碼表中被註解掉，所以目前沒有被用到。使用時還要把 md en 欄填 `y`、ex muxsel 填 `em_md`、md muxsel 填 `mdm_l` 或 `mdm_u`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|md_div": {
+      "sum": "riscv_CoreCtrl 的乘除法功能碼：有號除法（3'd1）",
+      "naming": [["md", "mul/div", "乘除法"], ["div", "divide", "除法（有號）"]],
+      "desc": "`localparam md_div = 3'd1;`。給 DIV 指令使用，結果取 64-bit 回應的下半（`mdm_l`）。解碼表中該行被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|md_divu": {
+      "sum": "riscv_CoreCtrl 的乘除法功能碼：無號除法（3'd2）",
+      "naming": [["md", "mul/div", "乘除法"], ["div", "divide", "除法"], ["u", "unsigned", "無號"]],
+      "desc": "`localparam md_divu = 3'd2;`。給 DIVU 指令使用，結果同樣取下半（`mdm_l`）。解碼表中該行被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|md_rem": {
+      "sum": "riscv_CoreCtrl 的乘除法功能碼：有號取餘數（3'd3）",
+      "naming": [["md", "mul/div", "乘除法"], ["rem", "remainder", "餘數（有號）"]],
+      "desc": "`localparam md_rem = 3'd3;`。給 REM 指令使用；因為餘數放在 64-bit 回應的上半，搭配的 md muxsel 要填 `mdm_u`。解碼表中該行被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|md_remu": {
+      "sum": "riscv_CoreCtrl 的乘除法功能碼：無號取餘數（3'd4）",
+      "naming": [["md", "mul/div", "乘除法"], ["rem", "remainder", "餘數"], ["u", "unsigned", "無號"]],
+      "desc": "`localparam md_remu = 3'd4;`，是這個 3-bit 欄位目前定義的最大值。給 REMU 指令使用，搭配 `mdm_u` 取結果上半。解碼表中該行被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|mdm_x": {
+      "sum": "riscv_CoreCtrl 的乘除法結果多工器常數：don't care（1'bx）",
+      "naming": [["mdm", "muldiv mux", "乘除法結果多工器"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam mdm_x = 1'bx;`，註解寫 Don't Care。目前解碼表每一行的 md muxsel 欄都填它，因為沒有任何指令使用乘除法器。它經 `muldiv_mux_sel_Dhl` → `muldiv_mux_sel_Xhl` 送到 dpath。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|mdm_l": {
+      "sum": "riscv_CoreCtrl 的乘除法結果多工器常數：取 64-bit 結果的下半（1'd0）",
+      "naming": [["mdm", "muldiv mux", "乘除法結果多工器"], ["l", "lower half", "低 32 位"]],
+      "desc": "`localparam mdm_l = 1'd0;`。程式碼註解寫得很清楚：mul / div / divu 要的是 `muldivresp_msg_result_Xhl[31:0]`。dpath 的 `muldiv_mux_out_Xhl` 就是依這個值選半邊。目前沒有指令使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|mdm_u": {
+      "sum": "riscv_CoreCtrl 的乘除法結果多工器常數：取 64-bit 結果的上半（1'd1）",
+      "naming": [["mdm", "muldiv mux", "乘除法結果多工器"], ["u", "upper half", "高 32 位"]],
+      "desc": "`localparam mdm_u = 1'd1;`。給 rem / remu（餘數放在回應的 [63:32]）以及 MULH 類指令使用。對應 dpath 的 `muldiv_mux_sel_Xhl == 1'd1` 分支。目前沒有指令使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|em_x": {
+      "sum": "riscv_CoreCtrl 的執行結果多工器常數：don't care（1'bx）",
+      "naming": [["em", "execute mux", "執行階段結果多工器"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam em_x = 1'bx;`，註解寫 Don't Care。解碼表裡 LW、SW、BNE、BLT 用它——這些指令的 X 階段輸出不會被寫回暫存器（load 的值是走記憶體回應那條路），所以選哪邊都無所謂。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|em_alu": {
+      "sum": "riscv_CoreCtrl 的執行結果多工器常數：用 ALU 輸出（1'd0）",
+      "naming": [["em", "execute mux", "執行階段結果多工器"], ["alu", "arithmetic logic unit", "算術邏輯單元"]],
+      "desc": "`localparam em_alu = 1'd0;`。LUI、AUIPC、ADDI、ORI、ADD、JAL、CSRW 都填它，對應 dpath 的 `execute_mux_sel_Xhl == 1'd0` → `alu_out_Xhl`。這個值會往後傳成 `execute_mux_out_Mhl`，再經寫回多工器寫進 regfile。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|em_md": {
+      "sum": "riscv_CoreCtrl 的執行結果多工器常數：用乘除法器輸出（1'd1）",
+      "naming": [["em", "execute mux", "執行階段結果多工器"], ["md", "mul/div", "乘除法單元"]],
+      "desc": "`localparam em_md = 1'd1;`，對應 dpath 的 `muldiv_mux_out_Xhl`。給 MUL / DIV / REM 等指令使用；因為這些指令在解碼表中被註解掉，目前沒有任何一行填它。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|nr": {
+      "sum": "riscv_CoreCtrl 的記憶體請求種類常數：不存取記憶體（2'b0）",
+      "naming": [["n", "no", "不要"], ["r", "request", "請求"]],
+      "desc": "`localparam nr = 2'b0;`，註解寫 No request。除了 LW / SW 以外的每一行都填它。它被 `dmemreq_val_Dhl = ( cs[`RISCV_INST_MSG_MEM_REQ] != nr )` 比對：只要不是 `nr`，這條指令就要發記憶體請求。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|ld": {
+      "sum": "riscv_CoreCtrl 的記憶體請求種類常數：load（2'd1）",
+      "naming": [["ld", "load", "從記憶體讀取"]],
+      "desc": "`localparam ld = 2'd1;`。解碼表裡 LW 填它，於是 `dmemreq_val_Dhl` 為 1（有請求）、`dmemreq_msg_rw_Dhl` 為 0（因為不等於 `st`，代表讀）。搭配的 wb muxsel 是 `wm_mem`，表示寫回的值來自記憶體。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|st": {
+      "sum": "riscv_CoreCtrl 的記憶體請求種類常數：store（2'd2）",
+      "naming": [["st", "store", "寫入記憶體"]],
+      "desc": "`localparam st = 2'd2;`。解碼表裡 SW 填它。它被 `dmemreq_msg_rw_Dhl = ( cs[`RISCV_INST_MSG_MEM_REQ] == st )` 比對成寫入位元 1，同時因為不等於 `nr`，`dmemreq_val_Dhl` 也是 1。SW 的 rf wen 是 `n`，不寫回暫存器。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|ml_x": {
+      "sum": "riscv_CoreCtrl 的記憶體存取長度常數：don't care（2'bx）",
+      "naming": [["ml", "memory length", "記憶體存取長度"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam ml_x = 2'bx;`。所有不存取記憶體的指令（mem rq 欄為 `nr` 的那些）在 mem len 欄都填它。它會被送到 `dmemreq_msg_len`，但因為 `dmemreq_val` 為 0，記憶體不會理會。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|ml_w": {
+      "sum": "riscv_CoreCtrl 的記憶體存取長度常數：整個 word（2'd0）",
+      "naming": [["ml", "memory length", "記憶體存取長度"], ["w", "word", "字（4 bytes）"]],
+      "desc": "`localparam ml_w = 2'd0;`。LW 與 SW 填它。按 vc 記憶體介面的約定，len 為 0 表示存取整個 word（4 bytes），所以這裡不是 0 個 byte 的意思。它送到 `vc_MemReqMsgToBits` 的 `len` 欄位。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|ml_b": {
+      "sum": "riscv_CoreCtrl 的記憶體存取長度常數：1 個 byte（2'd1）",
+      "naming": [["ml", "memory length", "記憶體存取長度"], ["b", "byte", "位元組"]],
+      "desc": "`localparam ml_b = 2'd1;`。給 LB / LBU / SB 使用，搭配的 memresp muxsel 會是 `dmm_b` 或 `dmm_bu`。這些指令在解碼表中被註解掉，所以目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|ml_h": {
+      "sum": "riscv_CoreCtrl 的記憶體存取長度常數：2 個 byte（2'd2）",
+      "naming": [["ml", "memory length", "記憶體存取長度"], ["h", "halfword", "半字（2 bytes）"]],
+      "desc": "`localparam ml_h = 2'd2;`。給 LH / LHU / SH 使用，搭配 `dmm_h` 或 `dmm_hu` 做延伸。這些指令在解碼表中被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|dmm_x": {
+      "sum": "riscv_CoreCtrl 的記憶體回應多工器常數：don't care（3'bx）",
+      "naming": [["dmm", "dmem response mux", "記憶體回應多工器"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam dmm_x = 3'bx;`。所有不做 load 的指令在 memresp muxsel 欄都填它。它經 `dmemresp_mux_sel_Dhl` → `_Xhl` → `_Mhl` 傳到 dpath，但因為這些指令的 wb muxsel 不是 `wm_mem`，選到什麼都不影響結果。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|dmm_w": {
+      "sum": "riscv_CoreCtrl 的記憶體回應多工器常數：整個 word 直接用（3'd0）",
+      "naming": [["dmm", "dmem response mux", "記憶體回應多工器"], ["w", "word", "字（4 bytes）"]],
+      "desc": "`localparam dmm_w = 3'd0;`。LW（以及 SW 那一行，雖然 store 不會用到）填它，對應 dpath 的 `dmemresp_mux_sel_Mhl == 3'd0` → 直接用 `dmemresp_msg_data`，不做任何延伸。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|dmm_b": {
+      "sum": "riscv_CoreCtrl 的記憶體回應多工器常數：byte 有號延伸（3'd1）",
+      "naming": [["dmm", "dmem response mux", "記憶體回應多工器"], ["b", "byte", "位元組（有號延伸）"]],
+      "desc": "`localparam dmm_b = 3'd1;`，對應 dpath 的 `dmemresp_lb_Mhl`（把最低 byte 做符號延伸成 32 bit）。給 LB 指令使用；該行在解碼表中被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|dmm_bu": {
+      "sum": "riscv_CoreCtrl 的記憶體回應多工器常數：byte 無號延伸（3'd2）",
+      "naming": [["dmm", "dmem response mux", "記憶體回應多工器"], ["b", "byte", "位元組"], ["u", "unsigned", "無號（補 0）"]],
+      "desc": "`localparam dmm_bu = 3'd2;`，對應 dpath 的 `dmemresp_lbu_Mhl`（最低 byte 前面補 0）。給 LBU 指令使用；該行在解碼表中被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|dmm_h": {
+      "sum": "riscv_CoreCtrl 的記憶體回應多工器常數：halfword 有號延伸（3'd3）",
+      "naming": [["dmm", "dmem response mux", "記憶體回應多工器"], ["h", "halfword", "半字（有號延伸）"]],
+      "desc": "`localparam dmm_h = 3'd3;`，對應 dpath 的 `dmemresp_lh_Mhl`。給 LH 指令使用；該行在解碼表中被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|dmm_hu": {
+      "sum": "riscv_CoreCtrl 的記憶體回應多工器常數：halfword 無號延伸（3'd4）",
+      "naming": [["dmm", "dmem response mux", "記憶體回應多工器"], ["h", "halfword", "半字"], ["u", "unsigned", "無號（補 0）"]],
+      "desc": "`localparam dmm_hu = 3'd4;`，是這個 3-bit 欄位目前定義的最大值，對應 dpath 的 `dmemresp_lhu_Mhl`。給 LHU 指令使用；該行在解碼表中被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|wm_x": {
+      "sum": "riscv_CoreCtrl 的寫回多工器常數：don't care（1'bx）",
+      "naming": [["wm", "writeback mux", "寫回多工器"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam wm_x = 1'bx;`，註解寫 Don't care。解碼表裡 BNE、BLT 用它，因為分支指令不寫回暫存器（rf wen 為 `n`），寫回來源選哪個都無所謂。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|wm_alu": {
+      "sum": "riscv_CoreCtrl 的寫回多工器常數：寫回 ALU / 執行階段結果（1'd0）",
+      "naming": [["wm", "writeback mux", "寫回多工器"], ["alu", "arithmetic logic unit", "算術邏輯單元"]],
+      "desc": "`localparam wm_alu = 1'd0;`。LUI、AUIPC、ADDI、ORI、ADD、JAL、CSRW 用它，對應 dpath 的 `wb_mux_sel_Mhl == 1'd0` → `execute_mux_out_Mhl`。CSRW 也走這條路，讓 rs1 的值一路傳到 `proc2csr_data_Whl`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|wm_mem": {
+      "sum": "riscv_CoreCtrl 的寫回多工器常數：寫回記憶體讀出的資料（1'd1）",
+      "naming": [["wm", "writeback mux", "寫回多工器"], ["mem", "memory", "記憶體"]],
+      "desc": "`localparam wm_mem = 1'd1;`。LW 用它（SW 那一行也填了，但因為 rf wen 是 `n` 所以沒差），對應 dpath 的 `dmemresp_mux_out_Mhl`，也就是經過長度/延伸處理後的 load 資料。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_val_Dhl": {
+      "sum": "riscv_CoreCtrl 判斷 D 階段目前是否有有效指令",
+      "naming": [["inst", "instruction", "指令"], ["val", "valid", "有效"], ["Dhl", "Decode stage, high-level", "解碼階段的訊號"]],
+      "desc": "`wire inst_val_Dhl = ( !bubble_Dhl && !squash_Dhl );`。它是很多判斷的前提：`brj_taken_Dhl`（只有有效指令才能跳）、`stall_muldiv_Dhl`、`stall_hazard_Dhl`（bubble 沒有暫存器相依性問題），以及 F 階段的 `squash_Fhl`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_rs1_Dhl": {
+      "sum": "riscv_CoreCtrl 從 D 階段指令解出的 rs1 暫存器編號",
+      "naming": [["inst", "instruction", "指令"], ["rs1", "source register 1", "第一個來源暫存器"], ["Dhl", "Decode stage, high-level", "解碼階段的訊號"]],
+      "desc": "5-bit wire，由 `inst_msg_from_bits`（`riscv_InstMsgFromBits` 的實例）從 `ir_Dhl` 拆出來。它被改名成 `rs1` 供解碼表使用，也被 `rs1_addr_Dhl` 拿去做 hazard 比對。注意 CoreCtrl 只看編號，實際讀 regfile 是 dpath 自己做的。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_rs2_Dhl": {
+      "sum": "riscv_CoreCtrl 從 D 階段指令解出的 rs2 暫存器編號",
+      "naming": [["inst", "instruction", "指令"], ["rs2", "source register 2", "第二個來源暫存器"], ["Dhl", "Decode stage, high-level", "解碼階段的訊號"]],
+      "desc": "5-bit wire，同樣由 `inst_msg_from_bits` 從 `ir_Dhl` 拆出。它被改名成 `rs2`，並經 `rs2_addr_Dhl` 用於 `stall_hazard_Dhl` 的比對（只有在 `rs2_en_Dhl` 為 1 時才算數）。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_rd_Dhl": {
+      "sum": "riscv_CoreCtrl 從 D 階段指令解出的 rd 目的暫存器編號",
+      "naming": [["inst", "instruction", "指令"], ["rd", "destination register", "目的暫存器"], ["Dhl", "Decode stage, high-level", "解碼階段的訊號"]],
+      "desc": "5-bit wire，由 `inst_msg_from_bits` 從 `ir_Dhl` 拆出，被改名成 `rd` 後填在解碼表的 rf waddr 欄位。它會一路打拍成 `rf_waddr_Xhl` / `_Mhl` / `_Whl`，最後決定寫進哪個暫存器，也是 hazard 判斷的比對對象。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_msg_from_bits": {
+      "sum": "riscv_CoreCtrl 裡的 riscv_InstMsgFromBits 實例，把 D 階段指令拆成欄位",
+      "naming": [["inst", "instruction", "指令"], ["msg", "message", "訊息"], ["from_bits", "from bits", "從 bits 拆出欄位"]],
+      "desc": "`riscv_InstMsgFromBits` 的實例（定義在 `riscvstall-InstMsg.v`）。輸入 `.msg(ir_Dhl)`，但控制單元只需要三個輸出：`rs1`、`rs2`、`rd`，其餘 port（opcode、funct3、funct7、shamt、各種 imm）都接成空的。需要 immediate 的是 dpath，那邊另外有一份自己的實例。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|rs1": {
+      "sum": "riscv_CoreCtrl 裡 inst_rs1_Dhl 的簡短別名，專門給解碼表排版用",
+      "naming": [["rs1", "source register 1", "第一個來源暫存器"]],
+      "desc": "`wire [4:0] rs1 = inst_rs1_Dhl;`。程式碼註解寫「Shorten register specifier name for table」——解碼表是一行一條指令的對齊表格，用短名字才排得下。實際上這份解碼表的 rf waddr 欄只用到 `rd` 和 `rx`，`rs1` 目前沒有被填進表裡。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|rs2": {
+      "sum": "riscv_CoreCtrl 裡 inst_rs2_Dhl 的簡短別名，專門給解碼表排版用",
+      "naming": [["rs2", "source register 2", "第二個來源暫存器"]],
+      "desc": "`wire [4:0] rs2 = inst_rs2_Dhl;`，和 `rs1` 一樣只是為了讓解碼表排版好看而取的短名。目前解碼表沒有任何一行把它填進去。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|rd": {
+      "sum": "riscv_CoreCtrl 裡 inst_rd_Dhl 的簡短別名，填在解碼表的 rf waddr 欄",
+      "naming": [["rd", "destination register", "目的暫存器"]],
+      "desc": "`wire [4:0] rd = inst_rd_Dhl;`。解碼表裡所有會寫回暫存器的指令（LUI、AUIPC、ADDI、ORI、ADD、LW、JAL）在 rf waddr 欄都填 `rd`，不寫回的填 `rx`。這個值經 `rf_waddr_Dhl` 打拍傳到 W 階段成為 regfile 的寫入位址。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|cs_sz": {
+      "sum": "riscv_CoreCtrl 控制訊號包 cs 的總位元數（39）",
+      "naming": [["cs", "control signals", "控制訊號包"], ["sz", "size", "位元數"]],
+      "desc": "`localparam cs_sz = `RISCV_INST_MSG_CS_SZ;`，值是 39（定義在 `riscvstall-InstMsg.v`）。它宣告 `reg [cs_sz-1:0] cs;` 的寬度，也用在預設值 `cs = {cs_sz{1'bx}}`。39 bit 正好是解碼表那 19 個欄位（inst val、j en、br sel、pc sel、op0 sel、rs1 en、op1 sel、rs2 en、alu fn、muldiv fn/en/sel、ex sel、mem req/len/sel、wb sel、rf wen/waddr、csr wen）的總寬度。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|cs": {
+      "sum": "riscv_CoreCtrl 的 39-bit 控制訊號包，解碼表一行就是一組 cs",
+      "naming": [["cs", "control signals", "解碼表產生的整包控制訊號"]],
+      "desc": "`reg [cs_sz-1:0] cs;`，由組合邏輯 `always @ (*)` 裡的 `casez ( ir_Dhl )` 指定。預設值是全 x（代表非法指令），命中某一行時才填入該指令的控制欄位。之後每個 D 階段的控制訊號都是從它切出來的，例如 `op0_mux_sel_Dhl = cs[`RISCV_INST_MSG_OP0_SEL]`、`rf_wen_Dhl = cs[`RISCV_INST_MSG_RF_WEN]`。它的最高位 `cs[`RISCV_INST_MSG_INST_VAL]` 為 0（也就是 x）時，檔案最後的 assertion 會印出 Illegal instruction。"
+    }
+  }
+}

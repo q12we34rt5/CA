@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab1 符號速查</title>
+<style>
+:root {
+  --bg: #f4f2ee;
+  --surface: #ffffff;
+  --surface-2: #f8f7f4;
+  --ink: #1d2126;
+  --ink-2: #4c5560;
+  --ink-3: #7b8591;
+  --line: #e1ddd5;
+  --line-2: #ece9e2;
+  --accent: #0b6e6e;
+  --accent-ink: #ffffff;
+  --accent-soft: #e0f0ee;
+  --mark: #ffe08a;
+  --mark-ink: #2b2100;
+  --code-bg: #fbfaf7;
+  --kw: #8a3ea8;
+  --cmt: #8a9199;
+  --num: #a35a00;
+  --k-macro: #a3480f;   --k-macro-bg: #fbe9dc;
+  --k-module: #5b3fb3;  --k-module-bg: #ebe6fa;
+  --k-port: #0b62a8;    --k-port-bg: #e0eefa;
+  --k-net: #2f6b2f;     --k-net-bg: #e3f1e0;
+  --k-param: #8a6a00;   --k-param-bg: #f7efcf;
+  --k-inst: #a3206a;    --k-inst-bg: #fae3ef;
+  --k-warn: #a32020;    --k-warn-bg: #fae1e1;
+  --shadow: 0 1px 2px rgba(30,30,20,.06), 0 4px 14px rgba(30,30,20,.05);
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181c; --surface: #1d2126; --surface-2: #22272d; --ink: #e6e8ea; --ink-2: #b3bac2;
+    --ink-3: #818b96; --line: #30363d; --line-2: #2a3036; --accent: #4fc4bd; --accent-ink: #062524;
+    --accent-soft: #173533; --mark: #6b5200; --mark-ink: #fff1c2; --code-bg: #181c20;
+    --kw: #c792ea; --cmt: #6c7782; --num: #e0a458;
+    --k-macro: #f0a173; --k-macro-bg: #3d2617; --k-module: #b8a4f5; --k-module-bg: #2b2547;
+    --k-port: #7dbcf2; --k-port-bg: #16304a; --k-net: #8fd08a; --k-net-bg: #1c3420;
+    --k-param: #e3c565; --k-param-bg: #3a3112; --k-inst: #f08fc0; --k-inst-bg: #421a30;
+    --k-warn: #f28b8b; --k-warn-bg: #451c1c;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15181c; --surface: #1d2126; --surface-2: #22272d; --ink: #e6e8ea; --ink-2: #b3bac2;
+  --ink-3: #818b96; --line: #30363d; --line-2: #2a3036; --accent: #4fc4bd; --accent-ink: #062524;
+  --accent-soft: #173533; --mark: #6b5200; --mark-ink: #fff1c2; --code-bg: #181c20;
+  --kw: #c792ea; --cmt: #6c7782; --num: #e0a458;
+  --k-macro: #f0a173; --k-macro-bg: #3d2617; --k-module: #b8a4f5; --k-module-bg: #2b2547;
+  --k-port: #7dbcf2; --k-port-bg: #16304a; --k-net: #8fd08a; --k-net-bg: #1c3420;
+  --k-param: #e3c565; --k-param-bg: #3a3112; --k-inst: #f08fc0; --k-inst-bg: #421a30;
+  --k-warn: #f28b8b; --k-warn-bg: #451c1c;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 190px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--sans); }
+button, input, select { font: inherit; color: inherit; }
+code, .mono { font-family: var(--mono); font-size: .92em; }
+
+/* ---------- header ---------- */
+header { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 1px solid var(--line); }
+.bar { max-width: 1100px; margin: 0 auto; padding: 14px 16px 10px; }
+.title-row { display: flex; align-items: baseline; gap: 4px 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.title-row h1, .title-row .ghost { white-space: nowrap; }
+h1 { font-size: 17px; margin: 0; letter-spacing: .02em; }
+.title-row .stats { color: var(--ink-3); font-size: 12.5px; }
+.title-row .spacer { flex: 1; }
+.ghost { background: none; border: 1px solid var(--line); border-radius: 7px; padding: 3px 10px; font-size: 13px; cursor: pointer; color: var(--ink-2); }
+.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.search-row { display: flex; gap: 8px; position: relative; }
+.search-wrap { position: relative; flex: 1; min-width: 0; }
+#q { width: 100%; padding: 10px 12px; font-family: var(--mono); font-size: 15px; background: var(--surface);
+  border: 1.5px solid var(--line); border-radius: 9px; outline: none; }
+#q:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+#go { padding: 0 20px; border: 0; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-weight: 600; cursor: pointer; }
+#go:hover { filter: brightness(1.08); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 9px; align-items: center; font-size: 13px; color: var(--ink-2); }
+.filters label { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.filters select { max-width: 270px; padding: 4px 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+.filters .hint { color: var(--ink-3); font-size: 12px; }
+#suggest { position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 9px; box-shadow: var(--shadow); max-height: 380px; overflow: auto; display: none; z-index: 30; }
+#suggest.on { display: block; }
+.sg { display: flex; align-items: center; gap: 8px; padding: 6px 12px; cursor: pointer; border-bottom: 1px solid var(--line-2); }
+.sg:last-child { border-bottom: 0; }
+.sg.sel, .sg:hover { background: var(--accent-soft); }
+.sg .nm { font-family: var(--mono); font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg .nm b { color: var(--accent); font-weight: 700; }
+.sg .meta { margin-left: auto; color: var(--ink-3); font-size: 12px; white-space: nowrap; }
+.openbar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; align-items: center; }
+.openbar:empty { display: none; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12px; padding: 2px 4px 2px 9px; border-radius: 99px;
+  background: var(--surface); border: 1px solid var(--line); cursor: pointer; max-width: 260px; }
+.chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip:hover { border-color: var(--accent); }
+.chip button { border: 0; background: none; cursor: pointer; color: var(--ink-3); padding: 0 4px; font-size: 13px; line-height: 1; }
+.chip button:hover { color: var(--k-warn); }
+.closeall { font-size: 12px; color: var(--ink-3); background: none; border: 0; cursor: pointer; text-decoration: underline; }
+
+/* ---------- main ---------- */
+main { max-width: 1100px; margin: 0 auto; padding: 18px 16px 120px; }
+.empty { color: var(--ink-2); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 22px 24px; }
+.empty h2 { margin: 0 0 8px; font-size: 16px; }
+.empty ul { margin: 6px 0 0; padding-left: 20px; }
+.empty .try { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.try button { font-family: var(--mono); font-size: 12.5px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+.try button:hover { border-color: var(--accent); color: var(--accent); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; }
+.card.flash { animation: flash 1s ease-out; }
+@keyframes flash { 0% { box-shadow: 0 0 0 4px var(--accent); } 100% { box-shadow: var(--shadow); } }
+.card-h { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line-2); background: var(--surface-2); flex-wrap: wrap; }
+.card.collapsed .card-h { border-bottom: 0; }
+.card.collapsed .card-b { display: none; }
+.card-h .name { font-family: var(--mono); font-size: 16.5px; font-weight: 700; word-break: break-all; }
+.card-h .scope { font-size: 12px; color: var(--ink-2); background: var(--accent-soft); border-radius: 5px; padding: 1px 7px; }
+.card-h .scope button { border: 0; background: none; color: var(--ink-3); cursor: pointer; padding: 0 0 0 4px; }
+.card-h .count { font-size: 12.5px; color: var(--ink-3); }
+.card-h .spacer { flex: 1; }
+.icon { border: 0; background: none; cursor: pointer; color: var(--ink-3); font-size: 16px; width: 28px; height: 28px; border-radius: 6px; }
+.icon:hover { background: var(--line-2); color: var(--ink); }
+.card-b { padding: 4px 0 6px; }
+.cardfilter { margin: 8px 14px 4px; }
+.cardfilter input { width: 100%; max-width: 340px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font-size: 13px; }
+.note { margin: 8px 14px; font-size: 13px; color: var(--ink-2); }
+.note a { color: var(--accent); cursor: pointer; text-decoration: underline; }
+
+.ent { border-top: 1px solid var(--line-2); }
+.ent:first-of-type { border-top: 0; }
+.ent-h { display: grid; grid-template-columns: 10px 84px minmax(0, 36%) minmax(0, 1fr) auto; gap: 9px; align-items: baseline; padding: 8px 14px; cursor: pointer; }
+.ent-h .badge { justify-self: start; }
+.ent-h:hover { background: var(--surface-2); }
+.ent-h .tw { color: var(--ink-3); font-size: 11px; width: 10px; flex: none; transition: transform .12s; }
+.ent.open > .ent-h .tw { transform: rotate(90deg); }
+.ent-h .where { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+.ent-h .where .f { color: var(--ink-3); }
+.ent-h .sum { color: var(--ink-2); font-size: 13.5px; flex: 1; min-width: 0; }
+.ent-h .n { color: var(--ink-3); font-size: 12px; white-space: nowrap; }
+.ent-b { display: none; padding: 2px 14px 14px 33px; }
+.ent.open > .ent-b { display: block; }
+.badge { font-size: 11px; font-weight: 600; border-radius: 4px; padding: 1px 6px; white-space: nowrap; flex: none; letter-spacing: .02em; }
+.b-macro { color: var(--k-macro); background: var(--k-macro-bg); }
+.b-module { color: var(--k-module); background: var(--k-module-bg); }
+.b-port { color: var(--k-port); background: var(--k-port-bg); }
+.b-net { color: var(--k-net); background: var(--k-net-bg); }
+.b-param { color: var(--k-param); background: var(--k-param-bg); }
+.b-inst { color: var(--k-inst); background: var(--k-inst-bg); }
+.b-warn { color: var(--k-warn); background: var(--k-warn-bg); }
+
+.sec-t { font-size: 11.5px; font-weight: 700; color: var(--ink-3); letter-spacing: .08em; margin: 14px 0 6px; }
+.declline { font-family: var(--mono); font-size: 13px; background: var(--code-bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 5px 9px; display: inline-block; max-width: 100%; overflow-x: auto; white-space: pre; }
+.naming { display: flex; flex-wrap: wrap; gap: 6px; }
+.frag { border: 1px solid var(--line); border-radius: 8px; padding: 4px 9px 5px; background: var(--surface-2); min-width: 0; }
+.frag .p { font-family: var(--mono); font-weight: 700; font-size: 13.5px; color: var(--accent); }
+.frag .e { font-size: 12px; color: var(--ink-2); }
+.frag .z { font-size: 12.5px; }
+.desc p { margin: 0 0 7px; max-width: 78ch; }
+.desc code { background: var(--code-bg); border: 1px solid var(--line-2); border-radius: 4px; padding: 0 4px; }
+a.sym { color: inherit; text-decoration: underline; text-decoration-style: dotted; text-decoration-color: var(--ink-3); text-underline-offset: 3px; cursor: pointer; }
+a.sym:hover { color: var(--accent); text-decoration-color: var(--accent); text-decoration-style: solid; }
+.noexp { color: var(--ink-3); font-style: italic; }
+
+details.fg { border: 1px solid var(--line-2); border-radius: 8px; margin-bottom: 8px; background: var(--code-bg); overflow: hidden; }
+details.fg > summary { cursor: pointer; padding: 5px 10px; font-size: 12.5px; color: var(--ink-2); background: var(--surface-2); list-style: none; display: flex; gap: 8px; align-items: center; }
+details.fg > summary::-webkit-details-marker { display: none; }
+details.fg > summary::before { content: "▸"; color: var(--ink-3); font-size: 10px; }
+details.fg[open] > summary::before { content: "▾"; }
+details.fg > summary .fp { font-family: var(--mono); color: var(--ink); }
+details.fg > summary .tag { font-size: 11px; color: var(--accent); }
+.occ { display: grid; grid-template-columns: 46px 96px 1fr; align-items: baseline; border-top: 1px solid var(--line-2); font-size: 12.5px; }
+.occ:hover { background: var(--surface-2); }
+.occ .ln { font-family: var(--mono); color: var(--ink-3); text-align: right; padding: 3px 8px 3px 0; cursor: pointer; user-select: none; }
+.occ .ln:hover { color: var(--accent); }
+.occ .kd { font-size: 11px; color: var(--ink-2); padding: 3px 0; white-space: nowrap; }
+.kd .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; background: var(--ink-3); }
+.kd.k-decl .dot, .kd.k-def .dot { background: var(--k-module); }
+.kd.k-write .dot { background: var(--k-macro); }
+.kd.k-read .dot { background: var(--k-net); }
+.kd.k-conn .dot, .kd.k-port .dot, .kd.k-inst .dot { background: var(--k-port); }
+.kd.k-hier .dot, .kd.k-guard .dot { background: var(--k-param); }
+.occ .cd { min-width: 0; padding: 3px 8px 3px 0; }
+.occ pre, .ctx pre { margin: 0; font-family: var(--mono); font-size: 12.5px; white-space: pre; overflow-x: auto; }
+.occ .extra { font-size: 12px; color: var(--ink-2); margin-top: 1px; font-family: var(--sans); }
+.occ .extra .io { font-size: 10.5px; border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; margin-left: 3px; color: var(--ink-3); }
+mark { background: var(--mark); color: var(--mark-ink); border-radius: 3px; padding: 0 1px; }
+.kw { color: var(--kw); } .cmt { color: var(--cmt); font-style: italic; } .num { color: var(--num); }
+.ctx { grid-column: 1 / -1; border-top: 1px dashed var(--line); background: var(--surface); padding: 6px 0; }
+.ctx .row { display: grid; grid-template-columns: 46px 1fr; }
+.ctx .row .ln { cursor: default; }
+.ctx .row.hit { background: var(--accent-soft); }
+.more { margin: 4px 0 0; font-size: 12.5px; }
+.more button { border: 0; background: none; color: var(--accent); cursor: pointer; text-decoration: underline; padding: 4px 10px; }
+
+.cand { display: grid; grid-template-columns: minmax(180px, 320px) 1fr; gap: 0 12px; padding: 5px 14px; border-top: 1px solid var(--line-2); cursor: pointer; align-items: baseline; }
+.cand:hover { background: var(--surface-2); }
+.cand .nm { font-family: var(--mono); font-size: 13px; word-break: break-all; }
+.cand .ds { font-size: 13px; color: var(--ink-2); }
+
+/* glossary */
+#gloss { display: none; }
+#gloss.on { display: block; }
+#gloss .gg { margin: 0 14px 12px; }
+#gloss h3 { font-size: 13.5px; margin: 14px 0 3px; }
+#gloss .gn { font-size: 13px; color: var(--ink-2); margin: 0 0 6px; max-width: 80ch; }
+#gloss table { border-collapse: collapse; font-size: 13px; width: 100%; }
+#gloss td { border-top: 1px solid var(--line-2); padding: 3px 10px 3px 0; vertical-align: top; }
+#gloss td:first-child { font-family: var(--mono); font-weight: 700; color: var(--accent); white-space: nowrap; }
+#gloss td:nth-child(2) { color: var(--ink-2); white-space: nowrap; }
+
+@media (max-width: 720px) {
+  .occ { grid-template-columns: 38px 1fr; }
+  .occ .kd { grid-column: 2; grid-row: 1; }
+  .occ .cd { grid-column: 1 / -1; padding-left: 8px; }
+  .ent-h { grid-template-columns: 10px auto minmax(0, 1fr) auto; }
+  .ent-h .sum { grid-column: 2 / -1; }
+  .ent-b { padding-left: 14px; }
+  .cand { grid-template-columns: 1fr; }
+  .filters label { max-width: 100%; }
+  .filters select { max-width: 100%; min-width: 0; flex: 1; }
+  #gloss td:nth-child(2) { white-space: normal; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="title-row">
+      <h1>Lab1 符號速查</h1>
+      <span class="stats" id="stats"></span>
+      <span class="spacer"></span>
+      <button class="ghost" id="btn-gloss" title="常見縮寫對照表">縮寫表</button>
+      <button class="ghost" id="btn-theme" title="切換深 / 淺色">◐</button>
+    </div>
+    <div class="search-row">
+      <div class="search-wrap">
+        <input id="q" type="text" autocomplete="off" spellcheck="false" autocapitalize="off"
+               placeholder="輸入符號，例如 dmemreq_msg_to_bits、VC_MEM_REQ_MSG_SZ、stall_Xhl、clk …">
+        <div id="suggest"></div>
+      </div>
+      <button id="go">查詢</button>
+    </div>
+    <div class="filters">
+      <label>檔案 <select id="f-file"></select></label>
+      <label>Module <select id="f-mod"></select></label>
+      <label>種類 <select id="f-kind">
+        <option value="">全部</option>
+        <option value="macro">macro（`define）</option>
+        <option value="module">module</option>
+        <option value="port">port（input / output）</option>
+        <option value="net">wire / reg</option>
+        <option value="param">parameter / localparam</option>
+        <option value="inst">instance</option>
+      </select></label>
+      <label><input type="checkbox" id="f-tests"> 含單元測試檔 (*.t.v)</label>
+      <span class="hint">搜尋框留空 + 選了檔案或 module → 列出該範圍內所有符號</span>
+    </div>
+    <div class="openbar" id="openbar"></div>
+  </div>
+</header>
+
+<main>
+  <section class="card" id="gloss">
+    <div class="card-h"><span class="name" style="font-family:var(--sans)">常見縮寫對照表</span><span class="spacer"></span>
+      <button class="icon" id="gloss-close" title="關閉">✕</button></div>
+    <div class="card-b" id="gloss-b"></div>
+  </section>
+  <div id="cards"></div>
+  <div class="empty" id="empty">
+    <h2>怎麼用</h2>
+    <ul>
+      <li>在上面輸入符號名稱（macro 不用打 <code>`</code>），按 Enter 或「查詢」。每次查詢會在最上面新增一張卡片，<b>舊的卡片會留著</b>，直到你按 ✕ 關掉。</li>
+      <li>像 <code>clk</code>、<code>reset</code> 這種到處都有的名字，可以先用「檔案 / Module」限制範圍；不限制的話卡片會列出每個 module 裡的那一個，點開你要看的即可。</li>
+      <li>卡片裡的程式碼和說明文字中，<span style="text-decoration:underline dotted">有虛線底線的符號都可以點</span>，會直接開一張新卡片（自動鎖定到那一行所在的 module）。</li>
+      <li>點行號可以展開前後文。</li>
+    </ul>
+    <div class="try" id="try"></div>
+  </div>
+</main>
+
+<script src="data.js"></script>
+<script>
+(function () {
+"use strict";
+const D = window.SYMDATA;
+if (!D) { document.getElementById("empty").innerHTML = "<h2>找不到 data.js</h2>請先在這個資料夾執行 <code>python3 build.py</code>。"; return; }
+
+const $ = (s, r) => (r || document).querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+
+const KEYWORDS = new Set(("always assign begin case casex casez default else end endcase endgenerate endmodule for generate genvar if initial " +
+  "inout input integer localparam module negedge or output parameter posedge reg signed wire while repeat forever real time function endfunction task endtask").split(" "));
+
+// ---------- index ----------
+const F = D.files;
+const E = D.entities;
+const byName = new Map();
+const fileIdx = new Map(F.map((f, i) => [f.path, i]));
+for (const e of E) {
+  if (!byName.has(e.name)) byName.set(e.name, []);
+  byName.get(e.name).push(e);
+  e._test = e.file ? /\.t\.v$/.test(e.file) : e.occ.every(o => /\.t\.v$/.test(F[o.f].path));
+}
+const names = [...byName.keys()];
+const namesLower = names.map(n => n.toLowerCase());
+
+function fileRank(p) {
+  if (!p) return 8;
+  if (/\.t\.v$/.test(p)) return 9;
+  if (p.startsWith("riscvstall/")) return /sim\.v$/.test(p) ? 3 : 0;
+  if (p.startsWith("vc/")) return 1;
+  if (p.startsWith("imuldiv/")) return 2;
+  return 4;
+}
+const base = p => p ? p.split("/").pop() : "?";
+
+function kindInfo(e) {
+  if (e.cat === "macro") return { g: "macro", cls: "b-macro", label: "macro" };
+  if (e.cat === "module") return { g: "module", cls: "b-module", label: "module" };
+  const k = e.dkind;
+  if (k === "input" || k === "output" || k === "inout") return { g: "port", cls: "b-port", label: k + (e.sub === "reg" ? " reg" : "") };
+  if (k === "parameter" || k === "localparam") return { g: "param", cls: "b-param", label: k };
+  if (k === "instance") return { g: "inst", cls: "b-inst", label: "instance" };
+  if (k === "implicit") return { g: "net", cls: "b-warn", label: "未宣告" };
+  if (k === "unknown") return { g: "port", cls: "b-warn", label: "來源不在 repo" };
+  if (k === "hier-unresolved") return { g: "net", cls: "b-warn", label: "階層路徑" };
+  if (k === "block") return { g: "net", cls: "b-net", label: "named block" };
+  return { g: "net", cls: "b-net", label: k };
+}
+
+function moduleAt(f, l) {
+  for (const m of F[f].modules) if (l >= m.start && l <= m.end) return m.name;
+  return null;
+}
+
+function matches(e, flt) {
+  if (!flt.tests && e._test) return false;
+  if (flt.kind && kindInfo(e).g !== flt.kind) return false;
+  if (flt.mod) {
+    const [mf, mm] = flt.mod.split("|");
+    if (e.cat === "signal") { if (!(e.file === mf && e.module === mm)) return false; }
+    else { const fi = fileIdx.get(mf); if (!e.occ.some(o => o.f === fi && o.m === mm)) return false; }
+  } else if (flt.file) {
+    if (e.cat === "signal") { if (e.file !== flt.file) return false; }
+    else { const fi = fileIdx.get(flt.file); if (e.file !== flt.file && !e.occ.some(o => o.f === fi)) return false; }
+  }
+  return true;
+}
+function sortEnts(list) {
+  return list.slice().sort((a, b) => fileRank(a.file) - fileRank(b.file) || String(a.file).localeCompare(String(b.file)) ||
+    String(a.module || "").localeCompare(String(b.module || "")) || a.name.localeCompare(b.name));
+}
+
+// ---------- filters UI ----------
+const elFile = $("#f-file"), elMod = $("#f-mod"), elKind = $("#f-kind"), elTests = $("#f-tests"), elQ = $("#q"), elSug = $("#suggest");
+function fillFileSelect() {
+  const keep = elFile.value;
+  const fs = F.map(f => f.path).filter(p => elTests.checked || !/\.t\.v$/.test(p)).sort((a, b) => fileRank(a) - fileRank(b) || a.localeCompare(b));
+  elFile.innerHTML = '<option value="">全部檔案</option>' + fs.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
+  if (fs.includes(keep)) elFile.value = keep;
+}
+function fillModSelect() {
+  const keep = elMod.value;
+  const opts = [];
+  for (const f of F) {
+    if (!elTests.checked && /\.t\.v$/.test(f.path)) continue;
+    if (elFile.value && f.path !== elFile.value) continue;
+    for (const m of f.modules) opts.push({ v: f.path + "|" + m.name, t: m.name, f: f.path });
+  }
+  opts.sort((a, b) => fileRank(a.f) - fileRank(b.f) || a.f.localeCompare(b.f));
+  elMod.innerHTML = '<option value="">全部 module</option>' + opts.map(o => `<option value="${esc(o.v)}">${esc(o.t)}　(${esc(base(o.f))})</option>`).join("");
+  if (opts.some(o => o.v === keep)) elMod.value = keep;
+}
+function curFilter() { return { file: elFile.value, mod: elMod.value, kind: elKind.value, tests: elTests.checked }; }
+elFile.onchange = () => { fillModSelect(); saveFilter(); };
+elMod.onchange = saveFilter; elKind.onchange = saveFilter;
+elTests.onchange = () => { fillFileSelect(); fillModSelect(); saveFilter(); };
+function saveFilter() { store.set("symlookup.filter", curFilter()); }
+
+// ---------- suggestions ----------
+let sugItems = [], sugSel = -1;
+function rankNames(q, flt, limit) {
+  const ql = q.toLowerCase();
+  const out = [];
+  for (let i = 0; i < names.length; i++) {
+    const nl = namesLower[i];
+    const p = nl.indexOf(ql);
+    if (p < 0) continue;
+    const ents = byName.get(names[i]).filter(e => matches(e, flt));
+    if (!ents.length) continue;
+    let score = nl === ql ? 0 : p === 0 ? 1 : (nl[p - 1] === "_" ? 2 : 3);
+    out.push({ name: names[i], ents, score, p });
+  }
+  out.sort((a, b) => a.score - b.score || a.name.length - b.name.length || a.name.localeCompare(b.name));
+  return limit ? out.slice(0, limit) : out;
+}
+function describeEnts(ents) {
+  const g = {};
+  for (const e of ents) { const k = kindInfo(e).g; g[k] = (g[k] || 0) + 1; }
+  const lab = { macro: "macro", module: "module", port: "port", net: "wire/reg", param: "param", inst: "instance" };
+  const parts = Object.keys(g).map(k => lab[k] + (g[k] > 1 ? "×" + g[k] : ""));
+  let where = "";
+  if (ents.length === 1) where = ents[0].cat === "signal" ? ents[0].module : base(ents[0].file);
+  else where = ents.length + " 個範圍";
+  return parts.join("、") + " · " + where;
+}
+function updateSuggest() {
+  const q = elQ.value.trim().replace(/^`/, "");
+  if (!q) { elSug.classList.remove("on"); sugItems = []; return; }
+  sugItems = rankNames(q, curFilter(), 14);
+  sugSel = -1;
+  if (!sugItems.length) { elSug.innerHTML = '<div class="sg" style="cursor:default;color:var(--ink-3)">在目前的範圍內找不到（試試放寬檔案 / module 限制）</div>'; elSug.classList.add("on"); return; }
+  const ql = q.toLowerCase();
+  elSug.innerHTML = sugItems.map((it, i) => {
+    const p = it.name.toLowerCase().indexOf(ql);
+    const nm = esc(it.name.slice(0, p)) + "<b>" + esc(it.name.slice(p, p + q.length)) + "</b>" + esc(it.name.slice(p + q.length));
+    return `<div class="sg" data-i="${i}"><span class="nm">${nm}</span><span class="meta">${esc(describeEnts(it.ents))}</span></div>`;
+  }).join("");
+  elSug.classList.add("on");
+}
+elQ.addEventListener("input", updateSuggest);
+elQ.addEventListener("focus", () => { if (!muteSuggest) updateSuggest(); });
+elQ.addEventListener("keydown", ev => {
+  if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+    if (!sugItems.length) return;
+    ev.preventDefault();
+    sugSel = (sugSel + (ev.key === "ArrowDown" ? 1 : -1) + sugItems.length + (sugSel < 0 && ev.key === "ArrowUp" ? 1 : 0)) % sugItems.length;
+    [...elSug.children].forEach((c, i) => c.classList.toggle("sel", i === sugSel));
+    const c = elSug.children[sugSel]; if (c) c.scrollIntoView({ block: "nearest" });
+  } else if (ev.key === "Enter") {
+    ev.preventDefault();
+    if (sugSel >= 0 && sugItems[sugSel]) { openCard(sugItems[sugSel].name, curFilter()); afterSearch(); }
+    else doSearch();
+  } else if (ev.key === "Escape") { elSug.classList.remove("on"); }
+});
+elSug.addEventListener("mousedown", ev => {
+  const row = ev.target.closest(".sg[data-i]"); if (!row) return;
+  ev.preventDefault();
+  openCard(sugItems[+row.dataset.i].name, curFilter()); afterSearch();
+});
+document.addEventListener("mousedown", ev => { if (!ev.target.closest(".search-wrap")) elSug.classList.remove("on"); });
+$("#go").onclick = doSearch;
+document.addEventListener("keydown", ev => {
+  if (ev.key === "/" && document.activeElement !== elQ && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { ev.preventDefault(); elQ.focus(); elQ.select(); }
+});
+let muteSuggest = false;
+function afterSearch() { muteSuggest = true; elQ.select(); muteSuggest = false; elSug.classList.remove("on"); }
+
+function doSearch() {
+  const q = elQ.value.trim().replace(/^`/, "");
+  const flt = curFilter();
+  if (!q) {
+    if (flt.file || flt.mod) openList("", flt);
+    return afterSearch();
+  }
+  let hit = byName.has(q) ? q : null;
+  if (!hit) { const i = namesLower.indexOf(q.toLowerCase()); if (i >= 0) hit = names[i]; }
+  if (hit && byName.get(hit).some(e => matches(e, flt))) openCard(hit, flt);
+  else if (hit && byName.get(hit).some(e => matches(e, { tests: true }))) openCard(hit, flt);   // exists, but outside scope: card explains
+  else openList(q, flt);
+  afterSearch();
+}
+
+// ---------- cards ----------
+const elCards = $("#cards"), elOpen = $("#openbar"), elEmpty = $("#empty");
+let cards = [];   // {id, type:'sym'|'list', name, flt, el}
+const cardId = (type, name, flt) => [type, name, flt.file || "", flt.mod || "", flt.kind || "", flt.tests ? 1 : 0].join("\u0001");
+
+function persist() {
+  store.set("symlookup.cards", cards.map(c => ({ type: c.type, name: c.name, flt: c.flt, collapsed: c.el.classList.contains("collapsed") })));
+  elEmpty.style.display = cards.length ? "none" : "";
+  elOpen.innerHTML = cards.map((c, i) => `<span class="chip" data-i="${i}" title="${esc(scopeText(c.flt) || "全部範圍")}"><span>${esc(c.type === "list" ? (c.name ? "“" + c.name + "” 的候選" : "清單: " + scopeText(c.flt)) : c.name)}</span><button data-x="${i}" title="關閉">✕</button></span>`).join("") +
+    (cards.length > 1 ? '<button class="closeall" id="closeall">全部關閉</button>' : "");
+}
+elOpen.addEventListener("click", ev => {
+  if (ev.target.id === "closeall") { cards.forEach(c => c.el.remove()); cards = []; return persist(); }
+  const x = ev.target.closest("[data-x]");
+  if (x) return closeCard(cards[+x.dataset.x]);
+  const ch = ev.target.closest(".chip");
+  if (ch) focusCard(cards[+ch.dataset.i]);
+});
+function closeCard(c) { c.el.remove(); cards = cards.filter(k => k !== c); persist(); }
+function focusCard(c) {
+  c.el.classList.remove("collapsed");
+  c.el.scrollIntoView({ behavior: "smooth", block: "start" });
+  c.el.classList.remove("flash"); void c.el.offsetWidth; c.el.classList.add("flash");
+}
+function scopeText(flt) {
+  const p = [];
+  if (flt.mod) p.push("module " + flt.mod.split("|")[1]);
+  else if (flt.file) p.push(base(flt.file));
+  if (flt.kind) p.push({ macro: "macro", module: "module", port: "port", net: "wire/reg", param: "param", inst: "instance" }[flt.kind]);
+  return p.join(" · ");
+}
+function mountCard(c, quiet) {
+  const old = cards.find(k => k.id === c.id);
+  if (old) { if (!quiet) focusCard(old); return old; }
+  cards.unshift(c);
+  elCards.prepend(c.el);
+  persist();
+  if (!quiet) { window.scrollTo({ top: 0, behavior: "smooth" }); c.el.classList.add("flash"); }
+  return c;
+}
+function cardShell(title, flt, countText) {
+  const el = document.createElement("section");
+  el.className = "card";
+  const sc = scopeText(flt);
+  el.innerHTML = `<div class="card-h"><span class="name">${esc(title)}</span>${sc ? `<span class="scope">範圍：${esc(sc)}</span>` : ""}
+    <span class="count">${esc(countText)}</span><span class="spacer"></span>
+    <button class="icon" data-act="collapse" title="收合 / 展開">▁</button><button class="icon" data-act="close" title="關閉這張卡片">✕</button></div><div class="card-b"></div>`;
+  return el;
+}
+
+function openCard(name, flt, quiet, collapsed) {
+  flt = Object.assign({ file: "", mod: "", kind: "", tests: false }, flt);
+  const all = byName.get(name) || [];
+  let ents = sortEnts(all.filter(e => matches(e, flt)));
+  let outside = false;
+  if (!ents.length) { ents = sortEnts(all); outside = true; }
+  const c = { id: cardId("sym", name, flt), type: "sym", name, flt };
+  const nOcc = ents.reduce((s, e) => s + e.occ.length, 0);
+  c.el = cardShell(name, outside ? {} : flt, ents.length > 1 ? `${ents.length} 個不同的定義 · 共 ${nOcc} 處` : `${nOcc} 處出現`);
+  if (collapsed) c.el.classList.add("collapsed");
+  const b = $(".card-b", c.el);
+  const hidden = all.length - ents.length;
+  if (outside && (flt.file || flt.mod || flt.kind || !flt.tests)) b.insertAdjacentHTML("beforeend", `<div class="note">在你選的範圍內沒有 <code>${esc(name)}</code>，以下是所有範圍的結果。</div>`);
+  else if (hidden > 0) b.insertAdjacentHTML("beforeend", `<div class="note">另有 ${hidden} 個同名符號在範圍外（其他 module / 檔案${flt.tests ? "" : "，或單元測試檔"}）。<a data-act="widen">顯示全部</a></div>`);
+  if (ents.length > 8) b.insertAdjacentHTML("beforeend", `<div class="cardfilter"><input type="text" placeholder="在這 ${ents.length} 個裡面篩選 module / 檔名 / 說明…" data-act="cf"></div>`);
+  const autoOpen = ents.length <= 3;
+  ents.forEach((e, i) => b.appendChild(entityEl(e, autoOpen || (ents.length <= 8 && i === 0), flt)));
+  wireCard(c);
+  return mountCard(c, quiet);
+}
+
+function openList(q, flt, quiet, collapsed) {
+  flt = Object.assign({ file: "", mod: "", kind: "", tests: false }, flt);
+  let items;
+  if (q) items = rankNames(q, flt);
+  else items = names.map(n => ({ name: n, ents: byName.get(n).filter(e => matches(e, flt)) })).filter(i => i.ents.length)
+    .sort((a, b) => {
+      const la = Math.min(...a.ents.map(e => (e.occ[0] ? e.occ[0].l : 0))), lb = Math.min(...b.ents.map(e => (e.occ[0] ? e.occ[0].l : 0)));
+      const ka = kindInfo(a.ents[0]).g, kb = kindInfo(b.ents[0]).g;
+      return ka.localeCompare(kb) || la - lb;
+    });
+  const c = { id: cardId("list", q, flt), type: "list", name: q, flt };
+  c.el = cardShell(q ? `沒有叫「${q}」的符號` : "符號清單", flt, q ? `${items.length} 個名稱相近的候選` : `${items.length} 個符號`);
+  if (collapsed) c.el.classList.add("collapsed");
+  const b = $(".card-b", c.el);
+  if (!items.length) b.innerHTML = `<div class="note">找不到任何包含「${esc(q)}」的符號。檢查拼字，或放寬上面的範圍限制${flt.tests ? "" : "（也可以勾選「含單元測試檔」）"}。</div>`;
+  else {
+    if (items.length > 12) b.insertAdjacentHTML("beforeend", `<div class="cardfilter"><input type="text" placeholder="篩選…" data-act="cf"></div>`);
+    const frag = document.createDocumentFragment();
+    items.slice(0, 600).forEach(it => {
+      const d = document.createElement("div");
+      d.className = "cand ent"; d.dataset.name = it.name;
+      const e0 = it.ents[0], ki = kindInfo(e0);
+      const sum = it.ents.length === 1 ? (e0.x ? e0.x.sum : "") : `${it.ents.length} 個範圍：` + [...new Set(it.ents.map(e => e.module || base(e.file)))].slice(0, 5).join("、");
+      d.innerHTML = `<span class="nm"><span class="badge ${ki.cls}">${esc(ki.label)}</span> ${esc(it.name)}</span><span class="ds">${esc(sum)}</span>`;
+      d._text = (it.name + " " + sum).toLowerCase();
+      frag.appendChild(d);
+    });
+    b.appendChild(frag);
+  }
+  wireCard(c);
+  return mountCard(c, quiet);
+}
+
+function wireCard(c) {
+  c.el.addEventListener("click", ev => {
+    const t = ev.target;
+    const act = t.closest("[data-act]");
+    if (act) {
+      const a = act.dataset.act;
+      if (a === "close") return closeCard(c);
+      if (a === "collapse") { c.el.classList.toggle("collapsed"); return persist(); }
+      if (a === "widen") { const i = cards.indexOf(c); closeCard(c); return openCard(c.name, { tests: true }); }
+      if (a === "allocc") { const ent = act.closest(".ent"); ent._showAll = true; renderOccs(ent); return; }
+      if (a === "cf") return;
+    }
+    const sym = t.closest("a.sym");
+    if (sym) { ev.preventDefault(); return openFromContext(sym.dataset.n, sym.dataset.f, sym.dataset.l, sym.dataset.m); }
+    const cand = t.closest(".cand");
+    if (cand) return openCard(cand.dataset.name, c.flt);
+    const ln = t.closest(".occ > .ln");
+    if (ln) return toggleCtx(ln.parentElement);
+    const eh = t.closest(".ent-h");
+    if (eh) { const ent = eh.parentElement; ent.classList.toggle("open"); if (ent.classList.contains("open")) fillEntity(ent); }
+  });
+  c.el.addEventListener("input", ev => {
+    if (ev.target.dataset.act !== "cf") return;
+    const v = ev.target.value.trim().toLowerCase();
+    c.el.querySelectorAll(".ent").forEach(d => { d.style.display = !v || d._text.includes(v) ? "" : "none"; });
+  });
+}
+
+function openFromContext(name, f, l, m) {
+  const all = byName.get(name);
+  if (!all) return;
+  let flt = { tests: true };
+  if (f !== undefined && f !== "") {
+    const file = F[+f].path;
+    const mod = m || moduleAt(+f, +l);
+    if (mod && all.some(e => e.cat === "signal" && e.file === file && e.module === mod)) flt = { file, mod: file + "|" + mod, tests: true };
+  }
+  if (!flt.mod) flt.tests = all.every(e => e._test) ? true : all.some(e => !e._test) ? false : true;
+  openCard(name, flt);
+}
+
+// ---------- entity rendering ----------
+function entityEl(e, open, flt) {
+  const d = document.createElement("div");
+  d.className = "ent" + (open ? " open" : "");
+  d._e = e; d._flt = flt;
+  const ki = kindInfo(e);
+  const where = e.cat === "signal" ? `${esc(e.module)} <span class="f">· ${esc(base(e.file))}</span>` :
+    e.cat === "macro" ? `<span class="f">${e.file ? "定義於 " + esc(base(e.file)) : "repo 內沒有 `define"}</span>` : `<span class="f">${esc(base(e.file))}</span>`;
+  const sum = e.x ? e.x.sum : "";
+  d._text = [e.name, e.module || "", e.file || "", sum, ki.label].join(" ").toLowerCase();
+  d.innerHTML = `<div class="ent-h"><span class="tw">▶</span><span class="badge ${ki.cls}">${esc(ki.label)}</span><span class="where">${where}</span>
+    <span class="sum">${esc(sum)}</span><span class="n">${e.occ.length} 處</span></div><div class="ent-b"></div>`;
+  if (open) fillEntity(d);
+  return d;
+}
+
+function fillEntity(d) {
+  if (d._filled) return;
+  d._filled = true;
+  const e = d._e, b = $(".ent-b", d);
+  let h = "";
+  if (e.cat === "signal" && e.decls && e.decls.length) {
+    const decl = [...new Set(e.decls)].map(s => s + (e.dkind === "instance" ? "" : " " + e.name)).join("\n");
+    h += `<div class="sec-t">宣告</div><div class="declline">${esc(decl)}</div>`;
+    if (e.dkind === "instance" && e.of) h += ` <span class="note" style="margin:0 0 0 8px">是 ${symLink(e.of)} 的一個實例</span>`;
+  }
+  h += `<div class="sec-t">命名拆解</div>`;
+  if (e.x && e.x.naming && e.x.naming.length) {
+    h += `<div class="naming">` + e.x.naming.map(p => `<div class="frag"><div class="p">${esc(p[0])}</div><div class="e">${esc(p[1] || "")}</div><div class="z">${esc(p[2] || "")}</div></div>`).join("") + `</div>`;
+  } else h += `<div class="noexp">（尚無解釋）</div>`;
+  h += `<div class="sec-t">用途說明</div>`;
+  if (e.x && e.x.desc) h += `<div class="desc">${richText(e.x.desc, e)}</div>`;
+  else h += `<div class="noexp">（尚無解釋——可參考下面的使用位置）</div>`;
+  h += `<div class="sec-t">使用位置</div><div class="occs"></div>`;
+  b.innerHTML = h;
+  renderOccs(d);
+}
+
+function symLink(name, e) {
+  if (!byName.has(name)) return `<code>${esc(name)}</code>`;
+  let ctx = "";
+  if (e && e.cat === "signal" && e.file) {
+    const fi = fileIdx.get(e.file);
+    if (fi !== undefined) ctx = ` data-f="${fi}" data-m="${esc(e.module)}"`;
+  }
+  return `<code><a class="sym" data-n="${esc(name)}"${ctx}>${esc(name)}</a></code>`;
+}
+// Split prose into text / code spans. Handles `x`, `` `define X `` and spans that
+// contain a macro tick such as `cs[`RISCV_INST_MSG_BR_SEL]`.
+function splitSpans(par) {
+  const out = [];
+  let i = 0, text = "";
+  const n = par.length;
+  const DIRECTIVE = /^`(ifndef|ifdef|define|endif|include|elsif|else|undef|timescale)\b/;
+  const macroAt = j => { const m = /^`([A-Za-z_]\w*)/.exec(par.slice(j, j + 80)); return m && m[1] === m[1].toUpperCase() && byName.has(m[1]); };
+  const push = code => { if (text) { out.push({ t: text }); text = ""; } out.push({ c: code }); };
+  while (i < n) {
+    if (par[i] !== "`") { text += par[i++]; continue; }
+    let code = null, j;
+    if (par[i + 1] === "`") {
+      j = par.indexOf("``", i + 2);
+      if (j > 0) { code = par.slice(i + 2, j).trim(); j += 2; }
+    }
+    if (code === null) {
+      const dm = DIRECTIVE.exec(par.slice(i, i + 12));
+      if (dm) {
+        // `ifndef FOO`  (a span whose content starts with the directive tick)  vs  bare `ifndef in prose
+        const k = par.indexOf("`", i + 1);
+        const c = k > 0 ? par.slice(i, k) : "";
+        if (k > 0 && c.length <= 80 && !/[\u3000-\u9fff\uff00-\uffef]/.test(c) && !DIRECTIVE.test(par.slice(k, k + 12)) && !macroAt(k)) { push(c); i = k + 1; continue; }
+        push(dm[0]); i += dm[0].length; continue;
+      }
+      j = i + 1;
+      while (j < n && !(par[j] === "`" && j > i + 1 && !DIRECTIVE.test(par.slice(j, j + 12)) && !macroAt(j))) j++;
+      if (j < n) {
+        const c = par.slice(i + 1, j);
+        if (c.length <= 140 && !/[，。、；（）「」：]/.test(c)) { code = c; j++; }
+      }
+    }
+    if (code === null) {
+      if (macroAt(i)) { const m = /^`\w+/.exec(par.slice(i, i + 80))[0]; push(m); i += m.length; continue; }   // bare `MACRO in prose
+      text += par[i++]; continue;                                   // stray tick: keep as text
+    }
+    push(code);
+    i = j;
+  }
+  if (text) out.push({ t: text });
+  return out;
+}
+function codeSpan(code, e) {
+  const nm = code.replace(/^`/, "");
+  if (/^[A-Za-z_][\w$]*$/.test(nm)) return byName.has(nm) ? symLink(nm, e) : `<code>${esc(code)}</code>`;
+  let ctx = "";
+  if (e && e.cat === "signal" && e.file && fileIdx.has(e.file)) ctx = ` data-f="${fileIdx.get(e.file)}" data-m="${esc(e.module)}"`;
+  const h = code.replace(/`?[A-Za-z_][\w$]*|[^`A-Za-z_]+|`/g, tok => {
+    const t = tok.replace(/^`/, "");
+    if (/^[A-Za-z_]/.test(t) && !KEYWORDS.has(t) && byName.has(t) && !/^\d/.test(t)) return `<a class="sym" data-n="${esc(t)}"${ctx}>${esc(tok)}</a>`;
+    return esc(tok);
+  });
+  return `<code>${h}</code>`;
+}
+function richText(s, e) {
+  return s.split(/\n+/).map(par => "<p>" + splitSpans(par).map(seg => seg.c !== undefined ? codeSpan(seg.c, e) : esc(seg.t)).join("") + "</p>").join("");
+}
+
+const OCC_LABEL = { def: "定義", decl: "宣告", write: "寫入 / 驅動", read: "讀取", conn: "接到 instance", port: "上層接線", inst: "實例化", guard: "條件編譯", hier: "階層式存取" };
+
+function renderOccs(d) {
+  const e = d._e, box = $(".occs", d), flt = d._flt || {};
+  const groups = new Map();
+  for (const o of e.occ) { if (!groups.has(o.f)) groups.set(o.f, []); groups.get(o.f).push(o); }
+  const homeF = e.file ? fileIdx.get(e.file) : -1;
+  const focusF = flt.mod ? fileIdx.get(flt.mod.split("|")[0]) : flt.file ? fileIdx.get(flt.file) : homeF;
+  const order = [...groups.keys()].sort((a, b) => (a === homeF ? -1 : 0) - (b === homeF ? -1 : 0) || fileRank(F[a].path) - fileRank(F[b].path) || F[a].path.localeCompare(F[b].path));
+  const total = e.occ.length;
+  box.innerHTML = "";
+  for (const f of order) {
+    const occs = groups.get(f).slice().sort((a, b) => a.l - b.l || a.c - b.c);
+    const det = document.createElement("details");
+    det.className = "fg";
+    det.open = total <= 40 || f === homeF || f === focusF;
+    const tag = f === homeF ? (e.cat === "macro" ? "定義處" : e.cat === "module" ? "定義處" : "所屬 module") : (e.cat === "signal" ? "外部（上層接線 / 階層存取）" : "");
+    det.innerHTML = `<summary><span class="fp">${esc(F[f].path)}</span><span>${occs.length} 處</span><span class="tag">${tag}</span></summary>`;
+    // merge occurrences on the same line
+    const byLine = new Map();
+    for (const o of occs) { if (!byLine.has(o.l)) byLine.set(o.l, []); byLine.get(o.l).push(o); }
+    const lines = [...byLine.keys()];
+    const limit = d._showAll ? Infinity : 60;
+    lines.slice(0, limit).forEach(l => det.appendChild(occRow(e, f, l, byLine.get(l))));
+    if (lines.length > limit) det.insertAdjacentHTML("beforeend", `<div class="more"><button data-act="allocc">還有 ${lines.length - limit} 行，顯示全部</button></div>`);
+    box.appendChild(det);
+  }
+}
+
+function occRow(e, f, l, os) {
+  const row = document.createElement("div");
+  row.className = "occ"; row._f = f; row._l = l; row._hl = os.map(o => [o.c, o.n]);
+  const kinds = [...new Set(os.map(o => o.k))];
+  const main = ["def", "decl", "write", "port", "inst", "conn", "hier", "guard", "read"].find(k => kinds.includes(k));
+  let label = OCC_LABEL[main];
+  if (main === "decl" && os.some(o => o.init)) label = "宣告並賦值";
+  if (kinds.length > 1 && kinds.includes("write") && kinds.includes("read")) label = "讀 + 寫";
+  const extras = [];
+  for (const o of os) {
+    if (o.k === "conn" || (o.tm && o.k === "read")) {
+      const dir = o.dir ? `<span class="io">${o.dir === "input" ? "該 port 是 input → 這裡是送進去" : o.dir === "output" ? "該 port 是 output → 由它驅動" : esc(o.dir)}</span>` : "";
+      extras.push(`接到 ${portLink(o.inst, f, l)}（${symLinkPlain(o.tm)}）的 ${o.isparam ? "參數" : "port"} <code>.${portSym(o)}</code>${dir}`);
+    } else if (o.k === "port") {
+      extras.push(`在 <code>${esc(o.m || "?")}</code> 裡，instance ${portLink(o.inst, f, l)} 的 <code>.${esc(e.name)}( … )</code> 接線`);
+    } else if (o.k === "hier") {
+      extras.push(`<code>${esc(o.m || "")}</code> 透過階層路徑 <code>${esc(o.path)}.${esc(e.name)}</code> 直接存取（testbench 常用）`);
+    } else if (o.k === "inst") {
+      extras.push(`在 <code>${esc(o.m || "?")}</code> 裡建立實例 ${portLink(o.inst, f, l)}`);
+    } else if (o.inmacro) {
+      extras.push(`出現在 macro ${symLinkPlain(o.inmacro)} 的定義內`);
+    } else if (o.dv) {
+      extras.push("`" + esc(o.dv) + " 判斷這個 macro 有沒有被定義");
+    } else if (o.for && o.for !== e.name) {
+      extras.push(`用來算出 ${symAt(o.for, f, l)}`);
+    }
+  }
+  const mod = os[0].m && e.cat !== "signal" ? `<span class="io" style="margin-left:0">${esc(os[0].m)}</span> ` : "";
+  const ex = [...new Set(extras)];
+  row.innerHTML = `<span class="ln" title="點一下展開前後文">${l}</span><span class="kd k-${main}"><span class="dot"></span>${label}</span>
+    <div class="cd"><pre>${codeLine(f, l, row._hl, true)}</pre>${ex.length || mod ? `<div class="extra">${mod}${ex.join("；")}</div>` : ""}</div>`;
+  return row;
+}
+function symLinkPlain(n) { return byName.has(n) ? `<a class="sym" data-n="${esc(n)}"><code>${esc(n)}</code></a>` : `<code>${esc(n)}</code>`; }
+function symAt(n, f, l) { return byName.has(n) ? `<a class="sym" data-n="${esc(n)}" data-f="${f}" data-l="${l}"><code>${esc(n)}</code></a>` : `<code>${esc(n)}</code>`; }
+function portLink(inst, f, l) { return inst ? symAt(inst, f, l) : ""; }
+function portSym(o) {
+  if (o.tf !== undefined && byName.has(o.tp)) return `<a class="sym" data-n="${esc(o.tp)}" data-f="${fileIdx.get(o.tf)}" data-m="${esc(o.tm)}">${esc(o.tp)}</a>`;
+  return esc(o.tp);
+}
+
+const TOK = /(`?[A-Za-z_][\w$]*)|("(?:\\.|[^"\\])*")|((?:\d[\d_]*)?'[sS]?[bBoOdDhH][0-9a-fA-F_xXzZ?]+|\d[\d_]*)|(\/\/.*$)|([\s\S])/g;
+function codeLine(f, l, hl, trim) {
+  let text = F[f].lines[l - 1] || "";
+  let off = 0;
+  if (trim) { off = text.length - text.trimStart().length; text = text.slice(off).trimEnd(); }
+  let out = "";
+  TOK.lastIndex = 0;
+  let m;
+  const inBlockCmt = /^\s*\/\//.test(text);
+  while ((m = TOK.exec(text))) {
+    const s = m[0], col = m.index + off;
+    if (m[1]) {
+      const nm = s.replace(/^`/, "");
+      const hit = hl && hl.some(h => h[0] === col);
+      if (hit) out += `<mark>${esc(s)}</mark>`;
+      else if (KEYWORDS.has(s)) out += `<span class="kw">${esc(s)}</span>`;
+      else if (byName.has(nm)) out += `<a class="sym" data-n="${esc(nm)}" data-f="${f}" data-l="${l}">${esc(s)}</a>`;
+      else out += esc(s);
+    } else if (m[3]) out += `<span class="num">${esc(s)}</span>`;
+    else if (m[4]) out += `<span class="cmt">${esc(s)}</span>`;
+    else out += esc(s);
+  }
+  return out || " ";
+}
+function toggleCtx(row) {
+  const next = row.nextElementSibling;
+  if (next && next.classList.contains("ctx")) return next.remove();
+  const f = row._f, l = row._l, R = 7;
+  const lo = Math.max(1, l - R), hi = Math.min(F[f].lines.length, l + R);
+  const ctx = document.createElement("div");
+  ctx.className = "ctx";
+  let h = "";
+  for (let i = lo; i <= hi; i++) h += `<div class="row${i === l ? " hit" : ""}"><span class="ln mono" style="font-size:12.5px;color:var(--ink-3);text-align:right;padding-right:8px">${i}</span><pre>${codeLine(f, i, i === l ? row._hl : null, false)}</pre></div>`;
+  ctx.innerHTML = h;
+  row.after(ctx);
+}
+
+// ---------- glossary ----------
+const elGloss = $("#gloss");
+$("#gloss-b").innerHTML = ((D.glossary && D.glossary.groups) || []).map(g =>
+  `<div class="gg"><h3>${esc(g.title)}</h3>${g.note ? `<p class="gn">${esc(g.note)}</p>` : ""}<table>` +
+  g.terms.map(t => `<tr><td>${esc(t[0])}</td><td>${esc(t[1])}</td><td>${esc(t[2])}</td></tr>`).join("") + `</table></div>`).join("");
+$("#btn-gloss").onclick = () => { elGloss.classList.toggle("on"); if (elGloss.classList.contains("on")) window.scrollTo({ top: 0, behavior: "smooth" }); };
+$("#gloss-close").onclick = () => elGloss.classList.remove("on");
+
+// ---------- theme ----------
+const root = document.documentElement;
+const savedTheme = store.get("symlookup.theme", null);
+if (savedTheme) root.dataset.theme = savedTheme;
+$("#btn-theme").onclick = () => {
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+  store.set("symlookup.theme", root.dataset.theme);
+};
+
+// ---------- boot ----------
+const sf = store.get("symlookup.filter", null);
+if (sf) elTests.checked = !!sf.tests;
+fillFileSelect();
+if (sf && sf.file) elFile.value = sf.file;
+fillModSelect();
+if (sf) { if (sf.mod) elMod.value = sf.mod; elKind.value = sf.kind || ""; }
+const nExp = E.filter(e => e.x).length;
+$("#stats").textContent = `${F.length} 個檔案 · ${E.length} 個符號 · ${E.reduce((s, e) => s + e.occ.length, 0)} 處出現` + (nExp < E.length ? ` · 解釋完成 ${nExp}/${E.length}` : "");
+$("#try").innerHTML = ["dmemreq_msg_to_bits", "VC_MEM_REQ_MSG_SZ", "vc_MemReqMsgToBits", "stall_Xhl", "cs", "pm_b", "clk"].filter(n => byName.has(n))
+  .map(n => `<button>${esc(n)}</button>`).join("");
+$("#try").onclick = ev => { if (ev.target.tagName === "BUTTON") openCard(ev.target.textContent, curFilter()); };
+const saved = store.get("symlookup.cards", []);
+saved.slice().reverse().forEach(s => {
+  try { if (s.type === "list") openList(s.name, s.flt, true, s.collapsed); else if (byName.has(s.name)) openCard(s.name, s.flt, true, s.collapsed); } catch (e) {}
+});
+// #sym=a,b,c in the URL opens those symbols (handy for bookmarks)
+const hm = /[#&]sym=([^&]+)/.exec(location.hash);
+if (hm) decodeURIComponent(hm[1]).split(",").reverse().forEach(n => { n = n.trim().replace(/^`/, ""); if (byName.has(n)) openCard(n, { tests: false }, true); });
+const hq = /[#&]q=([^&]+)/.exec(location.hash);
+if (hq) { elQ.value = decodeURIComponent(hq[1]); doSearch(); }
+persist();
+})();
+</script>
+</body>
+</html>

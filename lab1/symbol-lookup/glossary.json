@@ -1,0 +1,124 @@
+{
+  "groups": [
+    {
+      "title": "Pipeline 階段後綴（_Phl / _Fhl / _Dhl / _Xhl / _Mhl / _Whl）",
+      "note": "訊號名稱最後的大寫字母代表它屬於哪個 pipeline 階段；後面的 hl 是 vc 函式庫的時序標記（high-level：訊號在 clk 為高電位的半週期內穩定），初學時可以直接忽略 hl，只看階段字母。",
+      "terms": [
+        ["_Phl", "PC stage", "PC / next-PC 階段：決定下一個 PC 的邏輯（在 F 之前）"],
+        ["_Fhl", "Fetch stage", "取指階段：送出 imem 請求、等指令回來"],
+        ["_Dhl", "Decode stage", "解碼階段：解出控制訊號、讀 regfile、判斷 hazard"],
+        ["_Xhl", "eXecute stage", "執行階段：ALU / 乘除法 / 分支判斷"],
+        ["_Mhl", "Memory stage", "記憶體階段：送 dmem 請求、收資料"],
+        ["_Whl", "Writeback stage", "寫回階段：把結果寫回 regfile"],
+        ["_X2hl / _X3hl", "extra eXecute stages", "riscvlong 版本才有的額外執行階段（乘法器 pipeline）"]
+      ]
+    },
+    {
+      "title": "vc 函式庫時序後綴",
+      "note": "vc = Verilog Components，Batten 教授課程用的共用元件庫。port 名稱的後綴說明該訊號在 clk 的哪個時間點被取樣 / 變化。",
+      "terms": [
+        ["_p", "positive edge", "在 clk 正緣被取樣的輸入（例如 d_p, wen_p）"],
+        ["_n", "negative edge", "在 clk 負緣被取樣的輸入"],
+        ["_np", "next positive edge", "正緣之後才變化的輸出（flip-flop 的 q）"],
+        ["_pf", "positive-edge flip-flop", "module 名稱後綴：正緣觸發的 flip-flop 類元件"],
+        ["_hl", "high-level latch", "module 名稱後綴：clk 高電位時透通的 latch"],
+        ["_ll", "low-level latch", "module 名稱後綴：clk 低電位時透通的 latch"]
+      ]
+    },
+    {
+      "title": "val / rdy 握手介面",
+      "note": "所有 req / resp 介面都用 val-rdy 握手：送方拉 val 表示「我有資料」，收方拉 rdy 表示「我能收」，同一個 cycle 兩者皆 1 才算成交。",
+      "terms": [
+        ["val", "valid", "送方：這個 cycle 的 msg 是有效的"],
+        ["rdy", "ready", "收方：這個 cycle 可以接收"],
+        ["msg", "message", "打包成一串 bits 的訊息本體"],
+        ["req", "request", "請求（CPU → 記憶體 / 乘除法器）"],
+        ["resp", "response", "回應（記憶體 / 乘除法器 → CPU）"],
+        ["go", "val && rdy", "握手成功的那個 cycle"]
+      ]
+    },
+    {
+      "title": "記憶體介面",
+      "terms": [
+        ["imem", "instruction memory", "指令記憶體"],
+        ["dmem", "data memory", "資料記憶體"],
+        ["imemreq / imemresp", "instruction memory request / response", "取指令的請求 / 回應通道"],
+        ["dmemreq / dmemresp", "data memory request / response", "load / store 的請求 / 回應通道"],
+        ["memreq0 / memreq1", "memory request port 0 / 1", "測試用雙埠記憶體的兩個 port（0 接 imem、1 接 dmem）"],
+        ["rw", "read / write", "0 = 讀、1 = 寫"],
+        ["len", "length", "存取的 byte 數（0 代表整個 word）"],
+        ["addr", "address", "位址"],
+        ["to_bits / from_bits", "pack / unpack", "把各欄位打包成 msg bits / 從 msg bits 拆出欄位"]
+      ]
+    },
+    {
+      "title": "Macro 命名（全大寫）",
+      "terms": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["RISCV_", "RISC-V core", "處理器本身的 macro 前綴"],
+        ["IMULDIV_", "iterative mul/div", "迭代式乘除法器的 macro 前綴"],
+        ["_SZ", "size", "欄位或訊息的 bit 數"],
+        ["_MSB", "most significant bit", "欄位最高位元的 index"],
+        ["_FIELD", "field range", "展開成 msb:lsb 的位元範圍，用來切欄位"],
+        ["_V", "include guard", "檔名_V：防止同一個檔案被 `include 兩次"],
+        ["INST_MSG", "instruction message", "把 32-bit 指令當成有欄位的訊息來看（opcode, rs1, rs2, rd, imm…）"]
+      ]
+    },
+    {
+      "title": "參數 / 常數前綴",
+      "terms": [
+        ["p_", "parameter", "module 的 parameter（例如 p_addr_sz）"],
+        ["c_", "constant", "module 內的 localparam 常數（例如 c_read）"],
+        ["W", "width", "元件的位元寬度參數"]
+      ]
+    },
+    {
+      "title": "Datapath / Control 常見縮寫",
+      "terms": [
+        ["ctrl / dpath", "control / datapath", "控制單元 / 資料路徑，兩者合起來就是 Core"],
+        ["mux / sel", "multiplexer / select", "多工器 / 它的選擇訊號"],
+        ["pc", "program counter", "程式計數器"],
+        ["ir", "instruction register", "存放該階段指令的暫存器"],
+        ["inst", "instruction", "指令"],
+        ["rf", "register file", "32 個通用暫存器"],
+        ["wen / waddr / wdata", "write enable / address / data", "寫入致能 / 位址 / 資料"],
+        ["raddr / rdata", "read address / data", "讀取位址 / 資料"],
+        ["rs1 / rs2 / rd", "source reg 1 / 2, destination reg", "RISC-V 指令的來源 / 目的暫存器編號"],
+        ["imm", "immediate", "立即值（_i, _s, _sb, _u, _uj 為各種指令格式）"],
+        ["shamt", "shift amount", "位移量"],
+        ["op0 / op1", "operand 0 / 1", "ALU 的兩個輸入運算元"],
+        ["alu / fn", "arithmetic logic unit / function", "算術邏輯單元 / 它要做哪種運算"],
+        ["br / brj", "branch / branch-or-jump", "分支 / 分支或跳躍"],
+        ["targ", "target", "分支或跳躍的目標位址"],
+        ["wb", "writeback", "寫回"],
+        ["csr", "control and status register", "控制狀態暫存器（這裡用來把測試結果回報給 testbench）"],
+        ["cs", "control signals", "解碼表產生的整包控制訊號"],
+        ["muldiv", "multiply / divide", "乘除法單元"],
+        ["stall", "stall", "暫停：這個階段這個 cycle 不能前進"],
+        ["squash", "squash", "作廢：這個階段的指令要丟掉（分支猜錯）"],
+        ["bubble", "bubble", "氣泡：這個階段裡沒有有效指令（等同 nop）"],
+        ["byp", "bypass", "前饋 / forwarding"],
+        ["_next", "next value", "下一個 cycle 要存進暫存器的值"]
+      ]
+    },
+    {
+      "title": "解碼表 localparam 前綴（riscv_CoreCtrl）",
+      "terms": [
+        ["n / y", "no / yes", "1'b0 / 1'b1"],
+        ["br_", "branch type", "分支種類"],
+        ["pm_", "PC mux", "PC 多工器選項"],
+        ["am_", "operand-A (op0) mux", "op0 多工器選項"],
+        ["bm_", "operand-B (op1) mux", "op1 多工器選項"],
+        ["alu_", "ALU function", "ALU 功能碼"],
+        ["md_", "mul/div function", "乘除法功能碼"],
+        ["mdm_", "muldiv mux", "乘除法結果多工器選項"],
+        ["em_", "execute mux", "執行階段結果多工器選項"],
+        ["dmm_", "dmem response mux", "記憶體讀回資料多工器選項（sign/zero extend）"],
+        ["wm_", "writeback mux", "寫回多工器選項"],
+        ["nr / ld / st", "no request / load / store", "dmem 請求種類"],
+        ["ml_", "memory length", "dmem 存取長度"],
+        ["_x", "don't care", "不在乎（填 x）"]
+      ]
+    }
+  ]
+}

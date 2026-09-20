@@ -1,0 +1,807 @@
+[
+ {
+  "key": "vc/vc-StateElements.v|vc_DFF_pf|W",
+  "name": "W",
+  "cat": "signal",
+  "module": "vc_DFF_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:14",
+   "vc/vc-StateElements.v:17",
+   "vc/vc-StateElements.v:18"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_DFF_pf|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_DFF_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:16",
+   "vc/vc-StateElements.v:21"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_DFF_pf|d_p",
+  "name": "d_p",
+  "cat": "signal",
+  "module": "vc_DFF_pf",
+  "kind": "input",
+  "decl": "input [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:17",
+   "vc/vc-StateElements.v:22"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_DFF_pf|q_np",
+  "name": "q_np",
+  "cat": "signal",
+  "module": "vc_DFF_pf",
+  "kind": "output",
+  "decl": "output reg [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:18",
+   "vc/vc-StateElements.v:22"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_RDFF_pf|W",
+  "name": "W",
+  "cat": "signal",
+  "module": "vc_RDFF_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:30",
+   "vc/vc-StateElements.v:34",
+   "vc/vc-StateElements.v:35"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_RDFF_pf|RESET_VALUE",
+  "name": "RESET_VALUE",
+  "cat": "signal",
+  "module": "vc_RDFF_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:30",
+   "vc/vc-StateElements.v:39"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_RDFF_pf|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_RDFF_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:32",
+   "vc/vc-StateElements.v:38"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_RDFF_pf|reset_p",
+  "name": "reset_p",
+  "cat": "signal",
+  "module": "vc_RDFF_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:33",
+   "vc/vc-StateElements.v:39"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_RDFF_pf|d_p",
+  "name": "d_p",
+  "cat": "signal",
+  "module": "vc_RDFF_pf",
+  "kind": "input",
+  "decl": "input [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:34",
+   "vc/vc-StateElements.v:39"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_RDFF_pf|q_np",
+  "name": "q_np",
+  "cat": "signal",
+  "module": "vc_RDFF_pf",
+  "kind": "output",
+  "decl": "output reg [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:35",
+   "vc/vc-StateElements.v:39"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_EDFF_pf|W",
+  "name": "W",
+  "cat": "signal",
+  "module": "vc_EDFF_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:47",
+   "vc/vc-StateElements.v:50",
+   "vc/vc-StateElements.v:52"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_EDFF_pf|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_EDFF_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:49",
+   "vc/vc-StateElements.v:55"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_EDFF_pf|d_p",
+  "name": "d_p",
+  "cat": "signal",
+  "module": "vc_EDFF_pf",
+  "kind": "input",
+  "decl": "input [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:50",
+   "vc/vc-StateElements.v:56"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_EDFF_pf|en_p",
+  "name": "en_p",
+  "cat": "signal",
+  "module": "vc_EDFF_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:51",
+   "vc/vc-StateElements.v:56"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_EDFF_pf|q_np",
+  "name": "q_np",
+  "cat": "signal",
+  "module": "vc_EDFF_pf",
+  "kind": "output",
+  "decl": "output reg [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:52",
+   "vc/vc-StateElements.v:56"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ERDFF_pf|W",
+  "name": "W",
+  "cat": "signal",
+  "module": "vc_ERDFF_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:68",
+   "vc/vc-StateElements.v:72",
+   "vc/vc-StateElements.v:74"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ERDFF_pf|RESET_VALUE",
+  "name": "RESET_VALUE",
+  "cat": "signal",
+  "module": "vc_ERDFF_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:68",
+   "vc/vc-StateElements.v:78"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ERDFF_pf|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_ERDFF_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:70",
+   "vc/vc-StateElements.v:77",
+   "vc/vc-TestRandDelay.v:58"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ERDFF_pf|reset_p",
+  "name": "reset_p",
+  "cat": "signal",
+  "module": "vc_ERDFF_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:71",
+   "vc/vc-StateElements.v:78",
+   "vc/vc-TestRandDelay.v:59"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ERDFF_pf|d_p",
+  "name": "d_p",
+  "cat": "signal",
+  "module": "vc_ERDFF_pf",
+  "kind": "input",
+  "decl": "input [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:72",
+   "vc/vc-StateElements.v:78",
+   "vc/vc-TestRandDelay.v:61"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ERDFF_pf|en_p",
+  "name": "en_p",
+  "cat": "signal",
+  "module": "vc_ERDFF_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:73",
+   "vc/vc-StateElements.v:78",
+   "vc/vc-TestRandDelay.v:60"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ERDFF_pf|q_np",
+  "name": "q_np",
+  "cat": "signal",
+  "module": "vc_ERDFF_pf",
+  "kind": "output",
+  "decl": "output reg [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:74",
+   "vc/vc-StateElements.v:78",
+   "vc/vc-TestRandDelay.v:62"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_DFF_nf|W",
+  "name": "W",
+  "cat": "signal",
+  "module": "vc_DFF_nf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:90",
+   "vc/vc-StateElements.v:93",
+   "vc/vc-StateElements.v:94"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_DFF_nf|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_DFF_nf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:92",
+   "vc/vc-StateElements.v:97"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_DFF_nf|d_p",
+  "name": "d_p",
+  "cat": "signal",
+  "module": "vc_DFF_nf",
+  "kind": "input",
+  "decl": "input [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:93",
+   "vc/vc-StateElements.v:98"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_DFF_nf|q_np",
+  "name": "q_np",
+  "cat": "signal",
+  "module": "vc_DFF_nf",
+  "kind": "output",
+  "decl": "output reg [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:94",
+   "vc/vc-StateElements.v:98"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_EDFF_nf|W",
+  "name": "W",
+  "cat": "signal",
+  "module": "vc_EDFF_nf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:106",
+   "vc/vc-StateElements.v:109",
+   "vc/vc-StateElements.v:111"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_EDFF_nf|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_EDFF_nf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:108",
+   "vc/vc-StateElements.v:114",
+   "vc/vc-StateElements.v:118"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_EDFF_nf|d_n",
+  "name": "d_n",
+  "cat": "signal",
+  "module": "vc_EDFF_nf",
+  "kind": "input",
+  "decl": "input [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:109",
+   "vc/vc-StateElements.v:115"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_EDFF_nf|en_n",
+  "name": "en_n",
+  "cat": "signal",
+  "module": "vc_EDFF_nf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:110",
+   "vc/vc-StateElements.v:115",
+   "vc/vc-StateElements.v:118"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_EDFF_nf|q_pn",
+  "name": "q_pn",
+  "cat": "signal",
+  "module": "vc_EDFF_nf",
+  "kind": "output",
+  "decl": "output reg [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:111",
+   "vc/vc-StateElements.v:115"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_Latch_hl|W",
+  "name": "W",
+  "cat": "signal",
+  "module": "vc_Latch_hl",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:127",
+   "vc/vc-StateElements.v:130",
+   "vc/vc-StateElements.v:131"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_Latch_hl|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_Latch_hl",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:199",
+   "vc/vc-RAMs.v:206",
+   "vc/vc-StateElements.v:129",
+   "vc/vc-StateElements.v:135"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_Latch_hl|d_n",
+  "name": "d_n",
+  "cat": "signal",
+  "module": "vc_Latch_hl",
+  "kind": "input",
+  "decl": "input [W-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:200",
+   "vc/vc-RAMs.v:207",
+   "vc/vc-StateElements.v:130",
+   "vc/vc-StateElements.v:135"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_Latch_hl|q_np",
+  "name": "q_np",
+  "cat": "signal",
+  "module": "vc_Latch_hl",
+  "kind": "output",
+  "decl": "output reg [W-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:201",
+   "vc/vc-RAMs.v:208",
+   "vc/vc-StateElements.v:131",
+   "vc/vc-StateElements.v:135"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_hl|W",
+  "name": "W",
+  "cat": "signal",
+  "module": "vc_ELatch_hl",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:143",
+   "vc/vc-StateElements.v:147",
+   "vc/vc-StateElements.v:148"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_hl|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_ELatch_hl",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:145",
+   "vc/vc-StateElements.v:156",
+   "vc/vc-StateElements.v:160",
+   "vc/vc-StateElements.v:164"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_hl|en_p",
+  "name": "en_p",
+  "cat": "signal",
+  "module": "vc_ELatch_hl",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:146",
+   "vc/vc-StateElements.v:157",
+   "vc/vc-StateElements.v:164"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_hl|d_n",
+  "name": "d_n",
+  "cat": "signal",
+  "module": "vc_ELatch_hl",
+  "kind": "input",
+  "decl": "input [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:147",
+   "vc/vc-StateElements.v:161"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_hl|q_np",
+  "name": "q_np",
+  "cat": "signal",
+  "module": "vc_ELatch_hl",
+  "kind": "output",
+  "decl": "output reg [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:148",
+   "vc/vc-StateElements.v:161"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_hl|en_latched_pn",
+  "name": "en_latched_pn",
+  "cat": "signal",
+  "module": "vc_ELatch_hl",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "vc/vc-StateElements.v:154",
+   "vc/vc-StateElements.v:157",
+   "vc/vc-StateElements.v:160"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_Latch_ll|W",
+  "name": "W",
+  "cat": "signal",
+  "module": "vc_Latch_ll",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:173",
+   "vc/vc-StateElements.v:176",
+   "vc/vc-StateElements.v:177"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_Latch_ll|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_Latch_ll",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:147",
+   "vc/vc-RAMs.v:154",
+   "vc/vc-StateElements.v:175",
+   "vc/vc-StateElements.v:181"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_Latch_ll|d_p",
+  "name": "d_p",
+  "cat": "signal",
+  "module": "vc_Latch_ll",
+  "kind": "input",
+  "decl": "input [W-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:148",
+   "vc/vc-RAMs.v:155",
+   "vc/vc-StateElements.v:176",
+   "vc/vc-StateElements.v:181"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_Latch_ll|q_pn",
+  "name": "q_pn",
+  "cat": "signal",
+  "module": "vc_Latch_ll",
+  "kind": "output",
+  "decl": "output reg [W-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:149",
+   "vc/vc-RAMs.v:156",
+   "vc/vc-StateElements.v:177",
+   "vc/vc-StateElements.v:181"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_ll|W",
+  "name": "W",
+  "cat": "signal",
+  "module": "vc_ELatch_ll",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-StateElements.v:189",
+   "vc/vc-StateElements.v:193",
+   "vc/vc-StateElements.v:194"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_ll|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_ELatch_ll",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:191",
+   "vc/vc-StateElements.v:202",
+   "vc/vc-StateElements.v:206",
+   "vc/vc-StateElements.v:210"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_ll|en_n",
+  "name": "en_n",
+  "cat": "signal",
+  "module": "vc_ELatch_ll",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-StateElements.v:192",
+   "vc/vc-StateElements.v:203",
+   "vc/vc-StateElements.v:210"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_ll|d_p",
+  "name": "d_p",
+  "cat": "signal",
+  "module": "vc_ELatch_ll",
+  "kind": "input",
+  "decl": "input [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:193",
+   "vc/vc-StateElements.v:207"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_ll|q_pn",
+  "name": "q_pn",
+  "cat": "signal",
+  "module": "vc_ELatch_ll",
+  "kind": "output",
+  "decl": "output reg [W-1:0]",
+  "lines": [
+   "vc/vc-StateElements.v:194",
+   "vc/vc-StateElements.v:207"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v|vc_ELatch_ll|en_latched_np",
+  "name": "en_latched_np",
+  "cat": "signal",
+  "module": "vc_ELatch_ll",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "vc/vc-StateElements.v:200",
+   "vc/vc-StateElements.v:203",
+   "vc/vc-StateElements.v:206"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v||vc_Latch_ll",
+  "name": "vc_Latch_ll",
+  "cat": "module",
+  "lines": [
+   "vc/vc-RAMs.v:145",
+   "vc/vc-RAMs.v:152",
+   "vc/vc-StateElements.v:173"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-StateElements.v||vc_Latch_hl",
+  "name": "vc_Latch_hl",
+  "cat": "module",
+  "lines": [
+   "vc/vc-RAMs.v:197",
+   "vc/vc-RAMs.v:204",
+   "vc/vc-StateElements.v:127"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_STATE_ELEMENTS_V",
+  "name": "VC_STATE_ELEMENTS_V",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-StateElements.v:5",
+   "vc/vc-StateElements.v:6"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v||vc_DFF_pf",
+  "name": "vc_DFF_pf",
+  "cat": "module",
+  "lines": [
+   "vc/vc-StateElements.v:14"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-StateElements.v||vc_RDFF_pf",
+  "name": "vc_RDFF_pf",
+  "cat": "module",
+  "lines": [
+   "vc/vc-StateElements.v:30"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-StateElements.v||vc_EDFF_pf",
+  "name": "vc_EDFF_pf",
+  "cat": "module",
+  "lines": [
+   "vc/vc-StateElements.v:47"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-StateElements.v||vc_ERDFF_pf",
+  "name": "vc_ERDFF_pf",
+  "cat": "module",
+  "lines": [
+   "vc/vc-StateElements.v:68",
+   "vc/vc-TestRandDelay.v:56"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-StateElements.v||vc_DFF_nf",
+  "name": "vc_DFF_nf",
+  "cat": "module",
+  "lines": [
+   "vc/vc-StateElements.v:90"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-StateElements.v||vc_EDFF_nf",
+  "name": "vc_EDFF_nf",
+  "cat": "module",
+  "lines": [
+   "vc/vc-StateElements.v:106"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-StateElements.v||vc_ELatch_hl",
+  "name": "vc_ELatch_hl",
+  "cat": "module",
+  "lines": [
+   "vc/vc-StateElements.v:143"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-StateElements.v||vc_ELatch_ll",
+  "name": "vc_ELatch_ll",
+  "cat": "module",
+  "lines": [
+   "vc/vc-StateElements.v:189"
+  ],
+  "n_occ": 1
+ }
+]

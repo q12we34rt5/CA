@@ -1,0 +1,563 @@
+{
+ "entities": {
+  "`IMULDIV_DIVREQ_MSG_SZ": {
+   "sum": "除法器請求訊息的總 bit 數：65",
+   "naming": [
+    [
+     "IMULDIV_",
+     "iterative mul/div",
+     "乘除法器的 macro 前綴"
+    ],
+    [
+     "DIVREQ",
+     "divide request",
+     "除法請求"
+    ],
+    [
+     "MSG",
+     "message",
+     "訊息"
+    ],
+    [
+     "_SZ",
+     "size",
+     "bit 數"
+    ]
+   ],
+   "desc": "展開成 65 = 1（func：有號 / 無號）+ 32（a）+ 32（b）。比乘除法共用的 IMULDIV_MULDIVREQ_MSG_SZ（67）少 2 bits，因為除法器只需要一個 bit 說明有號或無號。用來宣告整包訊息的線寬，例如本檔三個模組的 bits / msg port，以及 imuldiv-DivReqMsg.t.v 裡的 msg_test / msg_ref。"
+  },
+  "`IMULDIV_DIVREQ_MSG_FUNC_SZ": {
+   "sum": "除法請求 func 欄位的 bit 數：1",
+   "naming": [
+    [
+     "IMULDIV_",
+     "iterative mul/div",
+     "乘除法器的 macro 前綴"
+    ],
+    [
+     "DIVREQ",
+     "divide request",
+     "除法請求"
+    ],
+    [
+     "MSG",
+     "message",
+     "訊息"
+    ],
+    [
+     "FUNC",
+     "function",
+     "運算種類欄位"
+    ],
+    [
+     "_SZ",
+     "size",
+     "bit 數"
+    ]
+   ],
+   "desc": "展開成 1：除法器只需要區分有號 / 無號兩種模式，商和餘數本來就會一起算出來。用來宣告 func 線的寬度（`imuldiv_DivReqMsgToBits` 的 input func、`imuldiv_DivReqMsgFromBits` 的 output func、`imuldiv_DivReqMsgToStr` 裡的 wire func）。"
+  },
+  "`IMULDIV_DIVREQ_MSG_FUNC_UNSIGNED": {
+   "sum": "func 欄位的編碼：無號除法（1'd0）",
+   "naming": [
+    [
+     "IMULDIV_",
+     "iterative mul/div",
+     "乘除法器的 macro 前綴"
+    ],
+    [
+     "DIVREQ",
+     "divide request",
+     "除法請求"
+    ],
+    [
+     "MSG",
+     "message",
+     "訊息"
+    ],
+    [
+     "FUNC",
+     "function",
+     "運算種類"
+    ],
+    [
+     "UNSIGNED",
+     "unsigned",
+     "無號"
+    ]
+   ],
+   "desc": "展開成 1'd0，對應 RISC-V 的 divu / remu。`imuldiv_IntMulDivIterative` 算出的 `divreq_msg_fn` 在 func 是 DIVU 或 REMU 時剛好是 0，就是這個值。在 `imuldiv_DivReqMsgToStr` 裡被取短名字 `fn_unsigned`，印成 \"divu\" / \"/u\"。"
+  },
+  "`IMULDIV_DIVREQ_MSG_FUNC_SIGNED": {
+   "sum": "func 欄位的編碼：有號除法（1'd1）",
+   "naming": [
+    [
+     "IMULDIV_",
+     "iterative mul/div",
+     "乘除法器的 macro 前綴"
+    ],
+    [
+     "DIVREQ",
+     "divide request",
+     "除法請求"
+    ],
+    [
+     "MSG",
+     "message",
+     "訊息"
+    ],
+    [
+     "FUNC",
+     "function",
+     "運算種類"
+    ],
+    [
+     "SIGNED",
+     "signed",
+     "有號"
+    ]
+   ],
+   "desc": "展開成 1'd1，對應 RISC-V 的 div / rem。它是這個檔案裡唯一被真正的硬體用到的 macro：`imuldiv_IntDivIterativeCtrl` 用 divreq_msg_fn == IMULDIV_DIVREQ_MSG_FUNC_SIGNED 產生 `is_op_signed`，並用 fn_reg 跟它比對來決定 `res_div_sign_mux_sel` 與 `res_rem_sign_mux_sel`（結果要不要補負號）。在 ToStr 裡短名字是 `fn_signed`，印成 \"div\" / \"/ \"。"
+  },
+  "`IMULDIV_DIVREQ_MSG_A_SZ": {
+   "sum": "被除數 a 欄位的 bit 數：32",
+   "naming": [
+    [
+     "IMULDIV_",
+     "iterative mul/div",
+     "乘除法器的 macro 前綴"
+    ],
+    [
+     "DIVREQ",
+     "divide request",
+     "除法請求"
+    ],
+    [
+     "MSG",
+     "message",
+     "訊息"
+    ],
+    [
+     "A",
+     "operand a",
+     "運算元 a：被除數"
+    ],
+    [
+     "_SZ",
+     "size",
+     "欄位的 bit 數"
+    ]
+   ],
+   "desc": "展開成 32，用來宣告 a 這條線的寬度，出現在本檔三個模組的 a port / wire，以及 imuldiv-DivReqMsg.t.v 裡 task 的輸入參數宣告。"
+  },
+  "`IMULDIV_DIVREQ_MSG_B_SZ": {
+   "sum": "除數 b 欄位的 bit 數：32",
+   "naming": [
+    [
+     "IMULDIV_",
+     "iterative mul/div",
+     "乘除法器的 macro 前綴"
+    ],
+    [
+     "DIVREQ",
+     "divide request",
+     "除法請求"
+    ],
+    [
+     "MSG",
+     "message",
+     "訊息"
+    ],
+    [
+     "B",
+     "operand b",
+     "運算元 b：除數"
+    ],
+    [
+     "_SZ",
+     "size",
+     "欄位的 bit 數"
+    ]
+   ],
+   "desc": "展開成 32，和 A_SZ 對稱。1 + 32 + 32 = 65，剛好是 `IMULDIV_DIVREQ_MSG_SZ`。"
+  },
+  "`IMULDIV_DIVREQ_MSG_FUNC_FIELD": {
+   "sum": "func 欄位在訊息裡的位置：單一 bit 64",
+   "naming": [
+    [
+     "IMULDIV_",
+     "iterative mul/div",
+     "乘除法器的 macro 前綴"
+    ],
+    [
+     "DIVREQ",
+     "divide request",
+     "除法請求"
+    ],
+    [
+     "MSG",
+     "message",
+     "訊息"
+    ],
+    [
+     "FUNC",
+     "function",
+     "運算種類"
+    ],
+    [
+     "_FIELD",
+     "field range",
+     "位元範圍（這裡只有一個 bit）"
+    ]
+   ],
+   "desc": "展開成 64——注意它跟其他 _FIELD 不一樣，沒有冒號，因為這個欄位只有 1 bit。用法仍是寫在中括號裡：bits[`IMULDIV_DIVREQ_MSG_FUNC_FIELD`]，出現在 `imuldiv_DivReqMsgToBits`、`imuldiv_DivReqMsgFromBits`、`imuldiv_DivReqMsgToStr` 以及 imuldiv-DivReqMsg.t.v。"
+  },
+  "`IMULDIV_DIVREQ_MSG_A_FIELD": {
+   "sum": "被除數 a 在訊息裡的位元範圍：63:32",
+   "naming": [
+    [
+     "IMULDIV_",
+     "iterative mul/div",
+     "乘除法器的 macro 前綴"
+    ],
+    [
+     "DIVREQ",
+     "divide request",
+     "除法請求"
+    ],
+    [
+     "MSG",
+     "message",
+     "訊息"
+    ],
+    [
+     "A",
+     "operand a",
+     "運算元 a"
+    ],
+    [
+     "_FIELD",
+     "field range",
+     "msb:lsb 位元範圍"
+    ]
+   ],
+   "desc": "展開成 63:32，訊息的中間 32 bits。檔頭那張 ASCII 圖把這一段標成 operand b，但 macro 定義的其實是 a 在 63:32、b 在 31:0——程式碼遵守的是 macro，所以那張圖的兩個欄位標反了。"
+  },
+  "`IMULDIV_DIVREQ_MSG_B_FIELD": {
+   "sum": "除數 b 在訊息裡的位元範圍：31:0",
+   "naming": [
+    [
+     "IMULDIV_",
+     "iterative mul/div",
+     "乘除法器的 macro 前綴"
+    ],
+    [
+     "DIVREQ",
+     "divide request",
+     "除法請求"
+    ],
+    [
+     "MSG",
+     "message",
+     "訊息"
+    ],
+    [
+     "B",
+     "operand b",
+     "運算元 b"
+    ],
+    [
+     "_FIELD",
+     "field range",
+     "msb:lsb 位元範圍"
+    ]
+   ],
+   "desc": "展開成 31:0，訊息的最低 32 bits。和 A_FIELD 一樣，跟檔頭 ASCII 圖的標示相反。"
+  },
+  "`IMULDIV_DIVREQ_MSG_V": {
+   "sum": "imuldiv-DivReqMsg.v 的 include guard macro",
+   "naming": [
+    [
+     "IMULDIV_",
+     "iterative mul/div",
+     "乘除法器的 macro 前綴"
+    ],
+    [
+     "DIVREQ",
+     "divide request",
+     "除法請求"
+    ],
+    [
+     "MSG",
+     "message",
+     "訊息"
+    ],
+    [
+     "_V",
+     "include guard",
+     "檔名_V：防止重複 include"
+    ]
+   ],
+   "desc": "檔案開頭用 ifndef / define 這個名字、結尾 endif，避免這個檔（被 imuldiv-IntDivIterative.v 與 imuldiv-IntDivIterative.t.v 同時 include 時）重複定義 macro 與 module。順帶一提，檔尾 endif 後面的註解寫的是 IMULDIV_MULDIVREQ_MSG_V，和實際的 guard 名字不符，應該是從 imuldiv-MulDivReqMsg.v 複製過來時忘了改——註解不影響編譯。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToBits|func": {
+   "sum": "imuldiv_DivReqMsgToBits 的輸入：1-bit 的有號 / 無號旗標",
+   "naming": [
+    [
+     "func",
+     "function",
+     "運算種類"
+    ]
+   ],
+   "desc": "寬度是 `IMULDIV_DIVREQ_MSG_FUNC_SZ`（1 bit），值為 `IMULDIV_DIVREQ_MSG_FUNC_SIGNED`(1) 或 `IMULDIV_DIVREQ_MSG_FUNC_UNSIGNED`(0)。透過 assign bits[`IMULDIV_DIVREQ_MSG_FUNC_FIELD`] = func 寫進訊息的最高位 bit 64。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToBits|a": {
+   "sum": "imuldiv_DivReqMsgToBits 的輸入：要打包的被除數",
+   "naming": [
+    [
+     "a",
+     "operand a",
+     "運算元 a：被除數"
+    ]
+   ],
+   "desc": "32 bits（`IMULDIV_DIVREQ_MSG_A_SZ`），經由 assign bits[`IMULDIV_DIVREQ_MSG_A_FIELD`] = a 放進訊息的 bit 63:32。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToBits|b": {
+   "sum": "imuldiv_DivReqMsgToBits 的輸入：要打包的除數",
+   "naming": [
+    [
+     "b",
+     "operand b",
+     "運算元 b：除數"
+    ]
+   ],
+   "desc": "32 bits（`IMULDIV_DIVREQ_MSG_B_SZ`），經由 assign bits[`IMULDIV_DIVREQ_MSG_B_FIELD`] = b 放進訊息的最低 32 bits。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToBits|bits": {
+   "sum": "imuldiv_DivReqMsgToBits 的輸出：打包完成的 65-bit 除法請求訊息",
+   "naming": [
+    [
+     "bits",
+     "bits",
+     "打包成一串位元的訊息"
+    ]
+   ],
+   "desc": "寬度 `IMULDIV_DIVREQ_MSG_SZ`（65）。由三行 assign 分別驅動 bit 64（func）、63:32（a）、31:0（b），三段剛好覆蓋整條線。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgFromBits|bits": {
+   "sum": "imuldiv_DivReqMsgFromBits 的輸入：待拆解的 65-bit 除法請求訊息",
+   "naming": [
+    [
+     "bits",
+     "bits",
+     "打包成一串位元的訊息"
+    ]
+   ],
+   "desc": "寬度 `IMULDIV_DIVREQ_MSG_SZ`（65）。在 imuldiv-IntDivIterative.t.v 裡，這條線接的是 testbench 自己用 macro 組出來的測試訊息，拆出的 func / a / b 再餵給受測的 `imuldiv_IntDivIterative`。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgFromBits|func": {
+   "sum": "imuldiv_DivReqMsgFromBits 的輸出：拆出來的有號 / 無號旗標",
+   "naming": [
+    [
+     "func",
+     "function",
+     "運算種類"
+    ]
+   ],
+   "desc": "1 bit，assign func = bits[`IMULDIV_DIVREQ_MSG_FUNC_FIELD`]，也就是訊息的 bit 64。在 testbench 裡接到受測模組的 divreq_msg_fn。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgFromBits|a": {
+   "sum": "imuldiv_DivReqMsgFromBits 的輸出：拆出來的被除數",
+   "naming": [
+    [
+     "a",
+     "operand a",
+     "運算元 a：被除數"
+    ]
+   ],
+   "desc": "32 bits，assign a = bits[`IMULDIV_DIVREQ_MSG_A_FIELD`]，取訊息的 bit 63:32。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgFromBits|b": {
+   "sum": "imuldiv_DivReqMsgFromBits 的輸出：拆出來的除數",
+   "naming": [
+    [
+     "b",
+     "operand b",
+     "運算元 b：除數"
+    ]
+   ],
+   "desc": "32 bits，assign b = bits[`IMULDIV_DIVREQ_MSG_B_FIELD`]，取訊息的最低 32 bits。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|msg": {
+   "sum": "imuldiv_DivReqMsgToStr 的唯一 port：要翻成文字的 65-bit 除法請求訊息",
+   "naming": [
+    [
+     "msg",
+     "message",
+     "訊息"
+    ]
+   ],
+   "desc": "寬度 `IMULDIV_DIVREQ_MSG_SZ`（65）。模組內部把它拆成 `func`、`a`、`b`，再用 $sformat 產生 `full_str` 與 `tiny_str`；若整包是全 x（用 === 比對）就直接印 \"x\"。整個模組包在 ifndef SYNTHESIS 裡，只在模擬時存在。imuldiv-DivReqMsg.t.v 以 instance 名稱 divreq_msg_to_str 把它接到 msg_test 上。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|func": {
+   "sum": "ToStr 模組內從 msg 切出來的 1-bit 有號 / 無號旗標",
+   "naming": [
+    [
+     "func",
+     "function",
+     "運算種類"
+    ]
+   ],
+   "desc": "1 bit，取自 msg[`IMULDIV_DIVREQ_MSG_FUNC_FIELD`]（bit 64）。它是兩個 case 的判斷對象，用 localparam `fn_signed` / `fn_unsigned` 比對，決定要印 \"div\" 還是 \"divu\"。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|a": {
+   "sum": "ToStr 模組內從 msg 切出來的被除數",
+   "naming": [
+    [
+     "a",
+     "operand a",
+     "運算元 a：被除數"
+    ]
+   ],
+   "desc": "32 bits，取自 msg 的 bit 63:32。只用在 $sformat 的 %d，印進 `full_str`（例如 \"div   10, 3\"）。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|b": {
+   "sum": "ToStr 模組內從 msg 切出來的除數",
+   "naming": [
+    [
+     "b",
+     "operand b",
+     "運算元 b：除數"
+    ]
+   ],
+   "desc": "32 bits，取自 msg 的最低 32 bits，同樣只印進 `full_str`；`tiny_str` 只印運算符號，不含 a 和 b。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|fn_unsigned": {
+   "sum": "ToStr 模組內「無號」編碼的短名字（值為 1'd0）",
+   "naming": [
+    [
+     "fn",
+     "function",
+     "運算種類"
+    ],
+    [
+     "unsigned",
+     "unsigned",
+     "無號"
+    ]
+   ],
+   "desc": "localparam fn_unsigned = `IMULDIV_DIVREQ_MSG_FUNC_UNSIGNED`。取短名字是為了讓 case ( func ) 好讀：這一項讓 `full_str` 印成 \"divu  %d, %d\"、`tiny_str` 印成 \"/u\"。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|fn_signed": {
+   "sum": "ToStr 模組內「有號」編碼的短名字（值為 1'd1）",
+   "naming": [
+    [
+     "fn",
+     "function",
+     "運算種類"
+    ],
+    [
+     "signed",
+     "signed",
+     "有號"
+    ]
+   ],
+   "desc": "localparam fn_signed = `IMULDIV_DIVREQ_MSG_FUNC_SIGNED`，對應 \"div   %d, %d\" 與 \"/ \"。因為 func 只有 1 bit，兩個 localparam 其實已經涵蓋所有情況，case 裡的 default 分支（\"undefined func\" / \"??\"）只有在 func 是 x / z 時才會走到。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|full_str": {
+   "sum": "ToStr 產生的完整文字字串暫存器（20 個字元）",
+   "naming": [
+    [
+     "full",
+     "full",
+     "完整版"
+    ],
+    [
+     "str",
+     "string",
+     "字串"
+    ]
+   ],
+   "desc": "宣告成 reg [20*8-1:0]，在 always @(*) 裡用 $sformat 填入，例如 \"div   10, 3\" 或 \"divu  10, 3\"。它不接到任何 port，是給波形檢視器觀察用的除錯輔助。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v|imuldiv_DivReqMsgToStr|tiny_str": {
+   "sum": "ToStr 產生的超短文字字串暫存器（2 個字元）",
+   "naming": [
+    [
+     "tiny",
+     "tiny",
+     "極短版"
+    ],
+    [
+     "str",
+     "string",
+     "字串"
+    ]
+   ],
+   "desc": "宣告成 reg [2*8-1:0]，只放 \"/ \"（有號）、\"/u\"（無號）、\"??\"（非法）或 \"x \"（全 x）。用來在波形圖裡用最窄的欄位標示這個 cycle 送的是哪種除法。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v||imuldiv_DivReqMsgToBits": {
+   "sum": "把 func / a / b 打包成 65-bit 除法請求訊息的組合邏輯模組",
+   "naming": [
+    [
+     "imuldiv",
+     "iterative integer multiply / divide",
+     "迭代式整數乘除法"
+    ],
+    [
+     "DivReqMsg",
+     "divide request message",
+     "除法請求訊息"
+    ],
+    [
+     "ToBits",
+     "to bits",
+     "打包成 bits"
+    ]
+   ],
+   "desc": "純組合邏輯，三行 assign 把 `func`、`a`、`b` 寫進 bits 的 64、63:32、31:0。它和 `imuldiv_DivReqMsgFromBits` 是一對相反的轉換器。從整個 repo 看來目前沒有檔案 instantiate 它（testbench 是直接用 _FIELD macro 往 msg_test 的各欄位寫值），它主要是定義訊息格式的參考實作。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v||imuldiv_DivReqMsgFromBits": {
+   "sum": "把 65-bit 除法請求訊息拆成 func / a / b 的組合邏輯模組",
+   "naming": [
+    [
+     "imuldiv",
+     "iterative integer multiply / divide",
+     "迭代式整數乘除法"
+    ],
+    [
+     "DivReqMsg",
+     "divide request message",
+     "除法請求訊息"
+    ],
+    [
+     "FromBits",
+     "from bits",
+     "從 bits 拆出欄位"
+    ]
+   ],
+   "desc": "純組合邏輯，三行 assign 用 FUNC / A / B 三個 _FIELD macro 從 `bits` 切出欄位。imuldiv-IntDivIterative.t.v 以 instance 名稱 msgfrombits instantiate 它：testbench 先組好一包 65-bit 訊息，再用它拆出 fn / a / b 接到受測的 `imuldiv_IntDivIterative`。"
+  },
+  "imuldiv/imuldiv-DivReqMsg.v||imuldiv_DivReqMsgToStr": {
+   "sum": "模擬用的除法請求訊息轉字串模組",
+   "naming": [
+    [
+     "imuldiv",
+     "iterative integer multiply / divide",
+     "迭代式整數乘除法"
+    ],
+    [
+     "DivReqMsg",
+     "divide request message",
+     "除法請求訊息"
+    ],
+    [
+     "ToStr",
+     "to string",
+     "轉成字串"
+    ]
+   ],
+   "desc": "只有一個 input `msg`、沒有輸出 port；結果放在內部的 `full_str`（\"div   10, 3\"）與 `tiny_str`（\"/ \"）兩條 reg 上供波形檢視器觀察。包在 ifndef SYNTHESIS 裡，只在模擬時編譯。imuldiv-DivReqMsg.t.v 以 instance 名稱 divreq_msg_to_str 使用它。"
+  }
+ }
+}

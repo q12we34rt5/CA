@@ -1,0 +1,760 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|msg": {
+      "sum": "riscv_InstMsgFromBits 的輸入：32-bit 指令本體，待拆成各欄位",
+      "naming": [
+        [
+          "msg",
+          "message",
+          "訊息，這裡就是一整條 32-bit 指令"
+        ]
+      ],
+      "desc": "`riscv_InstMsgFromBits` 唯一的輸入，寬度 `RISCV_INST_MSG_SZ` = 32 bit，內容就是從 imem 取回來的那條指令。module 內部所有 `assign` 都是從它身上用 `RISCV_INST_MSG_OPCODE`、`RISCV_INST_MSG_RS1` 這類位元範圍 macro 切欄位。實際接線上，`riscv_CoreCtrl` 的 `inst_msg_from_bits` 把 `ir_Dhl` 接進來，`riscv_CoreDpath` 的 `inst_msg_from_bits` 則接 `inst_Dhl`；兩者都是 D 階段的指令暫存器內容，所以這個 module 是純組合邏輯，沒有 clk / reset。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|opcode": {
+      "sum": "riscv_InstMsgFromBits 切出的 7-bit opcode 欄位（指令最低 7 bits）",
+      "naming": [
+        [
+          "opcode",
+          "operation code",
+          "指令的操作碼"
+        ]
+      ],
+      "desc": "7 bit（`RISCV_INST_MSG_OPCODE_SZ`），由 `assign opcode = msg[`RISCV_INST_MSG_OPCODE]` 取指令的 bit 6:0。RISC-V 用它區分大類，例如 0110011 = R-type 算術、0010011 = I-type 算術、0000011 = load、0100011 = store、1100011 = branch。值得注意的是：`riscv_CoreCtrl` 和 `riscv_CoreDpath` 兩處 instantiate 這個 module 時，opcode 這個 port 都是留空 `()` 沒有接出去——解碼是直接用 `casez ( ir_Dhl )` 比對整條指令的 pattern macro，不需要單獨的 opcode。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|rs1": {
+      "sum": "riscv_InstMsgFromBits 切出的 5-bit 來源暫存器 1 編號",
+      "naming": [
+        [
+          "rs",
+          "source register",
+          "來源暫存器"
+        ],
+        [
+          "1",
+          "number 1",
+          "第一個來源運算元"
+        ]
+      ],
+      "desc": "5 bit，等於 `msg[`RISCV_INST_MSG_RS1]` 也就是指令的 bit 19:15。在 `riscv_CoreCtrl` 裡接到 `inst_rs1_Dhl`，用來做 register file 讀取位址、以及和 X/M/W 階段的 `rf_waddr` 比對來判斷 load-use hazard 要不要 stall；在 `riscv_CoreDpath` 裡同樣接到 `inst_rs1_Dhl`，送進 regfile 的 `raddr0`。注意這個欄位是「無條件」從 bit 19:15 切出來的，指令是不是真的有 rs1 要看控制訊號 `RISCV_INST_MSG_RS1_EN`。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|rs2": {
+      "sum": "riscv_InstMsgFromBits 切出的 5-bit 來源暫存器 2 編號",
+      "naming": [
+        [
+          "rs",
+          "source register",
+          "來源暫存器"
+        ],
+        [
+          "2",
+          "number 2",
+          "第二個來源運算元"
+        ]
+      ],
+      "desc": "5 bit，等於指令的 bit 24:20（`RISCV_INST_MSG_RS2`）。R-type、store、branch 用得到它。在 `riscv_CoreCtrl` 接到 `inst_rs2_Dhl` 做 hazard 比對，在 `riscv_CoreDpath` 接到 `inst_rs2_Dhl` 當 regfile 的 `raddr1`。這個位元範圍和 `shamt` 完全重疊（同樣是 24:20），差別只在指令格式怎麼解讀，是否有效由 `RISCV_INST_MSG_RS2_EN` 決定。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|rd": {
+      "sum": "riscv_InstMsgFromBits 切出的 5-bit 目的暫存器編號",
+      "naming": [
+        [
+          "rd",
+          "destination register",
+          "目的暫存器"
+        ]
+      ],
+      "desc": "5 bit，等於指令的 bit 11:7（`RISCV_INST_MSG_RD`）。`riscv_CoreCtrl` 把它接到 `inst_rd_Dhl`，再用 `wire [4:0] rd = inst_rd_Dhl;` 縮短名字，直接填進解碼表 cs 的 `RISCV_INST_MSG_RF_WADDR` 欄位——也就是「要寫回哪個暫存器」；不寫回的指令（如 sw、branch）該欄填 `rx`（don't care）。在 S-type / SB-type 指令裡這幾個 bit 其實是 immediate 的一部分，所以只有在 `RISCV_INST_MSG_RF_WEN` 為 1 時才有意義。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|funct7": {
+      "sum": "riscv_InstMsgFromBits 切出的 7-bit funct7 欄位（指令最高 7 bits）",
+      "naming": [
+        [
+          "funct",
+          "function",
+          "功能碼"
+        ],
+        [
+          "7",
+          "7 bits",
+          "7 位元寬的那一個"
+        ]
+      ],
+      "desc": "7 bit，等於指令的 bit 31:25（`RISCV_INST_MSG_FUNCT7`）。R-type 用它再細分同一個 funct3 底下的運算，例如 funct3=000 opcode=0110011 時 funct7=0000000 是 add、0100000 是 sub；funct7=0000001 則整批是 RISCV32M 的 mul/div/rem。和 opcode 一樣，`riscv_CoreCtrl` 與 `riscv_CoreDpath` instantiate 時這個 port 都留空沒接，因為解碼是用整條指令的 pattern 比對。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|funct3": {
+      "sum": "riscv_InstMsgFromBits 切出的 3-bit funct3 欄位",
+      "naming": [
+        [
+          "funct",
+          "function",
+          "功能碼"
+        ],
+        [
+          "3",
+          "3 bits",
+          "3 位元寬的那一個"
+        ]
+      ],
+      "desc": "3 bit，等於指令的 bit 14:12（`RISCV_INST_MSG_FUNCT3`）。它是每個 opcode 底下的次分類：branch 用它分 beq/bne/blt/bge/bltu/bgeu，load 用它分 lb/lh/lw/lbu/lhu，I-type 算術用它分 addi/slti/xori/ori/andi 等。在 `riscv_CoreCtrl` 與 `riscv_CoreDpath` 的 instance 裡這個 port 一樣留空未接。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|shamt": {
+      "sum": "riscv_InstMsgFromBits 切出的 5-bit 位移量欄位（給 slli/srli/srai）",
+      "naming": [
+        [
+          "shamt",
+          "shift amount",
+          "位移量"
+        ]
+      ],
+      "desc": "5 bit，等於指令的 bit 24:20（`RISCV_INST_MSG_SHAMT`），位置和 `rs2` 相同，只有立即位移指令 slli / srli / srai 會這樣解讀。`riscv_CoreDpath` 把它接到 `inst_shamt_Dhl`，當作 op1 多工器的其中一個來源（解碼表裡的 `bm_shamt` 選項）。`riscv_CoreCtrl` 的 instance 則沒有接這個 port。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|imm_i": {
+      "sum": "riscv_InstMsgFromBits 產生的 I-type 立即值（已符號延伸成 32 bit）",
+      "naming": [
+        [
+          "imm",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "i",
+          "I-type",
+          "I 型指令格式（addi / load / jalr）"
+        ]
+      ],
+      "desc": "32 bit（`RISCV_INST_MSG_IMM_SZ`），由 `{{21{msg[31]}}, msg[30:25], msg[24:20]}` 組成，也就是取指令 bit 31:20 當 12-bit 有號立即值再符號延伸到 32 bit。`riscv_CoreDpath` 接到 `imm_i_Dhl`，當 op1 多工器的 `bm_imm_i` 來源；addi、ori、lw、jalr 這類指令都用它。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|imm_s": {
+      "sum": "riscv_InstMsgFromBits 產生的 S-type（store）立即值，已符號延伸",
+      "naming": [
+        [
+          "imm",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "s",
+          "S-type",
+          "S 型指令格式（store）"
+        ]
+      ],
+      "desc": "32 bit，由 `{{21{msg[31]}}, msg[30:25], msg[11:7]}` 組成：store 的 12-bit 位移被拆成 imm[11:5]（bit 31:25）與 imm[4:0]（bit 11:7），這裡把兩段接回來再符號延伸。`riscv_CoreDpath` 接到 `imm_s_Dhl`，是 op1 多工器的 `bm_imm_s` 來源，sw 指令用 `alu_add` 把它加到 rs1 上算出記憶體位址。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|imm_sb": {
+      "sum": "riscv_InstMsgFromBits 產生的 SB-type（branch）立即值，已乘 2 並符號延伸",
+      "naming": [
+        [
+          "imm",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "sb",
+          "SB-type",
+          "SB 型指令格式（條件分支）"
+        ]
+      ],
+      "desc": "32 bit，由 `{{20{msg[31]}}, msg[7], msg[30:25], msg[11:8], 1'b0}` 組成。SB-type 的位移欄位散落在 imm[12]=bit31、imm[11]=bit7、imm[10:5]=bit30:25、imm[4:1]=bit11:8，最低位恆為 0（分支目標一定是 2 的倍數），所以最後補一個 `1'b0`。`riscv_CoreDpath` 接到 `imm_sb_Dhl`，用來算分支目標位址 `branch_targ_Dhl`（pc + imm_sb）。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|imm_u": {
+      "sum": "riscv_InstMsgFromBits 產生的 U-type 立即值（高 20 bits 左移 12）",
+      "naming": [
+        [
+          "imm",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "u",
+          "U-type",
+          "U 型指令格式（lui / auipc）"
+        ]
+      ],
+      "desc": "32 bit，由 `{msg[31:12], 12'b0}` 組成：直接拿指令高 20 bit 當立即值的高位，低 12 bit 補 0，不需要符號延伸。`riscv_CoreDpath` 接到 `imm_u_Dhl`，是 op1 多工器的 `bm_imm_u` 來源。lui 用 `am_0`（op0 = 0）加上它得到常數；auipc 用 `am_pc`（op0 = PC）加上它得到相對位址。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgFromBits|imm_uj": {
+      "sum": "riscv_InstMsgFromBits 產生的 UJ-type（jal）立即值，已乘 2 並符號延伸",
+      "naming": [
+        [
+          "imm",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "uj",
+          "UJ-type",
+          "UJ 型指令格式（jal）"
+        ]
+      ],
+      "desc": "32 bit，由 `{{12{msg[31]}}, msg[19:12], msg[20], msg[30:25], msg[24:21], 1'b0}` 組成。jal 的 21-bit 位移被打散成 imm[20]=bit31、imm[19:12]=bit19:12、imm[11]=bit20、imm[10:1]=bit30:21，最低位恆為 0。`riscv_CoreDpath` 接到 `imm_uj_Dhl`，用來算 jump 目標 `jump_targ_Dhl`（pc + imm_uj），對應解碼表裡 jal 的 `pm_j`。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|msg": {
+      "sum": "riscv_InstMsgDisasm 的輸入：要被反組譯成文字的 32-bit 指令",
+      "naming": [
+        [
+          "msg",
+          "message",
+          "訊息，這裡是一整條 32-bit 指令"
+        ]
+      ],
+      "desc": "32 bit 的輸入，也是這個 module 唯一的 port。它先餵給內部的 `inst_msg_from_bits` 拆欄位，再被兩個 `always @(*)` 用 `casez` 比對各個 pattern macro，產生人看得懂的字串 `dasm` 與 `minidasm`。特別處理：若 `msg === 32'bx`（該階段是 bubble、內容不明）就直接印 \"x\"。`riscv_CoreCtrl` 為 `ir_Dhl`、`ir_Xhl`、`ir_Mhl`、`ir_Whl`、`ir_debug` 各建一個 instance，所以波形上每個 pipeline 階段都看得到指令名稱。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|opcode": {
+      "sum": "riscv_InstMsgDisasm 內部的 opcode 欄位線（實際上沒被用到）",
+      "naming": [
+        [
+          "opcode",
+          "operation code",
+          "操作碼"
+        ]
+      ],
+      "desc": "由內部 instance `inst_msg_from_bits` 的 `opcode` 輸出驅動，7 bit。不過在 `riscv_InstMsgDisasm` 的兩段 `casez` 裡指令是用整條 `msg` 比對 pattern macro 的，所以這條線宣告了、接了，但沒有任何地方讀它——`funct3`、`funct7` 也是同樣情形。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|rs1": {
+      "sum": "riscv_InstMsgDisasm 內部的 rs1 欄位線，用來印出組譯字串裡的第一個來源暫存器",
+      "naming": [
+        [
+          "rs",
+          "source register",
+          "來源暫存器"
+        ],
+        [
+          "1",
+          "number 1",
+          "第一個"
+        ]
+      ],
+      "desc": "5 bit，由內部 `inst_msg_from_bits` 拆出（指令 bit 19:15）。在 `dasm` 的 `$sformat` 裡以 `r%02d` 印出，例如 addi/lw 印成 `addi r05, r03, ...`，branch 印成 `bne r01, r02, ...`。只影響模擬時的可讀性，不參與任何硬體行為。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|rs2": {
+      "sum": "riscv_InstMsgDisasm 內部的 rs2 欄位線，用來印出第二個來源暫存器",
+      "naming": [
+        [
+          "rs",
+          "source register",
+          "來源暫存器"
+        ],
+        [
+          "2",
+          "number 2",
+          "第二個"
+        ]
+      ],
+      "desc": "5 bit，由內部 `inst_msg_from_bits` 拆出（指令 bit 24:20）。R-type（add/sub/mul…）、branch 與 store 的 `dasm` 字串會印它；store 印出來的順序是 `sw r<rs2>, r<rs1>, imm_s`。純模擬用途。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|rd": {
+      "sum": "riscv_InstMsgDisasm 內部的 rd 欄位線，用來印出目的暫存器",
+      "naming": [
+        [
+          "rd",
+          "destination register",
+          "目的暫存器"
+        ]
+      ],
+      "desc": "5 bit，由內部 `inst_msg_from_bits` 拆出（指令 bit 11:7）。在 lui、jal、addi、add 這類會寫回的指令字串裡當第一個印出來的暫存器。純模擬用途，不影響硬體。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|shamt": {
+      "sum": "riscv_InstMsgDisasm 內部的 shamt 欄位線，slli/srli/srai 印出位移量用",
+      "naming": [
+        [
+          "shamt",
+          "shift amount",
+          "位移量"
+        ]
+      ],
+      "desc": "5 bit，由內部 `inst_msg_from_bits` 拆出（指令 bit 24:20）。只有 `RISCV_INST_MSG_SLLI`、`RISCV_INST_MSG_SRLI`、`RISCV_INST_MSG_SRAI` 三個 case 會把它印進 `dasm`。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|funct3": {
+      "sum": "riscv_InstMsgDisasm 內部的 funct3 欄位線（宣告了但沒被使用）",
+      "naming": [
+        [
+          "funct",
+          "function",
+          "功能碼"
+        ],
+        [
+          "3",
+          "3 bits",
+          "3 位元寬"
+        ]
+      ],
+      "desc": "3 bit，由內部 `inst_msg_from_bits` 的 `funct3` 輸出驅動（指令 bit 14:12）。反組譯是靠整條指令比對 pattern macro，所以 funct3 的資訊已經隱含在比對裡，這條線實際上沒有被任何 `$sformat` 讀取。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|funct7": {
+      "sum": "riscv_InstMsgDisasm 內部的 funct7 欄位線（宣告了但沒被使用）",
+      "naming": [
+        [
+          "funct",
+          "function",
+          "功能碼"
+        ],
+        [
+          "7",
+          "7 bits",
+          "7 位元寬"
+        ]
+      ],
+      "desc": "7 bit，由內部 `inst_msg_from_bits` 的 `funct7` 輸出驅動（指令 bit 31:25）。同 `funct3`，只是把 module 的 port 接齊，實際印字串時沒用到。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|imm_i": {
+      "sum": "riscv_InstMsgDisasm 內部的 I-type 立即值線，印在 addi/load/jalr 的字串裡",
+      "naming": [
+        [
+          "imm",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "i",
+          "I-type",
+          "I 型格式"
+        ]
+      ],
+      "desc": "32 bit，由內部 `inst_msg_from_bits` 產生（指令 bit 31:20 符號延伸）。在 `dasm` 裡以 `%08x` 十六進位印出，例如 `lw r05, r03, fffffffc`。純模擬用途。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|imm_s": {
+      "sum": "riscv_InstMsgDisasm 內部的 S-type 立即值線，印在 sb/sh/sw 的字串裡",
+      "naming": [
+        [
+          "imm",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "s",
+          "S-type",
+          "S 型（store）格式"
+        ]
+      ],
+      "desc": "32 bit，由內部 `inst_msg_from_bits` 產生（bit 31:25 與 bit 11:7 兩段合併後符號延伸）。只有三個 store 指令的 case 會印它。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|imm_sb": {
+      "sum": "riscv_InstMsgDisasm 內部的 SB-type 立即值線，印在各種 branch 的字串裡",
+      "naming": [
+        [
+          "imm",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "sb",
+          "SB-type",
+          "SB 型（分支）格式"
+        ]
+      ],
+      "desc": "32 bit，由內部 `inst_msg_from_bits` 產生的分支相對位移（已乘 2、符號延伸）。beq/bne/blt/bge/bltu/bgeu 六個 case 都會把它印出來，方便在波形或 log 上核對分支目標。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|imm_u": {
+      "sum": "riscv_InstMsgDisasm 內部的 U-type 立即值線，印在 lui/auipc 的字串裡",
+      "naming": [
+        [
+          "imm",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "u",
+          "U-type",
+          "U 型格式"
+        ]
+      ],
+      "desc": "32 bit，等於指令 bit 31:12 左移 12 位。只有 `RISCV_INST_MSG_LUI` 與 `RISCV_INST_MSG_AUIPC` 兩個 case 使用。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|imm_uj": {
+      "sum": "riscv_InstMsgDisasm 內部的 UJ-type 立即值線，印在 jal 的字串裡",
+      "naming": [
+        [
+          "imm",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "uj",
+          "UJ-type",
+          "UJ 型（jal）格式"
+        ]
+      ],
+      "desc": "32 bit，jal 的跳躍相對位移（已乘 2、符號延伸）。只有 `RISCV_INST_MSG_JAL` 這個 case 使用。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|inst_msg_from_bits": {
+      "sum": "riscv_InstMsgDisasm 內部的 riscv_InstMsgFromBits 實例，負責把 msg 拆成欄位",
+      "naming": [
+        [
+          "inst",
+          "instruction",
+          "指令"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "from_bits",
+          "from bits",
+          "從一串 bits 拆出欄位"
+        ]
+      ],
+      "desc": "`riscv_InstMsgFromBits` 的實例，輸入接 `msg`，十二個輸出全部接到同名的內部 wire（`rd`、`rs1`、`rs2`、`shamt`、各種 imm…）。它存在的目的只是讓下面兩個 `always @(*)` 能把欄位值填進 `$sformat` 的字串。注意 `riscv_CoreCtrl` 和 `riscv_CoreDpath` 裡也各有一個叫 `inst_msg_from_bits` 的實例，那是不同 module 裡的不同 entity。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|dasm": {
+      "sum": "riscv_InstMsgDisasm 的完整反組譯字串（26 字元），給波形/除錯看",
+      "naming": [
+        [
+          "dasm",
+          "disassembly",
+          "反組譯結果"
+        ]
+      ],
+      "desc": "`reg [207:0]`，208 bit = 26 個字元，由 `always @(*)` 內的 `$sformat` 寫入，內容是完整的組譯文字，例如 `addi   r05, r03, 00000001` 或 `add    r01, r02, r03`。先判斷 `msg === 32'bx`（bubble / 未知）就印 \"x\"，否則用 `casez` 比對 pattern macro；比對不到任何 macro 時印 `undefined inst`。它只存在於 `ifndef SYNTHESIS` 區塊裡，純模擬用，不會被合成。"
+    },
+    "riscvstall/riscvstall-InstMsg.v|riscv_InstMsgDisasm|minidasm": {
+      "sum": "riscv_InstMsgDisasm 的短版反組譯字串（6 字元），只印指令助憶碼",
+      "naming": [
+        [
+          "mini",
+          "miniature",
+          "精簡版"
+        ],
+        [
+          "dasm",
+          "disassembly",
+          "反組譯結果"
+        ]
+      ],
+      "desc": "`reg [47:0]`，48 bit = 6 個字元，第二個 `always @(*)` 用同一組 `casez` 只寫入指令名稱，例如 `addi  `、`bne   `、`undef `。在波形檢視器上一條 pipeline 階段只要看這 6 個字就知道跑的是什麼指令，比 `dasm` 好排版。同樣是 `ifndef SYNTHESIS` 的模擬專用邏輯。"
+    },
+    "riscvstall/riscvstall-InstMsg.v||riscv_InstMsgFromBits": {
+      "sum": "把 32-bit 指令拆成 opcode / rs1 / rs2 / rd / funct / 各式 immediate 的純組合 module",
+      "naming": [
+        [
+          "riscv",
+          "RISC-V",
+          "RISC-V 處理器"
+        ],
+        [
+          "Inst",
+          "instruction",
+          "指令"
+        ],
+        [
+          "Msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "From",
+          "from",
+          "從…轉換"
+        ],
+        [
+          "Bits",
+          "bits",
+          "一串位元"
+        ]
+      ],
+      "desc": "純組合邏輯、沒有 clk 也沒有 reset：輸入一條 32-bit 指令 `msg`，輸出 12 個欄位。前七個（`opcode`、`rs1`、`rs2`、`rd`、`funct7`、`funct3`、`shamt`）只是單純切位元範圍；後五個（`imm_i`、`imm_s`、`imm_sb`、`imm_u`、`imm_uj`）則要把散落的 bit 重新拼接並做符號延伸，因為 RISC-V 五種指令格式的立即值編碼不同。它被 instantiate 三次：`riscv_CoreCtrl`（只取 rs1/rs2/rd 做 hazard 與寫回位址）、`riscv_CoreDpath`（取 rs1/rs2/rd/shamt 與全部 immediate 餵 regfile 與 op0/op1 多工器）、以及 `riscv_InstMsgDisasm`（反組譯印字串）。由於它不含 `ifndef SYNTHESIS`，是真正會被合成的硬體。"
+    },
+    "`RISCV_INST_MSG_CS_SZ": {
+      "sum": "控制訊號 bundle cs 的總寬度，展開成 39",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "CS",
+          "control signals",
+          "解碼表產生的整包控制訊號"
+        ],
+        [
+          "SZ",
+          "size",
+          "bit 數"
+        ]
+      ],
+      "desc": "展開成 `39`。`riscv_CoreCtrl` 用 `localparam cs_sz = `RISCV_INST_MSG_CS_SZ;` 再宣告 `reg [cs_sz-1:0] cs;`，解碼表的每一行就是把 21 個欄位用 `{ ... }` 串成這 39 bit 指定給 `cs`。`always @(*)` 開頭先寫 `cs = {cs_sz{1'bx}};`（預設為非法指令），比對不到任何 pattern 時就維持全 x，使得 `cs[`RISCV_INST_MSG_INST_VAL]` 不是 1，觸發 illegal instruction 的檢查。注意：欄位 macro 的最高位是 38:38，所以 39 bit 剛好用滿 bit 38 到 bit 0。"
+    },
+    "`RISCV_INST_MSG_LUI": {
+      "sum": "lui 指令的 32-bit 比對 pattern（U-type，opcode 0110111）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "LUI",
+          "load upper immediate",
+          "載入高位立即值"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_???_?????_0110111`：`?` 代表 don't care，所以只有 opcode = 0110111（bit 6:0） 是固定的。把 20-bit 立即值放到目的暫存器的高 20 bit（低 12 bit 補 0）。解碼表用 `am_0`（op0=0）+ `bm_imm_u` + `alu_add` 實作。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"lui\"。`riscv_CoreCtrl` 的解碼表已經填好這一行。"
+    },
+    "`RISCV_INST_MSG_AUIPC": {
+      "sum": "auipc 指令的 32-bit 比對 pattern（U-type，opcode 0010111）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "AUIPC",
+          "add upper immediate to PC",
+          "把高位立即值加到 PC"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_???_?????_0010111`：`?` 代表 don't care，所以只有 opcode = 0010111（bit 6:0） 是固定的。PC 加上 20-bit 立即值左移 12 的結果寫回 rd，用來組相對位址。解碼表用 `am_pc` + `bm_imm_u` + `alu_add`。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"auipc\"。`riscv_CoreCtrl` 的解碼表已經填好這一行。"
+    },
+    "`RISCV_INST_MSG_ADDI": {
+      "sum": "addi 指令的 32-bit 比對 pattern（I-type，opcode 0010011，funct3 000）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "ADD",
+          "add",
+          "加法"
+        ],
+        [
+          "I",
+          "immediate",
+          "立即值版本"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_000_?????_0010011`：`?` 代表 don't care，所以只有 opcode = 0010011（bit 6:0）、funct3 = 000（bit 14:12） 是固定的。rd = rs1 + 符號延伸的 imm_i。解碼表已實作：`am_rdat` + `bm_imm_i` + `alu_add` + `wm_alu`。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"addi\"。`riscv_CoreCtrl` 的解碼表已經填好這一行。"
+    },
+    "`RISCV_INST_MSG_ORI": {
+      "sum": "ori 指令的 32-bit 比對 pattern（I-type，opcode 0010011，funct3 110）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "OR",
+          "bitwise or",
+          "位元或"
+        ],
+        [
+          "I",
+          "immediate",
+          "立即值版本"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_110_?????_0010011`：`?` 代表 don't care，所以只有 opcode = 0010011（bit 6:0）、funct3 = 110（bit 14:12） 是固定的。rd = rs1 | imm_i。解碼表已實作：`am_rdat` + `bm_imm_i` + `alu_or`。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"ori\"。`riscv_CoreCtrl` 的解碼表已經填好這一行。"
+    },
+    "`RISCV_INST_MSG_ADD": {
+      "sum": "add 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 000）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "ADD",
+          "add",
+          "加法"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_?????_?????_000_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 000（bit 14:12）、funct7 = 0000000（bit 31:25） 是固定的。rd = rs1 + rs2。解碼表已實作：`am_rdat` + `bm_rdat` + `alu_add`，兩個來源暫存器都要 enable（`RS1_EN` 與 `RS2_EN` 皆為 y）。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"add\"。`riscv_CoreCtrl` 的解碼表已經填好這一行。"
+    },
+    "`RISCV_INST_MSG_LW": {
+      "sum": "lw 指令的 32-bit 比對 pattern（I-type，opcode 0000011，funct3 010）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "LW",
+          "load word",
+          "載入一個 word（4 bytes）"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_010_?????_0000011`：`?` 代表 don't care，所以只有 opcode = 0000011（bit 6:0）、funct3 = 010（bit 14:12） 是固定的。從 rs1+imm_i 讀 4 bytes 寫回 rd。解碼表已實作：`ld` + `ml_w` + `dmm_w` + `wm_mem`，ALU 用 `alu_add` 算位址。它也是 `riscv_CoreCtrl` load-use hazard 的主角：X 階段是 load 而 D 階段要用同一個暫存器時必須 stall。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"lw\"。`riscv_CoreCtrl` 的解碼表已經填好這一行。"
+    },
+    "`RISCV_INST_MSG_SW": {
+      "sum": "sw 指令的 32-bit 比對 pattern（S-type，opcode 0100011，funct3 010）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SW",
+          "store word",
+          "存一個 word（4 bytes）"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_010_?????_0100011`：`?` 代表 don't care，所以只有 opcode = 0100011（bit 6:0）、funct3 = 010（bit 14:12） 是固定的。把 rs2 整個 word 寫到 rs1+imm_s。解碼表已實作：`st` + `ml_w`，`RF_WEN`=n（不寫回暫存器），寫回位址欄填 `rx`。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"sw\"。`riscv_CoreCtrl` 的解碼表已經填好這一行。"
+    },
+    "`RISCV_INST_MSG_JAL": {
+      "sum": "jal 指令的 32-bit 比對 pattern（UJ-type，opcode 1101111）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "JAL",
+          "jump and link",
+          "跳躍並記下返回位址"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_???_?????_1101111`：`?` 代表 don't care，所以只有 opcode = 1101111（bit 6:0） 是固定的。無條件跳到 pc + imm_uj，同時把 pc+4 寫回 rd。解碼表設 `J_EN`=y、`pm_j`、`am_pc4` + `bm_0` + `alu_add`（等於把 pc+4 直接送去寫回）。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"jal\"。`riscv_CoreCtrl` 的解碼表已經填好這一行。"
+    },
+    "`RISCV_INST_MSG_BNE": {
+      "sum": "bne 指令的 32-bit 比對 pattern（SB-type，opcode 1100011，funct3 001）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "BNE",
+          "branch if not equal",
+          "不相等就跳"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_001_?????_1100011`：`?` 代表 don't care，所以只有 opcode = 1100011（bit 6:0）、funct3 = 001（bit 14:12） 是固定的。rs1 != rs2 就跳。解碼表已實作：`br_bne` + `pm_b`，ALU 做 `alu_xor`（結果非 0 代表不相等）。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"bne\"。`riscv_CoreCtrl` 的解碼表已經填好這一行。"
+    },
+    "`RISCV_INST_MSG_BLT": {
+      "sum": "blt 指令的 32-bit 比對 pattern（SB-type，opcode 1100011，funct3 100）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "BLT",
+          "branch if less than",
+          "小於就跳（有號）"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_100_?????_1100011`：`?` 代表 don't care，所以只有 opcode = 1100011（bit 6:0）、funct3 = 100（bit 14:12） 是固定的。有號比較 rs1 < rs2 就跳。解碼表已實作：`br_blt` + `pm_b`，ALU 做 `alu_sub`。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"blt\"。`riscv_CoreCtrl` 的解碼表已經填好這一行。"
+    }
+  }
+}

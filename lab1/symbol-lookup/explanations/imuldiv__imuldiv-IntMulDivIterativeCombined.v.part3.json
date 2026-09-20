@@ -1,0 +1,1065 @@
+{
+  "entities": {
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|counter_mux_out": {
+      "sum": "計數器多工器的輸出：下一個 cycle 要寫進 counter_reg 的值",
+      "naming": [
+        [
+          "counter",
+          "counter",
+          "計數器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "5-bit wire。`cntr_mux_sel == op_load` 時是 31，`== op_next` 時是 `counter_reg - 1`，其他（例如 `STATE_SIGN` 給的 x）是 5'bx。它無條件在每個 clk 正緣寫進 `counter_reg`，所以 IDLE 先載入 31、CALC 一路減到 0，共 32 個迭代 cycle。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|sign_next": {
+      "sum": "結果符號的下一個值：A 的 bit 31 XOR B 的 bit 31",
+      "naming": [
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ],
+        [
+          "next",
+          "next value",
+          "下一個 cycle 要存入的值"
+        ]
+      ],
+      "desc": "1-bit wire，`muldivreq_msg_a[31] ^ muldivreq_msg_b[31]`。兩個運算元異號時為 1，代表乘積（或商）應該是負的。只有在 `sign_en`（`STATE_IDLE`）時才被存進 `sign_reg`。注意它沒有考慮 divu / remu，無號運算時 ctrl 產生的 `res_*_sign_mux_sel` 會強制為 0，所以不會誤取二補數。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|rem_sign_next": {
+      "sum": "餘數符號的下一個值：直接取 A 的 bit 31",
+      "naming": [
+        [
+          "rem",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ],
+        [
+          "next",
+          "next value",
+          "下一個 cycle 要存入的值"
+        ]
+      ],
+      "desc": "1-bit wire，`muldivreq_msg_a[31]`。RISC-V 的 `rem` 規定餘數與被除數同號，所以只看 A。在 `sign_en` 時存進 `rem_sign_reg`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|unsigned_a": {
+      "sum": "運算元 A 的絕對值（有號運算且 A 為負時取二補數）",
+      "naming": [
+        [
+          "unsigned",
+          "unsigned",
+          "無號（取絕對值後）"
+        ],
+        [
+          "a",
+          "operand A",
+          "運算元 A"
+        ]
+      ],
+      "desc": "32-bit wire：`( muldivreq_msg_a[31] && op_sign_mux_sel ) ? ~muldivreq_msg_a + 1 : muldivreq_msg_a`。因為整個迭代演算法只處理無號數，載入前先把負數轉成絕對值，最後再依 `sign` / `rem_sign` 把符號補回去。`op_sign_mux_sel` 為 0（divu / remu）時原封不動。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|unsigned_b": {
+      "sum": "運算元 B 的絕對值（有號運算且 B 為負時取二補數）",
+      "naming": [
+        [
+          "unsigned",
+          "unsigned",
+          "無號（取絕對值後）"
+        ],
+        [
+          "b",
+          "operand B",
+          "運算元 B"
+        ]
+      ],
+      "desc": "32-bit wire，做法與 `unsigned_a` 相同。乘法時它經 `b_mux_out` 進 `b_reg`，除法時經 `result_mux_1_out` 包成 `{ 1'b0, unsigned_b, 32'b0 }` 進 `result_reg`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|a_mux_1_out": {
+      "sum": "a 暫存器第 1 層多工器輸出：左移值或加減法器結果",
+      "naming": [
+        [
+          "a",
+          "the a_reg register",
+          "a 暫存器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "1",
+          "mux number 1",
+          "第 1 層"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "65-bit wire。`a_mux_1_sel == a_shift`(0) 時是 `a_shift_out`（乘法：被乘數左移一位）；`== a_addsub`(1) 時是 `addsub_mux_out`（除法：試減結果或單純左移）。它再送進 `a_mux_2_out` 的 `a_next` 那一路。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|a_mux_2_out": {
+      "sum": "a 暫存器第 2 層多工器輸出：載入 A 或走迭代路徑",
+      "naming": [
+        [
+          "a",
+          "the a_reg register",
+          "a 暫存器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "2",
+          "mux number 2",
+          "第 2 層"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "65-bit wire。`a_mux_2_sel == a_load`(0) 時是 `{ 33'b0, unsigned_a }`，`== a_next`(1) 時是 `a_mux_1_out`。它在 `a_en` 為 1 時被寫進 `a_reg`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|b_mux_out": {
+      "sum": "b 暫存器多工器輸出：載入 B 或右移一位",
+      "naming": [
+        [
+          "b",
+          "the b_reg register",
+          "b 暫存器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "32-bit wire。`b_mux_sel == op_load` 時是 `unsigned_b`，`== op_next` 時是 `b_shift_out`。它無條件在每個 clk 正緣寫進 `b_reg`（沒有 enable）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|result_mux_1_out": {
+      "sum": "result 暫存器的初值多工器輸出：0 或左移 32 位的除數",
+      "naming": [
+        [
+          "result",
+          "result",
+          "結果"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "1",
+          "mux number 1",
+          "第 1 層"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "65-bit wire。`res_mux_1_sel == res_zero`(0) 時是 65'b0（乘法），`== res_b`(1) 時是 `{ 1'b0, unsigned_b, 32'b0 }`（除法的除數）。只在 `STATE_IDLE` 經 `result_mux_2_out` 載入。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|result_mux_2_out": {
+      "sum": "result 暫存器的輸入多工器輸出：初值或累加結果",
+      "naming": [
+        [
+          "result",
+          "result",
+          "結果"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "2",
+          "mux number 2",
+          "第 2 層"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "65-bit wire。`res_mux_2_sel == res_load` 時是 `result_mux_1_out`，`== res_next` 時是 `addsub_mux_out`。在 `result_en` 為 1 時寫進 `result_reg`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|counter_reg": {
+      "sum": "5-bit 迭代計數暫存器，從 31 數到 0",
+      "naming": [
+        [
+          "counter",
+          "counter",
+          "計數器"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "`reg [4:0]`，每個 clk 正緣無條件寫入 `counter_mux_out`（沒有 enable、也沒有 reset）。`STATE_IDLE` 載入 31，`STATE_CALC` 遞減，`ctrl` 看 `counter == 0` 判斷 32 回合跑完。因為沒有 enable，`STATE_SIGN` 期間它會被寫成 x；只要狀態機不在該狀態讀它就沒問題，但看波形時會看到 x，屬於正常現象。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|sign_reg": {
+      "sum": "存放結果正負號的 1-bit 暫存器",
+      "naming": [
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "在 `sign_en`（只有 `STATE_IDLE`）時存入 `sign_next`，之後整個運算都不變，經 `assign sign = sign_reg` 給 ctrl。因為 `a_reg` / `b_reg` 在運算中裝的都是絕對值，要靠這一位在最後把符號補回去。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|rem_sign_reg": {
+      "sum": "存放餘數正負號的 1-bit 暫存器",
+      "naming": [
+        [
+          "rem",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "和 `sign_reg` 同一個 `if ( sign_en )` 區塊，存入 `rem_sign_next`（也就是 A 的 bit 31）。經 `assign rem_sign = rem_sign_reg` 給 ctrl，用來決定 `res_rem_sign_mux_sel`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|a_reg": {
+      "sum": "65-bit 主暫存器：乘法時裝被乘數，除法時裝 {餘數, 商}",
+      "naming": [
+        [
+          "a",
+          "operand A / accumulator",
+          "運算元 A 的暫存器"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "整個設計最關鍵的暫存器。`STATE_IDLE` 載入 `{ 33'b0, unsigned_a }`。乘法時每回合左移一位當被乘數；除法時每回合存入 `addsub_mux_out`，高位逐步變成餘數、被左移騰出的最低位逐步填入商位元，所以 32 回合後 `a_reg[63:32]` 是餘數、`a_reg[31:0]` 是商。做成 65 bit 是為了讓除法的試減 `(a_reg << 1) - result_reg` 有一位符號位可以看（`diff_msb`）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|b_reg": {
+      "sum": "32-bit 乘數暫存器，乘法時每回合右移一位",
+      "naming": [
+        [
+          "b",
+          "operand B",
+          "運算元 B 的暫存器"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "每個 clk 正緣無條件寫入 `b_mux_out`。`STATE_IDLE` 載入 `unsigned_b`，`STATE_CALC` 每回合右移一位，最低位 `b_lsb` 告訴 ctrl 這回合要不要累加。除法時不使用（除數存在 `result_reg`），而 `STATE_SIGN` 時因為 `b_mux_sel` 是 x，它會變成 x。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|result_reg": {
+      "sum": "65-bit 暫存器：乘法時裝部分積，除法時裝（對齊後的）除數",
+      "naming": [
+        [
+          "result",
+          "result",
+          "結果"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "在 `result_en` 為 1 時寫入 `result_mux_2_out`。乘法：IDLE 清 0，CALC 每回合（`b_lsb` 為 1 時）加上 `a_reg`，結束後 `result_reg[63:0]` 就是乘積。除法：IDLE 載入 `{ 1'b0, unsigned_b, 32'b0 }`，CALC 時 `result_en` 為 0 所以保持不變，一直當被減的除數。這就是乘除法共用暫存器的關鍵設計。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|a_shift_out": {
+      "sum": "a_reg 左移一位的結果",
+      "naming": [
+        [
+          "a",
+          "the a_reg register",
+          "a 暫存器"
+        ],
+        [
+          "shift",
+          "shift left",
+          "左移"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "65-bit wire，`a_reg << 1`。乘法用它當下一回合的被乘數；除法用它當被減數（`addsub_out = a_shift_out - result_reg`），也在不夠減時直接當作 `a_reg` 的下一個值（`addsub_shift`）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|b_shift_out": {
+      "sum": "b_reg 右移一位的結果",
+      "naming": [
+        [
+          "b",
+          "the b_reg register",
+          "b 暫存器"
+        ],
+        [
+          "shift",
+          "shift right",
+          "右移"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "32-bit wire，`b_reg >> 1`。乘法每回合把乘數往右推一位，讓下一個位元出現在 `b_lsb`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|addsub_out": {
+      "sum": "共用加減法器的 65-bit 輸出（乘法做加、除法做減）",
+      "naming": [
+        [
+          "addsub",
+          "adder / subtractor",
+          "加減法器"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "`addsub_fn == fn_mul` 時是 `a_reg + result_reg`（累加部分積）；`== fn_div` 時是 `a_shift_out - result_reg`（試減）。它的 bit 64 就是 `diff_msb`，除法靠它判斷夠不夠減。整個設計只有這一個加減法器，乘法與除法共用——這正是 Combined 版相對於分開版最主要的硬體節省。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|addsub_mux_out": {
+      "sum": "加減法器後面的 4 選 1 多工器輸出，同時餵給 a_reg 與 result_reg",
+      "naming": [
+        [
+          "addsub",
+          "adder / subtractor",
+          "加減法器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "65-bit wire，依 `addsub_mux_sel` 選 `result_reg`(old)、`a_shift_out`(shift)、`addsub_out`(mul) 或 `{ addsub_out[64:1], 1'b1 }`(div)。乘法路徑經 `result_mux_2_out` 進 `result_reg`，除法路徑經 `a_mux_1_out` 進 `a_reg`，同一條線服務兩種運算。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|signed_res_mul_mux_out": {
+      "sum": "補上正負號後的 64-bit 乘積",
+      "naming": [
+        [
+          "signed",
+          "signed",
+          "有號"
+        ],
+        [
+          "res",
+          "result",
+          "結果"
+        ],
+        [
+          "mul",
+          "multiply",
+          "乘法"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "`res_mul_sign_mux_sel == sign_u` 時是 `result_reg[63:0]`，`== sign_s` 時是它的二補數。這是 `muldivresp_msg_result` 在 `res_mux_sel == fn_mul` 時的來源。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|signed_res_div_mux_out": {
+      "sum": "補上正負號後的 32-bit 商",
+      "naming": [
+        [
+          "signed",
+          "signed",
+          "有號"
+        ],
+        [
+          "res",
+          "result",
+          "結果"
+        ],
+        [
+          "div",
+          "divide",
+          "除法"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "`res_div_sign_mux_sel == sign_u` 時是 `a_reg[31:0]`，`== sign_s` 時是它的二補數。它會放在 `muldivresp_msg_result` 的低 32 bit。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombDpath|signed_res_rem_mux_out": {
+      "sum": "補上正負號後的 32-bit 餘數",
+      "naming": [
+        [
+          "signed",
+          "signed",
+          "有號"
+        ],
+        [
+          "res",
+          "result",
+          "結果"
+        ],
+        [
+          "rem",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "`res_rem_sign_mux_sel == sign_u` 時是 `a_reg[63:32]`，`== sign_s` 時是它的二補數。它會放在 `muldivresp_msg_result` 的高 32 bit。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|clk": {
+      "sum": "Ctrl 的時脈輸入，狀態機與 fn_reg 在它的正緣更新",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "唯一的 `always @ ( posedge clk )` 區塊用它更新 `state_reg` 與 `fn_reg`。控制訊號本身則是純組合邏輯（`cs` 表與各個 assign），所以同一個 cycle 內就會反映在 dpath 上。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|reset": {
+      "sum": "Ctrl 的同步 reset，把狀態機拉回 STATE_IDLE",
+      "naming": [
+        [
+          "reset",
+          "reset",
+          "重置"
+        ]
+      ],
+      "desc": "高電位有效、同步於 `clk` 正緣：`reset` 為 1 時 `state_reg <= STATE_IDLE`，此時 `fn_reg` 不會被更新（reset 分支裡沒有寫它）。這是整個 Combined 設計裡唯一真正使用 reset 的地方。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|muldivreq_msg_fn": {
+      "sum": "進到 Ctrl 的 3-bit 功能碼（當下的、還沒被存起來的）",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "fn",
+          "function",
+          "運算種類"
+        ]
+      ],
+      "desc": "值域見 `imuldiv-MulDivReqMsg.v` 的 `IMULDIV_MULDIVREQ_MSG_FUNC_MUL` … `IMULDIV_MULDIVREQ_MSG_FUNC_REMU`。它有兩種用法：一是在 `fn_en`（`STATE_IDLE`）時存進 `fn_reg` 供整個運算使用；二是被 `op_sign_mux_sel` 與 `res_mux_1_sel` 直接拿去組合——這兩條只在載入運算元的那個 cycle 需要正確，所以用當下的 fn 是可以的。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|muldivreq_val": {
+      "sum": "上游的請求 valid，Ctrl 用來判斷是否可以開始計算",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "只出現在 `muldivreq_go = muldivreq_val && muldivreq_rdy`。`STATE_IDLE` 時 `muldivreq_go` 為 1 就轉到 `STATE_CALC`；其他狀態 rdy 為 0，所以 val 拉著也不會有動作。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|muldivreq_rdy": {
+      "sum": "Ctrl 對上游宣告的 ready（只有 IDLE 為 1）",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可接收"
+        ]
+      ],
+      "desc": "`assign muldivreq_rdy = cs[9];`，`STATE_IDLE` 那一列是 `y`(1)，另外兩列是 `n`(0)。也就是說這個單元一次只能跑一筆運算，中途會反壓上游。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|muldivresp_val": {
+      "sum": "Ctrl 對下游宣告的結果 valid（只有 SIGN 為 1）",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "`assign muldivresp_val = cs[8];`，只有 `STATE_SIGN` 那一列是 `y`。進到這個狀態表示 32 回合已經跑完，`muldivresp_msg_result` 上的組合輸出已經是正確答案。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|muldivresp_rdy": {
+      "sum": "下游的 ready，決定結果何時被收走、狀態機何時回 IDLE",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可接收"
+        ]
+      ],
+      "desc": "只出現在 `muldivresp_go = muldivresp_val && muldivresp_rdy`；成立時 `state_next = STATE_IDLE`。若下游遲遲不 ready，狀態機就停在 `STATE_SIGN`，而該狀態的 `a_en` / `result_en` 都是 0，結果會穩穩保持著。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|counter": {
+      "sum": "Ctrl 讀進來的迭代計數值，用來判斷計算是否結束",
+      "naming": [
+        [
+          "counter",
+          "counter",
+          "計數器"
+        ]
+      ],
+      "desc": "5-bit 輸入，來自 dpath 的 `counter_reg`。唯一用途是 `is_calc_done = ( counter == 5'b0 )`，在 `STATE_CALC` 時成立就轉到 `STATE_SIGN`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|sign": {
+      "sum": "Ctrl 讀進來的結果符號旗標",
+      "naming": [
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ]
+      ],
+      "desc": "來自 dpath 的 `sign_reg`。用來產生 `res_mul_sign_mux_sel`（`fn_reg` 是 MUL 且 sign 為 1）與 `res_div_sign_mux_sel`（`fn_reg` 是 DIV 或 REM 且 sign 為 1）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|rem_sign": {
+      "sum": "Ctrl 讀進來的餘數符號旗標（被除數的符號）",
+      "naming": [
+        [
+          "rem",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ]
+      ],
+      "desc": "來自 dpath 的 `rem_sign_reg`。只用來產生 `res_rem_sign_mux_sel`，因為 RISC-V 的餘數符號跟被除數一致。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|b_lsb": {
+      "sum": "Ctrl 讀進來的乘數最低位，決定這回合要不要累加",
+      "naming": [
+        [
+          "b",
+          "operand B",
+          "運算元 B（乘數）"
+        ],
+        [
+          "lsb",
+          "least significant bit",
+          "最低位元"
+        ]
+      ],
+      "desc": "來自 dpath 的 `b_reg[0]`。只出現在 `addsub_mux_sel` 的判斷式：`is_mul && b_lsb` 選 `addsub_mul`，`is_mul && !b_lsb` 選 `addsub_old`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|diff_msb": {
+      "sum": "Ctrl 讀進來的試減符號位，決定除法這回合夠不夠減",
+      "naming": [
+        [
+          "diff",
+          "difference",
+          "相減結果"
+        ],
+        [
+          "msb",
+          "most significant bit",
+          "最高位元"
+        ]
+      ],
+      "desc": "來自 dpath 的 `addsub_out[64]`。在 `addsub_mux_sel` 裡：`(is_div || is_rem) && !diff_msb` 選 `addsub_div`（夠減，商位元 1），`&& diff_msb` 選 `addsub_shift`（不夠減，商位元 0）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|sign_en": {
+      "sum": "Ctrl 輸出的 enable：載入兩個符號旗標",
+      "naming": [
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ],
+        [
+          "en",
+          "enable",
+          "致能"
+        ]
+      ],
+      "desc": "`assign sign_en = cs[7];`，只有 `STATE_IDLE` 為 `y`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|a_en": {
+      "sum": "Ctrl 輸出的 enable：更新 a_reg",
+      "naming": [
+        [
+          "a",
+          "the a_reg register",
+          "a 暫存器"
+        ],
+        [
+          "en",
+          "enable",
+          "致能"
+        ]
+      ],
+      "desc": "`assign a_en = cs[6];`，IDLE 與 CALC 都是 `y`、SIGN 是 `n`，讓結果在等下游時凍結。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|result_en": {
+      "sum": "Ctrl 輸出的 enable：更新 result_reg（CALC 時只有乘法才開）",
+      "naming": [
+        [
+          "result",
+          "result",
+          "結果"
+        ],
+        [
+          "en",
+          "enable",
+          "致能"
+        ]
+      ],
+      "desc": "`assign result_en = cs[5];`。`cs` 表裡 `STATE_CALC` 這一欄填的是 `is_mul`（而不是固定的 y/n），所以除法時 `result_reg` 在整個計算過程保持是除數不變。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|cntr_mux_sel": {
+      "sum": "Ctrl 輸出：計數器要載入 31 還是減 1",
+      "naming": [
+        [
+          "cntr",
+          "counter",
+          "計數器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "`assign cntr_mux_sel = cs[3];`。IDLE 給 `op_load`、CALC 給 `op_next`、SIGN 給 `op_x`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|op_sign_mux_sel": {
+      "sum": "Ctrl 輸出：這次運算是有號的（要先取絕對值）嗎",
+      "naming": [
+        [
+          "op",
+          "operand",
+          "運算元"
+        ],
+        [
+          "sign",
+          "signed",
+          "有號"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "由當下的 `muldivreq_msg_fn` 是否等於 `IMULDIV_MULDIVREQ_MSG_FUNC_MUL`、`IMULDIV_MULDIVREQ_MSG_FUNC_DIV` 或 `IMULDIV_MULDIVREQ_MSG_FUNC_REM` 組合而成。dpath 靠它決定 `unsigned_a` / `unsigned_b` 要不要取二補數。divu / remu 時為 0，運算元原樣載入。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|a_mux_1_sel": {
+      "sum": "Ctrl 輸出：a_reg 的迭代值走「左移」（乘法）還是「加減法器」（除法）",
+      "naming": [
+        [
+          "a",
+          "the a_reg register",
+          "a 暫存器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "1",
+          "mux number 1",
+          "第 1 層"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "`assign a_mux_1_sel = is_div || is_rem;`。它來自 `fn_reg`，所以整個 `STATE_CALC` 期間穩定，不受上游把 `muldivreq_msg_fn` 換掉影響。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|a_mux_2_sel": {
+      "sum": "Ctrl 輸出：a_reg 要載入運算元還是接迭代值",
+      "naming": [
+        [
+          "a",
+          "the a_reg register",
+          "a 暫存器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "2",
+          "mux number 2",
+          "第 2 層"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "`assign a_mux_2_sel = cs[2];`。IDLE 給 `op_load`（對應 dpath 的 `a_load`）、CALC 給 `op_next`（對應 `a_next`）、SIGN 給 `op_x`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|b_mux_sel": {
+      "sum": "Ctrl 輸出：b_reg 要載入運算元 B 還是右移",
+      "naming": [
+        [
+          "b",
+          "the b_reg register",
+          "b 暫存器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "`assign b_mux_sel = cs[1];`。IDLE `op_load`、CALC `op_next`、SIGN `op_x`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|res_mux_1_sel": {
+      "sum": "Ctrl 輸出：result_reg 初值要填 0 還是除數",
+      "naming": [
+        [
+          "res",
+          "result",
+          "結果"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "1",
+          "mux number 1",
+          "第 1 層"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "由當下的 `muldivreq_msg_fn` 是否為 DIV / DIVU / REM / REMU 組合而成（是就 1）。只有 `STATE_IDLE` 載入那個 cycle 需要它正確。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|res_mux_2_sel": {
+      "sum": "Ctrl 輸出：result_reg 要吃初值還是吃累加結果",
+      "naming": [
+        [
+          "res",
+          "result",
+          "結果"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "2",
+          "mux number 2",
+          "第 2 層"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "`assign res_mux_2_sel = cs[0];`。IDLE `op_load`（＝`res_load`）、CALC `op_next`（＝`res_next`）、SIGN `op_x`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|addsub_fn": {
+      "sum": "Ctrl 輸出：加減法器要做加法（乘）還是減法（除）",
+      "naming": [
+        [
+          "addsub",
+          "adder / subtractor",
+          "加減法器"
+        ],
+        [
+          "fn",
+          "function",
+          "功能"
+        ]
+      ],
+      "desc": "`assign addsub_fn = is_div || is_rem;`，來自 `fn_reg`。0 對應 dpath 的 `fn_mul`（相加），1 對應 `fn_div`（相減）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|addsub_mux_sel": {
+      "sum": "Ctrl 輸出：2-bit 決定這回合把哪個值寫回暫存器",
+      "naming": [
+        [
+          "addsub",
+          "adder / subtractor",
+          "加減法器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "四種情況：乘法且 `b_lsb`=1 → `addsub_mul`；乘法且 `b_lsb`=0 → `addsub_old`；除法/取餘且 `diff_msb`=0 → `addsub_div`；除法/取餘且 `diff_msb`=1 → `addsub_shift`；都不成立（例如 `fn_reg` 還沒載入或是未定義的 fn）→ 2'bx。這是把乘法與除法演算法融進同一組硬體的核心控制訊號。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|res_mul_sign_mux_sel": {
+      "sum": "Ctrl 輸出：乘積要不要取二補數",
+      "naming": [
+        [
+          "res",
+          "result",
+          "結果"
+        ],
+        [
+          "mul",
+          "multiply",
+          "乘法"
+        ],
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "`( fn_reg == IMULDIV_MULDIVREQ_MSG_FUNC_MUL ) && sign`。只有有號乘法且兩運算元異號時為 1。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|res_div_sign_mux_sel": {
+      "sum": "Ctrl 輸出：商要不要取二補數",
+      "naming": [
+        [
+          "res",
+          "result",
+          "結果"
+        ],
+        [
+          "div",
+          "divide",
+          "除法"
+        ],
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "`fn_reg` 是 `IMULDIV_MULDIVREQ_MSG_FUNC_DIV` 或 `IMULDIV_MULDIVREQ_MSG_FUNC_REM` 且 `sign` 為 1 時為 1。無號的 divu / remu 永遠 0。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|res_rem_sign_mux_sel": {
+      "sum": "Ctrl 輸出：餘數要不要取二補數",
+      "naming": [
+        [
+          "res",
+          "result",
+          "結果"
+        ],
+        [
+          "rem",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "`fn_reg` 是 DIV 或 REM 且 `rem_sign` 為 1 時為 1。用 `rem_sign`（被除數符號）而不是 `sign`，因為餘數符號只跟被除數有關。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterativeCombined.v|imuldiv_IntMulDivIterativeCombCtrl|res_mux_sel": {
+      "sum": "Ctrl 輸出：最終輸出要選乘積還是 {餘數, 商}",
+      "naming": [
+        [
+          "res",
+          "result",
+          "結果"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "`assign res_mux_sel = is_div || is_rem;`。dpath 拿它跟 `fn_mul` / `fn_div` 比對來決定 `muldivresp_msg_result`。rem / remu 與 div / divu 走同一條路，商和餘數其實一起算好，由呼叫端取需要的半邊。"
+    }
+  }
+}

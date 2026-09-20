@@ -1,0 +1,296 @@
+<!-- ============================================================ ch3 -->
+<section class="ch" id="ch3" data-part="組合邏輯" data-nav="assign 與運算子">
+<p class="eyebrow">第 3 章 · 組合邏輯</p>
+<h2><code>assign</code> 與運算子：直接長出邏輯閘</h2>
+<p><code>assign</code> 的意思是「把右邊這坨電路的輸出，<b>永久焊在</b>左邊這條線上」。它不是「執行一次的賦值」，右邊任何輸入一變，左邊就跟著變。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 24 行</div>
+<pre><code class="language-verilog">wire diffSigns = alu_a[31] ^ alu_b[31];</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg class="narrow" viewBox="0 0 460 96" role="img" aria-label="alu_a 第 31 位元與 alu_b 第 31 位元接到一個 XOR 閘，輸出為 diffSigns。">
+  <text x="144" y="42" text-anchor="end">alu_a[31]</text><text x="144" y="56" text-anchor="end">alu_b[31]</text>
+  <path class="w" d="M150 38H204M150 52H204"/>
+  <use href="#g-xor" x="200" y="30"/>
+  <path class="w" d="M240 45H320"/><text x="328" y="49">diffSigns</text>
+</svg>
+</div>
+<figcaption><b>一個 <code>^</code> 就是一個 XOR 閘。</b>兩數正負號不同時輸出 1。</figcaption>
+</figure>
+</div>
+
+<h3>對多位元做位元運算：一次長出 N 個閘</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 129 行</div>
+<pre><code class="language-verilog">( alu_a &amp; alu_b )      // alu_a、alu_b 都是 [31:0]</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg class="narrow" viewBox="0 0 520 215" role="img" aria-label="32 位元的 AND 運算等於 32 個獨立的 AND 閘，每個閘處理同一個位置的一對位元。">
+  <text x="144" y="42" text-anchor="end">alu_a[31]</text><text x="144" y="56" text-anchor="end">alu_b[31]</text>
+  <path class="w" d="M150 38H240M150 52H240"/><use href="#g-and" x="240" y="30"/><path class="w" d="M270 45H350"/><text x="358" y="49">result[31]</text>
+  <text x="144" y="102" text-anchor="end">alu_a[30]</text><text x="144" y="116" text-anchor="end">alu_b[30]</text>
+  <path class="w" d="M150 98H240M150 112H240"/><use href="#g-and" x="240" y="90"/><path class="w" d="M270 105H350"/><text x="358" y="109">result[30]</text>
+  <text class="mut" x="252" y="148">⋮</text>
+  <text x="144" y="182" text-anchor="end">alu_a[0]</text><text x="144" y="196" text-anchor="end">alu_b[0]</text>
+  <path class="w" d="M150 178H240M150 192H240"/><use href="#g-and" x="240" y="170"/><path class="w" d="M270 185H350"/><text x="358" y="189">result[0]</text>
+</svg>
+</div>
+<figcaption><b><code>&amp;</code> 作用在 32 位元上 = 32 個並排的 AND 閘。</b>之後的圖為了簡潔，會用一個閘符號加上「32」的匯流排來代表這一整排。</figcaption>
+</figure>
+</div>
+
+<h3>運算子對照表</h3>
+<div class="tbl"><table>
+<thead><tr><th>運算子</th><th>合成出來的硬體</th><th>成本</th></tr></thead>
+<tbody>
+<tr><td><code>&amp;</code> <code>|</code> <code>^</code> <code>~</code></td><td>逐位元的 AND / OR / XOR / NOT 閘</td><td>每位元一個閘</td></tr>
+<tr><td><code>&amp;&amp;</code> <code>||</code> <code>!</code></td><td>邏輯運算，結果只有 1 位元（運算元先被壓成「是否非零」）</td><td>很小</td></tr>
+<tr><td><code>==</code> <code>!=</code></td><td>比較器：逐位元 XNOR 再全部 AND 起來</td><td>小</td></tr>
+<tr><td><code>+</code> <code>-</code></td><td>加法器（進位鏈）</td><td>中</td></tr>
+<tr><td><code>&lt;&lt; 1</code>、<code>&gt;&gt; 1</code>（固定量）</td><td>純接線，見<a href="#ch5">第 5 章</a></td><td>零</td></tr>
+<tr><td><code>&lt;&lt; alu_a[4:0]</code>（可變量）</td><td>桶式移位器 (barrel shifter)：5 層 mux，分別決定要不要移 1、2、4、8、16 位</td><td>中</td></tr>
+<tr><td><code>&gt;&gt;&gt;</code></td><td>算術右移，左邊補正負號位元。運算元必須是 <code>signed</code> 才有效，所以 Shifter 特地宣告 <code>wire signed [31:0]</code></td><td>同上</td></tr>
+<tr><td><code>*</code> <code>/</code> <code>%</code></td><td>整顆組合式乘法器／除法器。ALU 的 MulDiv 單元用了，面積非常大、延遲非常長</td><td>很大</td></tr>
+<tr><td><code>? :</code></td><td>多工器，見<a href="#ch4">第 4 章</a></td><td>小</td></tr>
+</tbody></table></div>
+<div class="note"><b>面積 vs 時間</b><p>寫 <code>alu_a * alu_b</code> 只要一行，但會合成出幾千個閘，而且一個時脈週期內要算完。lab1 的重點——<code>imuldiv-IntMulIterative.v</code>——就是改用「一個加法器 + 32 個週期」慢慢算，拿時間換面積。<a href="#ch14">第 14 章</a>會完整畫出來。</p></div>
+
+<h3>真實範例：一個加法器同時做加法和減法</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 20–22 行</div>
+<pre><code class="language-verilog">// We use one adder to perform both additions and subtractions
+wire [31:0] xB  = ( addsub_fn != 2'b00 ) ? ( ~alu_b + 1 ) : alu_b;
+wire [31:0] sum = alu_a + xB;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 250" role="img" aria-label="alu_b 分成兩路：一路直接進 mux 的 0 輸入，一路經過反相和加一之後進 mux 的 1 輸入。addsub_fn 不等於 00 時選擇負的 alu_b。mux 輸出 xB 與 alu_a 一起進加法器得到 sum。">
+  <text x="30" y="34">alu_a</text><path class="w" d="M30 40H420V80H450M236 46l8 -12"/><text class="s" x="246" y="32">32</text>
+  <text x="30" y="144">alu_b</text><path class="w" d="M30 150H330"/><circle class="d" cx="90" cy="150" r="3"/>
+  <path class="w" d="M90 150V90H120"/>
+  <rect class="k" x="120" y="72" width="60" height="36"/><text x="150" y="94" text-anchor="middle">~</text>
+  <path class="w" d="M180 90H210"/>
+  <rect class="k" x="210" y="72" width="60" height="36"/><text x="240" y="94" text-anchor="middle">+ 1</text>
+  <path class="w" d="M270 90H330"/>
+  <text class="zh mut" x="120" y="62">~alu_b + 1 就是 −alu_b（二補數）</text>
+  <path class="k" d="M330 70L356 80V160L330 170Z"/><text class="s" x="335" y="94">1</text><text class="s" x="335" y="154">0</text>
+  <path class="w" d="M356 120H450"/><text x="392" y="112">xB</text>
+  <rect class="k" x="450" y="60" width="70" height="90"/><text x="485" y="112" text-anchor="middle" style="font-size:20px">+</text>
+  <path class="w" d="M520 105H610M556 111l8 -12"/><text class="s" x="566" y="97">32</text><text x="584" y="97">sum</text>
+  <text class="cb" x="30" y="209">addsub_fn</text><path class="c" d="M30 215H180"/>
+  <rect class="k" x="180" y="198" width="90" height="34"/><text x="225" y="219" text-anchor="middle">!= 2'b00</text>
+  <path class="c" d="M270 215H343V166"/>
+</svg>
+</div>
+<figcaption><b>兩行程式 = 反相器 + 加一 + 比較器 + mux + 加法器。</b>a − b 等於 a + (−b)，所以減法只是「先把 b 變號再送進同一個加法器」。</figcaption>
+</figure>
+</div>
+</section>
+
+<!-- ============================================================ ch4 -->
+<section class="ch" id="ch4" data-part="組合邏輯" data-nav="? : 就是 MUX">
+<p class="eyebrow">第 4 章 · 組合邏輯</p>
+<h2><code>? :</code> 三元運算子：就是多工器 (MUX)</h2>
+<p>多工器是 lab1 裡出現最多次的元件：幾個輸入、一個選擇訊號、一個輸出，選擇訊號決定哪個輸入「通過」。在 Verilog 裡最直接的寫法就是 <code>條件 ? 真的時候 : 假的時候</code>。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 114–115 行</div>
+<pre><code class="language-verilog">wire [31:0] pc_mux_out_Phl_final
+  = pc_redirect_pending ? pc_redirect_targ : pc_mux_out_Phl;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg class="narrow" viewBox="0 0 560 170" role="img" aria-label="二選一多工器：pc_redirect_pending 為 1 時輸出 pc_redirect_targ，為 0 時輸出 pc_mux_out_Phl。">
+  <text x="60" y="47">pc_redirect_targ</text><path class="w" d="M60 55H250"/>
+  <text x="60" y="97">pc_mux_out_Phl</text><path class="w" d="M60 105H250"/>
+  <path class="k" d="M250 30L276 40V120L250 130Z"/><text class="s" x="255" y="59">1</text><text class="s" x="255" y="109">0</text>
+  <path class="w" d="M276 80H440"/><text x="290" y="72">pc_mux_out_Phl_final</text>
+  <path class="c" d="M263 126V155"/><text class="cb" x="272" y="159">pc_redirect_pending</text>
+</svg>
+</div>
+<figcaption><b>梯形 = mux。</b>資料從寬邊進、窄邊出；選擇訊號（藍色虛線）從側面進來。</figcaption>
+</figure>
+</div>
+
+<h3>串接的 <code>? :</code> → 多選一</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 128–133 行</div>
+<pre><code class="language-verilog">assign result
+  = ( logical_fn == 2'b00 ) ?  ( alu_a &amp; alu_b ) :
+    ( logical_fn == 2'b01 ) ?  ( alu_a | alu_b ) :
+    ( logical_fn == 2'b10 ) ?  ( alu_a ^ alu_b ) :
+    ( logical_fn == 2'b11 ) ? ~( alu_a | alu_b ) :
+                               ( 32'bx );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 640 300" role="img" aria-label="alu_a 和 alu_b 同時接到 AND、OR、XOR、NOR 四組閘，四個結果都算出來，再由 logical_fn 控制的四選一多工器挑出其中一個當 result。">
+  <text x="100" y="16" text-anchor="end">alu_a</text><text x="120" y="16">alu_b</text>
+  <path class="w" d="M90 24V228M130 24V242"/>
+  <path class="w" d="M90 48H220M130 62H220M90 108H224M130 122H224M90 168H224M130 182H224M90 228H224M130 242H224"/>
+  <circle class="d" cx="90" cy="48" r="3"/><circle class="d" cx="90" cy="108" r="3"/><circle class="d" cx="90" cy="168" r="3"/>
+  <circle class="d" cx="130" cy="62" r="3"/><circle class="d" cx="130" cy="122" r="3"/><circle class="d" cx="130" cy="182" r="3"/>
+  <use href="#g-and" x="220" y="40"/><use href="#g-or" x="220" y="100"/><use href="#g-xor" x="220" y="160"/><use href="#g-nor" x="220" y="220"/>
+  <path class="w" d="M250 55H420M260 115H420M260 175H420M268 235H420"/>
+  <text class="s mut" x="300" y="49">a &amp; b</text><text class="s mut" x="300" y="109">a | b</text><text class="s mut" x="300" y="169">a ^ b</text><text class="s mut" x="300" y="229">~(a | b)</text>
+  <path class="k" d="M420 30L446 42V248L420 260Z"/>
+  <text class="s" x="424" y="59">00</text><text class="s" x="424" y="119">01</text><text class="s" x="424" y="179">10</text><text class="s" x="424" y="239">11</text>
+  <path class="w" d="M446 145H580M506 151l8 -12"/><text class="s" x="516" y="137">32</text><text x="536" y="137">result</text>
+  <path class="c" d="M433 255V284"/><text class="cb" x="442" y="288">logical_fn</text>
+</svg>
+</div>
+<figcaption><b>四種運算「全部同時算」，mux 只是挑一個。</b>這和軟體的 if/else 不同：硬體不會「跳過」沒被選到的分支，那些閘一直都在、一直在運作。每個閘符號代表 32 個並排的閘。</figcaption>
+</figure>
+</div>
+<p>嚴格照字面，這段程式是四層串接的二選一 mux（有優先順序）。但因為四個條件互斥，合成工具會自動化簡成上圖的四選一。同樣的寫法在 <code>CoreDpath.v</code> 出現十幾次：<code>pc_mux</code>、<code>op0_mux</code>、<code>op1_mux</code>、<code>wb_mux</code>……看到這個排版就直接在腦中畫一個梯形。</p>
+</section>
+
+<!-- ============================================================ ch5 -->
+<section class="ch" id="ch5" data-part="組合邏輯" data-nav="{ } 拼接與複製">
+<p class="eyebrow">第 5 章 · 組合邏輯</p>
+<h2><code>{ }</code> 拼接與 <code>{n{ }}</code> 複製：只是重新整理電線</h2>
+<p><code>{a, b}</code> 把兩束線併成更寬的一束（<code>a</code> 在高位）。<code>{24{x}}</code> 把 <code>x</code> 複製 24 份。兩者都<b>不產生任何邏輯閘</b>，純粹是接線。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 315–316 行（load byte 的符號擴展）</div>
+<pre><code class="language-verilog">wire [31:0] dmemresp_lb_Mhl
+  = { {24{dmemresp_msg_data[7]}}, dmemresp_msg_data[7:0] };</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 640 215" role="img" aria-label="符號擴展的接線：來源的第 7 到 0 位元直接接到輸出的第 7 到 0 位元；來源的第 7 位元同時被複製 24 份，接到輸出的第 31 到 8 位元；來源的第 31 到 8 位元沒有被使用。">
+  <text x="30" y="20">dmemresp_msg_data</text><text x="440" y="20">dmemresp_lb_Mhl</text>
+  <rect class="gh" x="70" y="30" width="30" height="100"/><rect class="k" x="70" y="130" width="30" height="60"/>
+  <text x="62" y="84" text-anchor="end">[31:8]</text><text x="62" y="164" text-anchor="end">[7:0]</text>
+  <text class="zh mut" x="108" y="60">沒用到</text>
+  <rect class="af" x="500" y="30" width="30" height="100"/><rect class="k" x="500" y="130" width="30" height="60"/>
+  <text x="538" y="84">[31:8]</text><text x="538" y="164">[7:0]</text>
+  <path class="w" d="M100 165H500M296 171l8 -12"/><text class="s" x="306" y="157">8</text>
+  <circle class="d" cx="180" cy="165" r="3"/>
+  <path class="a" d="M180 165V92H330"/><text class="ac s" x="186" y="130">[7]</text>
+  <text class="ac" x="190" y="84">{24{data[7]}}</text>
+  <circle cx="330" cy="92" r="3" style="fill:var(--accent)"/>
+  <path class="a" d="M330 92L500 40M330 92L500 60M330 92L500 80M330 92L500 100M330 92L500 120"/>
+  <text class="zh ac" x="490" y="148" text-anchor="end">同一條線分岔 24 次</text>
+</svg>
+</div>
+<figcaption><b>符號擴展 = 把正負號位元那條線拉去填滿高位。</b>8 位元的 <code>0xFF</code>（−1）因此變成 32 位元的 <code>0xFFFFFFFF</code>（還是 −1）。<code>lbu</code> 版本則是 <code>{24{1'b0}}</code>，高位全部接地。</figcaption>
+</figure>
+</div>
+
+<p>指令解碼裡更誇張的「重新排線」也是同一招。RISC-V 的 branch 立即值在指令裡被拆成四段，<code>riscvstall-InstMsg.v</code> 第 290–294 行把它拼回來：</p>
+<div class="ex">
+<pre><code class="language-verilog">assign imm_sb = { {20{msg[31]}},   // 正負號複製 20 份
+                  msg[7],          // imm[11]
+                  msg[30:25],      // imm[10:5]
+                  msg[11:8],       // imm[4:1]
+                  1'b0 };          // 最低位固定是 0（位址一定是偶數）</code></pre>
+</div>
+<p>原始碼用 <code>`RISCV_INST_MSG_IMM_SIGN</code> 這類巨集代替數字，<a href="#ch11">第 11 章</a>會解釋；這裡我先把巨集展開成數字方便閱讀。</p>
+
+<h3>固定量的移位也是純接線</h3>
+<div class="ex">
+<div class="src">imuldiv/imuldiv-IntMulIterative.v · 第 202 行（圖中縮成 8 位元示意）</div>
+<pre><code class="language-verilog">wire [63:0] a_shift_out = a_reg &lt;&lt; 1;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg class="narrow" viewBox="0 0 480 190" role="img" aria-label="左移一位的接線：輸入的每個位元斜接到輸出的高一位，輸出最低位接 0，輸入最高位被丟棄。">
+  <text x="92" y="52" text-anchor="end">a_reg</text><text x="92" y="158" text-anchor="end">a_reg &lt;&lt; 1</text>
+  <rect class="k" x="100" y="34" width="288" height="26"/><rect class="k" x="100" y="140" width="288" height="26"/>
+  <path class="w" style="stroke-width:1" d="M136 34v26M172 34v26M208 34v26M244 34v26M280 34v26M316 34v26M352 34v26M136 140v26M172 140v26M208 140v26M244 140v26M280 140v26M316 140v26M352 140v26"/>
+  <g class="s" text-anchor="middle">
+  <text class="s" x="118" y="51">7</text><text class="s" x="154" y="51">6</text><text class="s" x="190" y="51">5</text><text class="s" x="226" y="51">4</text><text class="s" x="262" y="51">3</text><text class="s" x="298" y="51">2</text><text class="s" x="334" y="51">1</text><text class="s" x="370" y="51">0</text>
+  <text class="s" x="118" y="157">7</text><text class="s" x="154" y="157">6</text><text class="s" x="190" y="157">5</text><text class="s" x="226" y="157">4</text><text class="s" x="262" y="157">3</text><text class="s" x="298" y="157">2</text><text class="s" x="334" y="157">1</text><text class="s" x="370" y="157">0</text>
+  </g>
+  <path class="w" d="M154 60L118 140M190 60L154 140M226 60L190 140M262 60L226 140M298 60L262 140M334 60L298 140M370 60L334 140"/>
+  <path class="wm" d="M118 60L96 104"/><text class="zh mut" x="50" y="118">丟棄</text>
+  <path class="a" d="M408 104L370 140"/><text class="ac" x="398" y="98">1'b0</text>
+</svg>
+</div>
+<figcaption><b>移位固定量不需要任何閘</b>，每條線只是接到隔壁的位置。</figcaption>
+</figure>
+</div>
+</section>
+
+<!-- ============================================================ ch6 -->
+<section class="ch" id="ch6" data-part="組合邏輯" data-nav="always @(*)、if、case">
+<p class="eyebrow">第 6 章 · 組合邏輯</p>
+<h2><code>always @(*)</code>：用 <code>if</code> / <code>case</code> 寫組合邏輯</h2>
+<p>邏輯一複雜，用 <code>assign</code> 加一長串 <code>? :</code> 會很難讀。<code>always @(*)</code> 讓你改用 <code>if</code>、<code>case</code> 來描述<b>同樣的組合邏輯</b>。<code>@(*)</code> 的意思是「裡面用到的任何訊號一變，就重新計算」——這正是組合邏輯的行為。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 199–226 行（節錄）</div>
+<pre><code class="language-verilog">reg [10:0] cs;
+
+always @(*)
+begin
+  cs = 11'bx;                       // ① 預設值
+  case ( fn )
+    4'd0  : cs = { 2'd0, 2'b00, 2'bxx, 2'bxx, 3'bxx  }; // ADD
+    4'd1  : cs = { 2'd0, 2'b01, 2'bxx, 2'bxx, 3'bxx  }; // SUB
+    4'd2  : cs = { 2'd1, 2'bxx, 2'b00, 2'bxx, 3'bxx  }; // SLL
+    // ...
+    4'd15 : cs = { 2'd3, 2'bxx, 2'bxx, 2'bxx, 3'b100 }; // REMU
+  endcase
+
+  { out_mux_sel, fn_addsub, fn_shifter, fn_logical, fn_muldiv } = cs;  // ② 拆包
+end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 240" role="img" aria-label="case 敘述合成為一個查表電路：4 位元的 fn 進去，11 位元的 cs 出來，再用接線拆成 out_mux_sel、fn_addsub、fn_shifter、fn_logical、fn_muldiv 五組控制訊號。">
+  <text x="30" y="112">fn</text><path class="w" d="M30 120H130M76 126l8 -12"/><text class="s" x="86" y="112">4</text>
+  <rect class="k" x="130" y="60" width="170" height="120"/>
+  <text x="215" y="112" text-anchor="middle">case ( fn )</text><text class="zh mut" x="215" y="134" text-anchor="middle">16 列 × 11 位元的查表</text>
+  <path class="w" d="M300 120H380M336 126l8 -12"/><text class="s" x="346" y="112">11</text><text x="312" y="112">cs</text>
+  <path class="w" d="M380 40V200"/>
+  <path class="c" d="M380 40H440M380 80H440M380 120H440M380 160H440M380 200H440"/>
+  <text class="cb" x="448" y="44">cs[10:9] → out_mux_sel</text>
+  <text class="cb" x="448" y="84">cs[8:7]  → fn_addsub</text>
+  <text class="cb" x="448" y="124">cs[6:5]  → fn_shifter</text>
+  <text class="cb" x="448" y="164">cs[4:3]  → fn_logical</text>
+  <text class="cb" x="448" y="204">cs[2:0]  → fn_muldiv</text>
+</svg>
+</div>
+<figcaption><b><code>case</code> = 查表 (lookup table)。</b>合成後是一小團閘，功能等同一顆唯讀的表格。②那行把 <code>{ }</code> 寫在等號<b>左邊</b>，意思是把 11 條線依序拆給五個訊號——同樣只是接線。</figcaption>
+</figure>
+</div>
+
+<p>這種「把一整列控制訊號打包成一個向量 <code>cs</code>，再一次拆開」的寫法，是 lab1 的招牌風格。<code>riscvstall-CoreCtrl.v</code> 第 411 行開始那張巨大的指令解碼表，就是同一個模式的放大版（39 位元寬）。</p>
+
+<h3>組合 <code>always</code> 的三條規則</h3>
+<ol>
+  <li>敏感列表寫 <code>@(*)</code>。</li>
+  <li>裡面用 <code>=</code>（blocking）賦值。（<code>&lt;=</code> 留給時脈區塊，見<a href="#ch8">第 8 章</a>。）</li>
+  <li><b>每一條路徑都要給每個輸出一個值。</b>最保險的做法就是像上面 ① 那樣，一進來先給預設值。</li>
+</ol>
+
+<h3>違反第 3 條會怎樣：意外的 latch</h3>
+<div class="ex">
+<div class="src">左：示意範例　右：vc/vc-StateElements.v · 第 134–135 行</div>
+<pre><code class="language-verilog">always @(*)                    always @(*)
+  if ( s ) y = a;                if ( clk ) q_np &lt;= d_n;
+  else     y = b;                // 沒有 else：clk = 0 時 q_np 要維持原值</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 225" role="img" aria-label="左邊：if 和 else 都寫，合成為普通的二選一多工器。右邊：少了 else，多工器的 0 輸入被接回自己的輸出形成回授迴路，這就是 latch。">
+  <text class="hd" x="30" y="24">if、else 都有 → 單純的 mux</text>
+  <text x="48" y="79">a</text><text x="48" y="129">b</text><path class="w" d="M62 75H150M62 125H150"/>
+  <path class="k" d="M150 50L176 60V140L150 150Z"/><text class="s" x="155" y="79">1</text><text class="s" x="155" y="129">0</text>
+  <path class="w" d="M176 100H260"/><text x="268" y="104">y</text>
+  <path class="c" d="M163 146V180"/><text class="cb" x="172" y="184">s</text>
+  <path class="wm" d="M350 10V215"/>
+  <text class="hd" x="380" y="24">沒有 else → 必須記住舊值 → latch</text>
+  <text x="380" y="79">d_n</text><path class="w" d="M410 75H500"/>
+  <path class="k" d="M500 50L526 60V140L500 150Z"/><text class="s" x="505" y="79">1</text><text class="s" x="505" y="129">0</text>
+  <path class="w" d="M526 100H630"/><text x="638" y="104">q_np</text>
+  <circle class="d" cx="580" cy="100" r="3"/>
+  <path class="x" d="M580 100V195H460V125H500"/>
+  <path class="c" d="M513 146V180"/><text class="cb" x="522" y="184">clk</text>
+  <text class="zh wr" x="592" y="199">回授迴路</text>
+</svg>
+</div>
+<figcaption><b>少寫一個 <code>else</code>，電路就多了記憶。</b>右邊在 <code>vc_Latch_hl</code> 裡是<b>故意</b>的（它就是要做 latch）。但如果你只是想寫組合邏輯卻漏掉分支，合成工具一樣會默默生出 latch，這是初學者最常見的 bug 來源。</figcaption>
+</figure>
+</div>
+<div class="trap"><b>陷阱</b><p>lab1 的 FSM 在 <code>always @(*)</code> 開頭寫 <code>state_next = state_reg;</code>、ALU 寫 <code>cs = 11'bx;</code>，都是為了避開這個問題。你自己寫的時候請養成同樣的習慣。</p></div>
+
+<h3>巢狀 <code>if</code> → 串接的 mux</h3>
+<p><code>riscv_CoreDpathAluAddSub</code>（第 26–88 行）用多層 <code>if / else if</code> 實作 SLT（小於比較）。不需要另外畫圖：每一層 <code>if</code> 就是一顆二選一 mux，外層條件的 mux 接在比較靠近輸出的位置。條件 <code>addsub_fn == 2'b10</code>、<code>diffSigns</code>、<code>sum[31] == 1'b0</code> 分別成為三層 mux 的選擇訊號。</p>
+</section>

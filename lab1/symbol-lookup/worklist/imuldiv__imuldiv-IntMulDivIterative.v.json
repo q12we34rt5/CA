@@ -1,0 +1,346 @@
+[
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:57",
+   "imuldiv/imuldiv-IntMulDivIterative.v:14",
+   "imuldiv/imuldiv-IntMulDivIterative.v:66",
+   "imuldiv/imuldiv-IntMulDivIterative.v:79",
+   "imuldiv/imuldiv-iterative-sim.v:47",
+   "riscvstall/riscvstall-CoreDpath.v:428"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:58",
+   "imuldiv/imuldiv-IntMulDivIterative.v:15",
+   "imuldiv/imuldiv-IntMulDivIterative.v:67",
+   "imuldiv/imuldiv-IntMulDivIterative.v:80",
+   "imuldiv/imuldiv-iterative-sim.v:48",
+   "riscvstall/riscvstall-CoreDpath.v:429"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivreq_msg_fn",
+  "name": "muldivreq_msg_fn",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "input",
+  "decl": "input [2:0]",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:59",
+   "imuldiv/imuldiv-IntMulDivIterative.v:17",
+   "imuldiv/imuldiv-IntMulDivIterative.v:32",
+   "imuldiv/imuldiv-IntMulDivIterative.v:35",
+   "imuldiv/imuldiv-IntMulDivIterative.v:38",
+   "imuldiv/imuldiv-IntMulDivIterative.v:39",
+   "imuldiv/imuldiv-iterative-sim.v:49",
+   "riscvstall/riscvstall-CoreDpath.v:430"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivreq_msg_a",
+  "name": "muldivreq_msg_a",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "input",
+  "decl": "input [31:0]",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:60",
+   "imuldiv/imuldiv-IntMulDivIterative.v:18",
+   "imuldiv/imuldiv-IntMulDivIterative.v:68",
+   "imuldiv/imuldiv-IntMulDivIterative.v:82",
+   "imuldiv/imuldiv-iterative-sim.v:50",
+   "riscvstall/riscvstall-CoreDpath.v:431"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivreq_msg_b",
+  "name": "muldivreq_msg_b",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "input",
+  "decl": "input [31:0]",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:61",
+   "imuldiv/imuldiv-IntMulDivIterative.v:19",
+   "imuldiv/imuldiv-IntMulDivIterative.v:69",
+   "imuldiv/imuldiv-IntMulDivIterative.v:83",
+   "imuldiv/imuldiv-iterative-sim.v:51",
+   "riscvstall/riscvstall-CoreDpath.v:432"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivreq_val",
+  "name": "muldivreq_val",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:62",
+   "imuldiv/imuldiv-IntMulDivIterative.v:20",
+   "imuldiv/imuldiv-IntMulDivIterative.v:33",
+   "imuldiv/imuldiv-IntMulDivIterative.v:36",
+   "imuldiv/imuldiv-iterative-sim.v:52",
+   "riscvstall/riscvstall-CoreDpath.v:433"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivreq_rdy",
+  "name": "muldivreq_rdy",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:63",
+   "imuldiv/imuldiv-IntMulDivIterative.v:21",
+   "imuldiv/imuldiv-IntMulDivIterative.v:52",
+   "imuldiv/imuldiv-iterative-sim.v:53",
+   "riscvstall/riscvstall-CoreDpath.v:434"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivresp_msg_result",
+  "name": "muldivresp_msg_result",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "output",
+  "decl": "output [63:0]",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:64",
+   "imuldiv/imuldiv-IntMulDivIterative.v:23",
+   "imuldiv/imuldiv-IntMulDivIterative.v:56",
+   "imuldiv/imuldiv-iterative-sim.v:54",
+   "riscvstall/riscvstall-CoreDpath.v:435"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivresp_val",
+  "name": "muldivresp_val",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:65",
+   "imuldiv/imuldiv-IntMulDivIterative.v:24",
+   "imuldiv/imuldiv-IntMulDivIterative.v:54",
+   "imuldiv/imuldiv-iterative-sim.v:55",
+   "riscvstall/riscvstall-CoreDpath.v:436"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivresp_rdy",
+  "name": "muldivresp_rdy",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:66",
+   "imuldiv/imuldiv-IntMulDivIterative.v:25",
+   "imuldiv/imuldiv-IntMulDivIterative.v:74",
+   "imuldiv/imuldiv-IntMulDivIterative.v:88",
+   "imuldiv/imuldiv-iterative-sim.v:56",
+   "riscvstall/riscvstall-CoreDpath.v:437"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|mulreq_val",
+  "name": "mulreq_val",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:32",
+   "imuldiv/imuldiv-IntMulDivIterative.v:70"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|divreq_val",
+  "name": "divreq_val",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:35",
+   "imuldiv/imuldiv-IntMulDivIterative.v:84"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|divreq_msg_fn",
+  "name": "divreq_msg_fn",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:38",
+   "imuldiv/imuldiv-IntMulDivIterative.v:81"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|mulreq_rdy",
+  "name": "mulreq_rdy",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:36",
+   "imuldiv/imuldiv-IntMulDivIterative.v:45",
+   "imuldiv/imuldiv-IntMulDivIterative.v:52",
+   "imuldiv/imuldiv-IntMulDivIterative.v:71"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|divreq_rdy",
+  "name": "divreq_rdy",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:33",
+   "imuldiv/imuldiv-IntMulDivIterative.v:46",
+   "imuldiv/imuldiv-IntMulDivIterative.v:52",
+   "imuldiv/imuldiv-IntMulDivIterative.v:85"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|mulresp_val",
+  "name": "mulresp_val",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:47",
+   "imuldiv/imuldiv-IntMulDivIterative.v:54",
+   "imuldiv/imuldiv-IntMulDivIterative.v:56",
+   "imuldiv/imuldiv-IntMulDivIterative.v:73"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|divresp_val",
+  "name": "divresp_val",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:48",
+   "imuldiv/imuldiv-IntMulDivIterative.v:54",
+   "imuldiv/imuldiv-IntMulDivIterative.v:57",
+   "imuldiv/imuldiv-IntMulDivIterative.v:87"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|mulresp_msg_result",
+  "name": "mulresp_msg_result",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "wire",
+  "decl": "wire [63:0]",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:49",
+   "imuldiv/imuldiv-IntMulDivIterative.v:56",
+   "imuldiv/imuldiv-IntMulDivIterative.v:72"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|divresp_msg_result",
+  "name": "divresp_msg_result",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "wire",
+  "decl": "wire [63:0]",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:50",
+   "imuldiv/imuldiv-IntMulDivIterative.v:57",
+   "imuldiv/imuldiv-IntMulDivIterative.v:86"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|imul",
+  "name": "imul",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "instance",
+  "decl": "imuldiv_IntMulIterative imul ( ... );",
+  "instance_of": "imuldiv_IntMulIterative",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:64"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|idiv",
+  "name": "idiv",
+  "cat": "signal",
+  "module": "imuldiv_IntMulDivIterative",
+  "kind": "instance",
+  "decl": "imuldiv_IntDivIterative idiv ( ... );",
+  "instance_of": "imuldiv_IntDivIterative",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:77"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "imuldiv/imuldiv-IntMulDivIterative.v||imuldiv_IntMulDivIterative",
+  "name": "imuldiv_IntMulDivIterative",
+  "cat": "module",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:55",
+   "imuldiv/imuldiv-IntMulDivIterative.v:12",
+   "imuldiv/imuldiv-iterative-sim.v:45",
+   "riscvstall/riscvstall-CoreDpath.v:426"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`RISCV_INT_MULDIV_ITERATIVE_V",
+  "name": "RISCV_INT_MULDIV_ITERATIVE_V",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-IntMulDivIterative.v:5",
+   "imuldiv/imuldiv-IntMulDivIterative.v:6"
+  ],
+  "n_occ": 2
+ }
+]

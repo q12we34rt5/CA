@@ -1,0 +1,329 @@
+[
+ {
+  "key": "`RISCV_CORE_RISCVLONG",
+  "name": "RISCV_CORE_RISCVLONG",
+  "cat": "macro",
+  "lines": [
+   "Testbench.v:8"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`RISCV_CORE_RISCVBYP",
+  "name": "RISCV_CORE_RISCVBYP",
+  "cat": "macro",
+  "lines": [
+   "Testbench.v:10"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_TEST_SUITE_BEGIN",
+  "name": "VC_TEST_SUITE_BEGIN",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:9",
+   "imuldiv/imuldiv-IntDivIterative.t.v:93",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:93",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:93",
+   "imuldiv/imuldiv-IntMulIterative.t.v:91",
+   "imuldiv/imuldiv-MulDivReqMsg.t.v:9"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`VC_TEST_EQ",
+  "name": "VC_TEST_EQ",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:104",
+   "imuldiv/imuldiv-DivReqMsg.t.v:54",
+   "imuldiv/imuldiv-MulDivReqMsg.t.v:125",
+   "imuldiv/imuldiv-MulDivReqMsg.t.v:57"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`VC_TEST_CASE_BEGIN",
+  "name": "VC_TEST_CASE_BEGIN",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:109",
+   "imuldiv/imuldiv-DivReqMsg.t.v:59",
+   "imuldiv/imuldiv-IntDivIterative.t.v:105",
+   "imuldiv/imuldiv-IntDivIterative.t.v:128",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:105",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:126",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:149",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:172",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:105",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:126",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:149",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:172"
+  ],
+  "n_occ": 15
+ },
+ {
+  "key": "`VC_TEST_CASE_END",
+  "name": "VC_TEST_CASE_END",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:125",
+   "imuldiv/imuldiv-DivReqMsg.t.v:75",
+   "imuldiv/imuldiv-IntDivIterative.t.v:126",
+   "imuldiv/imuldiv-IntDivIterative.t.v:149",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:124",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:147",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:170",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:193",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:124",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:147",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:170",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:193"
+  ],
+  "n_occ": 15
+ },
+ {
+  "key": "`VC_TEST_SUITE_END",
+  "name": "VC_TEST_SUITE_END",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.t.v:127",
+   "imuldiv/imuldiv-IntDivIterative.t.v:151",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:195",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:195",
+   "imuldiv/imuldiv-IntMulIterative.t.v:124",
+   "imuldiv/imuldiv-MulDivReqMsg.t.v:166"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`SYNTHESIS",
+  "name": "SYNTHESIS",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-DivReqMsg.v:92",
+   "imuldiv/imuldiv-MulDivReqMsg.v:95",
+   "riscvstall/riscvstall-CoreCtrl.v:836",
+   "riscvstall/riscvstall-CoreCtrl.v:871",
+   "riscvstall/riscvstall-InstMsg.v:310",
+   "vc/vc-MemReqMsg.v:164",
+   "vc/vc-MemRespMsg.v:142",
+   "vc/vc-StateElements.v:117",
+   "vc/vc-StateElements.v:163",
+   "vc/vc-StateElements.v:209"
+  ],
+  "n_occ": 10
+ },
+ {
+  "key": "None||vc_TestRandDelaySource",
+  "name": "vc_TestRandDelaySource",
+  "cat": "module",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:37",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:37",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:37",
+   "imuldiv/imuldiv-IntMulIterative.t.v:36"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySource|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySource",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:39",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:39",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:39",
+   "imuldiv/imuldiv-IntMulIterative.t.v:38"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySource|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySource",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:40",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:40",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:40",
+   "imuldiv/imuldiv-IntMulIterative.t.v:39"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySource|msg",
+  "name": "msg",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySource",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:41",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:41",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:41",
+   "imuldiv/imuldiv-IntMulIterative.t.v:40"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySource|val",
+  "name": "val",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySource",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:42",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:42",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:42",
+   "imuldiv/imuldiv-IntMulIterative.t.v:41"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySource|rdy",
+  "name": "rdy",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySource",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:43",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:43",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:43",
+   "imuldiv/imuldiv-IntMulIterative.t.v:42"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySource|done",
+  "name": "done",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySource",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:44",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:44",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:44",
+   "imuldiv/imuldiv-IntMulIterative.t.v:43"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "None||vc_TestRandDelaySink",
+  "name": "vc_TestRandDelaySink",
+  "cat": "module",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:69",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:69",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:69",
+   "imuldiv/imuldiv-IntMulIterative.t.v:67"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySink|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySink",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:71",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:71",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:71",
+   "imuldiv/imuldiv-IntMulIterative.t.v:69"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySink|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySink",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:72",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:72",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:72",
+   "imuldiv/imuldiv-IntMulIterative.t.v:70"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySink|msg",
+  "name": "msg",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySink",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:73",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:73",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:73",
+   "imuldiv/imuldiv-IntMulIterative.t.v:71"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySink|val",
+  "name": "val",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySink",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:74",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:74",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:74",
+   "imuldiv/imuldiv-IntMulIterative.t.v:72"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySink|rdy",
+  "name": "rdy",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySink",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:75",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:75",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:75",
+   "imuldiv/imuldiv-IntMulIterative.t.v:73"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "?|vc_TestRandDelaySink|done",
+  "name": "done",
+  "cat": "signal",
+  "module": "vc_TestRandDelaySink",
+  "kind": "unknown",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:76",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:76",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:76",
+   "imuldiv/imuldiv-IntMulIterative.t.v:74"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`VC_TEST_CHECK",
+  "name": "VC_TEST_CHECK",
+  "cat": "macro",
+  "lines": [
+   "imuldiv/imuldiv-IntDivIterative.t.v:123",
+   "imuldiv/imuldiv-IntDivIterative.t.v:146",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:121",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:144",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:167",
+   "imuldiv/imuldiv-IntMulDivIterative.t.v:190",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:121",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:144",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:167",
+   "imuldiv/imuldiv-IntMulDivIterativeCombined.t.v:190",
+   "imuldiv/imuldiv-IntMulIterative.t.v:119"
+  ],
+  "n_occ": 11
+ }
+]

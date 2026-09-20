@@ -1,0 +1,528 @@
+[
+ {
+  "key": "Pattern.v|Pattern|p_max_delay",
+  "name": "p_max_delay",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "Pattern.v:14",
+   "Pattern.v:75",
+   "Testbench.v:89"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|p_reset_cycles",
+  "name": "p_reset_cycles",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "Pattern.v:15",
+   "Pattern.v:57",
+   "Testbench.v:90"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|p_default_max_cycles",
+  "name": "p_default_max_cycles",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "Pattern.v:130",
+   "Pattern.v:16",
+   "Testbench.v:91"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|p_is_rand_delay",
+  "name": "p_is_rand_delay",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "Pattern.v:141",
+   "Pattern.v:17",
+   "Testbench.v:92"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "output",
+  "decl": "output reg",
+  "lines": [
+   "Pattern.v:160",
+   "Pattern.v:183",
+   "Pattern.v:19",
+   "Pattern.v:48",
+   "Pattern.v:51",
+   "Pattern.v:57",
+   "Pattern.v:79",
+   "Testbench.v:96"
+  ],
+  "n_occ": 9
+ },
+ {
+  "key": "Pattern.v|Pattern|reset_proc",
+  "name": "reset_proc",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "output",
+  "decl": "output reg",
+  "lines": [
+   "Pattern.v:161",
+   "Pattern.v:184",
+   "Pattern.v:20",
+   "Pattern.v:54",
+   "Pattern.v:59",
+   "Testbench.v:97"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "Pattern.v|Pattern|reset_mem",
+  "name": "reset_mem",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "output",
+  "decl": "output reg",
+  "lines": [
+   "Pattern.v:21",
+   "Pattern.v:55",
+   "Pattern.v:60",
+   "Pattern.v:80",
+   "Testbench.v:98"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "Pattern.v|Pattern|status",
+  "name": "status",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "input",
+  "decl": "input [31:0]",
+  "lines": [
+   "Pattern.v:185",
+   "Pattern.v:186",
+   "Pattern.v:190",
+   "Pattern.v:204",
+   "Pattern.v:23",
+   "Testbench.v:99"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "Pattern.v|Pattern|retire_valid",
+  "name": "retire_valid",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:168",
+   "Pattern.v:24",
+   "Testbench.v:100"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memreq0_val",
+  "name": "memreq0_val",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:26",
+   "Pattern.v:82",
+   "Testbench.v:102"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memreq0_rdy",
+  "name": "memreq0_rdy",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Pattern.v:27",
+   "Pattern.v:83",
+   "Testbench.v:103"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memreq0_msg",
+  "name": "memreq0_msg",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "input",
+  "decl": "input [`VC_MEM_REQ_MSG_SZ(32,32)-1:0]",
+  "lines": [
+   "Pattern.v:28",
+   "Pattern.v:84",
+   "Testbench.v:104"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memresp0_val",
+  "name": "memresp0_val",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Pattern.v:30",
+   "Pattern.v:85",
+   "Testbench.v:105"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memresp0_rdy",
+  "name": "memresp0_rdy",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:31",
+   "Pattern.v:86",
+   "Testbench.v:106"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memresp0_msg",
+  "name": "memresp0_msg",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "output",
+  "decl": "output [`VC_MEM_RESP_MSG_SZ(32)-1:0]",
+  "lines": [
+   "Pattern.v:32",
+   "Pattern.v:87",
+   "Testbench.v:107"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memreq1_val",
+  "name": "memreq1_val",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:34",
+   "Pattern.v:89",
+   "Testbench.v:109"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memreq1_rdy",
+  "name": "memreq1_rdy",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Pattern.v:35",
+   "Pattern.v:90",
+   "Testbench.v:110"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memreq1_msg",
+  "name": "memreq1_msg",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "input",
+  "decl": "input [`VC_MEM_REQ_MSG_SZ(32,32)-1:0]",
+  "lines": [
+   "Pattern.v:36",
+   "Pattern.v:91",
+   "Testbench.v:111"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memresp1_val",
+  "name": "memresp1_val",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Pattern.v:38",
+   "Pattern.v:92",
+   "Testbench.v:112"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memresp1_rdy",
+  "name": "memresp1_rdy",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:39",
+   "Pattern.v:93",
+   "Testbench.v:113"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|memresp1_msg",
+  "name": "memresp1_msg",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "output",
+  "decl": "output [`VC_MEM_RESP_MSG_SZ(32)-1:0]",
+  "lines": [
+   "Pattern.v:40",
+   "Pattern.v:94",
+   "Testbench.v:114"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|c_mem_sz",
+  "name": "c_mem_sz",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "Pattern.v:67",
+   "Pattern.v:68",
+   "Pattern.v:72"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Pattern.v|Pattern|c_mem_num_words",
+  "name": "c_mem_num_words",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "Pattern.v:122",
+   "Pattern.v:68"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "Pattern.v|Pattern|mem",
+  "name": "mem",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "instance",
+  "decl": "vc_TestDualPortRandDelayMem mem ( ... );",
+  "instance_of": "vc_TestDualPortRandDelayMem",
+  "lines": [
+   "Pattern.v:122",
+   "Pattern.v:77"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "Pattern.v|Pattern|fh",
+  "name": "fh",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "integer",
+  "decl": "integer",
+  "lines": [
+   "Pattern.v:101",
+   "Pattern.v:115",
+   "Pattern.v:116",
+   "Pattern.v:120"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "Pattern.v|Pattern|exe_filename",
+  "name": "exe_filename",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "reg",
+  "decl": "reg [1023:0]",
+  "lines": [
+   "Pattern.v:102",
+   "Pattern.v:114",
+   "Pattern.v:115",
+   "Pattern.v:117",
+   "Pattern.v:122",
+   "Pattern.v:142",
+   "Pattern.v:145"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "Pattern.v|Pattern|vcd_filename",
+  "name": "vcd_filename",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "reg",
+  "decl": "reg [1023:0]",
+  "lines": [
+   "Pattern.v:103",
+   "Pattern.v:142",
+   "Pattern.v:145",
+   "Pattern.v:148"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "Pattern.v|Pattern|max_cycles",
+  "name": "max_cycles",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "Pattern.v:104",
+   "Pattern.v:129",
+   "Pattern.v:130",
+   "Pattern.v:212"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "Pattern.v|Pattern|verbose",
+  "name": "verbose",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "Pattern.v:105",
+   "Pattern.v:110",
+   "Pattern.v:134",
+   "Pattern.v:136",
+   "Pattern.v:137",
+   "Pattern.v:193"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "Pattern.v|Pattern|stats",
+  "name": "stats",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "Pattern.v:106",
+   "Pattern.v:111",
+   "Pattern.v:133",
+   "Pattern.v:134"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "Pattern.v|Pattern|vcd",
+  "name": "vcd",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "Pattern.v:107",
+   "Pattern.v:112",
+   "Pattern.v:140"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "Pattern.v|Pattern|num_cycles",
+  "name": "num_cycles",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "Pattern.v:157",
+   "Pattern.v:162",
+   "Pattern.v:166",
+   "Pattern.v:194",
+   "Pattern.v:195",
+   "Pattern.v:205",
+   "Pattern.v:212"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "Pattern.v|Pattern|num_inst",
+  "name": "num_inst",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "Pattern.v:158",
+   "Pattern.v:163",
+   "Pattern.v:169",
+   "Pattern.v:195",
+   "Pattern.v:206"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "Pattern.v|Pattern|ipc",
+  "name": "ipc",
+  "cat": "signal",
+  "module": "Pattern",
+  "kind": "real",
+  "decl": "real",
+  "lines": [
+   "Pattern.v:178",
+   "Pattern.v:195",
+   "Pattern.v:198",
+   "Pattern.v:207"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`RISCV_PATTERN_V",
+  "name": "RISCV_PATTERN_V",
+  "cat": "macro",
+  "lines": [
+   "Pattern.v:5",
+   "Pattern.v:6"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "Pattern.v||Pattern",
+  "name": "Pattern",
+  "cat": "module",
+  "lines": [
+   "Pattern.v:12",
+   "Testbench.v:87"
+  ],
+  "n_occ": 2
+ }
+]

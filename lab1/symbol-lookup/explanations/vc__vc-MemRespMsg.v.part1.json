@@ -1,0 +1,341 @@
+{
+  "entities": {
+    "`VC_MEM_RESP_MSG_V": {
+      "sum": "vc-MemRespMsg.v 的 include guard，防止這個檔被重複 `include",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["_V", "Verilog file guard", "檔名_V：include guard"]
+      ],
+      "desc": "檔案開頭 `ifndef VC_MEM_RESP_MSG_V / `define VC_MEM_RESP_MSG_V、結尾 `endif 圍起整份檔案。`riscvstall-Core.v`、`Pattern.v`、`vc-TestDualPortMem.v` 都會 `include 這個檔，有了 guard 才不會重複定義 macro 與 module。它沒有值，只是「已讀過」的標記。"
+    },
+    "`VC_MEM_RESP_MSG_DATA_SZ": {
+      "sum": "帶參數 macro：memory response 訊息中 data 欄位的 bit 數，等於 p_data_sz",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["DATA", "data", "讀回來的資料"],
+        ["_SZ", "size", "位元數"]
+      ],
+      "desc": "用法 `VC_MEM_RESP_MSG_DATA_SZ( p_data_sz )，展開就是 p_data_sz。和 request 那組不同，response 的 macro 只吃一個參數（回應裡沒有 addr 欄位）。以 32 來說是 32 bits，也就是記憶體讀回來的那個 word，放在訊息最低位 bits[31:0]。`vc_MemRespMsgToBits` / `vc_MemRespMsgFromBits` 的 data port 寬度由它決定。"
+    },
+    "`VC_MEM_RESP_MSG_DATA_MSB": {
+      "sum": "帶參數 macro：data 欄位最高位元的 index，等於 p_data_sz-1（32 時為 31）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["DATA", "data", "資料欄位"],
+        ["_MSB", "most significant bit", "最高位元的 index"]
+      ],
+      "desc": "展開成 ( `VC_MEM_RESP_MSG_DATA_SZ(p_data_sz) - 1 )。data 放在訊息最低位，所以範圍是 [p_data_sz-1:0]，p_data_sz=32 時 MSB=31。它是 `VC_MEM_RESP_MSG_DATA_FIELD` 的上界，也是 `VC_MEM_RESP_MSG_LEN_MSB` / `VC_MEM_RESP_MSG_LEN_FIELD` 往上堆 len 欄位的起點。"
+    },
+    "`VC_MEM_RESP_MSG_DATA_FIELD": {
+      "sum": "帶參數 macro：展開成 data 欄位的位元範圍（p_data_sz=32 時是 31:0）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["DATA", "data", "資料欄位"],
+        ["_FIELD", "field range", "展開成 msb:lsb 的位元範圍"]
+      ],
+      "desc": "展開成 (`VC_MEM_RESP_MSG_DATA_MSB(p_data_sz)):0，含冒號，所以只能寫在中括號裡：bits[`VC_MEM_RESP_MSG_DATA_FIELD(32)] 就是 bits[31:0]。`vc_MemRespMsgToBits` 用它塞 data、`vc_MemRespMsgFromBits` 用它拆 data。`riscv_Core` 的 `imemresp_msg_from_bits` / `dmemresp_msg_from_bits` 拆出來的就是這一段，分別當成取回的指令和 load 的資料。"
+    },
+    "`VC_MEM_RESP_MSG_LEN_SZ": {
+      "sum": "帶參數 macro：len 欄位的 bit 數，等於 $clog2(p_data_sz/8)",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["LEN", "length", "讀回來的 byte 數"],
+        ["_SZ", "size", "位元數"]
+      ],
+      "desc": "展開成 ($clog2(p_data_sz/8))；p_data_sz=32 時為 $clog2(4)=2，len 是 2 bits。語意是「這次回應帶回幾個 byte」：1 = 一個 byte、2 = 兩個 byte、0 = 整個 word。它決定 `vc_MemRespMsgToBits` 的 len port 寬度，也決定 `VC_MEM_RESP_MSG_LEN_FIELD` 佔的位置。"
+    },
+    "`VC_MEM_RESP_MSG_LEN_MSB": {
+      "sum": "帶參數 macro：len 欄位最高位元的 index（p_data_sz=32 時為 33）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["LEN", "length", "byte 數"],
+        ["_MSB", "most significant bit", "最高位元的 index"]
+      ],
+      "desc": "展開成 `VC_MEM_RESP_MSG_DATA_MSB(p_data_sz) + `VC_MEM_RESP_MSG_LEN_SZ(p_data_sz)，把 len 疊在 data 上面；32 時是 31+2 = 33。它是 `VC_MEM_RESP_MSG_LEN_FIELD` 的上界，也是 `VC_MEM_RESP_MSG_TYPE_MSB` / `VC_MEM_RESP_MSG_TYPE_FIELD` 的起算點（response 沒有 addr 欄位，所以 type 直接接在 len 上面）。"
+    },
+    "`VC_MEM_RESP_MSG_LEN_FIELD": {
+      "sum": "帶參數 macro：展開成 len 欄位的位元範圍（p_data_sz=32 時是 33:32）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["LEN", "length", "byte 數"],
+        ["_FIELD", "field range", "展開成 msb:lsb 的位元範圍"]
+      ],
+      "desc": "展開成 (`VC_MEM_RESP_MSG_LEN_MSB(p_data_sz)) : (`VC_MEM_RESP_MSG_DATA_MSB(p_data_sz) + 1)，32 時為 33:32。`vc_TestDualPortMem` 的 `memresp0_msg_to_bits` / `memresp1_msg_to_bits` 用它把回應長度打包進去；`riscv_Core` 那端其實把 `vc_MemRespMsgFromBits` 的 .len 接成空的（不使用），因為 sign/zero extend 是由 CoreCtrl 的 `dmemresp_mux_sel_Mhl` 決定的。"
+    },
+    "`VC_MEM_RESP_MSG_TYPE_SZ": {
+      "sum": "帶參數 macro：response 的 type 欄位 bit 數，固定為 1",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["TYPE", "type", "回應種類（讀或寫）"],
+        ["_SZ", "size", "位元數"]
+      ],
+      "desc": "定義成 `define VC_MEM_RESP_MSG_TYPE_SZ( p_data_sz ) 1，不看參數一律展開成 1——回應只分「這是讀的回應」和「這是寫的回應」兩種。`vc_MemRespMsgToBits` 的 type port 就是 1 bit，在 `vc_TestDualPortMem` 裡接的是 memresp0_msg_type_M / memresp1_msg_type_M。"
+    },
+    "`VC_MEM_RESP_MSG_TYPE_READ": {
+      "sum": "常數 macro：response 的 type 值 1'd0，代表這是讀取的回應（帶回 data）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["TYPE", "type", "回應種類"],
+        ["READ", "read", "讀取"]
+      ],
+      "desc": "無參數，展開成 1'd0。`vc_MemRespMsgToStr` 用 localparam c_read 收下它，比中時字串印成 \"rd:<len>:<data>\"。`vc_TestDualPortMem` 回應 read 請求時就把這個值放進 type 欄位；`riscv_Core` 那端其實沒有檢查 type（.type 接空），因為它本來就知道自己送出去的是讀還是寫。"
+    },
+    "`VC_MEM_RESP_MSG_TYPE_WRITE": {
+      "sum": "常數 macro：response 的 type 值 1'd1，代表這是寫入完成的回應（沒有有效 data）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["TYPE", "type", "回應種類"],
+        ["WRITE", "write", "寫入"]
+      ],
+      "desc": "無參數，展開成 1'd1。寫入回應只是一個「做完了」的通知，檔頭註解也說明 write response 除了 type 之外不帶其他有意義的內容，所以 `vc_MemRespMsgToStr` 對它只印 \"wr       \"，不印 data。對 CPU 來說它的作用是讓 store 指令的 M 階段可以往前推進。"
+    },
+    "`VC_MEM_RESP_MSG_TYPE_MSB": {
+      "sum": "帶參數 macro：type 欄位最高位元的 index（p_data_sz=32 時為 34，也是整條訊息的最高位）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["TYPE", "type", "回應種類"],
+        ["_MSB", "most significant bit", "最高位元的 index"]
+      ],
+      "desc": "展開成 `VC_MEM_RESP_MSG_LEN_MSB(p_data_sz) + `VC_MEM_RESP_MSG_TYPE_SZ(p_data_sz)，32 時是 33+1 = 34。type 是最後疊上去的欄位，所以這個值同時就是整條 response msg 的最高 bit index（總長 35 bits）。"
+    },
+    "`VC_MEM_RESP_MSG_TYPE_FIELD": {
+      "sum": "帶參數 macro：展開成 type 欄位的位元範圍（p_data_sz=32 時是 34:34）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["TYPE", "type", "回應種類"],
+        ["_FIELD", "field range", "展開成 msb:lsb 的位元範圍"]
+      ],
+      "desc": "展開成 (`VC_MEM_RESP_MSG_TYPE_MSB(p_data_sz)) : (`VC_MEM_RESP_MSG_LEN_MSB(p_data_sz) + 1)，32 時為 34:34——只有一位，但寫成範圍讓 slice 語法和其他欄位一致。`vc_MemRespMsgToBits` 用它塞 type、`vc_MemRespMsgFromBits` 用它拆 type。"
+    },
+    "`VC_MEM_RESP_MSG_SZ": {
+      "sum": "帶參數 macro：整條 memory response 訊息的總 bit 數（p_data_sz=32 時為 35）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["MEM_RESP_MSG", "memory response message", "記憶體回應訊息"],
+        ["_SZ", "size", "位元數"]
+      ],
+      "desc": "展開成 TYPE_SZ + LEN_SZ + DATA_SZ = 1 + $clog2(p_data_sz/8) + p_data_sz。以 32 來說是 1+2+32 = 35 bits，由高到低是 type(bit 34)、len(33:32)、data(31:0)——比 request 少了 addr，所以比 request 的 67 bits 短很多。`riscv_Core` 的 `imemresp_msg` / `dmemresp_msg` port、`Testbench.v`、`Pattern.v`、`riscvstall-sim.v` 的 wire 都宣告成 [`VC_MEM_RESP_MSG_SZ(32)-1:0]，`vc_TestDualPortMem` 則用 parameter c_resp_msg_sz 收著。"
+    },
+    "vc/vc-MemRespMsg.v||vc_MemRespMsgToBits": {
+      "sum": "把 type / len / data 打包成一條 memory response bits 的純組合邏輯 module",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["MemRespMsg", "memory response message", "記憶體回應訊息"],
+        ["To", "to", "轉換成"],
+        ["Bits", "bits", "一整串位元"]
+      ],
+      "desc": "只有一個 parameter `p_data_sz`（預設 32）。輸入 type / len / data，輸出 bits，內部三行 assign 各用一個 _FIELD macro 寫進對應 slice，沒有任何暫存器。它被 `vc_TestDualPortMem` instantiate 兩次：`memresp0_msg_to_bits`（port 0，回給 imem 端）和 `memresp1_msg_to_bits`（port 1，回給 dmem 端），把記憶體讀出的結果包好送回 CPU，CPU 那端再用 `vc_MemRespMsgFromBits` 拆開。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToBits|p_data_sz": {
+      "sum": "vc_MemRespMsgToBits 的資料寬度參數，預設 32；len 欄位寬度也由它推算",
+      "naming": [
+        ["p_", "parameter", "module 的 parameter"],
+        ["data", "data", "資料"],
+        ["_sz", "size", "位元數"]
+      ],
+      "desc": "parameter p_data_sz = 32。它同時決定 data 欄位寬度（p_data_sz）、len 欄位寬度（$clog2(p_data_sz/8)）與 bits 總寬度（`VC_MEM_RESP_MSG_SZ`）。`vc_TestDualPortMem` 把自己的 p_data_sz 傳給 vc_MemRespMsgToBits#(p_data_sz)，而 `riscv_Core` 那端是寫死 #(32)，兩邊要一致才不會錯位。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToBits|type": {
+      "sum": "vc_MemRespMsgToBits 的 1-bit 輸入：這筆回應對應的是讀(0)還是寫(1)",
+      "naming": [
+        ["type", "type", "回應種類（讀或寫）"]
+      ],
+      "desc": "寬度由 `VC_MEM_RESP_MSG_TYPE_SZ` 固定為 1。值 1'd0 = `VC_MEM_RESP_MSG_TYPE_READ、1'd1 = `VC_MEM_RESP_MSG_TYPE_WRITE。assign bits[`VC_MEM_RESP_MSG_TYPE_FIELD(p_data_sz)] = type 放到訊息最高位（p_data_sz=32 時是 bit 34）。在 `vc_TestDualPortMem` 裡它接的是 memresp0_msg_type_M / memresp1_msg_type_M，也就是把 M 階段暫存下來的請求種類原樣回報。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToBits|len": {
+      "sum": "vc_MemRespMsgToBits 的長度輸入：這次回應帶回幾個 byte（0 = 整個 word）",
+      "naming": [
+        ["len", "length", "byte 數"]
+      ],
+      "desc": "寬度 $clog2(p_data_sz/8)，32 時為 2 bits，打包進 bits[33:32]。在 `vc_TestDualPortMem` 裡接 memresp0_msg_len_M / memresp1_msg_len_M，通常就是把請求裡的 len 原樣回傳。CPU 端（`riscv_Core`）其實把對應的輸出接成空的，不看這個欄位。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToBits|data": {
+      "sum": "vc_MemRespMsgToBits 的資料輸入：讀出來的內容，放在 bits 最低 p_data_sz 位",
+      "naming": [
+        ["data", "data", "讀回來的資料"]
+      ],
+      "desc": "寬度 p_data_sz，打包進 bits[31:0]（32 時）。只有讀回應才有意義，寫回應時這個欄位沒有定義。在 `vc_TestDualPortMem` 裡接的是 memresp0_msg_data_M / memresp1_msg_data_M，也就是記憶體陣列這個 cycle 讀出來的 word。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToBits|bits": {
+      "sum": "vc_MemRespMsgToBits 的輸出：打包好的整條 memory response 訊息",
+      "naming": [
+        ["bits", "bits", "打包後的位元串"]
+      ],
+      "desc": "寬度 `VC_MEM_RESP_MSG_SZ(p_data_sz)，32 時為 35 bits：bit 34 = type、[33:32] = len、[31:0] = data。在 `vc_TestDualPortMem` 裡它直接接到 module 的 memresp0_msg / memresp1_msg 輸出，沿 val-rdy 介面回到 `riscv_Core` 的 `imemresp_msg` / `dmemresp_msg`。只有 memresp val 拉起來的 cycle 這條線上的值才算數。"
+    },
+    "vc/vc-MemRespMsg.v||vc_MemRespMsgFromBits": {
+      "sum": "把一條 memory response bits 拆回 type / len / data 的純組合邏輯 module",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["MemRespMsg", "memory response message", "記憶體回應訊息"],
+        ["From", "from", "從…還原"],
+        ["Bits", "bits", "一整串位元"]
+      ],
+      "desc": "和 `vc_MemRespMsgToBits` 對稱：輸入 bits，輸出 type / len / data，內部三行 assign 用同一組 _FIELD macro 做 slice，參數只有 `p_data_sz`。`riscv_Core` instantiate 兩次：`imemresp_msg_from_bits` 把取回的指令拆給 `imemresp_msg_data`，`dmemresp_msg_from_bits` 把 load 的結果拆給 `dmemresp_msg_data`；兩個 instance 的 .type 和 .len 都接成空 ()，表示刻意不使用那兩個欄位。`vc_MemRespMsgToStr` 也用它拆欄位來印字串。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgFromBits|p_data_sz": {
+      "sum": "vc_MemRespMsgFromBits 的資料寬度參數，預設 32，必須和送方一致",
+      "naming": [
+        ["p_", "parameter", "module 的 parameter"],
+        ["data", "data", "資料"],
+        ["_sz", "size", "位元數"]
+      ],
+      "desc": "parameter p_data_sz = 32，決定 bits 總寬度與各欄位切出來的位置。`riscv_Core` 的兩個 instance 都寫 vc_MemRespMsgFromBits#(32)，對應 `vc_TestDualPortMem` 那端同樣的 32，所以 bit 34 是 type、[33:32] 是 len、[31:0] 是 data。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgFromBits|bits": {
+      "sum": "vc_MemRespMsgFromBits 的輸入：記憶體送回來的整條 response 訊息",
+      "naming": [
+        ["bits", "bits", "打包後的位元串"]
+      ],
+      "desc": "寬度 `VC_MEM_RESP_MSG_SZ(p_data_sz)（32 時 35 bits）。在 `riscv_Core` 裡分別接 module 的輸入 port `imemresp_msg` 和 `dmemresp_msg`。module 內用三個 _FIELD macro 對它 slice 出 type / len / data。要注意只有在 imemresp_val / dmemresp_val 為 1 的 cycle，它的值才是有效回應；其他時候多半是 x。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgFromBits|type": {
+      "sum": "vc_MemRespMsgFromBits 拆出的 1-bit 回應種類輸出",
+      "naming": [
+        ["type", "type", "回應種類（讀或寫）"]
+      ],
+      "desc": "assign type = bits[`VC_MEM_RESP_MSG_TYPE_FIELD(p_data_sz)]，32 時就是 bits[34]。0 代表讀回應、1 代表寫回應。值得注意的是 `riscv_Core` 的 `imemresp_msg_from_bits` 與 `dmemresp_msg_from_bits` 都把 .type 接成空 ()，因為 CPU 自己記得送出去的是什麼請求，不需要從回應再確認一次。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgFromBits|len": {
+      "sum": "vc_MemRespMsgFromBits 拆出的長度輸出：回應帶回幾個 byte",
+      "naming": [
+        ["len", "length", "byte 數"]
+      ],
+      "desc": "assign len = bits[`VC_MEM_RESP_MSG_LEN_FIELD(p_data_sz)]，32 時是 bits[33:32]。同樣地，`riscv_Core` 的兩個 instance 都把 .len 接成空 ()——load 結果要做 sign extend 還是 zero extend、取幾個 byte，是由 CoreCtrl 解碼出來的 `dmemresp_mux_sel_Mhl` 決定，而不是看這個欄位。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgFromBits|data": {
+      "sum": "vc_MemRespMsgFromBits 拆出的資料輸出，是整個回應裡 CPU 真正會用的欄位",
+      "naming": [
+        ["data", "data", "讀回來的資料"]
+      ],
+      "desc": "assign data = bits[`VC_MEM_RESP_MSG_DATA_FIELD(p_data_sz)]，32 時是 bits[31:0]。在 `riscv_Core` 裡，`imemresp_msg_from_bits` 的 .data 接到 `imemresp_msg_data`（取回的 32-bit 指令，再送進 CoreCtrl 解碼），`dmemresp_msg_from_bits` 的 .data 接到 `dmemresp_msg_data`（load 讀回來的值，送進 dpath 做 extend 與寫回）。寫回應時這個欄位沒有意義。"
+    },
+    "vc/vc-MemRespMsg.v||vc_MemRespMsgToStr": {
+      "sum": "模擬專用 debug 輔助 module：把 response 訊息轉成可讀字串（如 \"rd:0:deadbeef\"）",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["MemRespMsg", "memory response message", "記憶體回應訊息"],
+        ["To", "to", "轉換成"],
+        ["Str", "string", "字串"]
+      ],
+      "desc": "包在 `ifndef SYNTHESIS 裡，只在模擬時存在。唯一的 input 是 `msg`，內部 instantiate `vc_MemRespMsgFromBits` 拆出 type / len / data，再用 $sformat 產生 `full_str`（9 字元）與 `tiny_str`（2 字元）兩個 reg 供波形觀察。用法是把它 instantiate 在 testbench 裡、msg 接到要看的 response 線上。從程式碼看來，這份 lab 目前沒有檔案實際 instantiate 它。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|p_data_sz": {
+      "sum": "vc_MemRespMsgToStr 的資料寬度參數，預設 32",
+      "naming": [
+        ["p_", "parameter", "module 的 parameter"],
+        ["data", "data", "資料"],
+        ["_sz", "size", "位元數"]
+      ],
+      "desc": "parameter p_data_sz = 32，決定輸入 `msg` 的寬度（35 bits）、內部各 wire 的寬度，並原樣傳給 `mem_resp_msg_from_bits`。它也決定 localparam `c_msg_sz` 的值，用來構造全 x 的比較常數。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|msg": {
+      "sum": "vc_MemRespMsgToStr 唯一的輸入：要被轉成字串的整條 response 訊息",
+      "naming": [
+        ["msg", "message", "訊息本體"]
+      ],
+      "desc": "寬度 `VC_MEM_RESP_MSG_SZ(p_data_sz)（32 時 35 bits）。它接到內部 `mem_resp_msg_from_bits` 的 .bits 以拆出欄位。兩段 always @(*) 都先用 msg === {c_msg_sz{1'bx}} 判斷這條訊息是否整條都是 x（代表這個 cycle 沒有有效回應），是的話印 \"x\" 佔位字串而不是亂數字；用 === 才能比對 x。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|type": {
+      "sum": "vc_MemRespMsgToStr 內部拆出的回應種類 wire，決定字串印 rd 還是 wr",
+      "naming": [
+        ["type", "type", "回應種類（讀或寫）"]
+      ],
+      "desc": "1-bit wire，由 `mem_resp_msg_from_bits` 的 .type 驅動。兩段 always @(*) 用 case(type) 比對 localparam `c_read` / `c_write`：read 印 \"rd:<len>:<data>\"、write 只印 \"wr       \"（因為寫回應沒有有效資料），其他值印 \"undefined type\" / \"??\"。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|len": {
+      "sum": "vc_MemRespMsgToStr 內部拆出的長度 wire，會被格式化成 len_str",
+      "naming": [
+        ["len", "length", "byte 數"]
+      ],
+      "desc": "寬度 $clog2(p_data_sz/8)（32 時 2 bits）的 wire，由 `mem_resp_msg_from_bits` 的 .len 驅動。用 $sformat( len_str, \"%x\", len ) 轉成 1 個十六進位字元後組進 `full_str`，字串裡看到 0 就表示回應帶回整個 word。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|data": {
+      "sum": "vc_MemRespMsgToStr 內部拆出的資料 wire，只有讀回應的字串會用到",
+      "naming": [
+        ["data", "data", "讀回來的資料"]
+      ],
+      "desc": "寬度 p_data_sz 的 wire，由 `mem_resp_msg_from_bits` 的 .data 驅動，經 $sformat 變成 `data_str`。只有 type 等於 `c_read` 的分支會把它接進 `full_str`；寫回應時 data 沒有定義，所以刻意不印。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|mem_resp_msg_from_bits": {
+      "sum": "vc_MemRespMsgToStr 裡的 vc_MemRespMsgFromBits 實例，負責把 msg 拆成三個欄位",
+      "naming": [
+        ["mem", "memory", "記憶體"],
+        ["resp", "response", "回應"],
+        ["msg", "message", "訊息"],
+        ["from", "from", "從…還原"],
+        ["bits", "bits", "位元串"]
+      ],
+      "desc": "寫成 vc_MemRespMsgFromBits#(p_data_sz)，把上層參數傳下去。.bits 接 module 的輸入 `msg`，.type / .len / .data 接到同名內部 wire，供後面的 $sformat 使用。它本身只是 bit-slice 的接線，沒有邏輯。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|c_msg_sz": {
+      "sum": "vc_MemRespMsgToStr 的 localparam：訊息總 bit 數的簡寫（p_data_sz=32 時 35）",
+      "naming": [
+        ["c_", "constant", "module 內的 localparam 常數"],
+        ["msg", "message", "訊息"],
+        ["_sz", "size", "位元數"]
+      ],
+      "desc": "localparam c_msg_sz = `VC_MEM_RESP_MSG_SZ(p_data_sz)。存在的目的是寫 {c_msg_sz{1'bx}}——一條同寬度的全 x 常數，拿去和 `msg` 做 === 比較以判斷這個 cycle 有沒有有效回應。兩段 always 區塊各用一次。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|c_read": {
+      "sum": "vc_MemRespMsgToStr 的 localparam：讀回應的 type 值 1'd0 的簡寫",
+      "naming": [
+        ["c_", "constant", "module 內的 localparam 常數"],
+        ["read", "read", "讀取"]
+      ],
+      "desc": "localparam c_read = `VC_MEM_RESP_MSG_TYPE_READ，值 1'd0。用在 case(type) 的分支標籤：比中時 `full_str` 印 \"rd:<len_str>:<data_str>\"、`tiny_str` 印 \"rd\"。這是唯一會把讀回來的資料印出來的分支。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|c_write": {
+      "sum": "vc_MemRespMsgToStr 的 localparam：寫回應的 type 值 1'd1 的簡寫",
+      "naming": [
+        ["c_", "constant", "module 內的 localparam 常數"],
+        ["write", "write", "寫入"]
+      ],
+      "desc": "localparam c_write = `VC_MEM_RESP_MSG_TYPE_WRITE，值 1'd1。case(type) 比中它時 `full_str` 只印 \"wr       \"（後面補空白湊滿 9 個字元）、`tiny_str` 印 \"wr\"，因為寫回應本來就不帶 data。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|len_str": {
+      "sum": "vc_MemRespMsgToStr 的暫存字串 reg：長度欄位的十六進位文字，1 個字元",
+      "naming": [
+        ["len", "length", "byte 數"],
+        ["_str", "string", "字串"]
+      ],
+      "desc": "reg [1*8-1:0]，剛好 1 個 ASCII 字元。由 $sformat( len_str, \"%x\", len ) 在 always @(*) 裡更新；len 最多 2 bits（0~3），一個十六進位字元就夠。之後被組進 `full_str` 的 \"rd:%s:%s\"。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|data_str": {
+      "sum": "vc_MemRespMsgToStr 的暫存字串 reg：讀回資料的十六進位文字，4 bytes 容量",
+      "naming": [
+        ["data", "data", "資料"],
+        ["_str", "string", "字串"]
+      ],
+      "desc": "reg [4*8-1:0]，4 個 ASCII 字元，由 $sformat( data_str, \"%x\", data ) 更新，只在 `c_read` 分支被組進 `full_str`。注意 32-bit 資料用 %x 會印成 8 個字元，而這裡只留得下 4 個，會被截斷——這是 vc 函式庫原本就有的小瑕疵。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|full_str": {
+      "sum": "vc_MemRespMsgToStr 的完整字串輸出 reg（9 字元），debug 時在波形上看這個",
+      "naming": [
+        ["full", "full", "完整版"],
+        ["_str", "string", "字串"]
+      ],
+      "desc": "reg [9*8-1:0]，9 個 ASCII 字元。always @(*) 先判斷 `msg` 是否全 x，是的話印 \"x        \"；否則依 type 印 \"rd:<len>:<data>\" 或 \"wr       \"，type 不合法則印 \"undefined type\"（這個字串有 14 個字元，比 9 個字元的容量長，會被截掉）。它不是 output port，是純粹給人在波形檢視器觀察的 reg。"
+    },
+    "vc/vc-MemRespMsg.v|vc_MemRespMsgToStr|tiny_str": {
+      "sum": "vc_MemRespMsgToStr 的短字串 reg（2 字元）：只顯示 rd / wr / x / ??",
+      "naming": [
+        ["tiny", "tiny", "極短版"],
+        ["_str", "string", "字串"]
+      ],
+      "desc": "reg [2*8-1:0]，由獨立的一段 always @(*) 驅動。msg 全 x 時印 \"x \"，否則依 type 印 \"rd\" 或 \"wr\"，不合法則印 \"??\"。用在波形欄位太窄、放不下 `full_str` 的時候，至少能看出每個 cycle 回的是讀還是寫。"
+    }
+  }
+}

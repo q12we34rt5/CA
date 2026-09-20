@@ -1,0 +1,254 @@
+{
+  "entities": {
+    "`RISCV_INT_DIV_ITERATIVE_V": {
+      "sum": "imuldiv-IntDivIterative.v 的 include guard macro，防止檔案被重複 include",
+      "naming": [
+        ["RISCV", "RISC-V", "這份作業的處理器專案前綴"],
+        ["INT", "integer", "整數運算"],
+        ["DIV", "divide", "除法"],
+        ["ITERATIVE", "iterative", "迭代式（一個 cycle 做一位）"],
+        ["V", "Verilog file / include guard", "檔名的 .v，代表這是該檔的 include guard"]
+      ],
+      "desc": "include guard，不是訊號。檔案用 `ifndef RISCV_INT_DIV_ITERATIVE_V / `define RISCV_INT_DIV_ITERATIVE_V … `endif 包住全部內容，確保即使 `imuldiv-IntMulDivIterative.v` 與測試檔各 include 一次，`imuldiv_IntDivIterative` 等 module 也只會被定義一次。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v||imuldiv_IntDivIterative": {
+      "sum": "迭代式 32-bit 整數除法器的頂層 module，同時算出商與餘數",
+      "naming": [
+        ["imuldiv", "iterative multiply / divide unit", "迭代式乘除法單元（這個資料夾的前綴）"],
+        ["Int", "integer", "整數"],
+        ["Div", "divide", "除法"],
+        ["Iterative", "iterative", "迭代式：32 輪，一輪算一位商"]
+      ],
+      "desc": "用 restoring division（不回存版本：算完減法後由正負決定要不要採用）做 32-bit ÷ 32-bit，一次回傳 64-bit 的 `{餘數, 商}`。port 分三組：`clk`/`reset`；請求 `divreq_msg_fn`（0 = 無號、1 = 有號）、`divreq_msg_a`（被除數）、`divreq_msg_b`（除數）、`divreq_val`/`divreq_rdy`；回應 `divresp_msg_result`、`divresp_val`/`divresp_rdy`。內部宣告 dpath 與 ctrl 之間的控制線後，instantiate `imuldiv_IntDivIterativeDpath`（`dpath`）與 `imuldiv_IntDivIterativeCtrl`（`ctrl`）。它被 `imuldiv_IntMulDivIterative` 以實例名 `idiv` 使用。檔案開頭 include 了 `imuldiv-DivReqMsg.v`，因為 ctrl 要用 `IMULDIV_DIVREQ_MSG_FUNC_SIGNED` 這個 macro。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v||imuldiv_IntDivIterativeDpath": {
+      "sum": "除法器的資料路徑：65-bit 的 a/b 暫存器、移位器、減法器與符號還原 mux",
+      "naming": [
+        ["imuldiv", "iterative multiply / divide unit", "迭代式乘除法單元"],
+        ["Int", "integer", "整數"],
+        ["Div", "divide", "除法"],
+        ["Iterative", "iterative", "迭代式"],
+        ["Dpath", "datapath", "資料路徑"]
+      ],
+      "desc": "核心是 65-bit 的 `a_reg`：低半邊逐步填入商、高半邊是目前的部分餘數。每一輪把 `a_reg` 左移一位，用 `sub_out = a_shift_out - b_reg` 試減；減出來不是負的（`diff_msb` 為 0）就採用差值並把最低位（商的這一位）設成 1，是負的就丟棄差值、保留左移後的值（商這一位為 0）。另外存 `div_sign_reg`/`rem_sign_reg` 記住商與餘數的正負號，最後由兩個 mux 各自還原符號，拼成 `divresp_msg_result`。只被頂層 instantiate 一次（實例名 `dpath`）。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v||imuldiv_IntDivIterativeCtrl": {
+      "sum": "除法器的控制單元：IDLE/CALC/SIGN 三狀態 FSM，並記住這筆請求是有號還是無號",
+      "naming": [
+        ["imuldiv", "iterative multiply / divide unit", "迭代式乘除法單元"],
+        ["Int", "integer", "整數"],
+        ["Div", "divide", "除法"],
+        ["Iterative", "iterative", "迭代式"],
+        ["Ctrl", "control", "控制單元"]
+      ],
+      "desc": "和乘法器的 ctrl 結構一樣：`state_reg` 有 `STATE_IDLE`、`STATE_CALC`、`STATE_SIGN` 三個狀態，用 8-bit 的 `cs` 表產生 `divreq_rdy`、`divresp_val`、`sign_en`、`a_en`、`b_en`、`fn_en`、`cntr_mux_sel`、`a_mux_sel`。多出來的東西是 `fn_reg`：把請求的有號/無號旗標存起來，這樣 32 個 cycle 之後還原符號時才知道要不要取負。另外 `sub_mux_sel` 直接吃 dpath 回報的 `diff_msb`，`is_op_signed` 則是即時比對 `divreq_msg_fn`。只被頂層 instantiate 一次（實例名 `ctrl`）。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|clk": {
+      "sum": "除法器頂層的時脈輸入，轉接給 dpath 與 ctrl",
+      "naming": [["clk", "clock", "時脈"]],
+      "desc": "同時接到 `dpath` 與 `ctrl` 的 `clk`。dpath 用它在正緣更新 `counter_reg`、`div_sign_reg`、`rem_sign_reg`、`a_reg`、`b_reg`；ctrl 用它更新 `state_reg` 與 `fn_reg`。由上層 `imuldiv_IntMulDivIterative` 的 `clk` 傳進來。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|reset": {
+      "sum": "除法器頂層的同步重置輸入，實際上只有 ctrl 的狀態機會用到",
+      "naming": [["reset", "reset", "重置"]],
+      "desc": "接到 `dpath` 與 `ctrl` 的 `reset`。和乘法器一樣，只有 `imuldiv_IntDivIterativeCtrl` 真的使用它（把 `state_reg` 設回 `STATE_IDLE`），`imuldiv_IntDivIterativeDpath` 雖然宣告了 `reset` port 卻完全沒有引用。因為 IDLE 狀態會重新載入所有資料暫存器，所以功能上沒有問題。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|divreq_msg_fn": {
+      "sum": "除法請求的功能欄位：0 = 無號除法、1 = 有號除法",
+      "naming": [
+        ["div", "divide", "除法"],
+        ["req", "request", "請求"],
+        ["msg", "message", "訊息欄位"],
+        ["fn", "function", "功能碼"]
+      ],
+      "desc": "1-bit 輸入，值的定義來自 `imuldiv-DivReqMsg.v`：`IMULDIV_DIVREQ_MSG_FUNC_UNSIGNED` 是 1'd0、`IMULDIV_DIVREQ_MSG_FUNC_SIGNED` 是 1'd1。頂層只把它接給 `ctrl`（沒有接給 dpath），ctrl 再用它產生 `is_op_signed` 給 dpath 決定要不要對運算元取絕對值，同時用 `fn_en` 把它存進 `fn_reg` 供最後還原符號用。上層 `imuldiv_IntMulDivIterative` 把 3-bit 的 `muldivreq_msg_fn` 壓成「是 DIV 或 REM 就是 1（有號）」再接進來。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|divreq_msg_a": {
+      "sum": "除法請求的被除數，32-bit",
+      "naming": [
+        ["div", "divide", "除法"],
+        ["req", "request", "請求"],
+        ["msg", "message", "訊息欄位"],
+        ["a", "operand a", "運算元 a（被除數）"]
+      ],
+      "desc": "32-bit 被除數，只在 `divreq_val` 為 1 的那個 cycle 有意義。頂層直接接給 `dpath`：`divreq_msg_a[31]` 參與 `div_sign_next` 的 XOR、也直接當成 `rem_sign_next`（餘數的符號跟著被除數走）；經 `unsigned_a` 取絕對值後載入 `a_reg` 的低 32 位。上層接的是 `muldivreq_msg_a`。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|divreq_msg_b": {
+      "sum": "除法請求的除數，32-bit",
+      "naming": [
+        ["div", "divide", "除法"],
+        ["req", "request", "請求"],
+        ["msg", "message", "訊息欄位"],
+        ["b", "operand b", "運算元 b（除數）"]
+      ],
+      "desc": "32-bit 除數，只在握手那個 cycle 有意義。`divreq_msg_b[31]` 和 a 的最高位 XOR 出商的符號；絕對值 `unsigned_b` 被放到 `b_in = {1'b0, unsigned_b, 32'b0}` 的中間位置後載入 `b_reg`，這樣每輪就能直接和左移後的部分餘數相減。上層接的是 `muldivreq_msg_b`。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|divreq_val": {
+      "sum": "外部告訴除法器「這個 cycle 的 fn/a/b 是有效請求」",
+      "naming": [
+        ["div", "divide", "除法"],
+        ["req", "request", "請求"],
+        ["val", "valid", "有效"]
+      ],
+      "desc": "請求通道 valid，接進 `ctrl`，只用在 `divreq_go = divreq_val && divreq_rdy`。成交就從 `STATE_IDLE` 進 `STATE_CALC`，同一 cycle dpath 載入運算元、ctrl 存下 `fn_reg`。上層 `imuldiv_IntMulDivIterative` 裡它是「`muldivreq_msg_fn` 不是 MUL 且 `muldivreq_val` 且乘法器也 ready」。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|divreq_rdy": {
+      "sum": "除法器告訴外部「我現在可以收新的除法請求」",
+      "naming": [
+        ["div", "divide", "除法"],
+        ["req", "request", "請求"],
+        ["rdy", "ready", "可以接收"]
+      ],
+      "desc": "由 `ctrl` 的 `cs[7]` 驅動，只有 `STATE_IDLE` 時為 1。除法器一次只處理一筆請求。上層用 `muldivreq_rdy = mulreq_rdy && divreq_rdy` 把它和乘法器的 ready 綁在一起。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|divresp_msg_result": {
+      "sum": "64-bit 除法結果：高 32 位是餘數、低 32 位是商",
+      "naming": [
+        ["div", "divide", "除法"],
+        ["resp", "response", "回應"],
+        ["msg", "message", "訊息欄位"],
+        ["result", "result", "結果"]
+      ],
+      "desc": "由 dpath 的 `assign divresp_msg_result = { signed_res_rem_mux_out, signed_res_div_mux_out };` 驅動，兩半各自套好正負號。要用商就取 `[31:0]`，要用餘數就取 `[63:32]`——上層的 REM 指令就是取高半邊。它是組合輸出，只有 `divresp_val` 為 1（`STATE_SIGN`）時才正確。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|divresp_val": {
+      "sum": "除法器告訴外部「商與餘數都算好了」",
+      "naming": [
+        ["div", "divide", "除法"],
+        ["resp", "response", "回應"],
+        ["val", "valid", "有效"]
+      ],
+      "desc": "由 `ctrl` 的 `cs[6]` 驅動，只有 `STATE_SIGN` 時為 1。此時 `a_en` 已經是 0，`a_reg` 凍結，輸出穩定。上層用 `muldivresp_val = mulresp_val || divresp_val` 合併乘除法的回應。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|divresp_rdy": {
+      "sum": "外部告訴除法器「我這個 cycle 收得下結果」",
+      "naming": [
+        ["div", "divide", "除法"],
+        ["resp", "response", "回應"],
+        ["rdy", "ready", "可以接收"]
+      ],
+      "desc": "接進 `ctrl`，只用在 `divresp_go = divresp_val && divresp_rdy`。成交後才從 `STATE_SIGN` 回到 `STATE_IDLE`；外部沒 ready 就一直停在 SIGN 把結果舉著。上層直接接 `muldivresp_rdy`。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|counter": {
+      "sum": "頂層把 dpath 的剩餘輪數傳給 ctrl 的 5-bit 連線",
+      "naming": [["counter", "counter", "計數器（還剩幾輪迭代）"]],
+      "desc": "來源是 `dpath` 的 `counter`（= `counter_reg`），去處是 `ctrl`。載入時為 31，CALC 每 cycle 減 1；ctrl 用 `is_calc_done = (counter == 5'b0)` 判斷 32 輪（對應 32 位商）跑完沒。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|div_sign": {
+      "sum": "頂層把「商應為負」這個旗標從 dpath 傳給 ctrl 的連線",
+      "naming": [
+        ["div", "divide / quotient", "除法（這裡指商）"],
+        ["sign", "sign", "正負號（1 = 商為負）"]
+      ],
+      "desc": "來源是 dpath 的 `div_sign_reg`（載入時存下 `divreq_msg_a[31] ^ divreq_msg_b[31]`），去處是 ctrl。ctrl 用 `res_div_sign_mux_sel = (fn_reg == SIGNED) && div_sign` 把它和「這筆是不是有號除法」AND 起來再送回 dpath——無號除法時就算最高位是 1 也不能取負。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|rem_sign": {
+      "sum": "頂層把「餘數應為負」這個旗標從 dpath 傳給 ctrl 的連線",
+      "naming": [
+        ["rem", "remainder", "餘數"],
+        ["sign", "sign", "正負號（1 = 餘數為負）"]
+      ],
+      "desc": "來源是 dpath 的 `rem_sign_reg`（載入時存下 `divreq_msg_a[31]`）。RISC-V 的規定是餘數的符號跟著被除數，所以只看 a。ctrl 用 `res_rem_sign_mux_sel = (fn_reg == SIGNED) && rem_sign` 送回 dpath 控制餘數的符號還原。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|diff_msb": {
+      "sum": "頂層把減法結果的正負（最高位）從 dpath 傳給 ctrl 的連線",
+      "naming": [
+        ["diff", "difference", "相減的結果"],
+        ["msb", "most significant bit", "最高位元（這裡代表正負號）"]
+      ],
+      "desc": "來源是 dpath 的 `sub_out[64]`：這一輪部分餘數減除數後是不是借位（變成負的）。ctrl 直接 `assign sub_mux_sel = diff_msb` 轉接回 dpath。為 0 表示減得動 → 採用差值、商這一位填 1；為 1 表示減不動 → 丟棄差值（restoring）、商這一位是 0。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|sign_en": {
+      "sum": "頂層 ctrl→dpath 的連線：要不要在這個 cycle 記下商與餘數的正負號",
+      "naming": [
+        ["sign", "sign", "正負號"],
+        ["en", "enable", "寫入致能"]
+      ],
+      "desc": "由 `ctrl` 的 `cs[5]` 驅動，只有 `STATE_IDLE` 為 1。它同時致能 `div_sign_reg` 與 `rem_sign_reg` 兩個暫存器的寫入，之後整個運算過程保持不變。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|a_en": {
+      "sum": "頂層 ctrl→dpath 的連線：要不要更新 65-bit 的商/餘數暫存器",
+      "naming": [
+        ["a", "operand a", "運算元 a（被除數 / 部分餘數+商）"],
+        ["en", "enable", "寫入致能"]
+      ],
+      "desc": "由 `ctrl` 的 `cs[4]` 驅動。IDLE 為 1（載入被除數絕對值）、CALC 為 1（每輪更新）、SIGN 為 0（凍結結果讓外部讀）。和乘法器不同的是，這裡 `a_reg` 有明確的 enable，因為結果就存在 `a_reg` 裡，SIGN 時絕對不能被 x 污染。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|b_en": {
+      "sum": "頂層 ctrl→dpath 的連線：要不要載入除數暫存器",
+      "naming": [
+        ["b", "operand b", "運算元 b（除數）"],
+        ["en", "enable", "寫入致能"]
+      ],
+      "desc": "由 `ctrl` 的 `cs[3]` 驅動，只有 `STATE_IDLE` 為 1。因為除數在整個迭代過程中固定不變（不像乘法器的 b 要一直右移），所以只需要在載入時寫一次，`b_reg` 也就不需要 mux。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|cntr_mux_sel": {
+      "sum": "頂層 ctrl→dpath 的連線：counter 載入 31 還是減一",
+      "naming": [
+        ["cntr", "counter", "計數器"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "由 `ctrl` 的 `cs[1]` 驅動。0（op_load）載入 31、1（op_next）做 `counter_reg - 1`。IDLE 給 0、CALC 給 1、SIGN 給 x。注意除法器的欄位順序和乘法器不同（中間多了 `b_en` 與 `fn_en`），所以它是 `cs[1]` 而不是 `cs[3]`。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|is_op_signed": {
+      "sum": "頂層 ctrl→dpath 的連線：這筆請求是有號除法嗎（決定要不要取絕對值）",
+      "naming": [
+        ["is", "is", "是否"],
+        ["op", "operand / operation", "運算元 / 運算"],
+        ["signed", "signed", "有號"]
+      ],
+      "desc": "由 ctrl 的 `assign is_op_signed = (divreq_msg_fn == IMULDIV_DIVREQ_MSG_FUNC_SIGNED);` 驅動——注意它用的是當下的 `divreq_msg_fn`，不是存起來的 `fn_reg`。dpath 用它決定 `unsigned_a`/`unsigned_b` 要不要把負數轉成絕對值；因為這兩條線只在載入那個 cycle 被採用，而那時請求還在 port 上，所以用未暫存的版本是正確的。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|a_mux_sel": {
+      "sum": "頂層 ctrl→dpath 的連線：a_reg 要載入被除數還是這一輪的迭代結果",
+      "naming": [
+        ["a", "operand a", "運算元 a"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "由 `ctrl` 的 `cs[0]` 驅動。0（op_load）載入 `{33'b0, unsigned_a}`（被除數絕對值放在最低 32 位）；1（op_next）載入 `sub_mux_out`，也就是這一輪左移+試減之後決定的新值。SIGN 給 x。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|sub_mux_sel": {
+      "sum": "頂層 ctrl→dpath 的連線：這一輪要採用減法結果還是保留原值（其實就是 diff_msb）",
+      "naming": [
+        ["sub", "subtract / subtractor", "減法器"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "ctrl 裡是 `assign sub_mux_sel = diff_msb;`，不經過 `cs` 表。0（sub_next，表示減法沒有變負）選 `{sub_out[64:1], 1'b1}`：採用差值並把商的這一位設為 1；1（sub_old）選 `a_shift_out`：不採用差值（restoring），商的這一位維持左移進來的 0。這是 restoring division 每一輪的核心判斷。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|res_div_sign_mux_sel": {
+      "sum": "頂層 ctrl→dpath 的連線：輸出的商要不要取負",
+      "naming": [
+        ["res", "result", "結果"],
+        ["div", "divide / quotient", "商"],
+        ["sign", "sign", "正負號"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "由 ctrl 的 `assign res_div_sign_mux_sel = (fn_reg == IMULDIV_DIVREQ_MSG_FUNC_SIGNED) && div_sign;` 驅動。用的是暫存後的 `fn_reg` 而不是即時的 `divreq_msg_fn`，因為送出結果時原請求早就不在 port 上了。它控制 dpath 的 `signed_res_div_mux_out`：1 就輸出 `~a_reg[31:0] + 1`。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|res_rem_sign_mux_sel": {
+      "sum": "頂層 ctrl→dpath 的連線：輸出的餘數要不要取負",
+      "naming": [
+        ["res", "result", "結果"],
+        ["rem", "remainder", "餘數"],
+        ["sign", "sign", "正負號"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "由 ctrl 的 `assign res_rem_sign_mux_sel = (fn_reg == IMULDIV_DIVREQ_MSG_FUNC_SIGNED) && rem_sign;` 驅動，同樣用暫存的 `fn_reg`。它控制 `signed_res_rem_mux_out`：1 就輸出 `~a_reg[63:32] + 1`。因為餘數符號跟被除數走，這裡的 `rem_sign` 只看被除數的最高位。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|dpath": {
+      "sum": "頂層裡 imuldiv_IntDivIterativeDpath 的唯一實例",
+      "naming": [["dpath", "datapath", "資料路徑"]],
+      "desc": "`imuldiv_IntDivIterativeDpath` 的實例。它收 `divreq_msg_a`/`divreq_msg_b`（注意沒有接 `divreq_msg_fn`，有號與否是透過 ctrl 給的 `is_op_signed` 得知），輸出 `divresp_msg_result`，並把 `counter`、`div_sign`、`rem_sign`、`diff_msb` 回報給 `ctrl`。所有 65-bit 的暫存器與減法器都在這裡。"
+    },
+    "imuldiv/imuldiv-IntDivIterative.v|imuldiv_IntDivIterative|ctrl": {
+      "sum": "頂層裡 imuldiv_IntDivIterativeCtrl 的唯一實例",
+      "naming": [["ctrl", "control", "控制單元"]],
+      "desc": "`imuldiv_IntDivIterativeCtrl` 的實例。它獨占四條 val/rdy 握手線與 `divreq_msg_fn`，吃 dpath 回報的四個狀態訊號，輸出九個控制訊號給 `dpath`。整個除法器的階段（`state_reg`）與有號旗標（`fn_reg`）都存在這個實例裡。"
+    }
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "entities": {
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|p_mem_sz": {
+      "sum": "vc_TestDualPortRandDelayMem 的參數：測試記憶體大小（byte）",
+      "naming": [["p_", "parameter", "module 參數"], ["mem", "memory", "記憶體"], ["sz", "size", "大小"]],
+      "desc": "預設 1024，直接往下傳給內部的 `vc_TestDualPortMem` 實例 `mem`，決定真正的陣列大小。`riscvstall-sim.v` 傳 1<<20，`Pattern.v` 傳 `c_mem_sz`（同樣是 1<<20）。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|p_addr_sz": {
+      "sum": "vc_TestDualPortRandDelayMem 的參數：請求訊息位址欄位的 bit 數",
+      "naming": [["p_", "parameter", "module 參數"], ["addr", "address", "位址"], ["sz", "size", "位元數"]],
+      "desc": "預設 8，本專案傳 32。它用來算 `c_req_msg_sz`，也傳給內部的 `mem` 實例。註解特別提醒超出實體記憶體的高位位址會在記憶體裡被截掉。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|p_data_sz": {
+      "sum": "vc_TestDualPortRandDelayMem 的參數：資料欄位的 bit 數",
+      "naming": [["p_", "parameter", "module 參數"], ["data", "data", "資料"], ["sz", "size", "位元數"]],
+      "desc": "預設 32，本專案也是 32。用來算 `c_req_msg_sz`、`c_resp_msg_sz`，並傳給 `vc_TestDualPortMem` 決定每格 word 的寬度。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|p_max_delay": {
+      "sum": "vc_TestDualPortRandDelayMem 的參數：回應最多隨機延遲幾個 cycle",
+      "naming": [["p_", "parameter", "module 參數"], ["max", "maximum", "最大"], ["delay", "delay", "延遲週期數"]],
+      "desc": "預設 0，傳給兩個 `vc_TestRandDelay` 實例（`rand_delay0`、`rand_delay1`）。0 代表完全不延遲（`vc_TestRandDelay` 內部的 `rand_num` 固定為 0，訊息直接穿過）；大於 0 時每則回應會隨機等 0 ~ p_max_delay-1 個 cycle，用來測試 CPU 的 val-rdy 握手能不能承受不定延遲。`riscvstall-sim.v` 傳 0，`Pattern.v` 則把 testbench 自己的 `p_max_delay` 傳進來。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|c_req_msg_sz": {
+      "sum": "請求訊息的總 bit 數（常數參數）",
+      "naming": [["c_", "constant", "不該從外面設定的常數"], ["req", "request", "請求"], ["msg", "message", "訊息"], ["sz", "size", "位元數"]],
+      "desc": "`` `VC_MEM_REQ_MSG_SZ(p_addr_sz,p_data_sz) ``，32/32 時是 67 bit。決定 `memreq0_msg`、`memreq1_msg` 這兩個輸入 port 的寬度；這些 bits 原封不動轉送給內部的 `mem` 實例。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|c_resp_msg_sz": {
+      "sum": "回應訊息的總 bit 數（常數參數）",
+      "naming": [["c_", "constant", "不該從外面設定的常數"], ["resp", "response", "回應"], ["msg", "message", "訊息"], ["sz", "size", "位元數"]],
+      "desc": "`` `VC_MEM_RESP_MSG_SZ(p_data_sz) ``，32-bit 資料時是 35 bit。它同時是 `memresp0_msg`/`memresp1_msg` 的寬度、內部 `mem_memresp0_msg`/`mem_memresp1_msg` 的寬度，也是兩個 `vc_TestRandDelay` 的 `p_msg_sz` 參數值。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|clk": {
+      "sum": "vc_TestDualPortRandDelayMem 的時脈輸入，轉送給記憶體與兩個延遲模組",
+      "naming": [["clk", "clock", "時脈"]],
+      "desc": "這個 module 本身沒有邏輯，clk 只是接到 `mem`、`rand_delay0`、`rand_delay1` 三個實例的 `.clk`。在 testbench 裡接的是產生方波的 `clk`。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|reset": {
+      "sum": "vc_TestDualPortRandDelayMem 的 reset 輸入，轉送給下層三個實例",
+      "naming": [["reset", "reset", "重置"]],
+      "desc": "接到 `mem`（清掉請求緩衝的 valid）以及 `rand_delay0`/`rand_delay1`（把狀態機拉回 `c_state_idle`、延遲計數器歸零）。在 `riscvstall-sim.v` 與 `Pattern.v` 中接的是 `reset_mem`，和 CPU 的 `reset_proc` 分開控制。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq0_val": {
+      "sum": "port 0 請求 valid 輸入，直接轉給內部記憶體",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["val", "valid", "請求有效"]],
+      "desc": "原封不動接到 `mem` 實例的 `.memreq0_val`。請求路徑上沒有插入隨機延遲，只有回應路徑才有——所以延遲效果是靠回應端反壓回來的。本專案 port 0 接 CPU 的 `imemreq_val`。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq0_rdy": {
+      "sum": "port 0 請求 ready 輸出，來自內部記憶體",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["rdy", "ready", "可以收請求"]],
+      "desc": "由 `mem` 實例的 `.memreq0_rdy` 驅動，而記憶體裡那條線又等於 `mem_memresp0_rdy`（即 `rand_delay0` 的 `in_rdy`）。所以隨機延遲期間 `rand_delay0` 會把 `in_rdy` 拉低，連帶讓 CPU 的取指請求被擋住。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq0_msg": {
+      "sum": "port 0 的請求訊息 bits，直接轉給內部記憶體",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息本體"]],
+      "desc": "`c_req_msg_sz` 位元輸入，接到 `mem` 的 `.memreq0_msg`，由記憶體內部的 `vc_MemReqMsgFromBits` 解開欄位。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp0_val": {
+      "sum": "port 0 回應 valid 輸出，由 rand_delay0 延遲後產生",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["0", "port 0", "第 0 個記憶體埠"], ["val", "valid", "回應有效"]],
+      "desc": "由 `rand_delay0` 的 `.out_val` 驅動。記憶體產生的 `mem_memresp0_val` 會先進入延遲模組，等隨機的 cycle 數到了才在這裡變成 1。CPU 端看到的 `imemresp_val` 就是它。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp0_rdy": {
+      "sum": "port 0 回應 ready 輸入，接到 rand_delay0 的 out_rdy",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["0", "port 0", "第 0 個記憶體埠"], ["rdy", "ready", "收方可以收回應"]],
+      "desc": "接到 `rand_delay0` 的 `.out_rdy`，影響延遲模組何時完成傳輸、也透過它的 `in_rdy` 反壓到記憶體。`riscvstall-sim.v` 把它綁成 1'b1（CPU 永遠收得下取指回應）。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp0_msg": {
+      "sum": "port 0 的回應訊息 bits（延遲模組直通輸出）",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息本體"]],
+      "desc": "由 `rand_delay0` 的 `.out_msg` 驅動，而 `vc_TestRandDelay` 內部是 `assign out_msg = in_msg`，也就是訊息 bits 完全不被暫存、只有 val/rdy 被延遲，所以延遲期間這條線就是記憶體當下輸出的 `mem_memresp0_msg`。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq1_val": {
+      "sum": "port 1 請求 valid 輸入（dmem），直接轉給內部記憶體",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["val", "valid", "請求有效"]],
+      "desc": "接到 `mem` 的 `.memreq1_val`。在 `riscvstall-sim.v` 裡是 CPU 的 `dmemreq_val`（load / store 請求）。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq1_rdy": {
+      "sum": "port 1 請求 ready 輸出，來自內部記憶體",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["rdy", "ready", "可以收請求"]],
+      "desc": "由 `mem` 的 `.memreq1_rdy` 驅動，最終等於 `rand_delay1` 的 `in_rdy`。當 port 1 的回應正在隨機延遲時，這條線會變 0，CPU 的 `dmemreq_rdy` 就被拉低，導致 M 階段 stall。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq1_msg": {
+      "sum": "port 1 的請求訊息 bits，直接轉給內部記憶體",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息本體"]],
+      "desc": "`c_req_msg_sz` 位元輸入，接到 `mem` 的 `.memreq1_msg`，內含 load/store 的 type、位址、長度與 store 資料。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp1_val": {
+      "sum": "port 1 回應 valid 輸出，由 rand_delay1 延遲後產生",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["1", "port 1", "第 1 個記憶體埠"], ["val", "valid", "回應有效"]],
+      "desc": "由 `rand_delay1` 的 `.out_val` 驅動，是 CPU 看到的 `dmemresp_val`。p_max_delay 為 0 時它等於記憶體的 `mem_memresp1_val`（零延遲直通）。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp1_rdy": {
+      "sum": "port 1 回應 ready 輸入，接到 rand_delay1 的 out_rdy",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["1", "port 1", "第 1 個記憶體埠"], ["rdy", "ready", "收方可以收回應"]],
+      "desc": "接到 `rand_delay1` 的 `.out_rdy`。`riscvstall-sim.v` 同樣把它接成 1'b1，代表 CPU 一定收得下 dmem 回應；`Pattern.v` 則由測試程式自己控制。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp1_msg": {
+      "sum": "port 1 的回應訊息 bits（延遲模組直通輸出）",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息本體"]],
+      "desc": "由 `rand_delay1` 的 `.out_msg` 驅動（內部是 `assign out_msg = in_msg`），也就是 load 指令讀回來的資料，回到 CPU 的 `dmemresp_msg`。只有在 `memresp1_val` 與 `memresp1_rdy` 同時為 1 的那個 cycle 才該被取用。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp0_val": {
+      "sum": "記憶體實例輸出、尚未延遲的 port 0 回應 valid",
+      "naming": [["mem", "the mem instance", "內部記憶體實例"], ["memresp0", "memory response port 0", "第 0 埠的回應"], ["val", "valid", "有效"]],
+      "desc": "內部 wire，連接 `mem` 的 `.memresp0_val` 到 `rand_delay0` 的 `.in_val`。它在請求被接下的下一個 cycle 就變 1，之後由延遲模組決定何時把它放行到外部的 `memresp0_val`。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp0_rdy": {
+      "sum": "延遲模組回傳給記憶體的 port 0 回應 ready",
+      "naming": [["mem", "the mem instance", "內部記憶體實例"], ["memresp0", "memory response port 0", "第 0 埠的回應"], ["rdy", "ready", "可以收"]],
+      "desc": "內部 wire，由 `rand_delay0` 的 `.in_rdy` 驅動，接到 `mem` 的 `.memresp0_rdy`。因為記憶體裡 `memreq0_rdy = memresp0_rdy`，這條線同時決定記憶體的請求緩衝要不要前進——這就是隨機延遲能把整條 imem 通道卡住的機制。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp0_msg": {
+      "sum": "記憶體輸出、尚未經過延遲模組的 port 0 回應訊息",
+      "naming": [["mem", "the mem instance", "內部記憶體實例"], ["memresp0", "memory response port 0", "第 0 埠的回應"], ["msg", "message", "訊息"]],
+      "desc": "`c_resp_msg_sz` 位元 wire，從 `mem` 的 `.memresp0_msg` 接到 `rand_delay0` 的 `.in_msg`；延遲模組只是把它直通到 `out_msg`。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp1_val": {
+      "sum": "記憶體輸出、尚未延遲的 port 1 回應 valid",
+      "naming": [["mem", "the mem instance", "內部記憶體實例"], ["memresp1", "memory response port 1", "第 1 埠的回應"], ["val", "valid", "有效"]],
+      "desc": "內部 wire，從 `mem` 的 `.memresp1_val` 接到 `rand_delay1` 的 `.in_val`，代表 dmem 資料已經準備好、等待隨機延遲放行。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp1_rdy": {
+      "sum": "延遲模組回傳給記憶體的 port 1 回應 ready",
+      "naming": [["mem", "the mem instance", "內部記憶體實例"], ["memresp1", "memory response port 1", "第 1 埠的回應"], ["rdy", "ready", "可以收"]],
+      "desc": "內部 wire，由 `rand_delay1` 的 `.in_rdy` 驅動。它同時決定記憶體 port 1 的請求緩衝是否前進，以及對外的 `memreq1_rdy`，所以延遲中 CPU 的 store/load 請求會被擋住。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp1_msg": {
+      "sum": "記憶體輸出、尚未經過延遲模組的 port 1 回應訊息",
+      "naming": [["mem", "the mem instance", "內部記憶體實例"], ["memresp1", "memory response port 1", "第 1 埠的回應"], ["msg", "message", "訊息"]],
+      "desc": "`c_resp_msg_sz` 位元 wire，把 `mem` 的 `.memresp1_msg` 送進 `rand_delay1` 的 `.in_msg`，最後直通成外部的 `memresp1_msg`。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem": {
+      "sum": "內部的 vc_TestDualPortMem 實例：真正存放程式與資料的地方",
+      "naming": [["mem", "memory", "記憶體實例"]],
+      "desc": "`vc_TestDualPortMem#(p_mem_sz,p_addr_sz,p_data_sz)` 的實例。兩個請求埠直接接到本 module 的對外 port，兩個回應埠則接到 `mem_memresp0_*` / `mem_memresp1_*`，再經過隨機延遲模組才出去。testbench 載入程式時會用階層路徑指到這個實例裡的陣列（例如 `riscvstall-sim.v` 中的路徑 mem.mem.m）。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|rand_delay0": {
+      "sum": "port 0 回應路徑上的 vc_TestRandDelay 實例",
+      "naming": [["rand", "random", "隨機"], ["delay", "delay", "延遲"], ["0", "port 0", "第 0 個記憶體埠"]],
+      "desc": "`vc_TestRandDelay#(c_resp_msg_sz,p_max_delay)` 的實例：`in_*` 接記憶體的 port 0 回應，`out_*` 接本 module 的 `memresp0_*`。它會為每則回應抽一個 0 ~ p_max_delay-1 的隨機等待數，等待期間把 `in_rdy` 拉低（連帶擋住新的取指請求）。p_max_delay = 0 時等同直通。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|rand_delay1": {
+      "sum": "port 1 回應路徑上的 vc_TestRandDelay 實例",
+      "naming": [["rand", "random", "隨機"], ["delay", "delay", "延遲"], ["1", "port 1", "第 1 個記憶體埠"]],
+      "desc": "與 `rand_delay0` 同型、獨立的一份，負責 dmem 回應的隨機延遲。兩個埠各自抽隨機數，因此 imem 與 dmem 的延遲互不相關，可以測出 CPU 在 stall 邏輯上的漏洞。"
+    },
+    "vc/vc-TestDualPortRandDelayMem.v||vc_TestDualPortRandDelayMem": {
+      "sum": "雙埠測試記憶體 + 回應隨機延遲的包裝 module",
+      "naming": [["vc", "Verilog Components", "共用元件庫前綴"], ["Test", "test", "測試用"], ["DualPort", "dual port", "兩個獨立存取埠"], ["RandDelay", "random delay", "隨機延遲"], ["Mem", "memory", "記憶體"]],
+      "desc": "本身沒有任何邏輯，只是把一個 `vc_TestDualPortMem`（實例名 `mem`）和兩個 `vc_TestRandDelay`（`rand_delay0`、`rand_delay1`）接在一起：請求直接穿過去，回應則各自經過一個隨機延遲模組。參數多了 `p_max_delay` 控制延遲上限。`riscvstall-sim.v`、`riscvstall-randdelay-sim.v` 與 `Pattern.v` 都是 instantiate 這個 module（實例名都叫 `mem`），port 0 給指令、port 1 給資料。"
+    },
+    "`VC_TEST_DUAL_PORT_RAND_DELAY_MEM_V": {
+      "sum": "vc-TestDualPortRandDelayMem.v 的 include guard macro",
+      "naming": [["VC", "Verilog Components", "vc 元件庫前綴"], ["TEST", "test", "測試用"], ["DUAL_PORT", "dual port", "雙埠"], ["RAND_DELAY", "random delay", "隨機延遲"], ["MEM", "memory", "記憶體"], ["_V", "include guard", "檔名_V：防止重複 include"]],
+      "desc": "檔頭的 ifndef / define 搭配檔尾 endif，確保 `vc_TestDualPortRandDelayMem` 只被定義一次。本檔會引入 vc-MemReqMsg.v、vc-MemRespMsg.v、vc-TestDualPortMem.v、vc-TestRandDelay.v，這些檔也各有自己的 guard。"
+    }
+  }
+}

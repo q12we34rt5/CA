@@ -1,0 +1,527 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|alu_a_u": {
+      "sum": "alu_a 的絕對值，供有號除法 / 取餘使用。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "a",
+          "A operand",
+          "第一個運算元"
+        ],
+        [
+          "u",
+          "unsigned (magnitude)",
+          "取絕對值後的無號版本"
+        ]
+      ],
+      "desc": "32-bit wire：`( alu_a[31] == 1'b1 ) ? ( ~alu_a + 1 ) : alu_a`。負數就取二補數變成正的。它跟 `alu_b_u` 一起算出 `quotient_raw` 與 `remainder_raw`，之後再依 `negative` / `alu_a[31]` 把符號補回去。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|alu_b_u": {
+      "sum": "alu_b 的絕對值，供有號除法 / 取餘使用。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "b",
+          "B operand",
+          "第二個運算元"
+        ],
+        [
+          "u",
+          "unsigned (magnitude)",
+          "取絕對值後的無號版本"
+        ]
+      ],
+      "desc": "32-bit wire：`( alu_b[31] == 1'b1 ) ? ( ~alu_b + 1 ) : alu_b`。用來當 `quotient_raw = alu_a_u / alu_b_u` 與 `remainder_raw = alu_a_u % alu_b_u` 的除數。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|product": {
+      "sum": "alu_a 乘 alu_b 的低 32 位元結果（MUL）。",
+      "naming": [
+        [
+          "product",
+          "product",
+          "乘積"
+        ]
+      ],
+      "desc": "32-bit wire `= alu_a * alu_b`。因為宣告成 32 bits，超出的高位會被截掉，正好符合 RISC-V `MUL` 只取低 32 bits 的定義。`muldiv_fn == 3'd0` 時被 `result` 選用。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|quotientu": {
+      "sum": "無號除法的商（DIVU）。",
+      "naming": [
+        [
+          "quotient",
+          "quotient",
+          "商"
+        ],
+        [
+          "u",
+          "unsigned",
+          "無號"
+        ]
+      ],
+      "desc": "32-bit wire `= alu_a / alu_b`。因為 `alu_a`、`alu_b` 都是沒有 `signed` 修飾的 wire，Verilog 會當成無號數相除，所以這條線直接就是 DIVU 的結果，不需要再修正符號。`muldiv_fn == 3'd2` 時被選用。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|remainderu": {
+      "sum": "無號取餘的結果（REMU）。",
+      "naming": [
+        [
+          "remainder",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "u",
+          "unsigned",
+          "無號"
+        ]
+      ],
+      "desc": "32-bit wire `= alu_a % alu_b`，同樣是無號運算。`muldiv_fn == 3'd4` 時被 `result` 選用。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|quotient_raw": {
+      "sum": "兩個絕對值相除的商，還沒補上正負號。",
+      "naming": [
+        [
+          "quotient",
+          "quotient",
+          "商"
+        ],
+        [
+          "raw",
+          "raw",
+          "未加工的"
+        ]
+      ],
+      "desc": "32-bit wire `= alu_a_u / alu_b_u`。它是有號除法的中間值：先用絕對值算出大小，再由 `quotient` 依 `negative` 決定要不要取二補數。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|remainder_raw": {
+      "sum": "兩個絕對值相除的餘數，還沒補上正負號。",
+      "naming": [
+        [
+          "remainder",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "raw",
+          "raw",
+          "未加工的"
+        ]
+      ],
+      "desc": "32-bit wire `= alu_a_u % alu_b_u`。有號取餘的中間值，由 `remainder` 依 `alu_a[31]`（被除數的符號）決定要不要取負。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|quotient": {
+      "sum": "有號除法的商（DIV），已經補回正負號。",
+      "naming": [
+        [
+          "quotient",
+          "quotient",
+          "商"
+        ]
+      ],
+      "desc": "32-bit wire：`negative ? ( ~quotient_raw + 1 ) : quotient_raw`。兩個運算元符號不同時商為負。`muldiv_fn == 3'd1` 時被 `result` 選用。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|remainder": {
+      "sum": "有號取餘的結果（REM），符號跟被除數一致。",
+      "naming": [
+        [
+          "remainder",
+          "remainder",
+          "餘數"
+        ]
+      ],
+      "desc": "32-bit wire：`alu_a[31] ? ( ~remainder_raw + 1 ) : remainder_raw`。程式裡也有註解 `// Remainder is same sign as dividend`——RISC-V 規定 REM 的結果與被除數同號，所以這裡只看 `alu_a` 的符號，不看 `negative`。`muldiv_fn == 3'd3` 時被選用。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|in0": {
+      "sum": "主 ALU 的第一個輸入運算元（X 階段的 op0）。",
+      "naming": [
+        [
+          "in",
+          "input",
+          "輸入"
+        ],
+        [
+          "0",
+          "operand 0",
+          "第 0 個運算元"
+        ]
+      ],
+      "desc": "32-bit input。在 `riscv_CoreDpath` 裡接的是 `op0_mux_out_Xhl`（rs1、PC、PC+4 或常數 0）。它被送進 `addsub`、`logical`、`muldiv` 的 `alu_a`，但送進 `shifter` 時是接 `.alu_b`（被位移的值）。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|in1": {
+      "sum": "主 ALU 的第二個輸入運算元（X 階段的 op1）。",
+      "naming": [
+        [
+          "in",
+          "input",
+          "輸入"
+        ],
+        [
+          "1",
+          "operand 1",
+          "第 1 個運算元"
+        ]
+      ],
+      "desc": "32-bit input。在 `riscv_CoreDpath` 裡接的是 `op1_mux_out_Xhl`（rs2、shamt 或各種立即值）。它被送進 `addsub`、`logical`、`muldiv` 的 `alu_b`，而送進 `shifter` 時是接 `.alu_a`（位移量）。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|fn": {
+      "sum": "主 ALU 的 4-bit 功能碼，決定要做哪一種運算。",
+      "naming": [
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ]
+      ],
+      "desc": "4-bit input，接 datapath 的 `alu_fn_Xhl`。對照 `riscv_CoreCtrl` 的常數：0=ADD、1=SUB、2=SLL、3=OR、4=SLT、5=SLTU、6=AND、7=XOR、8=NOR、9=SRL、10=SRA；11–15 是 MUL/DIV/DIVU/REM/REMU，但 riscvstall 的 ctrl 沒有產生這些值（乘除法走獨立的 `imuldiv` 單元）。它進入 `always @(*)` 的 case 查出 11-bit 的 `cs`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|out": {
+      "sum": "主 ALU 的 32-bit 運算結果。",
+      "naming": [
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "由最後的輸出多工器決定：`out_mux_sel` 為 `2'd0` 取 `addsub_out`、`2'd1` 取 `shifter_out`、`2'd2` 取 `logical_out`、`2'd3` 取 `muldiv_out`，其餘 `32'bx`。在 `riscv_CoreDpath` 裡它接到 `alu_out_Xhl`，再經 `execute_mux_sel_Xhl` 決定要不要往 M 階段送。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|out_mux_sel": {
+      "sum": "選哪個功能單元的輸出當作 ALU 結果（0=addsub、1=shifter、2=logical、3=muldiv）。",
+      "naming": [
+        [
+          "out",
+          "output",
+          "輸出"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ]
+      ],
+      "desc": "`reg [1:0]`，是 `cs` 最高的 2 bits，由 `{ out_mux_sel, fn_addsub, fn_shifter, fn_logical, fn_muldiv } = cs;` 拆出來。雖然宣告成 `reg`，它其實是 `always @(*)` 產生的組合邏輯。它驅動檔案最後那個輸出多工器。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|fn_addsub": {
+      "sum": "解碼表拆出來的 加減單元 子功能碼（2 bits）。",
+      "naming": [
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ],
+        [
+          "addsub",
+          "add / subtract unit",
+          "加減單元"
+        ]
+      ],
+      "desc": "`reg [1:0]`，是 `cs` 的第 8–9 bit。接到 `addsub` 實例的 `.addsub_fn`。只有 fn=0/1/4/5 時有定義值（00/01/10/11），其他指令這欄是 `2'bxx`，反正輸出不會被選用。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|fn_shifter": {
+      "sum": "解碼表拆出來的 位移單元 子功能碼（2 bits）。",
+      "naming": [
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ],
+        [
+          "shifter",
+          "shifter unit",
+          "位移單元"
+        ]
+      ],
+      "desc": "`reg [1:0]`，是 `cs` 的第 6–7 bit。接到 `shifter` 實例的 `.shift_fn`。只有 fn=2（SLL→00）、9（SRL→01）、10（SRA→11）時有定義值。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|fn_logical": {
+      "sum": "解碼表拆出來的 邏輯單元 子功能碼（2 bits）。",
+      "naming": [
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ],
+        [
+          "logical",
+          "logical unit",
+          "邏輯單元"
+        ]
+      ],
+      "desc": "`reg [1:0]`，是 `cs` 的第 4–5 bit。接到 `logical` 實例的 `.logical_fn`。只有 fn=3（OR→01）、6（AND→00）、7（XOR→10）、8（NOR→11）時有定義值。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|fn_muldiv": {
+      "sum": "解碼表拆出來的 乘除法單元 子功能碼（3 bits）。",
+      "naming": [
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ],
+        [
+          "muldiv",
+          "mul/div unit",
+          "乘除法單元"
+        ]
+      ],
+      "desc": "`reg [2:0]`，是 `cs` 的最低 3 bits。接到 `muldiv` 實例的 `.muldiv_fn`。只有 fn=11–15 時有定義值（000–100），而 riscvstall 的 ctrl 不會送出這些 fn，所以實務上它一直是 `3'bxx`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|cs": {
+      "sum": "ALU 解碼表的一整包控制訊號（11 bits）。",
+      "naming": [
+        [
+          "cs",
+          "control signals",
+          "控制訊號"
+        ]
+      ],
+      "desc": "`reg [10:0]`。在 `always @(*)` 裡先預設成 `11'bx`，再用 `case ( fn )` 依 16 個 fn 值各填一行，格式是 `{ out_mux_sel, fn_addsub, fn_shifter, fn_logical, fn_muldiv }`（2+2+2+2+3 = 11 bits）。填完後立刻用那行 concatenation 賦值語句拆回五個欄位。用不到的欄位一律填 `x`，讓合成器自由最佳化。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|addsub_out": {
+      "sum": "addsub 功能單元的輸出。",
+      "naming": [
+        [
+          "addsub",
+          "add / subtract",
+          "加減"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "32-bit wire，接 `addsub` 實例的 `.result`。`out_mux_sel == 2'd0` 時成為 ALU 的 `out`，對應 ADD / SUB / SLT / SLTU 四種指令。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|addsub": {
+      "sum": "加減 / 比較功能單元的實例。",
+      "naming": [
+        [
+          "addsub",
+          "add / subtract",
+          "加減"
+        ]
+      ],
+      "desc": "`riscv_CoreDpathAluAddSub` 的實例。接法：`.addsub_fn (fn_addsub)`、`.alu_a (in0)`、`.alu_b (in1)`、`.result (addsub_out)`。四個功能單元是並聯的，全部同時算，最後才由 `out_mux_sel` 挑一個。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|shifter_out": {
+      "sum": "shifter 功能單元的輸出。",
+      "naming": [
+        [
+          "shifter",
+          "shifter",
+          "位移器"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "32-bit wire，接 `shifter` 實例的 `.result`。`out_mux_sel == 2'd1` 時成為 ALU 的 `out`，對應 SLL / SRL / SRA。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|shifter": {
+      "sum": "位移功能單元的實例（注意 a / b 是對調接的）。",
+      "naming": [
+        [
+          "shifter",
+          "shifter",
+          "位移器"
+        ]
+      ],
+      "desc": "`riscv_CoreDpathAluShifter` 的實例。接法：`.shift_fn (fn_shifter)`、`.alu_a (in1)`、`.alu_b (in0)`、`.result (shifter_out)`。這裡 `.alu_a` 接的是 `in1` 而不是 `in0`，因為在那個 module 裡 `alu_a` 代表位移量、`alu_b` 才是被位移的資料。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|logical_out": {
+      "sum": "logical 功能單元的輸出。",
+      "naming": [
+        [
+          "logical",
+          "logical",
+          "邏輯"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "32-bit wire，接 `logical` 實例的 `.result`。`out_mux_sel == 2'd2` 時成為 ALU 的 `out`，對應 AND / OR / XOR / NOR。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|logical": {
+      "sum": "逐位元邏輯功能單元的實例。",
+      "naming": [
+        [
+          "logical",
+          "logical",
+          "邏輯"
+        ]
+      ],
+      "desc": "`riscv_CoreDpathAluLogical` 的實例。接法：`.logical_fn (fn_logical)`、`.alu_a (in0)`、`.alu_b (in1)`、`.result (logical_out)`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|muldiv_out": {
+      "sum": "muldiv 功能單元的輸出。",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "out",
+          "output",
+          "輸出"
+        ]
+      ],
+      "desc": "32-bit wire，接 `muldiv` 實例的 `.result`。`out_mux_sel == 2'd3` 時才會被選用，但 riscvstall 的 ctrl 不會產生 fn=11–15，所以在這份設計裡它實際上用不到。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAlu|muldiv": {
+      "sum": "乘除法功能單元的實例（在 riscvstall 中未實際使用）。",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法"
+        ]
+      ],
+      "desc": "`riscv_CoreDpathAluMulDiv` 的實例。接法：`.muldiv_fn (fn_muldiv)`、`.alu_a (in0)`、`.alu_b (in1)`、`.result (muldiv_out)`。它用 Verilog 的 `*`、`/`、`%` 運算子直接算，是行為級模型；riscvstall 的乘除法實際上交給 `riscvstall-CoreDpathPipeMulDiv.v` 裡的 `imuldiv` 迭代式單元處理。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v||riscv_CoreDpathAlu": {
+      "sum": "5 階段 RISC-V core 的主 ALU：解碼 4-bit fn，挑四個功能單元其中之一的結果。",
+      "naming": [
+        [
+          "riscv",
+          "RISC-V",
+          "RISC-V 指令集"
+        ],
+        [
+          "CoreDpath",
+          "core datapath",
+          "核心資料路徑"
+        ],
+        [
+          "Alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ]
+      ],
+      "desc": "純組合邏輯 module，port 只有 `in0`、`in1`、`fn`、`out`。內部分兩塊：前半是 decoder，用 `case ( fn )` 查出 11-bit 的 `cs` 再拆成 `out_mux_sel` 與四個子功能碼；後半 instantiate `addsub`、`shifter`、`logical`、`muldiv` 四個功能單元並用 `out_mux_sel` 選出結果。它在 `riscv_CoreDpath` 裡以 `alu` 這個實例名被使用，輸入是 `op0_mux_out_Xhl` / `op1_mux_out_Xhl`，fn 是 `alu_fn_Xhl`，輸出到 `alu_out_Xhl`。"
+    },
+    "`RISCV_CORE_DPATH_ALU_V": {
+      "sum": "riscvstall-CoreDpathAlu.v 的 include guard macro。",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器相關"
+        ],
+        [
+          "CORE_DPATH_ALU",
+          "core datapath ALU",
+          "核心資料路徑的 ALU"
+        ],
+        [
+          "V",
+          "include guard",
+          "檔名_V：include guard"
+        ]
+      ],
+      "desc": "單純的 include guard：檔案開頭 `` `ifndef RISCV_CORE_DPATH_ALU_V `` / `` `define RISCV_CORE_DPATH_ALU_V ``，結尾 `` `endif ``。避免這個檔被 include 兩次時，四個 ALU module 被重複定義。它沒有值也不參與邏輯。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v||riscv_CoreDpathAluAddSub": {
+      "sum": "ALU 的加減 / 比較功能單元 module。",
+      "naming": [
+        [
+          "riscv",
+          "RISC-V",
+          "RISC-V 指令集"
+        ],
+        [
+          "CoreDpathAlu",
+          "core datapath ALU",
+          "核心資料路徑的 ALU"
+        ],
+        [
+          "AddSub",
+          "add / subtract",
+          "加法 / 減法"
+        ]
+      ],
+      "desc": "port 是 `addsub_fn`、`alu_a`、`alu_b`、`result`。它用同一個加法器完成加、減、有號比較、無號比較四件事：`xB` 在非加法時取 `alu_b` 的二補數，`sum = alu_a + xB`；比較時再依 `diffSigns` 決定要看 `alu_a[31]` 還是 `sum[31]`，輸出 `{31'b0, 0或1}`。被 `riscv_CoreDpathAlu` 以實例名 `addsub` instantiate。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v||riscv_CoreDpathAluShifter": {
+      "sum": "ALU 的位移功能單元 module（SLL / SRL / SRA）。",
+      "naming": [
+        [
+          "riscv",
+          "RISC-V",
+          "RISC-V 指令集"
+        ],
+        [
+          "CoreDpathAlu",
+          "core datapath ALU",
+          "核心資料路徑的 ALU"
+        ],
+        [
+          "Shifter",
+          "shifter",
+          "位移器"
+        ]
+      ],
+      "desc": "port 是 `shift_fn`、`alu_a`（位移量）、`alu_b`（被位移的值）、`result`。左移與邏輯右移直接用 `<<` / `>>`，算術右移則先把值轉成 `signed_alu_b` 再用 `>>>`。位移量只取 `alu_a[4:0]`。被 `riscv_CoreDpathAlu` 以實例名 `shifter` instantiate，而且是把 `in1` 接到 `alu_a`、`in0` 接到 `alu_b`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v||riscv_CoreDpathAluLogical": {
+      "sum": "ALU 的逐位元邏輯功能單元 module（AND / OR / XOR / NOR）。",
+      "naming": [
+        [
+          "riscv",
+          "RISC-V",
+          "RISC-V 指令集"
+        ],
+        [
+          "CoreDpathAlu",
+          "core datapath ALU",
+          "核心資料路徑的 ALU"
+        ],
+        [
+          "Logical",
+          "logical",
+          "邏輯運算"
+        ]
+      ],
+      "desc": "port 是 `logical_fn`、`alu_a`、`alu_b`、`result`，整個 module 只有一個 `assign` 三元運算鏈。四種運算分別對應 `logical_fn` 的 00/01/10/11。被 `riscv_CoreDpathAlu` 以實例名 `logical` instantiate。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v||riscv_CoreDpathAluMulDiv": {
+      "sum": "ALU 內的乘除法行為模型 module（riscvstall 裡沒實際用到）。",
+      "naming": [
+        [
+          "riscv",
+          "RISC-V",
+          "RISC-V 指令集"
+        ],
+        [
+          "CoreDpathAlu",
+          "core datapath ALU",
+          "核心資料路徑的 ALU"
+        ],
+        [
+          "MulDiv",
+          "multiply / divide",
+          "乘法 / 除法"
+        ]
+      ],
+      "desc": "port 是 `muldiv_fn`、`alu_a`、`alu_b`、`result`。它用 Verilog 的 `*`、`/`、`%` 直接算出 `product`、`quotientu`、`remainderu`，並另外走絕對值路徑算出有號的 `quotient` 與 `remainder`（餘數跟被除數同號）。被 `riscv_CoreDpathAlu` 以實例名 `muldiv` instantiate，但因為 `riscv_CoreCtrl` 只會送出 fn=0–10，這條路徑在 riscvstall 中永遠不會被選中；真正的乘除法是由 `imuldiv` 迭代式單元完成。"
+    }
+  }
+}

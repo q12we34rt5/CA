@@ -1,0 +1,723 @@
+[
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToBits|p_addr_sz",
+  "name": "p_addr_sz",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToBits",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-MemReqMsg.v:110",
+   "vc/vc-MemReqMsg.v:115",
+   "vc/vc-MemReqMsg.v:116",
+   "vc/vc-MemReqMsg.v:117",
+   "vc/vc-MemReqMsg.v:118",
+   "vc/vc-MemReqMsg.v:122",
+   "vc/vc-MemReqMsg.v:125",
+   "vc/vc-MemReqMsg.v:126",
+   "vc/vc-MemReqMsg.v:127",
+   "vc/vc-MemReqMsg.v:128"
+  ],
+  "n_occ": 10
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToBits|p_data_sz",
+  "name": "p_data_sz",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToBits",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-MemReqMsg.v:111",
+   "vc/vc-MemReqMsg.v:115",
+   "vc/vc-MemReqMsg.v:116",
+   "vc/vc-MemReqMsg.v:117",
+   "vc/vc-MemReqMsg.v:118",
+   "vc/vc-MemReqMsg.v:122",
+   "vc/vc-MemReqMsg.v:125",
+   "vc/vc-MemReqMsg.v:126",
+   "vc/vc-MemReqMsg.v:127",
+   "vc/vc-MemReqMsg.v:128"
+  ],
+  "n_occ": 10
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToBits|type",
+  "name": "type",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToBits",
+  "kind": "input",
+  "decl": "input [`VC_MEM_REQ_MSG_TYPE_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:116",
+   "riscvstall/riscvstall-Core.v:125",
+   "vc/vc-MemReqMsg.v:115",
+   "vc/vc-MemReqMsg.v:125"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToBits|addr",
+  "name": "addr",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToBits",
+  "kind": "input",
+  "decl": "input [`VC_MEM_REQ_MSG_ADDR_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:117",
+   "riscvstall/riscvstall-Core.v:126",
+   "vc/vc-MemReqMsg.v:116",
+   "vc/vc-MemReqMsg.v:126"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToBits|len",
+  "name": "len",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToBits",
+  "kind": "input",
+  "decl": "input [`VC_MEM_REQ_MSG_LEN_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:118",
+   "riscvstall/riscvstall-Core.v:127",
+   "vc/vc-MemReqMsg.v:117",
+   "vc/vc-MemReqMsg.v:127"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToBits|data",
+  "name": "data",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToBits",
+  "kind": "input",
+  "decl": "input [`VC_MEM_REQ_MSG_DATA_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:119",
+   "riscvstall/riscvstall-Core.v:128",
+   "vc/vc-MemReqMsg.v:118",
+   "vc/vc-MemReqMsg.v:128"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToBits|bits",
+  "name": "bits",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToBits",
+  "kind": "output",
+  "decl": "output [`VC_MEM_REQ_MSG_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:120",
+   "riscvstall/riscvstall-Core.v:129",
+   "vc/vc-MemReqMsg.v:122",
+   "vc/vc-MemReqMsg.v:125",
+   "vc/vc-MemReqMsg.v:126",
+   "vc/vc-MemReqMsg.v:127",
+   "vc/vc-MemReqMsg.v:128"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgFromBits|p_addr_sz",
+  "name": "p_addr_sz",
+  "cat": "signal",
+  "module": "vc_MemReqMsgFromBits",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-MemReqMsg.v:138",
+   "vc/vc-MemReqMsg.v:143",
+   "vc/vc-MemReqMsg.v:147",
+   "vc/vc-MemReqMsg.v:148",
+   "vc/vc-MemReqMsg.v:149",
+   "vc/vc-MemReqMsg.v:150",
+   "vc/vc-MemReqMsg.v:153",
+   "vc/vc-MemReqMsg.v:154",
+   "vc/vc-MemReqMsg.v:155",
+   "vc/vc-MemReqMsg.v:156"
+  ],
+  "n_occ": 10
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgFromBits|p_data_sz",
+  "name": "p_data_sz",
+  "cat": "signal",
+  "module": "vc_MemReqMsgFromBits",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-MemReqMsg.v:139",
+   "vc/vc-MemReqMsg.v:143",
+   "vc/vc-MemReqMsg.v:147",
+   "vc/vc-MemReqMsg.v:148",
+   "vc/vc-MemReqMsg.v:149",
+   "vc/vc-MemReqMsg.v:150",
+   "vc/vc-MemReqMsg.v:153",
+   "vc/vc-MemReqMsg.v:154",
+   "vc/vc-MemReqMsg.v:155",
+   "vc/vc-MemReqMsg.v:156"
+  ],
+  "n_occ": 10
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgFromBits|bits",
+  "name": "bits",
+  "cat": "signal",
+  "module": "vc_MemReqMsgFromBits",
+  "kind": "input",
+  "decl": "input [`VC_MEM_REQ_MSG_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:143",
+   "vc/vc-MemReqMsg.v:153",
+   "vc/vc-MemReqMsg.v:154",
+   "vc/vc-MemReqMsg.v:155",
+   "vc/vc-MemReqMsg.v:156",
+   "vc/vc-MemReqMsg.v:182",
+   "vc/vc-TestDualPortMem.v:109",
+   "vc/vc-TestDualPortMem.v:125"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgFromBits|type",
+  "name": "type",
+  "cat": "signal",
+  "module": "vc_MemReqMsgFromBits",
+  "kind": "output",
+  "decl": "output [`VC_MEM_REQ_MSG_TYPE_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:147",
+   "vc/vc-MemReqMsg.v:153",
+   "vc/vc-MemReqMsg.v:183",
+   "vc/vc-TestDualPortMem.v:110",
+   "vc/vc-TestDualPortMem.v:126"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgFromBits|addr",
+  "name": "addr",
+  "cat": "signal",
+  "module": "vc_MemReqMsgFromBits",
+  "kind": "output",
+  "decl": "output [`VC_MEM_REQ_MSG_ADDR_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:148",
+   "vc/vc-MemReqMsg.v:154",
+   "vc/vc-MemReqMsg.v:184",
+   "vc/vc-TestDualPortMem.v:111",
+   "vc/vc-TestDualPortMem.v:127"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgFromBits|len",
+  "name": "len",
+  "cat": "signal",
+  "module": "vc_MemReqMsgFromBits",
+  "kind": "output",
+  "decl": "output [`VC_MEM_REQ_MSG_LEN_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:149",
+   "vc/vc-MemReqMsg.v:155",
+   "vc/vc-MemReqMsg.v:185",
+   "vc/vc-TestDualPortMem.v:112",
+   "vc/vc-TestDualPortMem.v:128"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgFromBits|data",
+  "name": "data",
+  "cat": "signal",
+  "module": "vc_MemReqMsgFromBits",
+  "kind": "output",
+  "decl": "output [`VC_MEM_REQ_MSG_DATA_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:150",
+   "vc/vc-MemReqMsg.v:156",
+   "vc/vc-MemReqMsg.v:186",
+   "vc/vc-TestDualPortMem.v:113",
+   "vc/vc-TestDualPortMem.v:129"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|p_addr_sz",
+  "name": "p_addr_sz",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-MemReqMsg.v:167",
+   "vc/vc-MemReqMsg.v:170",
+   "vc/vc-MemReqMsg.v:175",
+   "vc/vc-MemReqMsg.v:176",
+   "vc/vc-MemReqMsg.v:177",
+   "vc/vc-MemReqMsg.v:178",
+   "vc/vc-MemReqMsg.v:180",
+   "vc/vc-MemReqMsg.v:191"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|p_data_sz",
+  "name": "p_data_sz",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-MemReqMsg.v:168",
+   "vc/vc-MemReqMsg.v:170",
+   "vc/vc-MemReqMsg.v:175",
+   "vc/vc-MemReqMsg.v:176",
+   "vc/vc-MemReqMsg.v:177",
+   "vc/vc-MemReqMsg.v:178",
+   "vc/vc-MemReqMsg.v:180",
+   "vc/vc-MemReqMsg.v:191"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|msg",
+  "name": "msg",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "input",
+  "decl": "input [`VC_MEM_REQ_MSG_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:170",
+   "vc/vc-MemReqMsg.v:182",
+   "vc/vc-MemReqMsg.v:208",
+   "vc/vc-MemReqMsg.v:225"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|type",
+  "name": "type",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_REQ_MSG_TYPE_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:175",
+   "vc/vc-MemReqMsg.v:183",
+   "vc/vc-MemReqMsg.v:211",
+   "vc/vc-MemReqMsg.v:228"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|addr",
+  "name": "addr",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_REQ_MSG_ADDR_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:176",
+   "vc/vc-MemReqMsg.v:184",
+   "vc/vc-MemReqMsg.v:204"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|len",
+  "name": "len",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_REQ_MSG_LEN_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:177",
+   "vc/vc-MemReqMsg.v:185",
+   "vc/vc-MemReqMsg.v:205"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|data",
+  "name": "data",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_REQ_MSG_DATA_SZ(p_addr_sz,p_data_sz)-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:178",
+   "vc/vc-MemReqMsg.v:186",
+   "vc/vc-MemReqMsg.v:206"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|mem_req_msg_from_bits",
+  "name": "mem_req_msg_from_bits",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "instance",
+  "decl": "vc_MemReqMsgFromBits mem_req_msg_from_bits ( ... );",
+  "instance_of": "vc_MemReqMsgFromBits",
+  "lines": [
+   "vc/vc-MemReqMsg.v:180"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|c_msg_sz",
+  "name": "c_msg_sz",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-MemReqMsg.v:191",
+   "vc/vc-MemReqMsg.v:208",
+   "vc/vc-MemReqMsg.v:225"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|c_read",
+  "name": "c_read",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-MemReqMsg.v:192",
+   "vc/vc-MemReqMsg.v:212",
+   "vc/vc-MemReqMsg.v:229"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|c_write",
+  "name": "c_write",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-MemReqMsg.v:193",
+   "vc/vc-MemReqMsg.v:213",
+   "vc/vc-MemReqMsg.v:230"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|addr_str",
+  "name": "addr_str",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "reg",
+  "decl": "reg [4*8-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:197",
+   "vc/vc-MemReqMsg.v:204",
+   "vc/vc-MemReqMsg.v:212",
+   "vc/vc-MemReqMsg.v:213"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|len_str",
+  "name": "len_str",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "reg",
+  "decl": "reg [1*8-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:198",
+   "vc/vc-MemReqMsg.v:205",
+   "vc/vc-MemReqMsg.v:212",
+   "vc/vc-MemReqMsg.v:213"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|data_str",
+  "name": "data_str",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "reg",
+  "decl": "reg [4*8-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:199",
+   "vc/vc-MemReqMsg.v:206",
+   "vc/vc-MemReqMsg.v:213"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|full_str",
+  "name": "full_str",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "reg",
+  "decl": "reg [14*8-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:201",
+   "vc/vc-MemReqMsg.v:209",
+   "vc/vc-MemReqMsg.v:212",
+   "vc/vc-MemReqMsg.v:213",
+   "vc/vc-MemReqMsg.v:214"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v|vc_MemReqMsgToStr|tiny_str",
+  "name": "tiny_str",
+  "cat": "signal",
+  "module": "vc_MemReqMsgToStr",
+  "kind": "reg",
+  "decl": "reg [2*8-1:0]",
+  "lines": [
+   "vc/vc-MemReqMsg.v:222",
+   "vc/vc-MemReqMsg.v:226",
+   "vc/vc-MemReqMsg.v:229",
+   "vc/vc-MemReqMsg.v:230",
+   "vc/vc-MemReqMsg.v:231"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_SZ",
+  "name": "VC_MEM_REQ_MSG_SZ",
+  "cat": "macro",
+  "lines": [
+   "Pattern.v:28",
+   "Pattern.v:36",
+   "Testbench.v:46",
+   "Testbench.v:53",
+   "riscvstall/riscvstall-Core.v:20",
+   "riscvstall/riscvstall-Core.v:32",
+   "riscvstall/riscvstall-randdelay-sim.v:25",
+   "riscvstall/riscvstall-randdelay-sim.v:31",
+   "riscvstall/riscvstall-sim.v:25",
+   "riscvstall/riscvstall-sim.v:31",
+   "vc/vc-MemReqMsg.v:122",
+   "vc/vc-MemReqMsg.v:143"
+  ],
+  "n_occ": 17
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v||vc_MemReqMsgToBits",
+  "name": "vc_MemReqMsgToBits",
+  "cat": "module",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:114",
+   "riscvstall/riscvstall-Core.v:123",
+   "vc/vc-MemReqMsg.v:108"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_TYPE_READ",
+  "name": "VC_MEM_REQ_MSG_TYPE_READ",
+  "cat": "macro",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:116",
+   "vc/vc-MemReqMsg.v:192",
+   "vc/vc-MemReqMsg.v:85",
+   "vc/vc-TestDualPortMem.v:82"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_V",
+  "name": "VC_MEM_REQ_MSG_V",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:37",
+   "vc/vc-MemReqMsg.v:38"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_DATA_SZ",
+  "name": "VC_MEM_REQ_MSG_DATA_SZ",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:102",
+   "vc/vc-MemReqMsg.v:118",
+   "vc/vc-MemReqMsg.v:150",
+   "vc/vc-MemReqMsg.v:178",
+   "vc/vc-MemReqMsg.v:46",
+   "vc/vc-MemReqMsg.v:50",
+   "vc/vc-TestDualPortMem.v:90"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_DATA_MSB",
+  "name": "VC_MEM_REQ_MSG_DATA_MSB",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:49",
+   "vc/vc-MemReqMsg.v:53",
+   "vc/vc-MemReqMsg.v:62",
+   "vc/vc-MemReqMsg.v:67"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_DATA_FIELD",
+  "name": "VC_MEM_REQ_MSG_DATA_FIELD",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:128",
+   "vc/vc-MemReqMsg.v:156",
+   "vc/vc-MemReqMsg.v:52"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_LEN_SZ",
+  "name": "VC_MEM_REQ_MSG_LEN_SZ",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:101",
+   "vc/vc-MemReqMsg.v:117",
+   "vc/vc-MemReqMsg.v:149",
+   "vc/vc-MemReqMsg.v:177",
+   "vc/vc-MemReqMsg.v:58",
+   "vc/vc-MemReqMsg.v:63",
+   "vc/vc-TestDualPortMem.v:89"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_LEN_MSB",
+  "name": "VC_MEM_REQ_MSG_LEN_MSB",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:61",
+   "vc/vc-MemReqMsg.v:66",
+   "vc/vc-MemReqMsg.v:75",
+   "vc/vc-MemReqMsg.v:80"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_LEN_FIELD",
+  "name": "VC_MEM_REQ_MSG_LEN_FIELD",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:127",
+   "vc/vc-MemReqMsg.v:155",
+   "vc/vc-MemReqMsg.v:65"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_ADDR_SZ",
+  "name": "VC_MEM_REQ_MSG_ADDR_SZ",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:100",
+   "vc/vc-MemReqMsg.v:116",
+   "vc/vc-MemReqMsg.v:148",
+   "vc/vc-MemReqMsg.v:176",
+   "vc/vc-MemReqMsg.v:71",
+   "vc/vc-MemReqMsg.v:76",
+   "vc/vc-TestDualPortMem.v:88"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_ADDR_MSB",
+  "name": "VC_MEM_REQ_MSG_ADDR_MSB",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:74",
+   "vc/vc-MemReqMsg.v:79",
+   "vc/vc-MemReqMsg.v:89",
+   "vc/vc-MemReqMsg.v:94"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_ADDR_FIELD",
+  "name": "VC_MEM_REQ_MSG_ADDR_FIELD",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:126",
+   "vc/vc-MemReqMsg.v:154",
+   "vc/vc-MemReqMsg.v:78"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_TYPE_SZ",
+  "name": "VC_MEM_REQ_MSG_TYPE_SZ",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:115",
+   "vc/vc-MemReqMsg.v:147",
+   "vc/vc-MemReqMsg.v:175",
+   "vc/vc-MemReqMsg.v:84",
+   "vc/vc-MemReqMsg.v:90",
+   "vc/vc-MemReqMsg.v:99",
+   "vc/vc-TestDualPortMem.v:87"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_TYPE_WRITE",
+  "name": "VC_MEM_REQ_MSG_TYPE_WRITE",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:193",
+   "vc/vc-MemReqMsg.v:86",
+   "vc/vc-TestDualPortMem.v:83"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_TYPE_MSB",
+  "name": "VC_MEM_REQ_MSG_TYPE_MSB",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:88",
+   "vc/vc-MemReqMsg.v:93"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "`VC_MEM_REQ_MSG_TYPE_FIELD",
+  "name": "VC_MEM_REQ_MSG_TYPE_FIELD",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-MemReqMsg.v:125",
+   "vc/vc-MemReqMsg.v:153",
+   "vc/vc-MemReqMsg.v:92"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v||vc_MemReqMsgFromBits",
+  "name": "vc_MemReqMsgFromBits",
+  "cat": "module",
+  "lines": [
+   "vc/vc-MemReqMsg.v:136",
+   "vc/vc-MemReqMsg.v:180",
+   "vc/vc-TestDualPortMem.v:107",
+   "vc/vc-TestDualPortMem.v:123"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-MemReqMsg.v||vc_MemReqMsgToStr",
+  "name": "vc_MemReqMsgToStr",
+  "cat": "module",
+  "lines": [
+   "vc/vc-MemReqMsg.v:165"
+  ],
+  "n_occ": 1
+ }
+]

@@ -1,0 +1,252 @@
+{
+  "entities": {
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|clk": {
+      "sum": "乘法器 ctrl 的時脈，狀態暫存器在它的正緣更新",
+      "naming": [["clk", "clock", "時脈"]],
+      "desc": "ctrl 裡唯一的時序元件是 `state_reg`，它在每個 clk 正緣更新（reset 時設成 `STATE_IDLE`，否則寫入 `state_next`）。由頂層 `imuldiv_IntMulIterative` 傳進來，和 dpath 用的是同一個時脈。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|reset": {
+      "sum": "乘法器 ctrl 的同步重置：把 FSM 拉回 STATE_IDLE",
+      "naming": [["reset", "reset", "重置"]],
+      "desc": "在 `always @(posedge clk)` 裡 `if (reset) state_reg <= STATE_IDLE;`，是同步 reset（只在時脈正緣生效）。因為 IDLE 狀態會把 dpath 的所有暫存器重新載入，所以整個乘法器只靠這一個 reset 就能回到乾淨狀態。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|mulreq_val": {
+      "sum": "ctrl 收到的請求 valid，用來判斷握手是否成交",
+      "naming": [
+        ["mul", "multiply", "乘法"],
+        ["req", "request", "請求"],
+        ["val", "valid", "有效"]
+      ],
+      "desc": "從頂層傳進來的外部訊號。ctrl 只在 `wire mulreq_go = mulreq_val && mulreq_rdy;` 這一行用到它。在 `STATE_IDLE` 時若 `mulreq_go` 為 1，下個 cycle 就跳到 `STATE_CALC`；同一個 cycle dpath 因為 `cs` 給的是 op_load，已經把運算元載入暫存器了。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|mulreq_rdy": {
+      "sum": "ctrl 輸出的請求 ready，只有 STATE_IDLE 時為 1",
+      "naming": [
+        ["mul", "multiply", "乘法"],
+        ["req", "request", "請求"],
+        ["rdy", "ready", "可以接收"]
+      ],
+      "desc": "`assign mulreq_rdy = cs[7];`，是 `cs` 表最左邊那一欄：IDLE 是 y(1)、CALC 是 n(0)、SIGN 是 n(0)。因為它只看 `state_reg` 不看 `mulreq_val`，這是標準的「rdy 不依賴 val」寫法，可以避免組合迴路。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|mulresp_val": {
+      "sum": "ctrl 輸出的回應 valid，只有 STATE_SIGN 時為 1",
+      "naming": [
+        ["mul", "multiply", "乘法"],
+        ["resp", "response", "回應"],
+        ["val", "valid", "有效"]
+      ],
+      "desc": "`assign mulresp_val = cs[6];`，表中只有 `STATE_SIGN` 那一列是 y。它為 1 時 dpath 的 `result_en` 已經是 0，所以 `mulresp_msg_result` 穩定不動，外部可以安心取走。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|mulresp_rdy": {
+      "sum": "ctrl 收到的回應 ready，決定結果何時被取走",
+      "naming": [
+        ["mul", "multiply", "乘法"],
+        ["resp", "response", "回應"],
+        ["rdy", "ready", "可以接收"]
+      ],
+      "desc": "從頂層傳進來的外部訊號，只用在 `wire mulresp_go = mulresp_val && mulresp_rdy;`。`STATE_SIGN` 時若 `mulresp_go` 為 1，下個 cycle 回到 `STATE_IDLE` 準備接下一筆；否則就一直停在 SIGN 等對方收。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|counter": {
+      "sum": "ctrl 從 dpath 收到的剩餘輪數，用來判斷 32 輪跑完了沒",
+      "naming": [["counter", "counter", "計數器"]],
+      "desc": "5-bit 輸入，來源是 dpath 的 `counter_reg`。ctrl 只用它算 `wire is_calc_done = (counter == 5'b0);`。在 CALC 狀態下 counter 從 31 一路減到 0，看到 0 的那個 cycle 仍然執行最後一輪的累加（因為 `cs` 還是 CALC 那一列），下個 cycle 才進 `STATE_SIGN`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|sign": {
+      "sum": "ctrl 從 dpath 收到的正負號旗標，原封不動轉成 sign_mux_sel",
+      "naming": [["sign", "sign", "正負號（1 = 結果為負）"]],
+      "desc": "1-bit 輸入，來源是 dpath 的 `sign_reg`。ctrl 對它不做任何判斷，只有 `assign sign_mux_sel = sign;` 一行。設計上把它繞經 ctrl 是為了維持「所有控制訊號都由 ctrl 發出」的風格，功能上等同於 dpath 內部直接接線。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|b_lsb": {
+      "sum": "ctrl 從 dpath 收到的乘數最低位，原封不動轉成 add_mux_sel",
+      "naming": [
+        ["b", "operand b", "運算元 b（乘數）"],
+        ["lsb", "least significant bit", "最低位元"]
+      ],
+      "desc": "1-bit 輸入，來源是 dpath 的 `b_reg[0]`。ctrl 只有 `assign add_mux_sel = b_lsb;` 一行。它不參與狀態轉移，純粹是把「這一輪要不要加」這個由資料決定的判斷送回 dpath。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|sign_en": {
+      "sum": "ctrl 輸出：命令 dpath 在這個 cycle 記下結果正負號",
+      "naming": [
+        ["sign", "sign", "正負號"],
+        ["en", "enable", "寫入致能"]
+      ],
+      "desc": "`assign sign_en = cs[5];`。表中只有 `STATE_IDLE` 是 y，因為運算元只有在請求進來那一刻才在 port 上，正負號必須當下就算好存起來。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|result_en": {
+      "sum": "ctrl 輸出：命令 dpath 在這個 cycle 更新累加器",
+      "naming": [
+        ["result", "result", "結果 / 累加器"],
+        ["en", "enable", "寫入致能"]
+      ],
+      "desc": "`assign result_en = cs[4];`。IDLE 與 CALC 是 y、SIGN 是 n。IDLE 的 y 是為了把累加器歸零，CALC 的 y 是每輪累加，SIGN 的 n 是為了凍結答案讓外部讀取。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|cntr_mux_sel": {
+      "sum": "ctrl 輸出：counter 載入 31 還是減一",
+      "naming": [
+        ["cntr", "counter", "計數器"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "`assign cntr_mux_sel = cs[3];`。IDLE 給 `op_load`(0)、CALC 給 `op_next`(1)、SIGN 給 `op_x`(x)。SIGN 給 x 會讓 dpath 的 `counter_reg` 變成 x，但下一次 IDLE 會重新載入 31，所以無害。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|a_mux_sel": {
+      "sum": "ctrl 輸出：a_reg 載入運算元還是載入左移值",
+      "naming": [
+        ["a", "operand a", "運算元 a（被乘數）"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "`assign a_mux_sel = cs[2];`。IDLE 給 `op_load`（載入零擴充的 `unsigned_a`）、CALC 給 `op_next`（每輪左移一位）、SIGN 給 `op_x`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|b_mux_sel": {
+      "sum": "ctrl 輸出：b_reg 載入運算元還是右移一位",
+      "naming": [
+        ["b", "operand b", "運算元 b（乘數）"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "`assign b_mux_sel = cs[1];`。IDLE 給 `op_load`（載入 `unsigned_b`）、CALC 給 `op_next`（每輪右移一位，把下一位乘數推到 `b_lsb`）、SIGN 給 `op_x`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|result_mux_sel": {
+      "sum": "ctrl 輸出：累加器清零還是寫入條件加法結果",
+      "naming": [
+        ["result", "result", "結果 / 累加器"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "`assign result_mux_sel = cs[0];`，是 `cs` 表最右邊那一欄。IDLE 給 `op_load`（寫 64'b0）、CALC 給 `op_next`（寫 `add_mux_out`）、SIGN 給 `op_x`（但 SIGN 時 `result_en` 為 0，不會真的寫進去）。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|add_mux_sel": {
+      "sum": "ctrl 輸出：這一輪加不加（直接等於 b_lsb，不經過 cs 表）",
+      "naming": [
+        ["add", "add / adder", "加法器"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "`assign add_mux_sel = b_lsb;`。它和其他控制訊號不同，不是狀態的函數而是資料的函數，所以不放在 `cs` 表裡（表只有 8 欄，剛好對應 8 個狀態相關訊號）。這也表示它在 IDLE 與 SIGN 狀態也會亂跳，但那兩個狀態 `result_mux_sel` 不是 op_next，`add_mux_out` 的值不會被採用。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|sign_mux_sel": {
+      "sum": "ctrl 輸出：最終結果要不要取負（直接等於 sign，不經過 cs 表）",
+      "naming": [
+        ["sign", "sign", "正負號"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "`assign sign_mux_sel = sign;`，同樣是資料相關而非狀態相關，所以不放在 `cs` 表。它控制 dpath 的 `signed_result_mux_out`，在 `mulresp_val` 為 1 時決定輸出 `result_reg` 或它的二補數。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|STATE_IDLE": {
+      "sum": "FSM 狀態常數 2'd0：閒置，等待並接收新的乘法請求",
+      "naming": [
+        ["STATE", "state", "狀態機的狀態"],
+        ["IDLE", "idle", "閒置"]
+      ],
+      "desc": "`localparam STATE_IDLE = 2'd0;`。這個狀態下 `mulreq_rdy` 為 1，`cs` 表給出全部 op_load，所以只要外部拉起 `mulreq_val`，同一個 cycle dpath 就把 counter=31、a、b、result=0、sign 全部載入，下個 cycle 進 `STATE_CALC`。reset 也是把 `state_reg` 設成這個值。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|STATE_CALC": {
+      "sum": "FSM 狀態常數 2'd1：連續 32 個 cycle 做 shift-add 迭代",
+      "naming": [
+        ["STATE", "state", "狀態機的狀態"],
+        ["CALC", "calculate", "計算"]
+      ],
+      "desc": "`localparam STATE_CALC = 2'd1;`。`cs` 表給全部 op_next：每個 cycle 依 `b_lsb` 條件累加、a 左移、b 右移、counter 減一。停留的 cycle 數固定為 32（counter 從 31 數到 0），直到 `is_calc_done` 為 1 才轉到 `STATE_SIGN`。這段期間 `mulreq_rdy` 與 `mulresp_val` 都是 0，外部只能等。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|STATE_SIGN": {
+      "sum": "FSM 狀態常數 2'd2：補上正負號並把結果交給外部",
+      "naming": [
+        ["STATE", "state", "狀態機的狀態"],
+        ["SIGN", "sign", "補正負號"]
+      ],
+      "desc": "`localparam STATE_SIGN = 2'd2;`。`cs` 表給 `mulresp_val = y`、所有 enable 為 n、所有 mux sel 為 x：dpath 的暫存器被凍住，`signed_result_mux_out` 依 `sign_mux_sel` 輸出最終值。一直停在這裡直到 `mulresp_go`（對方收走）才回 `STATE_IDLE`。注意取負號是組合邏輯完成的，所以這個狀態最少只花 1 個 cycle。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|state_reg": {
+      "sum": "2-bit 狀態暫存器，記住乘法器目前在 IDLE / CALC / SIGN 哪一階段",
+      "naming": [
+        ["state", "state", "狀態"],
+        ["reg", "register", "暫存器"]
+      ],
+      "desc": "在 clk 正緣更新：`reset` 為 1 時設成 `STATE_IDLE`，否則寫入 `state_next`。它是整個乘法器唯一的控制狀態，兩個 always block 都看它——一個算下一狀態，一個查 `cs` 表產生控制訊號。因為 `cs` 只依賴 `state_reg`（不依賴輸入），這是 Moore 型 FSM。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|state_next": {
+      "sum": "組合算出的下一個狀態，餵給 state_reg",
+      "naming": [
+        ["state", "state", "狀態"],
+        ["next", "next", "下一個 cycle 的值"]
+      ],
+      "desc": "宣告成 `reg [1:0]` 但由 `always @(*)` 驅動（組合邏輯）。預設 `state_next = state_reg`（維持不變），再依目前狀態改寫：IDLE 遇 `mulreq_go` → CALC，CALC 遇 `is_calc_done` → SIGN，SIGN 遇 `mulresp_go` → IDLE。先給預設值的寫法可以避免推論出 latch。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|n": {
+      "sum": "ctrl 的 localparam：值 1'd0，在 cs 表裡代表「否」",
+      "naming": [["n", "no", "否 / 不做"]],
+      "desc": "`localparam n = 1'd0;`。純粹是讓 `cs` 表讀起來像真值表的縮寫，用在 `mulreq_rdy`、`mulresp_val`、`sign_en`、`result_en` 這幾欄。例如 `STATE_CALC` 那一列前兩欄是 `n, n`，意思是計算中既不收新請求也還沒有結果。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|y": {
+      "sum": "ctrl 的 localparam：值 1'd1，在 cs 表裡代表「是」",
+      "naming": [["y", "yes", "是 / 要做"]],
+      "desc": "`localparam y = 1'd1;`。用在 `cs` 表的 enable/valid 欄位，例如 `STATE_IDLE` 那一列的 `y, n, y, y` 表示「收請求、還沒有結果、寫 sign_reg、寫 result_reg」。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|op_x": {
+      "sum": "ctrl 的 localparam：值 1'dx，在 cs 表裡代表這個 mux 選擇不在乎",
+      "naming": [
+        ["op", "operand / operation", "運算元載入方式"],
+        ["x", "don't care", "不在乎"]
+      ],
+      "desc": "`localparam op_x = 1'dx;`，只用在 `STATE_SIGN` 那一列的四個 mux 欄位。填 x 讓合成工具有最佳化空間，模擬時也能幫忙抓出「在不該用的狀態卻用了這個值」的錯誤（x 會傳播出去很明顯）。dpath 裡有同名的 localparam。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|op_load": {
+      "sum": "ctrl 的 localparam：值 1'd0，在 cs 表裡代表「載入新運算元」",
+      "naming": [
+        ["op", "operand / operation", "運算元載入方式"],
+        ["load", "load", "載入初始值"]
+      ],
+      "desc": "`localparam op_load = 1'd0;`，填在 `STATE_IDLE` 那一列的四個 mux 欄位，和 dpath 裡同名常數的值一致。dpath 收到 0 就走「開始新一筆乘法」那條路。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|op_next": {
+      "sum": "ctrl 的 localparam：值 1'd1，在 cs 表裡代表「推進到下一輪」",
+      "naming": [
+        ["op", "operand / operation", "運算元載入方式"],
+        ["next", "next", "下一輪的值"]
+      ],
+      "desc": "`localparam op_next = 1'd1;`，填在 `STATE_CALC` 那一列的四個 mux 欄位。dpath 收到 1 就做 counter 減一、a 左移、b 右移、累加。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|cs_size": {
+      "sum": "ctrl 的 localparam：控制訊號向量 cs 的位元數，值為 8",
+      "naming": [
+        ["cs", "control signals", "整包控制訊號"],
+        ["size", "size", "位元數"]
+      ],
+      "desc": "`localparam cs_size = 8;`，用來宣告 `reg [cs_size-1:0] cs;`。8 剛好對應 `cs` 表的 8 欄：`mulreq_rdy`、`mulresp_val`、`sign_en`、`result_en`、`cntr_mux_sel`、`a_mux_sel`、`b_mux_sel`、`result_mux_sel`。如果之後要加控制訊號，改這裡和表格即可。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|cs": {
+      "sum": "8-bit 控制訊號向量，由狀態查表得到，再拆給各個輸出",
+      "naming": [["cs", "control signals", "解碼表產生的整包控制訊號"]],
+      "desc": "由 `always @(*)` 的 case 依 `state_reg` 填值：IDLE 是 `{y,n,y,y,op_load,op_load,op_load,op_load}`，CALC 是 `{n,n,n,y,op_next,op_next,op_next,op_next}`，SIGN 是 `{n,y,n,n,op_x,op_x,op_x,op_x}`。接著由上而下拆成 `cs[7]`=`mulreq_rdy`、`cs[6]`=`mulresp_val`、`cs[5]`=`sign_en`、`cs[4]`=`result_en`、`cs[3]`=`cntr_mux_sel`、`cs[2]`=`a_mux_sel`、`cs[1]`=`b_mux_sel`、`cs[0]`=`result_mux_sel`。注意 case 沒有 default，但三個狀態的 2-bit 編碼中 2'd3 未被使用；因為 `state_reg` 只會停在這三個值，模擬上不會出問題。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|mulreq_go": {
+      "sum": "請求通道握手成交的那一個 cycle（val && rdy）",
+      "naming": [
+        ["mul", "multiply", "乘法"],
+        ["req", "request", "請求"],
+        ["go", "val && rdy", "握手成功"]
+      ],
+      "desc": "`wire mulreq_go = mulreq_val && mulreq_rdy;`。只在 `STATE_IDLE` 的轉移判斷中使用：為 1 就跳到 `STATE_CALC`。因為 `mulreq_rdy` 本來就只有 IDLE 才是 1，所以其他狀態這條線必然是 0。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|mulresp_go": {
+      "sum": "回應通道握手成交的那一個 cycle（val && rdy）",
+      "naming": [
+        ["mul", "multiply", "乘法"],
+        ["resp", "response", "回應"],
+        ["go", "val && rdy", "握手成功"]
+      ],
+      "desc": "`wire mulresp_go = mulresp_val && mulresp_rdy;`。只在 `STATE_SIGN` 的轉移判斷中使用：結果被對方收走後才回 `STATE_IDLE`，這樣就算外部一直不 ready，答案也不會被沖掉。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeCtrl|is_calc_done": {
+      "sum": "迭代跑完的旗標：counter 數到 0",
+      "naming": [
+        ["is", "is", "是否"],
+        ["calc", "calculate", "計算"],
+        ["done", "done", "完成"]
+      ],
+      "desc": "`wire is_calc_done = (counter == 5'b0);`。在 `STATE_CALC` 中為 1 時，下個 cycle 轉到 `STATE_SIGN`。要注意它為 1 的那個 cycle 仍然屬於 CALC，`cs` 還是 CALC 那一列，所以第 32 輪（counter=0 這一輪）的累加照常執行，剛好湊滿 32 位乘數。"
+    }
+  }
+}

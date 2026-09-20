@@ -1,0 +1,164 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|ir_Mhl": {
+      "sum": "riscv_CoreCtrl 的 M 階段指令暫存器（供除錯與反組譯使用）",
+      "naming": [["ir", "instruction register", "指令暫存器"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "32-bit `reg`，在 `!stall_Mhl` 的正緣從 `ir_Xhl` 載入。M 階段需要的控制訊號都已經各自打拍過來了，所以它只被 `inst_msg_disasm_M`（印出組語）和下一級的 `ir_Whl` 使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|dmemreq_val_Mhl": {
+      "sum": "riscv_CoreCtrl 記錄「上一拍真的送出了一筆 dmem 請求」，M 階段用它決定要不要等回應",
+      "naming": [["dmem", "data memory", "資料記憶體"], ["req", "request", "請求"], ["val", "valid", "有效"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "1-bit `reg`。它的更新方式和其他 M 階段暫存器不同：`dmemreq_val_Mhl <= dmemreq_val;` 這一行寫在 `if (reset) / else if (!stall_Mhl)` 區塊**之外**，所以每個 cycle 都會無條件更新（也沒有 reset 值，因此 `stall_dmem_Mhl` 才要加 `!reset` 條件）。它記的是對外實際送出的 `dmemreq_val`（已含 `inst_val_Xhl && !stall_Xhl`），M 階段據此判斷要不要等 `dmemresp_val`。這個寫法是學生改過的部分，閱讀時要特別留意它不受 stall 保護。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|rf_wen_Mhl": {
+      "sum": "riscv_CoreCtrl 在 M 階段記錄這條指令將來要寫回暫存器",
+      "naming": [["rf", "register file", "暫存器檔案"], ["wen", "write enable", "寫入致能"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "1-bit `reg`，在 `!stall_Mhl` 時從 `rf_wen_Xhl` 載入，再往後傳給 `rf_wen_Whl`。它也被 D 階段的 `stall_hazard_Dhl` 讀取：M 裡的指令會寫暫存器、D 又要讀同一個暫存器時就得 stall。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|rf_waddr_Mhl": {
+      "sum": "riscv_CoreCtrl 在 M 階段的暫存器寫入位址，供 hazard 比對",
+      "naming": [["rf", "register file", "暫存器檔案"], ["waddr", "write address", "寫入位址"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "5-bit `reg`，在 `!stall_Mhl` 時從 `rf_waddr_Xhl` 載入，再傳給輸出用的 `rf_waddr_Whl`。`stall_hazard_Dhl` 會把它和 `rs1_addr_Dhl` / `rs2_addr_Dhl` 比對（同時要求它不是 5'd0）。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|csr_wen_Mhl": {
+      "sum": "riscv_CoreCtrl 在 M 階段暫存的 CSR 寫入致能",
+      "naming": [["csr", "control and status register", "控制狀態暫存器"], ["wen", "write enable", "寫入致能"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "1-bit `reg`，在 `!stall_Mhl` 時從 `csr_wen_Xhl` 載入，再往後傳給 `csr_wen_Whl`，最後在 W 階段決定要不要更新 `csr_status`。只有 CSRW 指令會讓它為 1。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|csr_addr_Mhl": {
+      "sum": "riscv_CoreCtrl 在 M 階段暫存的 CSR 位址",
+      "naming": [["csr", "control and status register", "控制狀態暫存器"], ["addr", "address", "位址"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "12-bit `reg`，在 `!stall_Mhl` 時從 `csr_addr_Xhl` 載入，再傳給 `csr_addr_Whl`。它的源頭是指令的 [31:20] 欄位。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bubble_Mhl": {
+      "sum": "riscv_CoreCtrl 記錄 M 階段裝的是不是氣泡",
+      "naming": [["bubble", "bubble", "氣泡（空指令）"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "1-bit `reg`。reset 時設成 1，之後在 `!stall_Mhl` 的正緣載入 `bubble_next_Xhl`。它決定 `inst_val_Mhl`，而後者又決定要不要因為等記憶體回應而 stall、以及 D 階段的 hazard 比對是否要把 M 算進去。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_val_Mhl": {
+      "sum": "riscv_CoreCtrl 判斷 M 階段目前是否有有效指令",
+      "naming": [["inst", "instruction", "指令"], ["val", "valid", "有效"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "`wire inst_val_Mhl = ( !bubble_Mhl && !squash_Mhl );`（`squash_Mhl` 固定為 0）。它用在 `stall_dmem_Mhl`（只有有效指令才值得等回應）以及 D 階段 `stall_hazard_Dhl` 的 M 那三項條件。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|squash_Mhl": {
+      "sum": "riscv_CoreCtrl 的 M 階段作廢訊號，固定接 0 的 dummy 訊號",
+      "naming": [["squash", "squash", "作廢"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "`wire squash_Mhl = 1'b0;`，註解寫 Dummy Squash Signal。指令走到 M 階段時分支早已解出，沒有東西能作廢它（而且記憶體請求已經送出去了，也不該作廢）。它只出現在 `inst_val_Mhl` 與 `bubble_sel_Mhl` 的算式裡。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|stall_dmem_Mhl": {
+      "sum": "riscv_CoreCtrl 的 M 階段 stall 條件：load/store 的回應還沒回來",
+      "naming": [["stall", "stall", "暫停"], ["dmem", "data memory", "資料記憶體"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "`wire stall_dmem_Mhl = ( !reset && dmemreq_val_Mhl && inst_val_Mhl && !dmemresp_val );`。`!reset` 是必要的，因為 `dmemreq_val_Mhl` 沒有 reset 初始值。它直接就是 `stall_Mhl`，會沿著 `stall_Xhl` → `stall_Dhl` → `stall_Fhl` 把整條 pipeline 前段都卡住，也讓 `dmemresp_rdy` 為 0 直到 M 準備好收資料。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bubble_sel_Mhl": {
+      "sum": "riscv_CoreCtrl 判斷 M 階段這一拍要往 W 送氣泡",
+      "naming": [["bubble", "bubble", "氣泡（空指令）"], ["sel", "select", "選擇訊號"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "`wire bubble_sel_Mhl = ( squash_Mhl || stall_Mhl );`，實際上等於 `stall_Mhl`。M 被卡住時指令還留在 M，所以送給 W 的是氣泡。它只被 `bubble_next_Mhl` 使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bubble_next_Mhl": {
+      "sum": "riscv_CoreCtrl 算出下一拍要寫進 bubble_Whl 的值",
+      "naming": [["bubble", "bubble", "氣泡（空指令）"], ["next", "next value", "下一個 cycle 的值"], ["Mhl", "Memory stage, high-level", "記憶體階段的訊號"]],
+      "desc": "`bubble_sel_Mhl` 為 1 時是 1'b1，否則保留 `bubble_Mhl`。它在 `!stall_Whl`（永遠成立）的正緣被寫進 `bubble_Whl`，最終決定這一拍有沒有指令退休、有沒有真的寫回暫存器。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|ir_Whl": {
+      "sum": "riscv_CoreCtrl 的 W 階段指令暫存器（供除錯與反組譯使用）",
+      "naming": [["ir", "instruction register", "指令暫存器"], ["Whl", "Writeback stage, high-level", "寫回階段的訊號"]],
+      "desc": "32-bit `reg`，在 `!stall_Whl` 的正緣從 `ir_Mhl` 載入（因為 `stall_Whl` 固定為 0，等於每拍都更新）。它被 `inst_msg_disasm_W` 用來印出正在寫回的指令，也被再打一拍存進 `ir_debug`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|rf_wen_Whl": {
+      "sum": "riscv_CoreCtrl 在 W 階段記錄的暫存器寫入致能（尚未加上有效性判斷）",
+      "naming": [["rf", "register file", "暫存器檔案"], ["wen", "write enable", "寫入致能"], ["Whl", "Writeback stage, high-level", "寫回階段的訊號"]],
+      "desc": "1-bit `reg`，在 `!stall_Whl` 時從 `rf_wen_Mhl` 載入。它是「這條指令想寫暫存器嗎」，真正送給 regfile 的是 `rf_wen_out_Whl = ( inst_val_Whl && !stall_Whl && rf_wen_Whl )`。它也被 D 階段的 `stall_hazard_Dhl` 用來檢查 W 這一級的相依性。要注意 module 的輸出 port 名字是 `rf_wen_out_Whl`，和這個內部 reg 不同。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|csr_wen_Whl": {
+      "sum": "riscv_CoreCtrl 在 W 階段的 CSR 寫入致能，決定要不要更新 csr_status",
+      "naming": [["csr", "control and status register", "控制狀態暫存器"], ["wen", "write enable", "寫入致能"], ["Whl", "Writeback stage, high-level", "寫回階段的訊號"]],
+      "desc": "1-bit `reg`，在 `!stall_Whl` 時從 `csr_wen_Mhl` 載入。CSR 暫存器的 `always` 區塊判斷 `csr_wen_Whl && inst_val_Whl` 成立時，才依 `csr_addr_Whl` 把 `proc2csr_data_Whl` 寫進 `csr_status`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|csr_addr_Whl": {
+      "sum": "riscv_CoreCtrl 在 W 階段的 CSR 位址，只有 12'd21 會被處理",
+      "naming": [["csr", "control and status register", "控制狀態暫存器"], ["addr", "address", "位址"], ["Whl", "Writeback stage, high-level", "寫回階段的訊號"]],
+      "desc": "12-bit `reg`，在 `!stall_Whl` 時從 `csr_addr_Mhl` 載入。CSR 寫入的 `case ( csr_addr_Whl )` 只列了一項 `12'd21 : csr_status <= proc2csr_data_Whl;`，這是這門課約定用來回報測試結果的位址；寫其他 CSR 位址會被默默忽略。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bubble_Whl": {
+      "sum": "riscv_CoreCtrl 記錄 W 階段裝的是不是氣泡",
+      "naming": [["bubble", "bubble", "氣泡（空指令）"], ["Whl", "Writeback stage, high-level", "寫回階段的訊號"]],
+      "desc": "1-bit `reg`。reset 時設成 1，之後在 `!stall_Whl`（永遠成立）的正緣載入 `bubble_next_Mhl`。它決定 `inst_val_Whl`，因此也就決定了這一拍會不會真的寫回暫存器、會不會更新 `csr_status`、`retire_valid` 要不要拉高。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_val_Whl": {
+      "sum": "riscv_CoreCtrl 判斷 W 階段目前是否有有效指令（等同於有指令完成）",
+      "naming": [["inst", "instruction", "指令"], ["val", "valid", "有效"], ["Whl", "Writeback stage, high-level", "寫回階段的訊號"]],
+      "desc": "`wire inst_val_Whl = ( !bubble_Whl && !squash_Whl );`（`squash_Whl` 固定為 0）。它決定 `retire_valid`、`rf_wen_out_Whl`、CSR 是否更新，也是 D 階段 `stall_hazard_Dhl` 的 W 那三項條件之一，另外還被打一拍存進 `inst_val_debug` 供反組譯輸出使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|squash_Whl": {
+      "sum": "riscv_CoreCtrl 的 W 階段作廢訊號，固定接 0 的 dummy 訊號",
+      "naming": [["squash", "squash", "作廢"], ["Whl", "Writeback stage, high-level", "寫回階段的訊號"]],
+      "desc": "`wire squash_Whl = 1'b0;`，註解寫 Dummy squash（原始碼裡拼成 squahs）。指令走到寫回階段就一定會完成，沒有作廢的可能。它只出現在 `inst_val_Whl` 的算式裡。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|ir_debug": {
+      "sum": "riscv_CoreCtrl 把 W 階段指令再延一拍的除錯暫存器",
+      "naming": [["ir", "instruction register", "指令暫存器"], ["debug", "debug", "除錯用"]],
+      "desc": "32-bit `reg`，每個 clk 正緣無條件載入 `ir_Whl`（沒有 stall 或 reset 條件）。它接到 `inst_msg_disasm_debug`，讓模擬波形/文字輸出可以看到「上一拍寫回的是哪條指令」。純粹是除錯用，不影響任何功能邏輯。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_val_debug": {
+      "sum": "riscv_CoreCtrl 把 W 階段有效位元再延一拍的除錯暫存器",
+      "naming": [["inst", "instruction", "指令"], ["val", "valid", "有效"], ["debug", "debug", "除錯用"]],
+      "desc": "1-bit `reg`，每個 clk 正緣無條件載入 `inst_val_Whl`，和 `ir_debug` 成對。用來在除錯輸出時分辨 `ir_debug` 裡裝的是真指令還是氣泡。從程式碼看來它目前只是被寫入、沒有被其他邏輯讀取（`inst_msg_disasm_debug` 只吃 msg）。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_msg_disasm_D": {
+      "sum": "riscv_CoreCtrl 裡負責反組譯 D 階段指令的除錯實例",
+      "naming": [["inst", "instruction", "指令"], ["msg", "message", "訊息"], ["disasm", "disassemble", "反組譯"], ["D", "Decode stage", "解碼階段"]],
+      "desc": "`riscv_InstMsgDisasm` 的實例（定義在 `riscvstall-InstMsg.v`），只接一個 port `.msg ( ir_Dhl )`。它把 32-bit 指令翻成人看得懂的組語字串供模擬時列印。整段包在 `` `ifndef SYNTHESIS `` 裡，所以只在模擬時存在，不會被綜合。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_msg_disasm_X": {
+      "sum": "riscv_CoreCtrl 裡負責反組譯 X 階段指令的除錯實例",
+      "naming": [["inst", "instruction", "指令"], ["msg", "message", "訊息"], ["disasm", "disassemble", "反組譯"], ["X", "eXecute stage", "執行階段"]],
+      "desc": "`riscv_InstMsgDisasm` 的實例，輸入 `.msg ( ir_Xhl )`。和其他四個 disasm 實例一起，讓你在模擬時可以一眼看出五個階段各自裝著哪條指令，對除錯 stall 與 squash 行為很有用。只在 `` `ifndef SYNTHESIS `` 區塊內存在。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_msg_disasm_M": {
+      "sum": "riscv_CoreCtrl 裡負責反組譯 M 階段指令的除錯實例",
+      "naming": [["inst", "instruction", "指令"], ["msg", "message", "訊息"], ["disasm", "disassemble", "反組譯"], ["M", "Memory stage", "記憶體階段"]],
+      "desc": "`riscv_InstMsgDisasm` 的實例，輸入 `.msg ( ir_Mhl )`。只在模擬時存在（包在 `` `ifndef SYNTHESIS `` 裡），沒有輸出 port，純粹用於顯示 M 階段正在處理的指令。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_msg_disasm_W": {
+      "sum": "riscv_CoreCtrl 裡負責反組譯 W 階段指令的除錯實例",
+      "naming": [["inst", "instruction", "指令"], ["msg", "message", "訊息"], ["disasm", "disassemble", "反組譯"], ["W", "Writeback stage", "寫回階段"]],
+      "desc": "`riscv_InstMsgDisasm` 的實例，輸入 `.msg ( ir_Whl )`。對應正在寫回的那條指令，是判斷「程式實際執行了哪些指令」最直接的一個。只在模擬時存在。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_msg_disasm_debug": {
+      "sum": "riscv_CoreCtrl 裡負責反組譯延遲一拍除錯暫存器的實例",
+      "naming": [["inst", "instruction", "指令"], ["msg", "message", "訊息"], ["disasm", "disassemble", "反組譯"], ["debug", "debug", "除錯用"]],
+      "desc": "`riscv_InstMsgDisasm` 的實例，輸入 `.msg ( ir_debug )`，也就是比 W 階段再晚一拍的指令。有些模擬輸出（例如 line trace）要在指令完成之後才印，用這個延遲版本比較好對齊。只在 `` `ifndef SYNTHESIS `` 區塊內存在。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|overload": {
+      "sum": "riscv_CoreCtrl 的非法指令連續偵測旗標，連續兩拍非法就結束模擬",
+      "naming": [["overload", "overload", "超載 / 連續出錯"]],
+      "desc": "1-bit `reg`，宣告時初始化為 1'b0，只存在於 `` `ifndef SYNTHESIS `` 區塊。每個 clk 正緣檢查 `!cs[`RISCV_INST_MSG_INST_VAL] && !reset`：成立就印出「RTL-ERROR : %m : Illegal instruction!」，若 `overload` 已經是 1 就呼叫 `$finish` 停掉模擬，否則把它設成 1；不成立則清 0。注意這段用的是阻塞指定（`overload = 1'b1;`），而且它檢查的是 D 階段組合邏輯解出的 `cs`，並沒有判斷 D 階段是不是氣泡，所以 reset 之後 pipeline 還在填的時候也可能看到這個訊息。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v||riscv_CoreCtrl": {
+      "sum": "5-stage RISC-V pipeline 的控制單元 module，負責解碼、hazard stall 與分支 squash",
+      "naming": [["riscv", "RISC-V", "RISC-V 處理器"], ["Core", "core", "處理器核心"], ["Ctrl", "control", "控制單元"]],
+      "desc": "定義在 `riscvstall-CoreCtrl.v`，由 `riscv_Core` 以實例名 `ctrl` 實例化，和 `riscv_CoreDpath`（實例名 `dpath`）配成一對。它的 port 分成幾組：imem 請求/回應握手、dmem 請求/回應握手、送給 dpath 的控制訊號（各種 mux sel、`alu_fn_Xhl`、`rf_wen_out_Whl`、五級的 `stall_*`）、dpath 回傳的分支條件與 `proc2csr_data_Whl`、以及對外的 `csr_status` 與 `retire_valid`。內部結構是 P/F/D/X/M/W 各一段：F 段有學生加上的 imem 握手狀態機，D 段有 `casez` 解碼表產生 39-bit 的 `cs`，並用 `stall_hazard_Dhl` 做無 bypass 的資料相依 stall，X 段解分支並 squash F 與 D，W 段寫回並更新 CSR。"
+    },
+    "`RISCV_CORE_CTRL_V": {
+      "sum": "riscvstall-CoreCtrl.v 的 include guard macro",
+      "naming": [["RISCV", "RISC-V core", "處理器相關的 macro 前綴"], ["CORE_CTRL", "core control", "處理器控制單元"], ["V", "Verilog file", "檔名的 .v，用於 include guard"]],
+      "desc": "檔案開頭的 `` `ifndef RISCV_CORE_CTRL_V `` / `` `define RISCV_CORE_CTRL_V ``，配上檔尾的 `` `endif ``，是標準的 include guard：確保這個檔案即使被 `` `include `` 很多次（例如 `riscvstall-Core.v` 與各種 testbench 都 include），module 也只會被定義一次。它不代表任何硬體。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|stats_en": {
+      "sum": "模擬程式用階層路徑寫入 riscv_CoreCtrl 的統計開關，但這個 module 裡並沒有宣告它",
+      "naming": [["stats", "statistics", "效能統計"], ["en", "enable", "啟用"]],
+      "desc": "`riscvstall-sim.v` 與 `riscvstall-randdelay-sim.v` 裡用 `proc.ctrl.stats_en = 1'b0/1'b1;` 這種階層式路徑去寫它，用意是讓測試程式（透過特定指令）框出一段要統計效能的區間。但這份 `riscv_CoreCtrl` 的原始碼中**完全沒有宣告 `stats_en`**，也沒有任何邏輯讀它。也就是說這是課程原始版本留下的介面，而目前的實作把統計功能拿掉了（`Pattern.v` 則是自己在 testbench 裡數 `num_cycles` / `num_inst`）。這種階層寫入在某些模擬器下會直接報錯，是值得注意的地方。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|num_inst": {
+      "sum": "模擬程式想從 riscv_CoreCtrl 讀出的已執行指令數，但這個 module 裡並沒有宣告它",
+      "naming": [["num", "number of", "數量"], ["inst", "instruction", "指令"]],
+      "desc": "`riscvstall-sim.v` / `riscvstall-randdelay-sim.v` 用 `proc.ctrl.num_inst` 這個階層路徑來算 IPC 並列印。但 `riscv_CoreCtrl` 裡沒有這個 reg，也沒有任何地方去累加它——原本應該是在 `stats_en` 為 1 時，每當 `retire_valid`（或 `inst_val_Whl`）成立就加一的計數器。要讓這些 sim 檔真的印出有意義的數字，就得自己在 CoreCtrl 裡補上這個計數器。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|num_cycles": {
+      "sum": "模擬程式想從 riscv_CoreCtrl 讀出的已經過 cycle 數，但這個 module 裡並沒有宣告它",
+      "naming": [["num", "number of", "數量"], ["cycles", "cycles", "時脈週期"]],
+      "desc": "和 `num_inst` 成對，被 `riscvstall-sim.v` / `riscvstall-randdelay-sim.v` 以 `proc.ctrl.num_cycles` 讀取來算 IPC。同樣地，`riscv_CoreCtrl` 裡沒有宣告它，原本的設計應該是在 `stats_en` 為 1 的期間每個 clk 正緣加一。可以對照 `Pattern.v`，那裡有一組自己在 testbench 端實作的 `num_cycles` / `num_inst` 計數器。"
+    }
+  }
+}

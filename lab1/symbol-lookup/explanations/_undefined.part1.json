@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "`RISCV_CORE_RISCVLONG": {
+      "sum": "選用 riscvlong 版 Core 的編譯期開關，目前不會被定義",
+      "naming": [["RISCV", "RISC-V", "處理器"], ["CORE", "core", "處理器核心"], ["RISCVLONG", "riscvlong", "多週期乘法 / 較長 pipeline 的版本"]],
+      "desc": "這是只由命令列 -D 定義的 macro，程式碼裡沒有任何 `` `define ``。`build/Makefile` 的 `proc_template` 會傳 `-DRISCV_CORE_$(2)`，而目前只有 `$(eval $(call proc_template,riscvstall,RISCVSTALL,stall))` 這一行生效，也就是實際傳進去的是 `-DRISCV_CORE_RISCVSTALL`；`riscvlong` 那一行在 Makefile 裡被註解掉，要先跑 `riscvlong/setup.sh` 才會啟用。`Testbench.v` 用 `` `ifdef RISCV_CORE_RISCVLONG `` 決定要不要 include `riscvlong-Core.v`，所以在目前的 repo 裡這個分支永遠不成立（`riscvlong/` 底下也只有 setup.sh，沒有 Verilog 原始碼）。"
+    },
+    "`RISCV_CORE_RISCVBYP": {
+      "sum": "選用 riscvbyp 版 Core 的編譯期開關，目前不會被定義",
+      "naming": [["RISCV", "RISC-V", "處理器"], ["CORE", "core", "處理器核心"], ["RISCVBYP", "riscvbyp", "用 bypass/forwarding 解 hazard 的版本"]],
+      "desc": "和 `RISCV_CORE_RISCVLONG` 一樣，只可能由 `build/Makefile` 的 `-DRISCV_CORE_$(2)` 傳入，而 `$(eval $(call proc_template,riscvbyp,RISCVBYP,byp))` 那行目前是註解狀態（要先跑 `riscvbyp/setup.sh`）。`Testbench.v` 的 `` `elsif RISCV_CORE_RISCVBYP `` 分支因此不會成立，預設會落到 `` `else `` 去 include `riscvstall-Core.v`。repo 裡的 `riscvbyp/` 目錄目前也只有 setup.sh。"
+    },
+    "`VC_TEST_SUITE_BEGIN": {
+      "sum": "vc 測試框架的巨集，用來開一個測試套件；但定義它的 vc-Test.v 不在 repo 裡",
+      "naming": [["VC_", "Verilog Components", "vc 函式庫前綴"], ["TEST", "test", "測試"], ["SUITE", "suite", "測試套件"], ["BEGIN", "begin", "開始"]],
+      "desc": "這個 macro 應該定義在 `vc-Test.v`，而那個檔案並不在 `vc/` 裡（`vc/vc.mk` 的 `vc_srcs` 也沒列它），全 repo 找不到任何 `` `define VC_TEST_SUITE_BEGIN ``。所有 `imuldiv/*.t.v` 都在開頭 `` `include \"vc-Test.v\" `` 然後用 `` `VC_TEST_SUITE_BEGIN( \"名稱\" ) `` 開場，因此這些單元測試檔目前無法單獨編譯。從 Batten 課程的原始版本來看，它會展開成 tester module 需要的共用樣板：宣告 `clk`、產生時脈、印出套件名稱、初始化通過 / 失敗計數，並解析 `+test-case=` 之類的命令列參數。`build/Makefile` 也沒有編譯 `*.t.v` 的規則，只編 `-sim` 目標。"
+    },
+    "`VC_TEST_EQ": {
+      "sum": "vc 測試框架用來比較「應該相等」的巨集，定義檔不在 repo 裡",
+      "naming": [["VC_", "Verilog Components", "vc 函式庫前綴"], ["TEST", "test", "測試"], ["EQ", "equal", "相等"]],
+      "desc": "同樣屬於缺席的 `vc-Test.v`，repo 內找不到定義。用法出現在 `imuldiv/imuldiv-DivReqMsg.t.v` 與 `imuldiv/imuldiv-MulDivReqMsg.t.v`，形式是 `` `VC_TEST_EQ( 名稱, 實際值, 期望值 ) ``，用來檢查 req message 的打包 / 解包結果是否符合預期。因為定義不存在，這兩個測試檔無法單獨編譯。"
+    },
+    "`VC_TEST_CASE_BEGIN": {
+      "sum": "vc 測試框架用來開一個測試案例的巨集，定義檔不在 repo 裡",
+      "naming": [["VC_", "Verilog Components", "vc 函式庫前綴"], ["TEST", "test", "測試"], ["CASE", "case", "測試案例"], ["BEGIN", "begin", "開始"]],
+      "desc": "應由缺席的 `vc-Test.v` 定義，repo 內沒有任何 `` `define ``。`imuldiv` 的各個 `.t.v` 用 `` `VC_TEST_CASE_BEGIN( 編號, \"說明\" ) `` 開一個測試案例，對應的結尾是 `` `VC_TEST_CASE_END ``。從用法推測它會展開成一個帶編號的 `begin` 區塊，只有在命令列指定跑這個案例（或跑全部）時才執行，並把案例名稱印出來。"
+    },
+    "`VC_TEST_CASE_END": {
+      "sum": "vc 測試框架用來結束一個測試案例的巨集，定義檔不在 repo 裡",
+      "naming": [["VC_", "Verilog Components", "vc 函式庫前綴"], ["TEST", "test", "測試"], ["CASE", "case", "測試案例"], ["END", "end", "結束"]],
+      "desc": "與 `VC_TEST_CASE_BEGIN` 成對使用，同樣應該定義在不存在的 `vc-Test.v`。它會關掉 `VC_TEST_CASE_BEGIN` 展開出來的 `begin` 區塊（所以兩者的數量與順序必須一一對應）。repo 內找不到定義，`imuldiv/*.t.v` 因此無法單獨編譯。"
+    },
+    "`VC_TEST_SUITE_END": {
+      "sum": "vc 測試框架用來結束測試套件並印出結果的巨集，定義檔不在 repo 裡",
+      "naming": [["VC_", "Verilog Components", "vc 函式庫前綴"], ["TEST", "test", "測試"], ["SUITE", "suite", "測試套件"], ["END", "end", "結束"]],
+      "desc": "每個 `imuldiv/*.t.v` 的最後一行都是 `` `VC_TEST_SUITE_END ``，與開頭的 `` `VC_TEST_SUITE_BEGIN `` 配成一對。它應該定義在缺席的 `vc-Test.v` 裡，作用是收尾整個 tester module：印出總共通過 / 失敗幾個案例，然後 `$finish`。repo 內沒有定義。"
+    },
+    "`VC_TEST_CHECK": {
+      "sum": "vc 測試框架用來檢查條件是否成立的巨集，定義檔不在 repo 裡",
+      "naming": [["VC_", "Verilog Components", "vc 函式庫前綴"], ["TEST", "test", "測試"], ["CHECK", "check", "檢查"]],
+      "desc": "用在 `imuldiv` 四個乘除法器的 `.t.v` 裡，形式是 `` `VC_TEST_CHECK( \"說明\", 條件 ) ``——例如檢查 helper module 的 `t0_done` 有沒有變成 1，代表 source / sink 都把測試資料跑完了。它應該定義在缺席的 `vc-Test.v` 中，repo 內找不到 `` `define ``，所以這些測試檔無法單獨編譯。"
+    },
+    "`SYNTHESIS": {
+      "sum": "標記「正在合成」的慣用 macro；這個 repo 從頭到尾都不會定義它",
+      "naming": [["SYNTHESIS", "synthesis", "邏輯合成"]],
+      "desc": "業界慣用的開關：合成工具通常會自動定義它，讓 RTL 可以用 `` `ifndef SYNTHESIS `` 把「只在模擬時有意義」的程式碼包起來。這個 repo 裡沒有任何 `` `define SYNTHESIS ``，`build/Makefile` 與各個 `.mk` 也沒有用 -D 傳它，所以用 iverilog 模擬時那些 `` `ifndef SYNTHESIS `` 區塊一律會被編進去。它保護的內容包括：`vc/vc-StateElements.v` 裡檢查輸入有沒有變成 X 的斷言、`vc/vc-MemReqMsg.v` 與 `vc/vc-MemRespMsg.v` 的訊息追蹤 / 轉字串邏輯、`riscvstall/riscvstall-InstMsg.v` 和 `riscvstall/riscvstall-CoreCtrl.v` 的反組譯字串產生器（也就是 sim 檔用 `inst_msg_disasm_D.minidasm` 印出來的東西），以及 `imuldiv` 兩個 ReqMsg 檔的除錯輸出。這些都是 `$display` / 字串處理，無法合成成硬體。"
+    },
+    "None||vc_TestRandDelaySource": {
+      "sum": "測試用的隨機延遲資料來源 module；repo 裡找不到它的原始碼",
+      "naming": [["vc_", "Verilog Components", "vc 函式庫前綴"], ["Test", "test", "測試用元件"], ["RandDelay", "random delay", "隨機延遲"], ["Source", "source", "資料來源（送方）"]],
+      "desc": "`imuldiv` 的四個乘除法器測試檔（`imuldiv-IntMulIterative.t.v`、`imuldiv-IntDivIterative.t.v`、`imuldiv-IntMulDivIterative.t.v`、`imuldiv-IntMulDivIterativeCombined.t.v`）都 `` `include \"vc-TestRandDelaySource.v\" `` 並 instantiate 成 `src`，但 `vc/` 目錄裡沒有這個檔（`vc/vc.mk` 的 `vc_srcs` 也沒列），全 repo 找不到它的定義——所以這些 `.t.v` 目前無法單獨編譯，`build/Makefile` 也沒有編譯 `*.t.v` 的規則。從使用方式 `vc_TestRandDelaySource#(67,1024,3) src` 可以推出三個 parameter 依序是訊息寬度（bits）、內部測試資料陣列的深度、隨機延遲上限；port 有 `clk`、`reset`、輸出的 `msg` / `val`、輸入的 `rdy`，以及表示資料全部送完的 `done`。測試程式會用 `src.m[i] = ...` 之類的方式預先填入要送出的請求，然後它就以隨機間隔把資料一筆筆用 val-rdy 握手推給待測元件。"
+    },
+    "?|vc_TestRandDelaySource|clk": {
+      "sum": "vc_TestRandDelaySource 的時脈輸入（該 module 原始碼不在 repo 內）",
+      "naming": [["clk", "clock", "時脈"]],
+      "desc": "這個 port 的所屬 module `vc_TestRandDelaySource` 原始碼不在 repo 裡，因此無法看到宣告，只能從 instantiate 的地方推斷。在 `imuldiv` 的 `.t.v` 裡它接的是 helper module 的 `clk`（最終來自缺席的 `vc-Test.v` 所產生的測試時脈），元件內部應該是在正緣推進握手狀態與隨機延遲計數。"
+    },
+    "?|vc_TestRandDelaySource|reset": {
+      "sum": "vc_TestRandDelaySource 的重置輸入（該 module 原始碼不在 repo 內）",
+      "naming": [["reset", "reset", "重置"]],
+      "desc": "所屬 module 的原始碼不在 repo 內。在 `imuldiv` 的 helper module 裡它接的是 helper 的 `reset`（測試程式用 `t0_reset` 控制），作用應該是把內部的資料索引歸零、重新從第一筆測試資料開始送，並清掉 `done`。"
+    },
+    "?|vc_TestRandDelaySource|msg": {
+      "sum": "vc_TestRandDelaySource 送出的測試資料本體（該 module 原始碼不在 repo 內）",
+      "naming": [["msg", "message", "打包成 bits 的訊息"]],
+      "desc": "所屬 module 不在 repo 內，寬度由第一個 parameter 決定。例如 `imuldiv-IntMulIterative.t.v` 用 `#(67,1024,3)`，接出來的 `src_msg` 就是 67 bits，剛好是 `imuldiv_MulDivReqMsg` 的寬度（func + a + b），再交給 `imuldiv_MulDivReqMsgFromBits` 拆成 `a`、`b` 餵給乘法器。只有在 `val` 與 `rdy` 同時為 1 的那個 cycle 才算送出一筆。"
+    },
+    "?|vc_TestRandDelaySource|val": {
+      "sum": "vc_TestRandDelaySource 的 valid 輸出（該 module 原始碼不在 repo 內）",
+      "naming": [["val", "valid", "有效"]],
+      "desc": "所屬 module 不在 repo 內。從接線看，它接到待測乘除法器的 `mulreq_val` / `divreq_val`，表示「這個 cycle 有一筆測試請求要送」。之所以叫 RandDelay，就是因為它會隨機空幾個 cycle 不拉 val，藉此測出待測元件在輸入斷斷續續時握手有沒有寫對。"
+    },
+    "?|vc_TestRandDelaySource|rdy": {
+      "sum": "vc_TestRandDelaySource 的 ready 輸入（該 module 原始碼不在 repo 內）",
+      "naming": [["rdy", "ready", "可以接收"]],
+      "desc": "所屬 module 不在 repo 內。它接的是待測元件的 `mulreq_rdy` / `divreq_rdy`，代表待測元件這個 cycle 收不收得下請求。source 要看到 `val && rdy` 才會把資料索引往前推一筆。"
+    },
+    "?|vc_TestRandDelaySource|done": {
+      "sum": "vc_TestRandDelaySource 把資料全部送完的旗標（該 module 原始碼不在 repo 內）",
+      "naming": [["done", "done", "完成"]],
+      "desc": "所屬 module 不在 repo 內。在 helper module 裡它接成 `src_done`，再和 sink 的 `sink_done` 用 `assign done = src_done && sink_done;` 合起來；測試程式則用 `` `VC_TEST_CHECK `` 等 `t0_done` 變成 1，代表這個測試案例的所有輸入都送完、所有輸出也都檢查完了。"
+    },
+    "None||vc_TestRandDelaySink": {
+      "sum": "測試用的隨機延遲資料接收端 module；repo 裡找不到它的原始碼",
+      "naming": [["vc_", "Verilog Components", "vc 函式庫前綴"], ["Test", "test", "測試用元件"], ["RandDelay", "random delay", "隨機延遲"], ["Sink", "sink", "資料接收端（收方）"]],
+      "desc": "和 `vc_TestRandDelaySource` 成對使用，同樣由 `imuldiv` 的四個乘除法器測試檔 `` `include \"vc-TestRandDelaySink.v\" `` 並 instantiate 成 `sink`，但 `vc/` 裡沒有這個檔，全 repo 找不到定義，因此那些 `.t.v` 無法單獨編譯。從 `vc_TestRandDelaySink#(64,1024,3) sink` 推斷，三個 parameter 是訊息寬度、內部期望值陣列深度、隨機延遲上限；port 有 `clk`、`reset`、輸入的 `msg` / `val`、輸出的 `rdy` 與 `done`。它的工作是隨機地拉高或壓低 `rdy` 來接收待測元件的輸出，並把收到的每一筆和測試程式預先填好的期望值比對，全部收完就把 `done` 拉起來。"
+    },
+    "?|vc_TestRandDelaySink|clk": {
+      "sum": "vc_TestRandDelaySink 的時脈輸入（該 module 原始碼不在 repo 內）",
+      "naming": [["clk", "clock", "時脈"]],
+      "desc": "所屬 module `vc_TestRandDelaySink` 的原始碼不在 repo 內。在 `imuldiv` 的 helper module 裡接的是 helper 的 `clk`，元件內部應該在正緣推進比對與隨機延遲計數。"
+    },
+    "?|vc_TestRandDelaySink|reset": {
+      "sum": "vc_TestRandDelaySink 的重置輸入（該 module 原始碼不在 repo 內）",
+      "naming": [["reset", "reset", "重置"]],
+      "desc": "所屬 module 的原始碼不在 repo 內。接的是 helper 的 `reset`，作用應該是把期望值索引歸零、清掉 `done`，讓下一個測試案例可以重新開始。"
+    },
+    "?|vc_TestRandDelaySink|msg": {
+      "sum": "vc_TestRandDelaySink 收到的資料，會和期望值比對（該 module 原始碼不在 repo 內）",
+      "naming": [["msg", "message", "打包成 bits 的訊息"]],
+      "desc": "所屬 module 不在 repo 內。寬度由第一個 parameter 決定，例如 `imuldiv-IntMulIterative.t.v` 用 64，正好是乘法結果 `mulresp_msg_result` 的寬度（32×32 的乘積）；除法器的測試則是把商和餘數合起來的 64 bits。sink 會把握手成功時收到的值和測試程式預填的期望值比較，不符就報錯。"
+    },
+    "?|vc_TestRandDelaySink|val": {
+      "sum": "vc_TestRandDelaySink 的 valid 輸入（該 module 原始碼不在 repo 內）",
+      "naming": [["val", "valid", "有效"]],
+      "desc": "所屬 module 不在 repo 內。接的是待測元件的 `mulresp_val` / `divresp_val`，代表這個 cycle 有一筆結果要交出來。只有 `val && rdy` 同時成立時 sink 才會真的收下並比對。"
+    },
+    "?|vc_TestRandDelaySink|rdy": {
+      "sum": "vc_TestRandDelaySink 的 ready 輸出（該 module 原始碼不在 repo 內）",
+      "naming": [["rdy", "ready", "可以接收"]],
+      "desc": "所屬 module 不在 repo 內。接到待測元件的 `mulresp_rdy` / `divresp_rdy`。這正是「隨機延遲」的關鍵：sink 會隨機把 rdy 壓低幾個 cycle，逼待測元件必須把結果 hold 住、不能自顧自往前跑，用來抓出只在「下游永遠 ready」時才正確的錯誤寫法。"
+    },
+    "?|vc_TestRandDelaySink|done": {
+      "sum": "vc_TestRandDelaySink 把期望值全部收完的旗標（該 module 原始碼不在 repo 內）",
+      "naming": [["done", "done", "完成"]],
+      "desc": "所屬 module 不在 repo 內。在 helper module 裡接成 `sink_done`，和 `src_done` 一起 AND 成 helper 的 `done`，測試程式再用 `` `VC_TEST_CHECK `` 等它變成 1 判定這個案例跑完。"
+    }
+  }
+}

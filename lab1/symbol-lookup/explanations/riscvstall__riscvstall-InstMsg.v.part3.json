@@ -1,0 +1,1185 @@
+{
+  "entities": {
+    "`RISCV_INST_MSG_OPCODE_SZ": {
+      "sum": "欄位寬度常數 macro，展開成 7（opcode 欄位的 bit 數）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "OPCODE",
+          "opcode",
+          "操作碼"
+        ],
+        [
+          "SZ",
+          "size",
+          "bit 數"
+        ]
+      ],
+      "desc": "展開成 `7`。這一組結尾是 `_SZ` 的 macro 專門用在 port / wire 的寬度宣告（寫成 `[`RISCV_INST_MSG_OPCODE_SZ-1:0]`），和另一組不帶 `_SZ`、展開成 msb:lsb 位元範圍的同名 macro（用來切位元）是兩回事，不要搞混。對應位元範圍 `RISCV_INST_MSG_OPCODE`（6:0），用在 `output [`RISCV_INST_MSG_OPCODE_SZ-1:0] opcode` 的宣告上。"
+    },
+    "`RISCV_INST_MSG_RS1_SZ": {
+      "sum": "欄位寬度常數 macro，展開成 5（rs1 欄位的 bit 數）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "RS1",
+          "source register 1",
+          "第一來源暫存器"
+        ],
+        [
+          "SZ",
+          "size",
+          "bit 數"
+        ]
+      ],
+      "desc": "展開成 `5`。這一組結尾是 `_SZ` 的 macro 專門用在 port / wire 的寬度宣告（寫成 `[`RISCV_INST_MSG_RS1_SZ-1:0]`），和另一組不帶 `_SZ`、展開成 msb:lsb 位元範圍的同名 macro（用來切位元）是兩回事，不要搞混。5 bit 剛好可以編號 32 個通用暫存器。用在 `riscv_InstMsgFromBits` 的 `rs1` port 宣告。"
+    },
+    "`RISCV_INST_MSG_RS2_SZ": {
+      "sum": "欄位寬度常數 macro，展開成 5（rs2 欄位的 bit 數）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "RS2",
+          "source register 2",
+          "第二來源暫存器"
+        ],
+        [
+          "SZ",
+          "size",
+          "bit 數"
+        ]
+      ],
+      "desc": "展開成 `5`。這一組結尾是 `_SZ` 的 macro 專門用在 port / wire 的寬度宣告（寫成 `[`RISCV_INST_MSG_RS2_SZ-1:0]`），和另一組不帶 `_SZ`、展開成 msb:lsb 位元範圍的同名 macro（用來切位元）是兩回事，不要搞混。用在 `riscv_InstMsgFromBits` 的 `rs2` port 宣告，對應位元範圍 `RISCV_INST_MSG_RS2`。"
+    },
+    "`RISCV_INST_MSG_RD_SZ": {
+      "sum": "欄位寬度常數 macro，展開成 5（rd 欄位的 bit 數）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "RD",
+          "destination register",
+          "目的暫存器"
+        ],
+        [
+          "SZ",
+          "size",
+          "bit 數"
+        ]
+      ],
+      "desc": "展開成 `5`。這一組結尾是 `_SZ` 的 macro 專門用在 port / wire 的寬度宣告（寫成 `[`RISCV_INST_MSG_RD_SZ-1:0]`），和另一組不帶 `_SZ`、展開成 msb:lsb 位元範圍的同名 macro（用來切位元）是兩回事，不要搞混。用在 `riscv_InstMsgFromBits` 的 `rd` port 宣告；`riscv_CoreCtrl` 解碼表裡 `RISCV_INST_MSG_RF_WADDR` 欄位也是 5 bit 寬。"
+    },
+    "`RISCV_INST_MSG_FUNCT3_SZ": {
+      "sum": "欄位寬度常數 macro，展開成 3（funct3 欄位的 bit 數）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "FUNCT3",
+          "function code 3",
+          "3-bit 功能碼"
+        ],
+        [
+          "SZ",
+          "size",
+          "bit 數"
+        ]
+      ],
+      "desc": "展開成 `3`。這一組結尾是 `_SZ` 的 macro 專門用在 port / wire 的寬度宣告（寫成 `[`RISCV_INST_MSG_FUNCT3_SZ-1:0]`），和另一組不帶 `_SZ`、展開成 msb:lsb 位元範圍的同名 macro（用來切位元）是兩回事，不要搞混。對應位元範圍 `RISCV_INST_MSG_FUNCT3`（14:12）。"
+    },
+    "`RISCV_INST_MSG_FUNCT7_SZ": {
+      "sum": "欄位寬度常數 macro，展開成 7（funct7 欄位的 bit 數）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "FUNCT7",
+          "function code 7",
+          "7-bit 功能碼"
+        ],
+        [
+          "SZ",
+          "size",
+          "bit 數"
+        ]
+      ],
+      "desc": "展開成 `7`。這一組結尾是 `_SZ` 的 macro 專門用在 port / wire 的寬度宣告（寫成 `[`RISCV_INST_MSG_FUNCT7_SZ-1:0]`），和另一組不帶 `_SZ`、展開成 msb:lsb 位元範圍的同名 macro（用來切位元）是兩回事，不要搞混。對應位元範圍 `RISCV_INST_MSG_FUNCT7`（31:25）。"
+    },
+    "`RISCV_INST_MSG_IMM_SZ": {
+      "sum": "欄位寬度常數 macro，展開成 32（立即值展開後的 bit 數）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "SZ",
+          "size",
+          "bit 數"
+        ]
+      ],
+      "desc": "展開成 `32`。這一組結尾是 `_SZ` 的 macro 專門用在 port / wire 的寬度宣告（寫成 `[`RISCV_INST_MSG_IMM_SZ-1:0]`），和另一組不帶 `_SZ`、展開成 msb:lsb 位元範圍的同名 macro（用來切位元）是兩回事，不要搞混。注意這是「符號延伸之後」的寬度：指令裡的立即值只有 12 或 20 bit，但 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj` 五個輸出都是完整 32 bit，可以直接餵給 ALU。"
+    },
+    "`RISCV_INST_MSG_SHAMT_SZ": {
+      "sum": "欄位寬度常數 macro，展開成 5（位移量欄位的 bit 數）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SHAMT",
+          "shift amount",
+          "位移量"
+        ],
+        [
+          "SZ",
+          "size",
+          "bit 數"
+        ]
+      ],
+      "desc": "展開成 `5`。這一組結尾是 `_SZ` 的 macro 專門用在 port / wire 的寬度宣告（寫成 `[`RISCV_INST_MSG_SHAMT_SZ-1:0]`），和另一組不帶 `_SZ`、展開成 msb:lsb 位元範圍的同名 macro（用來切位元）是兩回事，不要搞混。5 bit 足以表示 0~31 的位移量，對應 32-bit 暫存器。用在 `riscv_InstMsgFromBits` 的 `shamt` port 宣告。"
+    },
+    "`RISCV_INST_MSG_JALR": {
+      "sum": "jalr 指令的 32-bit 比對 pattern（I-type，opcode 1100111，funct3 000）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "JALR",
+          "jump and link register",
+          "跳到暫存器指定的位址並記下返回位址"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_000_?????_1100111`：`?` 代表 don't care，所以只有 opcode = 1100111（bit 6:0）、funct3 = 000（bit 14:12） 是固定的。跳到 (rs1 + imm_i) & ~1，把 pc+4 寫回 rd。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的（`pm_r` 選項已經備好），屬於作業要自己補的指令。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"jalr\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_BEQ": {
+      "sum": "beq 指令的 32-bit 比對 pattern（SB-type，opcode 1100011，funct3 000）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "BEQ",
+          "branch if equal",
+          "相等就跳"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_000_?????_1100011`：`?` 代表 don't care，所以只有 opcode = 1100011（bit 6:0）、funct3 = 000（bit 14:12） 是固定的。rs1 == rs2 就跳到 pc + imm_sb。對應控制常數 `br_beq`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"beq\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_BGE": {
+      "sum": "bge 指令的 32-bit 比對 pattern（SB-type，opcode 1100011，funct3 101）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "BGE",
+          "branch if greater or equal",
+          "大於等於就跳（有號）"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_101_?????_1100011`：`?` 代表 don't care，所以只有 opcode = 1100011（bit 6:0）、funct3 = 101（bit 14:12） 是固定的。有號比較 rs1 >= rs2 就跳。對應控制常數 `br_bge`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"bge\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_BLTU": {
+      "sum": "bltu 指令的 32-bit 比對 pattern（SB-type，opcode 1100011，funct3 110）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "BLT",
+          "branch if less than",
+          "小於就跳"
+        ],
+        [
+          "U",
+          "unsigned",
+          "無號比較"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_110_?????_1100011`：`?` 代表 don't care，所以只有 opcode = 1100011（bit 6:0）、funct3 = 110（bit 14:12） 是固定的。無號比較 rs1 < rs2 就跳。對應控制常數 `br_bltu`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"bltu\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_BGEU": {
+      "sum": "bgeu 指令的 32-bit 比對 pattern（SB-type，opcode 1100011，funct3 111）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "BGE",
+          "branch if greater or equal",
+          "大於等於就跳"
+        ],
+        [
+          "U",
+          "unsigned",
+          "無號比較"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_111_?????_1100011`：`?` 代表 don't care，所以只有 opcode = 1100011（bit 6:0）、funct3 = 111（bit 14:12） 是固定的。無號比較 rs1 >= rs2 就跳。對應控制常數 `br_bgeu`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"bgeu\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_LB": {
+      "sum": "lb 指令的 32-bit 比對 pattern（I-type，opcode 0000011，funct3 000）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "LB",
+          "load byte",
+          "載入一個 byte（有號延伸）"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_000_?????_0000011`：`?` 代表 don't care，所以只有 opcode = 0000011（bit 6:0）、funct3 = 000（bit 14:12） 是固定的。從 rs1+imm_i 讀 1 byte 並符號延伸後寫回 rd。對應控制常數 `ml_b` + `dmm_b`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"lb\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_LH": {
+      "sum": "lh 指令的 32-bit 比對 pattern（I-type，opcode 0000011，funct3 001）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "LH",
+          "load halfword",
+          "載入半字（2 bytes，有號延伸）"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_001_?????_0000011`：`?` 代表 don't care，所以只有 opcode = 0000011（bit 6:0）、funct3 = 001（bit 14:12） 是固定的。從 rs1+imm_i 讀 2 bytes 並符號延伸。對應 `ml_h` + `dmm_h`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"lh\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_LBU": {
+      "sum": "lbu 指令的 32-bit 比對 pattern（I-type，opcode 0000011，funct3 100）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "LB",
+          "load byte",
+          "載入一個 byte"
+        ],
+        [
+          "U",
+          "unsigned",
+          "無號（補 0）"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_100_?????_0000011`：`?` 代表 don't care，所以只有 opcode = 0000011（bit 6:0）、funct3 = 100（bit 14:12） 是固定的。從 rs1+imm_i 讀 1 byte 並零延伸。對應 `ml_b` + `dmm_bu`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"lbu\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_LHU": {
+      "sum": "lhu 指令的 32-bit 比對 pattern（I-type，opcode 0000011，funct3 101）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "LH",
+          "load halfword",
+          "載入半字"
+        ],
+        [
+          "U",
+          "unsigned",
+          "無號（補 0）"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_101_?????_0000011`：`?` 代表 don't care，所以只有 opcode = 0000011（bit 6:0）、funct3 = 101（bit 14:12） 是固定的。從 rs1+imm_i 讀 2 bytes 並零延伸。對應 `ml_h` + `dmm_hu`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"lhu\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SB": {
+      "sum": "sb 指令的 32-bit 比對 pattern（S-type，opcode 0100011，funct3 000）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SB",
+          "store byte",
+          "存一個 byte"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_000_?????_0100011`：`?` 代表 don't care，所以只有 opcode = 0100011（bit 6:0）、funct3 = 000（bit 14:12） 是固定的。把 rs2 的最低 1 byte 寫到 rs1+imm_s。對應 `st` + `ml_b`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"sb\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SH": {
+      "sum": "sh 指令的 32-bit 比對 pattern（S-type，opcode 0100011，funct3 001）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SH",
+          "store halfword",
+          "存半字（2 bytes）"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_001_?????_0100011`：`?` 代表 don't care，所以只有 opcode = 0100011（bit 6:0）、funct3 = 001（bit 14:12） 是固定的。把 rs2 的低 2 bytes 寫到 rs1+imm_s。對應 `st` + `ml_h`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"sh\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_NOP": {
+      "sum": "nop 的完整比對 pattern：其實就是 addi x0, x0, 0，全部 32 bits 都固定",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "NOP",
+          "no operation",
+          "什麼都不做"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_00000_00000_000_00000_0010011`，沒有任何 `?`——整條指令 32 bit 全部固定，就是 `addi x0, x0, 0`。原始碼旁邊有一行大寫註解 DO NOT IMPLEMENT THE *NOP* INSTRUCTION IN YOUR CONTROL MODULE，意思是 `riscv_CoreCtrl` 的解碼表「不要」為它單獨開一行：nop 本來就會被 `RISCV_INST_MSG_ADDI` 那一行比對到（addi 的 pattern 涵蓋它），而且 `casez` 是由上而下比對，多開一行只會讓兩條規則重疊。它真正被用到的地方是 `riscv_InstMsgDisasm`：兩個 `casez` 都把它排在第一個，好讓 addi x0,x0,0 顯示成 \"nop\" 而不是 \"addi r00, r00, 00000000\"。"
+    },
+    "`RISCV_INST_MSG_SLTI": {
+      "sum": "slti 指令的 32-bit 比對 pattern（I-type，opcode 0010011，funct3 010）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SLT",
+          "set less than",
+          "小於則設為 1"
+        ],
+        [
+          "I",
+          "immediate",
+          "立即值版本"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_010_?????_0010011`：`?` 代表 don't care，所以只有 opcode = 0010011（bit 6:0）、funct3 = 010（bit 14:12） 是固定的。有號比較 rs1 < imm_i 則 rd=1 否則 0。對應 `alu_lt`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"slti\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SLTIU": {
+      "sum": "sltiu 指令的 32-bit 比對 pattern（I-type，opcode 0010011，funct3 011）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SLT",
+          "set less than",
+          "小於則設為 1"
+        ],
+        [
+          "I",
+          "immediate",
+          "立即值版本"
+        ],
+        [
+          "U",
+          "unsigned",
+          "無號比較"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_011_?????_0010011`：`?` 代表 don't care，所以只有 opcode = 0010011（bit 6:0）、funct3 = 011（bit 14:12） 是固定的。無號比較 rs1 < imm_i 則 rd=1。對應 `alu_ltu`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"sltiu\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_XORI": {
+      "sum": "xori 指令的 32-bit 比對 pattern（I-type，opcode 0010011，funct3 100）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "XOR",
+          "exclusive or",
+          "互斥或"
+        ],
+        [
+          "I",
+          "immediate",
+          "立即值版本"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_100_?????_0010011`：`?` 代表 don't care，所以只有 opcode = 0010011（bit 6:0）、funct3 = 100（bit 14:12） 是固定的。rd = rs1 ^ imm_i。對應 `alu_xor`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"xori\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_ANDI": {
+      "sum": "andi 指令的 32-bit 比對 pattern（I-type，opcode 0010011，funct3 111）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "AND",
+          "bitwise and",
+          "位元且"
+        ],
+        [
+          "I",
+          "immediate",
+          "立即值版本"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_111_?????_0010011`：`?` 代表 don't care，所以只有 opcode = 0010011（bit 6:0）、funct3 = 111（bit 14:12） 是固定的。rd = rs1 & imm_i。對應 `alu_and`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"andi\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SLLI": {
+      "sum": "slli 指令的 32-bit 比對 pattern（I-type，opcode 0010011，funct3 001）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SLL",
+          "shift left logical",
+          "邏輯左移"
+        ],
+        [
+          "I",
+          "immediate",
+          "立即位移量版本"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_?????_?????_001_?????_0010011`：`?` 代表 don't care，所以只有 opcode = 0010011（bit 6:0）、funct3 = 001（bit 14:12）、funct7 = 0000000（bit 31:25） 是固定的。rd = rs1 << shamt（shamt 取指令 bit 24:20）。funct7 必須是 0000000 才算 slli。解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"slli\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SRLI": {
+      "sum": "srli 指令的 32-bit 比對 pattern（I-type，opcode 0010011，funct3 101）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SRL",
+          "shift right logical",
+          "邏輯右移（左邊補 0）"
+        ],
+        [
+          "I",
+          "immediate",
+          "立即位移量版本"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_?????_?????_101_?????_0010011`：`?` 代表 don't care，所以只有 opcode = 0010011（bit 6:0）、funct3 = 101（bit 14:12）、funct7 = 0000000（bit 31:25） 是固定的。rd = rs1 >> shamt，高位補 0。和 srai 的差別只在 funct7（0000000 vs 0100000）。解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"srli\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SRAI": {
+      "sum": "srai 指令的 32-bit 比對 pattern（I-type，opcode 0010011，funct3 101）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SRA",
+          "shift right arithmetic",
+          "算術右移（保留符號）"
+        ],
+        [
+          "I",
+          "immediate",
+          "立即位移量版本"
+        ]
+      ],
+      "desc": "展開成 `32'b0100000_?????_?????_101_?????_0010011`：`?` 代表 don't care，所以只有 opcode = 0010011（bit 6:0）、funct3 = 101（bit 14:12）、funct7 = 0100000（bit 31:25） 是固定的。rd = rs1 >>> shamt，高位補符號位。funct7 = 0100000 是它與 srli 的唯一差別。解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"srai\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SUB": {
+      "sum": "sub 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 000）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SUB",
+          "subtract",
+          "減法"
+        ]
+      ],
+      "desc": "展開成 `32'b0100000_?????_?????_000_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 000（bit 14:12）、funct7 = 0100000（bit 31:25） 是固定的。rd = rs1 - rs2。和 add 的 opcode、funct3 完全相同，只靠 funct7 = 0100000 區分。解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"sub\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SLL": {
+      "sum": "sll 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 001）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SLL",
+          "shift left logical",
+          "邏輯左移"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_?????_?????_001_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 001（bit 14:12）、funct7 = 0000000（bit 31:25） 是固定的。rd = rs1 << rs2[4:0]。對應 `alu_sll`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"sll\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SLT": {
+      "sum": "slt 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 010）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SLT",
+          "set less than",
+          "小於則設為 1"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_?????_?????_010_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 010（bit 14:12）、funct7 = 0000000（bit 31:25） 是固定的。有號比較 rs1 < rs2 則 rd=1。對應 `alu_lt`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"slt\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SLTU": {
+      "sum": "sltu 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 011）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SLT",
+          "set less than",
+          "小於則設為 1"
+        ],
+        [
+          "U",
+          "unsigned",
+          "無號比較"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_?????_?????_011_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 011（bit 14:12）、funct7 = 0000000（bit 31:25） 是固定的。無號比較 rs1 < rs2 則 rd=1。對應 `alu_ltu`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"sltu\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_XOR": {
+      "sum": "xor 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 100）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "XOR",
+          "exclusive or",
+          "互斥或"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_?????_?????_100_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 100（bit 14:12）、funct7 = 0000000（bit 31:25） 是固定的。rd = rs1 ^ rs2。對應 `alu_xor`；解碼表這一行目前是註解掉的（不過 bne 有借用 `alu_xor` 來判斷相等）。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"xor\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SRL": {
+      "sum": "srl 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 101）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SRL",
+          "shift right logical",
+          "邏輯右移"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_?????_?????_101_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 101（bit 14:12）、funct7 = 0000000（bit 31:25） 是固定的。rd = rs1 >> rs2[4:0]，高位補 0。對應 `alu_srl`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"srl\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_SRA": {
+      "sum": "sra 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 101）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SRA",
+          "shift right arithmetic",
+          "算術右移"
+        ]
+      ],
+      "desc": "展開成 `32'b0100000_?????_?????_101_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 101（bit 14:12）、funct7 = 0100000（bit 31:25） 是固定的。rd = rs1 >>> rs2[4:0]，高位補符號位。和 srl 只差 funct7。對應 `alu_sra`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"sra\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_OR": {
+      "sum": "or 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 110）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "OR",
+          "bitwise or",
+          "位元或"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_?????_?????_110_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 110（bit 14:12）、funct7 = 0000000（bit 31:25） 是固定的。rd = rs1 | rs2。對應 `alu_or`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"or\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_AND": {
+      "sum": "and 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 111）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "AND",
+          "bitwise and",
+          "位元且"
+        ]
+      ],
+      "desc": "展開成 `32'b0000000_?????_?????_111_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 111（bit 14:12）、funct7 = 0000000（bit 31:25） 是固定的。rd = rs1 & rs2。對應 `alu_and`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"and\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_MUL": {
+      "sum": "mul 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 000）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "MUL",
+          "multiply",
+          "乘法"
+        ]
+      ],
+      "desc": "展開成 `32'b0000001_?????_?????_000_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 000（bit 14:12）、funct7 = 0000001（bit 31:25） 是固定的。rd = (rs1 * rs2) 的低 32 bit。funct7 = 0000001 是 RISCV32M 擴充的記號。實作時要設 `MULDIV_EN`=y、`md_mul`、`mdm_l`（取 64-bit 結果的低半）、`em_md`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"mul\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_DIV": {
+      "sum": "div 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 100）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "DIV",
+          "divide",
+          "除法（有號）"
+        ]
+      ],
+      "desc": "展開成 `32'b0000001_?????_?????_100_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 100（bit 14:12）、funct7 = 0000001（bit 31:25） 是固定的。有號除法，rd = rs1 / rs2 的商。對應 `md_div` + `mdm_l`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"div\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_DIVU": {
+      "sum": "divu 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 101）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "DIV",
+          "divide",
+          "除法"
+        ],
+        [
+          "U",
+          "unsigned",
+          "無號"
+        ]
+      ],
+      "desc": "展開成 `32'b0000001_?????_?????_101_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 101（bit 14:12）、funct7 = 0000001（bit 31:25） 是固定的。無號除法取商。對應 `md_divu` + `mdm_l`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"divu\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_REM": {
+      "sum": "rem 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 110）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "REM",
+          "remainder",
+          "餘數（有號）"
+        ]
+      ],
+      "desc": "展開成 `32'b0000001_?????_?????_110_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 110（bit 14:12）、funct7 = 0000001（bit 31:25） 是固定的。有號除法取餘數。對應 `md_rem` + `mdm_u`（餘數放在 64-bit 結果的高半）；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"rem\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    },
+    "`RISCV_INST_MSG_REMU": {
+      "sum": "remu 指令的 32-bit 比對 pattern（R-type，opcode 0110011，funct3 111）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "REM",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "U",
+          "unsigned",
+          "無號"
+        ]
+      ],
+      "desc": "展開成 `32'b0000001_?????_?????_111_?????_0110011`：`?` 代表 don't care，所以只有 opcode = 0110011（bit 6:0）、funct3 = 111（bit 14:12）、funct7 = 0000001（bit 31:25） 是固定的。無號除法取餘數。對應 `md_remu` + `mdm_u`；解碼表這一行目前是註解掉的。它的用法是放在 `casez` 的 case label 上（`casez` 會把 `?` 當萬用字元），`riscv_CoreCtrl` 用 `casez ( ir_Dhl )` 比對它來查解碼表 `cs`，`riscv_InstMsgDisasm` 用同一個 macro 比對 `msg` 來印出 `dasm` / `minidasm` 的字串 \"remu\"。`riscv_CoreCtrl` 的解碼表裡這一行是註解掉的，要自己補上 cs 的內容。"
+    }
+  }
+}

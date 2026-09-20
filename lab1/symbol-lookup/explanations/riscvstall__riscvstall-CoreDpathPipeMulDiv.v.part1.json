@@ -1,0 +1,781 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|clk": {
+      "sum": "riscv_CoreDpathPipeMulDiv 的時脈輸入，驅動裡面所有 pipeline 暫存器",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "整個模組只有一個 `always @( posedge clk )` 區塊，`fn_reg`、`a_reg`、`b_reg`、`result1_reg`～`result3_reg` 以及 `val0_reg`～`val3_reg` 全部在 clk 正緣更新。這個模組是行為模型（用 Verilog 的 `*`、`/`、`%` 直接算），所以 clk 的作用只是把算出來的結果一級一級往後推，模擬乘除法要花好幾個 cycle 的延遲。由上層（若有 instantiate）傳入。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|reset": {
+      "sum": "riscv_CoreDpathPipeMulDiv 的同步 reset，把輸入暫存器與所有 valid bit 清 0",
+      "naming": [
+        [
+          "reset",
+          "reset",
+          "重置"
+        ]
+      ],
+      "desc": "在 clk 正緣且 `reset` 為 1 時，`fn_reg`、`a_reg`、`b_reg`、`result1_reg`、`result2_reg`、`result3_reg` 都被清成 0，`val0_reg`～`val3_reg` 也全部清成 0，表示 pipeline 裡沒有任何有效的乘除法運算。因為 `val3_reg` 變 0，`muldivresp_val` 也會是 0、`stall` 會是 0，所以 reset 後 `muldivreq_rdy` 立刻是 1，可以馬上接受新的請求。程式碼裡 `val0_reg <= 0;` 在 reset 分支中被寫了兩次（重複但無害）。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_msg_fn": {
+      "sum": "riscv_CoreDpathPipeMulDiv 的請求輸入：要做哪一種乘除法運算（3-bit func 碼）",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "fn",
+          "function",
+          "運算種類"
+        ]
+      ],
+      "desc": "3 bits，編碼就是 `IMULDIV_MULDIVREQ_MSG_FUNC_MUL`(0)、`IMULDIV_MULDIVREQ_MSG_FUNC_DIV`(1)、`IMULDIV_MULDIVREQ_MSG_FUNC_DIVU`(2)、`IMULDIV_MULDIVREQ_MSG_FUNC_REM`(3)、`IMULDIV_MULDIVREQ_MSG_FUNC_REMU`(4)，定義在本檔 include 的 imuldiv-MulDivReqMsg.v。只有在握手成功（`muldivreq_go` 為 1）的那個 cycle 才會被鎖進 `fn_reg`；後面的結果多工器 `result0` 是用 `fn_reg` 而不是這個訊號去選的。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_msg_a": {
+      "sum": "riscv_CoreDpathPipeMulDiv 的請求輸入：第一個 32-bit 運算元（被乘數 / 被除數）",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "a",
+          "operand a",
+          "運算元 a：乘法的被乘數、除法的被除數"
+        ]
+      ],
+      "desc": "32 bits。在 `muldivreq_go` 為 1 的那個 cycle 被鎖進 `a_reg`，之後所有運算（`a_unsign`、`quotientu`、`remainderu`、`sign`）都是用 `a_reg` 而不是這個輸入端。對應 RISC-V 指令的 rs1 值。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_msg_b": {
+      "sum": "riscv_CoreDpathPipeMulDiv 的請求輸入：第二個 32-bit 運算元（乘數 / 除數）",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "b",
+          "operand b",
+          "運算元 b：乘法的乘數、除法的除數"
+        ]
+      ],
+      "desc": "32 bits，對應 RISC-V 指令的 rs2 值。在 `muldivreq_go` 的那個 cycle 鎖進 `b_reg`。注意除法用的是 Verilog 的 `/`、`%`，若 `b_reg` 為 0，模擬時結果會是 x（本模組沒有特別處理除以零）。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_val": {
+      "sum": "riscv_CoreDpathPipeMulDiv 的請求 valid：上層說「這個 cycle 的 fn/a/b 是有效的」",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "val-rdy 握手的 valid 端。與 `muldivreq_rdy` 一起決定 `muldivreq_go`：兩者同時為 1 的那個 cycle，`muldivreq_msg_fn` / `_a` / `_b` 才會被鎖進 `fn_reg` / `a_reg` / `b_reg`，同時 `val0_reg` 被設成 1，代表 pipeline 第 0 級有一筆有效運算。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_rdy": {
+      "sum": "riscv_CoreDpathPipeMulDiv 的請求 ready：只要模組沒有卡住就接受新請求",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可以接收"
+        ]
+      ],
+      "desc": "由 `assign muldivreq_rdy = !stall;` 驅動，而 `stall` 是「輸出端有有效結果但對方還不收」（`val3_reg && !muldivresp_rdy`）。也就是說這個模組平常每個 cycle 都能吃一筆新請求（因為運算是行為模型，一個 cycle 就算完），只有在最後一級塞住時才拉低。它同時被拿去和 `muldivreq_val` 相 and 產生 `muldivreq_go`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivresp_msg_result": {
+      "sum": "riscv_CoreDpathPipeMulDiv 的 64-bit 運算結果輸出",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "result",
+          "result",
+          "結果"
+        ]
+      ],
+      "desc": "64 bits，直接 `assign` 成 `result3_reg`（pipeline 最後一級）。乘法時整個 64 bits 就是乘積；除法 / 取餘數時高 32 bits 是餘數、低 32 bits 是商（見 `result0` 的組法 `{ remainder, quotient }`），由使用端自己挑要哪一半。只有在 `muldivresp_val` 為 1 時才有意義。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivresp_val": {
+      "sum": "riscv_CoreDpathPipeMulDiv 的回應 valid：最後一級有有效結果",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "`assign muldivresp_val = val3_reg;`，也就是「pipeline 最後一級裝著一筆真的運算」。它和 `muldivresp_rdy` 一起構成輸出端的 val-rdy 握手；若 val 為 1 而 rdy 為 0，`stall` 會被拉起來，整條 pipeline（以及 `muldivreq_rdy`）都會凍住。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivresp_rdy": {
+      "sum": "riscv_CoreDpathPipeMulDiv 的回應 ready：上層這個 cycle 願不願意收結果",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可以接收"
+        ]
+      ],
+      "desc": "由上層（CPU datapath）驅動的輸入。唯一的用途是算 `stall = val3_reg && !muldivresp_rdy`：當最後一級有結果、但上層說收不下時，模組整個停住不再前進，也把 `muldivreq_rdy` 拉低，形成反壓（back-pressure）。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|stall_Xhl": {
+      "sum": "CPU X 階段的 stall 訊號，傳進來控制乘除法 pipeline 第 0→1 級要不要塞 bubble",
+      "naming": [
+        [
+          "stall",
+          "stall",
+          "暫停"
+        ],
+        [
+          "Xhl",
+          "eXecute stage, high-level",
+          "執行階段的訊號"
+        ]
+      ],
+      "desc": "由上層 CoreCtrl / CoreDpath 傳入。兩個用途：(1) `val1_next = stall_Xhl ? 1'b0 : val0_reg`，X 階段卡住時往第 1 級送 bubble（valid=0）而不是真的運算；(2) 在 `always` 區塊裡，當這個 cycle 沒有握手成功且 `stall_Xhl` 為 0 時，把 `val0_reg` 清成 0（沒 stall 就代表第 0 級的那筆已經前進了）。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|stall_Mhl": {
+      "sum": "CPU M 階段的 stall 訊號，控制乘除法 pipeline 第 1 級要不要前進",
+      "naming": [
+        [
+          "stall",
+          "stall",
+          "暫停"
+        ],
+        [
+          "Mhl",
+          "Memory stage, high-level",
+          "記憶體階段的訊號"
+        ]
+      ],
+      "desc": "由上層傳入。`val2_next = stall_Mhl ? 1'b0 : val1_reg`，M 階段卡住時往第 2 級送 bubble；同時 `if ( !stall_Mhl )` 才會更新 `result1_reg <= result0` 與 `val1_reg <= val1_next`，也就是 M 階段 stall 時第 1 級整個凍結不動。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|stall_X2hl": {
+      "sum": "宣告了但整個模組完全沒有使用的輸入（原始碼註解自己說「需要接上去」）",
+      "naming": [
+        [
+          "stall",
+          "stall",
+          "暫停"
+        ],
+        [
+          "X2hl",
+          "second eXecute stage, high-level",
+          "第二個執行階段的訊號"
+        ]
+      ],
+      "desc": "port 清單上方的註解寫著 \"These need to be hooked up to something!\"，而從程式碼看來 `stall_X2hl` 在模組內部一次也沒被讀到——第 2、3 級的前進條件用的是內部的 `stall`，不是它。照設計意圖，它應該要像 `stall_Xhl`、`stall_Mhl` 那樣參與第 2 級的凍結與 bubble 插入。這是留給學生補完的地方。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|stall_X3hl": {
+      "sum": "同樣宣告了卻沒被使用的輸入，本來應該控制乘除法 pipeline 第 3 級",
+      "naming": [
+        [
+          "stall",
+          "stall",
+          "暫停"
+        ],
+        [
+          "X3hl",
+          "third eXecute stage, high-level",
+          "第三個執行階段的訊號"
+        ]
+      ],
+      "desc": "和 `stall_X2hl` 一樣，只出現在 port 宣告，模組內部沒有任何地方讀它。目前第 3 級（`result3_reg`、`val3_reg`）是靠內部的 `stall`（輸出端沒被收走）來決定要不要前進。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_go": {
+      "sum": "請求端握手成功的那個 cycle（val 且 rdy 都為 1）",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "go",
+          "val && rdy",
+          "握手成功"
+        ]
+      ],
+      "desc": "`wire muldivreq_go = muldivreq_val && muldivreq_rdy;`。在 `always @( posedge clk )` 裡，只有這個訊號為 1 的 cycle 才會把 `muldivreq_msg_fn` / `_a` / `_b` 鎖進 `fn_reg` / `a_reg` / `b_reg`，並把 `val0_reg` 設為 1。它是「一筆新運算進入 pipeline」的唯一入口。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|fn_reg": {
+      "sum": "鎖住這筆請求要做哪種運算的 3-bit 暫存器",
+      "naming": [
+        [
+          "fn",
+          "function",
+          "運算種類"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "3 bits，在 `muldivreq_go` 的 cycle 從 `muldivreq_msg_fn` 載入，reset 時為 0。它是 `result0` 那個多工器的選擇訊號：等於 `IMULDIV_MULDIVREQ_MSG_FUNC_MUL` 就選 `product`，`..._DIV` / `..._REM` 選 `{ remainder, quotient }`，`..._DIVU` / `..._REMU` 選 `{ remainderu, quotientu }`。注意它只有一份，所以如果連續丟進多筆不同運算，後面的請求會覆蓋掉它——這個模組實際上一次只算得準一筆。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|a_reg": {
+      "sum": "鎖住運算元 a（被乘數 / 被除數）的 32-bit 暫存器",
+      "naming": [
+        [
+          "a",
+          "operand a",
+          "運算元 a"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "32 bits，`muldivreq_go` 時從 `muldivreq_msg_a` 載入。所有組合邏輯都以它為輸入：`sign = a_reg[31] ^ b_reg[31]`、`a_unsign`（若為負就取二補數變正）、無號除法 `quotientu = a_reg / b_reg`、`remainderu = a_reg % b_reg`，以及餘數符號判斷 `remainder`（餘數跟被除數同號，所以看 `a_reg[31]`）。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|b_reg": {
+      "sum": "鎖住運算元 b（乘數 / 除數）的 32-bit 暫存器",
+      "naming": [
+        [
+          "b",
+          "operand b",
+          "運算元 b"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "32 bits，`muldivreq_go` 時從 `muldivreq_msg_b` 載入。用於 `sign`（取 `b_reg[31]` 和 `a_reg[31]` 做 XOR）、`b_unsign`，以及無號的 `quotientu` / `remainderu`。若它是 0，Verilog 的 `/` 與 `%` 會產生 x。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|result1_reg": {
+      "sum": "乘除法假 pipeline 的第 1 級結果暫存器（64-bit）",
+      "naming": [
+        [
+          "result",
+          "result",
+          "結果"
+        ],
+        [
+          "1",
+          "stage 1",
+          "pipeline 第 1 級"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "64 bits。在 `!stall_Mhl` 時從組合邏輯算出的 `result0` 載入，reset 時為 0；之後在 `!stall` 時傳給 `result2_reg`。因為實際運算是一個 cycle 內用 `*` / `/` 算完的，這三級 result 暫存器純粹是用來「假裝」乘除法需要多個 cycle，好讓時序對上 CPU 的 X/M pipeline。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|result2_reg": {
+      "sum": "乘除法假 pipeline 的第 2 級結果暫存器（64-bit）",
+      "naming": [
+        [
+          "result",
+          "result",
+          "結果"
+        ],
+        [
+          "2",
+          "stage 2",
+          "pipeline 第 2 級"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "64 bits，在 `!stall` 時從 `result1_reg` 載入，並在同一個 cycle 把自己的舊值交給 `result3_reg`（非阻塞賦值 `<=`，所以兩行同時看到的是上一個 cycle 的值，不會踩到彼此）。reset 時為 0。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|result3_reg": {
+      "sum": "乘除法假 pipeline 最後一級的結果暫存器，直接接到輸出",
+      "naming": [
+        [
+          "result",
+          "result",
+          "結果"
+        ],
+        [
+          "3",
+          "stage 3",
+          "pipeline 第 3 級"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "64 bits，在 `!stall` 時從 `result2_reg` 載入，reset 時為 0。`muldivresp_msg_result` 就是直接 `assign` 成它。搭配 `val3_reg`（`muldivresp_val`）一起看：只有 val 為 1 的 cycle 這個值才有意義。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val0_reg": {
+      "sum": "pipeline 第 0 級（輸入暫存器那一級）是否裝著有效運算",
+      "naming": [
+        [
+          "val",
+          "valid",
+          "有效"
+        ],
+        [
+          "0",
+          "stage 0",
+          "pipeline 第 0 級"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "1 bit。`muldivreq_go` 的 cycle 設為 1；若沒有新請求且 `!stall_Xhl`（代表這一級的東西已經往前走了）就清為 0；reset 時為 0。它經由 `val1_next = stall_Xhl ? 0 : val0_reg` 往下一級傳。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val1_reg": {
+      "sum": "pipeline 第 1 級的 valid bit，和 result1_reg 成對",
+      "naming": [
+        [
+          "val",
+          "valid",
+          "有效"
+        ],
+        [
+          "1",
+          "stage 1",
+          "pipeline 第 1 級"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "1 bit，在 `!stall_Mhl` 時載入 `val1_next`（也就是 X 階段沒 stall 才把 `val0_reg` 傳進來，否則塞 0 當 bubble），reset 時為 0。再往下經由 `val2_next` 傳給 `val2_reg`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val2_reg": {
+      "sum": "pipeline 第 2 級的 valid bit，和 result2_reg 成對",
+      "naming": [
+        [
+          "val",
+          "valid",
+          "有效"
+        ],
+        [
+          "2",
+          "stage 2",
+          "pipeline 第 2 級"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "1 bit，在 `!stall` 時載入 `val2_next`（M 階段沒 stall 才接 `val1_reg`，否則為 0），同一個 cycle 把舊值交給 `val3_reg`。reset 時為 0。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val3_reg": {
+      "sum": "pipeline 最後一級的 valid bit，直接當作 muldivresp_val，也決定 stall",
+      "naming": [
+        [
+          "val",
+          "valid",
+          "有效"
+        ],
+        [
+          "3",
+          "stage 3",
+          "pipeline 第 3 級"
+        ],
+        [
+          "reg",
+          "register",
+          "暫存器"
+        ]
+      ],
+      "desc": "1 bit，在 `!stall` 時從 `val2_reg` 載入，reset 時為 0。兩個出口：`assign muldivresp_val = val3_reg;`，以及 `wire stall = val3_reg && !muldivresp_rdy;`。也就是說「手上有結果但沒人收」就停住整條 pipeline，並把 `muldivreq_rdy` 拉低。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val1_next": {
+      "sum": "第 1 級 valid bit 下一個 cycle 的值：X 階段 stall 時插 bubble",
+      "naming": [
+        [
+          "val",
+          "valid",
+          "有效"
+        ],
+        [
+          "1",
+          "stage 1",
+          "pipeline 第 1 級"
+        ],
+        [
+          "_next",
+          "next value",
+          "下一個 cycle 要存的值"
+        ]
+      ],
+      "desc": "`wire val1_next = (stall_Xhl) ? 1'b0 : (val0_reg);`。X 階段被 stall 表示那筆指令還沒真的前進，所以不該讓乘除法 pipeline 的第 1 級收到一個「有效」標記，改送 0（bubble）。只有在 `!stall_Mhl` 的 cycle 才會真的被寫進 `val1_reg`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val2_next": {
+      "sum": "第 2 級 valid bit 下一個 cycle 的值：M 階段 stall 時插 bubble",
+      "naming": [
+        [
+          "val",
+          "valid",
+          "有效"
+        ],
+        [
+          "2",
+          "stage 2",
+          "pipeline 第 2 級"
+        ],
+        [
+          "_next",
+          "next value",
+          "下一個 cycle 要存的值"
+        ]
+      ],
+      "desc": "`wire val2_next = (stall_Mhl) ? 1'b0 : (val1_reg);`，和 `val1_next` 同樣的想法，只是往後一級。它在 `!stall` 的 cycle 被寫進 `val2_reg`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|sign": {
+      "sum": "有號乘除法的結果符號：兩個運算元符號相異就為 1",
+      "naming": [
+        [
+          "sign",
+          "sign",
+          "正負號"
+        ]
+      ],
+      "desc": "`wire sign = ( a_reg[31] ^ b_reg[31] );`。因為本模組是先把兩個運算元都轉成正數（`a_unsign`、`b_unsign`）再算，最後再依這個 bit 決定要不要把結果取二補數。用在 `product`（有號乘積）和 `quotient`（有號商）。餘數不用它——餘數的符號跟被除數一致，所以 `remainder` 是看 `a_reg[31]`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|a_unsign": {
+      "sum": "把 a_reg 轉成正數（絕對值）後的 32-bit 值",
+      "naming": [
+        [
+          "a",
+          "operand a",
+          "運算元 a"
+        ],
+        [
+          "unsign",
+          "unsigned",
+          "轉成無號 / 取絕對值"
+        ]
+      ],
+      "desc": "`( a_reg[31] == 1'b1 ) ? ( ~a_reg + 1'b1 ) : a_reg`，也就是 a_reg 為負時取二補數。有號運算（`product_raw`、`quotient_raw`、`remainder_raw`）都用它當輸入，這樣就能用無號的 `*` / `/` / `%` 來算，最後再補上符號。無號版的 DIVU / REMU 則不經過它，直接用 `a_reg`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|b_unsign": {
+      "sum": "把 b_reg 轉成正數（絕對值）後的 32-bit 值",
+      "naming": [
+        [
+          "b",
+          "operand b",
+          "運算元 b"
+        ],
+        [
+          "unsign",
+          "unsigned",
+          "轉成無號 / 取絕對值"
+        ]
+      ],
+      "desc": "`( b_reg[31] == 1'b1 ) ? ( ~b_reg + 1'b1 ) : b_reg`。和 `a_unsign` 一起餵給 `product_raw`、`quotient_raw`、`remainder_raw`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|quotientu": {
+      "sum": "無號除法的商（DIVU 用），直接用原始 a_reg / b_reg 算",
+      "naming": [
+        [
+          "quotient",
+          "quotient",
+          "商"
+        ],
+        [
+          "u",
+          "unsigned",
+          "無號"
+        ]
+      ],
+      "desc": "`wire [31:0] quotientu = a_reg / b_reg;`。因為 Verilog 對 `reg [31:0]` 的除法本來就是無號運算，所以不需要先轉絕對值。它和 `remainderu` 一起被打包成 `{ remainderu, quotientu }`，在 `fn_reg` 是 `IMULDIV_MULDIVREQ_MSG_FUNC_DIVU` 或 `IMULDIV_MULDIVREQ_MSG_FUNC_REMU` 時成為 `result0`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|remainderu": {
+      "sum": "無號取餘數的結果（REMU 用）",
+      "naming": [
+        [
+          "remainder",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "u",
+          "unsigned",
+          "無號"
+        ]
+      ],
+      "desc": "`wire [31:0] remainderu = a_reg % b_reg;`，無號取餘。與 `quotientu` 組成 `{ remainderu, quotientu }`，在 DIVU / REMU 時被 `result0` 選中；使用端再依指令是 divu 還是 remu 去挑低 32 或高 32 bits。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|product_raw": {
+      "sum": "兩個絕對值相乘的 64-bit 中間結果（還沒補符號）",
+      "naming": [
+        [
+          "product",
+          "product",
+          "乘積"
+        ],
+        [
+          "raw",
+          "raw",
+          "還沒補上符號的原始值"
+        ]
+      ],
+      "desc": "`wire [63:0] product_raw = a_unsign * b_unsign;`。因為兩個輸入都已轉成正數，這個乘積一定是正的。接著 `product` 會依 `sign` 決定要不要取二補數，得到真正的有號乘積。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|quotient_raw": {
+      "sum": "兩個絕對值相除的 32-bit 商（還沒補符號）",
+      "naming": [
+        [
+          "quotient",
+          "quotient",
+          "商"
+        ],
+        [
+          "raw",
+          "raw",
+          "還沒補上符號的原始值"
+        ]
+      ],
+      "desc": "`wire [31:0] quotient_raw = a_unsign / b_unsign;`。之後由 `quotient` 依 `sign` 決定是否取二補數，成為有號除法（DIV）的商。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|remainder_raw": {
+      "sum": "兩個絕對值取餘數的 32-bit 結果（還沒補符號）",
+      "naming": [
+        [
+          "remainder",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "raw",
+          "raw",
+          "還沒補上符號的原始值"
+        ]
+      ],
+      "desc": "`wire [31:0] remainder_raw = a_unsign % b_unsign;`。接著 `remainder` 依 `a_reg[31]`（被除數的符號）決定是否取二補數——RISC-V 規定餘數的符號跟被除數相同，所以這裡用的不是 `sign`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|product": {
+      "sum": "補好符號的 64-bit 有號乘積（MUL 的結果）",
+      "naming": [
+        [
+          "product",
+          "product",
+          "乘積"
+        ]
+      ],
+      "desc": "`( sign ) ? ( ~product_raw + 1'b1 ) : product_raw`，也就是兩運算元異號時把 `product_raw` 取二補數。當 `fn_reg` 等於 `IMULDIV_MULDIVREQ_MSG_FUNC_MUL` 時，它整個 64 bits 就是 `result0`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|quotient": {
+      "sum": "補好符號的 32-bit 有號商（DIV 的結果）",
+      "naming": [
+        [
+          "quotient",
+          "quotient",
+          "商"
+        ]
+      ],
+      "desc": "`( sign ) ? ( ~quotient_raw + 1'b1 ) : quotient_raw`。它被放在 `{ remainder, quotient }` 的低 32 bits，在 `fn_reg` 為 `IMULDIV_MULDIVREQ_MSG_FUNC_DIV` 或 `IMULDIV_MULDIVREQ_MSG_FUNC_REM` 時成為 `result0` 的下半部。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|remainder": {
+      "sum": "補好符號的 32-bit 有號餘數（REM 的結果），符號跟被除數一致",
+      "naming": [
+        [
+          "remainder",
+          "remainder",
+          "餘數"
+        ]
+      ],
+      "desc": "`( a_reg[31] ) ? ( ~remainder_raw + 1'b1 ) : remainder_raw`——注意判斷條件是被除數 `a_reg` 的最高位，不是 `sign`，因為 RISC-V 的 rem 結果符號跟被除數相同。它被放在 `{ remainder, quotient }` 的高 32 bits。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|result0": {
+      "sum": "組合邏輯算出的 64-bit 運算結果，pipeline 的第 0 級輸出",
+      "naming": [
+        [
+          "result",
+          "result",
+          "結果"
+        ],
+        [
+          "0",
+          "stage 0",
+          "pipeline 第 0 級（還沒進暫存器）"
+        ]
+      ],
+      "desc": "一個依 `fn_reg` 選擇的多工器：MUL 選 `product`；DIV / REM 選 `{ remainder, quotient }`；DIVU / REMU 選 `{ remainderu, quotientu }`；其他情況給 x。它在 `!stall_Mhl` 的 cycle 被存進 `result1_reg`。要注意 default 分支寫的是 `32'bx`，但這條 wire 是 64 bits，寬度對不上（高位會補 0），看起來應該寫成 `64'bx`。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|stall": {
+      "sum": "模組內部的反壓訊號：有結果但上層不收，整條 pipeline 停住",
+      "naming": [
+        [
+          "stall",
+          "stall",
+          "暫停"
+        ]
+      ],
+      "desc": "`wire stall = val3_reg && !muldivresp_rdy;`（宣告寫在檔案最後，但在前面就被用到）。它有兩個作用：`assign muldivreq_rdy = !stall;` 讓請求端不再收新資料，以及 `if ( !stall )` 才更新 `result2_reg` / `result3_reg` / `val2_reg` / `val3_reg`。注意它管的是第 2、3 級；第 0、1 級是看 `stall_Xhl` / `stall_Mhl`。"
+    },
+    "`RISCV_PIPE_MULDIV_ITERATIVE_V": {
+      "sum": "riscvstall-CoreDpathPipeMulDiv.v 的 include guard macro",
+      "naming": [
+        [
+          "RISCV_",
+          "RISC-V core",
+          "處理器的 macro 前綴"
+        ],
+        [
+          "PIPE",
+          "pipelined",
+          "管線化的"
+        ],
+        [
+          "MULDIV",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "ITERATIVE",
+          "iterative",
+          "迭代式"
+        ],
+        [
+          "_V",
+          "include guard",
+          "檔名_V：防止重複 include"
+        ]
+      ],
+      "desc": "檔案開頭用 ifndef / define 這個名字，結尾 endif，這就是標準的 include guard：防止同一個檔案被 include 兩次導致 module 重複定義，本身沒有任何值的意義。名字裡雖然有 ITERATIVE，但這個檔案其實是行為模型（直接用 Verilog 的 * 和 /），不是真的迭代式電路。"
+    },
+    "riscvstall/riscvstall-CoreDpathPipeMulDiv.v||riscv_CoreDpathPipeMulDiv": {
+      "sum": "把行為模型乘除法包成固定延遲 pipeline 的模組，供 riscvstall datapath 選用",
+      "naming": [
+        [
+          "riscv",
+          "RISC-V",
+          "處理器"
+        ],
+        [
+          "Core",
+          "core",
+          "處理器核心"
+        ],
+        [
+          "Dpath",
+          "datapath",
+          "資料路徑"
+        ],
+        [
+          "Pipe",
+          "pipelined",
+          "管線化的"
+        ],
+        [
+          "MulDiv",
+          "multiply / divide",
+          "乘除法單元"
+        ]
+      ],
+      "desc": "port 分三組：請求端（`muldivreq_msg_fn` / `_a` / `_b` + `muldivreq_val` / `muldivreq_rdy`）、回應端（`muldivresp_msg_result` / `muldivresp_val` / `muldivresp_rdy`），以及從 CPU 傳進來的 stall 訊號（`stall_Xhl`、`stall_Mhl`、`stall_X2hl`、`stall_X3hl`）。內部用一個 cycle 的組合邏輯算完 `result0`，再用 `result1_reg`～`result3_reg` 三級暫存器模擬多 cycle 延遲。從整個 repo 看來，它目前沒有被任何檔案 instantiate——`riscvstall-CoreDpath.v` 用的是 `imuldiv_IntMulDivIterative`；它只有被列在 riscvstall.mk 的檔案清單裡，算是課程提供的參考 / 備用實作。"
+    }
+  }
+}

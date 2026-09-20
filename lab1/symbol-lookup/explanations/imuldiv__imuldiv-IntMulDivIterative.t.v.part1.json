@@ -1,0 +1,467 @@
+{
+  "entities": {
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|clk": {
+      "sum": "imuldiv_IntMulDivIterative_helper 的時脈輸入，由 `tester` 的測試框架 clk 驅動並分給 src / DUT / sink",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "1 bit input。`tester` instantiate `imuldiv_IntMulDivIterative_helper` 時把 `.clk (clk)` 接上去，而 `tester` 裡的 `clk` 本身沒有宣告——它是 `VC_TEST_SUITE_BEGIN` 這個 macro 展開後產生的（框架自己產生的測試時脈）。在 helper 內部它同時餵給 `src`、`imuldiv`、`sink` 三個 instance，確保送測資、運算、收結果都在同一個時脈域。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|reset": {
+      "sum": "imuldiv_IntMulDivIterative_helper 的重置輸入，由 `tester` 的 `t0_reset` 驅動",
+      "naming": [
+        [
+          "reset",
+          "reset",
+          "重置"
+        ]
+      ],
+      "desc": "1 bit input，接到 `tester` 的 `t0_reset`。每個測試案例都先把測資寫進 src / sink 的記憶體陣列，再 `#5` 拉 reset 為 1、`#20` 放掉，讓 `src`、`imuldiv`、`sink` 從乾淨狀態開始跑。reset 期間 DUT 的狀態機會回到 idle、src/sink 的索引會歸零。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|done": {
+      "sum": "imuldiv_IntMulDivIterative_helper 的完成訊號：src 送完且 sink 全部比對完畢才為 1",
+      "naming": [
+        [
+          "done",
+          "done",
+          "已完成"
+        ]
+      ],
+      "desc": "1 bit output，由 `assign done = src_done && sink_done;` 驅動。接到 `tester` 的 `t0_done`。測試案例最後 `#10000` 之後用 `VC_TEST_CHECK( \"Is sink finished?\", t0_done )` 檢查它是不是 1——如果 DUT 卡住（例如握手訊號寫錯、狀態機沒回到 idle），sink 就收不滿預期的筆數，`done` 會留在 0 而測試失敗。注意 sink 只要有任何一筆結果和預期不符就會立刻報錯，所以 `done` 為 1 代表全部都對。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|src_msg": {
+      "sum": "`src` 送出的 67-bit 請求訊息（func + a + b 打包在一起）",
+      "naming": [
+        [
+          "src",
+          "source",
+          "測試來源（送請求的一端）"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ]
+      ],
+      "desc": "wire [66:0]，由 `src` 的 `msg` output 驅動，送進 `msgfrombits` 的 `bits` input 拆欄位。格式就是 `IMULDIV_MULDIVREQ_MSG` 的格式：最高位是 func 欄位，接著 bit 63:32 是 a、bit 31:0 是 b。實際的值是測試案例直接寫進 `t0.src.src.m[...]` 陣列的那些常數，例如 `67'h3_00000222_00000032`（func=3 也就是 rem、a=0x222、b=0x32）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|src_msg_fn": {
+      "sum": "從 `src_msg` 拆出來的 3-bit 功能碼，決定 DUT 這次要做哪種運算",
+      "naming": [
+        [
+          "src",
+          "source",
+          "測試來源（送請求的一端）"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "fn",
+          "function",
+          "功能碼（要做哪種運算）"
+        ]
+      ],
+      "desc": "wire [2:0]，由 `msgfrombits` 的 `func` output 驅動，接到 `imuldiv` 的 `muldivreq_msg_fn`。3 bit 功能碼，編碼來自 `imuldiv-MulDivReqMsg.v`：0 = mul、1 = div、2 = divu、3 = rem、4 = remu。測試案例就是靠它在同一條測試鏈上切換不同運算，case 4 \"mixed\" 更是把五種功能碼交錯著送進去，專門測 DUT 在連續不同運算之間會不會殘留上一筆的狀態。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|src_msg_a": {
+      "sum": "從 `src_msg` 拆出來的 32-bit 運算元 a（被乘數 / 被除數）",
+      "naming": [
+        [
+          "src",
+          "source",
+          "測試來源（送請求的一端）"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "a",
+          "operand a",
+          "第一個運算元（被乘數 / 被除數）"
+        ]
+      ],
+      "desc": "wire [31:0]，由 `msgfrombits` 的 `a` output 驅動（對應訊息 bit 63:32），接到 `imuldiv` 的 `muldivreq_msg_a`。它是組合邏輯直接從 `src_msg` 切出來的，所以只有在 `src_val` 為 1 的那些 cycle 才有意義。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|src_msg_b": {
+      "sum": "從 `src_msg` 拆出來的 32-bit 運算元 b（乘數 / 除數）",
+      "naming": [
+        [
+          "src",
+          "source",
+          "測試來源（送請求的一端）"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "b",
+          "operand b",
+          "第二個運算元（乘數 / 除數）"
+        ]
+      ],
+      "desc": "wire [31:0]，由 `msgfrombits` 的 `b` output 驅動（對應訊息 bit 31:0），接到 `imuldiv` 的 `muldivreq_msg_b`。和 `src_msg_a` 一樣是純組合邏輯的切片，在握手成功（`src_val` 且 `src_rdy` 同時為 1）的那個 cycle 被 DUT 吃進去。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|src_val": {
+      "sum": "`src` 對 DUT 說「這個 cycle 有一筆請求」的 valid 訊號",
+      "naming": [
+        [
+          "src",
+          "source",
+          "測試來源（送請求的一端）"
+        ],
+        [
+          "val",
+          "valid",
+          "資料有效"
+        ]
+      ],
+      "desc": "wire，由 `src` 的 `val` output 驅動，接到 `imuldiv` 的 `muldivreq_val`。`vc_TestRandDelaySource` 會隨機插入延遲（這裡參數的第三個 3 就是最大隨機延遲），所以 `src_val` 不會每個 cycle 都是 1——這正是用來壓測 DUT 的 val/rdy 握手有沒有寫對。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|src_rdy": {
+      "sum": "DUT 回給 `src` 的 ready：這個 cycle 可以收一筆新請求",
+      "naming": [
+        [
+          "src",
+          "source",
+          "測試來源（送請求的一端）"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可以接收"
+        ]
+      ],
+      "desc": "wire，由 `imuldiv` 的 `muldivreq_rdy` output 驅動，接回 `src` 的 `rdy` input。迭代式的運算單元在算到一半時會把它拉低，`src` 就得把同一筆訊息一直 hold 住直到 `src_val && src_rdy` 同時為 1 才換下一筆。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|src_done": {
+      "sum": "`src` 把所有測資都送出去之後拉高的完成旗標",
+      "naming": [
+        [
+          "src",
+          "source",
+          "測試來源（送請求的一端）"
+        ],
+        [
+          "done",
+          "done",
+          "已完成"
+        ]
+      ],
+      "desc": "wire，由 `src` 的 `done` output 驅動，和 `sink_done` 做 AND 後成為 helper 的 `done`。`vc_TestRandDelaySource` 的 done 條件是內部陣列 `m` 裡的測資都送完了。光是 `src_done` 為 1 還不夠，還要等 sink 收完並比對完才算整個測試通過。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|sink_msg": {
+      "sum": "DUT 送給 `sink` 的 64-bit 運算結果",
+      "naming": [
+        [
+          "sink",
+          "sink",
+          "測試接收端（收回應並比對答案）"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ]
+      ],
+      "desc": "wire [63:0]，由 `imuldiv` 的 `muldivresp_msg_result` 驅動，接到 `sink` 的 `msg`。乘法時這 64 bit 是完整的乘積；除法 / 取餘數時則是「餘數在高 32 bit、商在低 32 bit」，所以 div 和 rem 的預期值長得一樣，差別只在上層要取哪一半。`sink` 會把它和測試案例寫進 `t0.sink.sink.m[...]` 的預期值比對，不符就直接報錯。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|sink_val": {
+      "sum": "DUT 告訴 `sink`「結果好了」的 valid 訊號",
+      "naming": [
+        [
+          "sink",
+          "sink",
+          "測試接收端（收回應並比對答案）"
+        ],
+        [
+          "val",
+          "valid",
+          "資料有效"
+        ]
+      ],
+      "desc": "wire，由 `imuldiv` 的 `muldivresp_val` output 驅動，接到 `sink` 的 `val`。只有 `sink_val` 為 1 的 cycle，`sink_msg` 上的值才是有效結果。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|sink_rdy": {
+      "sum": "`sink` 回給 DUT 的 ready：這個 cycle 願意收結果",
+      "naming": [
+        [
+          "sink",
+          "sink",
+          "測試接收端（收回應並比對答案）"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可以接收"
+        ]
+      ],
+      "desc": "wire，由 `sink` 的 `rdy` output 驅動，接回 `imuldiv` 的 `muldivresp_rdy`。`vc_TestRandDelaySink` 會隨機拉低它，模擬下游塞住的情況，逼 DUT 必須把結果 hold 住而不能把資料丟掉——這是這個測試最容易抓到的 bug 之一。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|sink_done": {
+      "sum": "`sink` 收滿並比對完所有預期結果後拉高的完成旗標",
+      "naming": [
+        [
+          "sink",
+          "sink",
+          "測試接收端（收回應並比對答案）"
+        ],
+        [
+          "done",
+          "done",
+          "已完成"
+        ]
+      ],
+      "desc": "wire，由 `sink` 的 `done` output 驅動，和 `src_done` 一起組成 helper 的 `done`。它為 1 代表 `t0.sink.sink.m[...]` 裡的每一筆預期值都被收到而且相符。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|src": {
+      "sum": "`vc_TestRandDelaySource` 的實例：按隨機延遲把測資一筆筆送進 DUT",
+      "naming": [
+        [
+          "src",
+          "source",
+          "測試來源（送請求的一端）"
+        ]
+      ],
+      "desc": "`vc_TestRandDelaySource#(67,1024,3) src`：第一個參數是訊息寬度 67 bit、第二個 1024 是內部測資陣列的深度、第三個 3 是隨機延遲的上限。port 接 `clk`、`reset`、輸出 `msg`/`val`、輸入 `rdy`、輸出 `done`。測資不是用 `$readmemh` 讀檔，而是測試案例用階層式路徑 `t0.src.src.m[i] = ...` 直接寫進它內部的記憶體陣列。vc 測試框架的原始檔（`vc-Test.v`、`vc-TestRandDelaySource.v`、`vc-TestRandDelaySink.v`）並不在這份 repo 裡（`../lab1/vc/` 只有 `vc-TestRandDelay.v`、`vc-TestDualPortMem.v` 等幾個檔），所以以下說明是從使用方式推得的。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|msgfrombits": {
+      "sum": "`imuldiv_MulDivReqMsgFromBits` 的實例：把 src 送來的一串 bits 拆成 func / a / b",
+      "naming": [
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "from",
+          "from",
+          "從…轉出"
+        ],
+        [
+          "bits",
+          "bits",
+          "位元串"
+        ]
+      ],
+      "desc": "純組合邏輯的拆包器。`bits` 接 `src_msg`，輸出 `func`、`a`、`b` 分別接 `src_msg_fn`、`src_msg_a`、`src_msg_b`。有了它，測資才能用「一整串 hex」的形式寫在測試案例裡，而 DUT 看到的是已經分好的欄位。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|imuldiv": {
+      "sum": "受測元件（DUT）：`imuldiv_IntMulDivIterative` 的實例，能做 mul/div/divu/rem/remu 五種運算的迭代式乘除法單元",
+      "naming": [
+        [
+          "imuldiv",
+          "iterative integer multiply/divide unit",
+          "迭代式整數乘除法單元"
+        ]
+      ],
+      "desc": "這就是這個檔案要測的東西。輸入側接 `clk`、`reset`、`src_msg_fn`/`src_msg_a`/`src_msg_b`（接到 `muldivreq_msg_fn`/`_a`/`_b`）、`src_val`/`src_rdy` 握手；輸出側 `muldivresp_msg_result` 接 `sink_msg`、`muldivresp_val`/`muldivresp_rdy` 和 `sink` 握手。這一版是把 `imuldiv_IntMulIterative` 和 `imuldiv_IntDivIterative` 兩個獨立單元包在一起、再用 func 決定要把請求送給誰、結果由誰提供。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|imuldiv_IntMulDivIterative_helper|sink": {
+      "sum": "`vc_TestRandDelaySink` 的實例：隨機延遲地收結果並和預期值比對",
+      "naming": [
+        [
+          "sink",
+          "sink",
+          "測試接收端（收回應並比對答案）"
+        ]
+      ],
+      "desc": "`vc_TestRandDelaySink#(64,1024,3) sink`：訊息寬度 64 bit、陣列深度 1024、隨機延遲上限 3。port 接 `clk`、`reset`、輸入 `msg`/`val`、輸出 `rdy`、輸出 `done`。預期答案由測試案例用 `t0.sink.sink.m[i] = ...` 寫進去；每收到一筆就和陣列裡對應那筆比對，全部對完才把 `done` 拉高。vc 測試框架的原始檔（`vc-Test.v`、`vc-TestRandDelaySource.v`、`vc-TestRandDelaySink.v`）並不在這份 repo 裡（`../lab1/vc/` 只有 `vc-TestRandDelay.v`、`vc-TestDualPortMem.v` 等幾個檔），所以以下說明是從使用方式推得的。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|tester|t0_reset": {
+      "sum": "`tester` 產生、送給 `t0` 的 reset，初值為 1",
+      "naming": [
+        [
+          "t0",
+          "test harness 0",
+          "第 0 組測試裝置"
+        ],
+        [
+          "reset",
+          "reset",
+          "重置"
+        ]
+      ],
+      "desc": "reg，宣告時就初始化成 1'b1，確保模擬一開始 DUT 就在 reset 狀態。每個測試案例的流程都是：先填測資 → `#5` 設成 1'b1 → `#20` 設成 1'b0 → 跑 `#10000` 再檢查。這個「先填陣列再 reset」的順序很重要，因為 reset 會把 src/sink 的讀寫索引歸零。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|tester|t0_done": {
+      "sum": "從 `t0` 拉出來的完成訊號，是每個測試案例最後檢查的對象",
+      "naming": [
+        [
+          "t0",
+          "test harness 0",
+          "第 0 組測試裝置"
+        ],
+        [
+          "done",
+          "done",
+          "已完成"
+        ]
+      ],
+      "desc": "wire，接 `t0` 的 `done`（也就是 `src_done && sink_done`）。測試案例等 `#10000` 個時間單位後用 `VC_TEST_CHECK( \"Is sink finished?\", t0_done )` 檢查它。為 0 通常代表 DUT 算不完、握手卡住，或 sink 還沒收滿預期筆數。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|tester|t0": {
+      "sum": "`tester` 裡唯一的測試裝置實例：`imuldiv_IntMulDivIterative_helper`",
+      "naming": [
+        [
+          "t0",
+          "test harness 0",
+          "第 0 組測試裝置"
+        ]
+      ],
+      "desc": "把 src + 拆包器 + DUT + sink 這一整條測試鏈包成一個 instance，port 只有 `.clk (clk)`、`.reset (t0_reset)`、`.done (t0_done)`。所有測試案例共用同一個 `t0`，靠每個案例開頭重新填 `t0.src.src.m` / `t0.sink.sink.m` 再 reset 一次來換測資。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v||imuldiv_IntMulDivIterative_helper": {
+      "sum": "把 source、拆包器、imuldiv_IntMulDivIterative 與 sink 串成一條測試鏈的 helper module",
+      "naming": [
+        [
+          "imuldiv",
+          "iterative multiply/divide unit",
+          "迭代式乘除法單元"
+        ],
+        [
+          "IntMulDiv",
+          "integer multiply/divide",
+          "整數乘除法"
+        ],
+        [
+          "Iterative",
+          "iterative",
+          "迭代式（一次算一位）"
+        ],
+        [
+          "helper",
+          "helper",
+          "測試用輔助模組"
+        ]
+      ],
+      "desc": "port 只有 `clk`、`reset`（input）與 `done`（output）。內部依序是：`vc_TestRandDelaySource src` → `imuldiv_MulDivReqMsgFromBits msgfrombits`（拆欄位）→ `imuldiv_IntMulDivIterative imuldiv`（受測元件）→ `vc_TestRandDelaySink sink`。src 和 DUT 之間、DUT 和 sink 之間都是 val/rdy 握手，兩端的隨機延遲讓握手在各種時序組合下都被測到。`done` 是 `src_done && sink_done`。包成 module 的好處是：同一份測試檔可以 instantiate 多組（雖然這裡只有 `t0` 一組）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v||tester": {
+      "sum": "imuldiv-IntMulDivIterative 的測試 top module，含 4 個測試案例",
+      "naming": [
+        [
+          "tester",
+          "tester",
+          "測試模組"
+        ]
+      ],
+      "desc": "沒有 port 的 testbench top。`VC_TEST_SUITE_BEGIN( \"imuldiv-IntMulDivIterative\" )` 開場，宣告 `t0_reset` / `t0_done`，instantiate 一組 `imuldiv_IntMulDivIterative_helper t0`，然後是 4 個 `VC_TEST_CASE_BEGIN` 區塊（case 1 \"mul\"、case 2 \"div/rem\"、case 3 \"divu/remu\"、case 4 \"mixed\"），最後 `VC_TEST_SUITE_END( 4 )`。每個案例的做法都一樣：把輸入測資寫進 `t0.src.src.m[]`、把預期結果寫進 `t0.sink.sink.m[]`，reset 一次，跑一段時間後檢查 `t0_done`。檔案開頭還有一段被註解掉的 `$dumpfile`/`$dumpvars`，要看波形時可以把它解開。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|tester|clk": {
+      "sum": "`tester` 裡沒有宣告就直接使用的測試時脈，來自 VC_TEST 框架的 macro",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "`tester` 內找不到 `clk` 的宣告，但它被當成 `t0` 的 `.clk` 接進去。從用法看，它是 `VC_TEST_SUITE_BEGIN` 展開後產生的訊號——vc 測試框架會在 macro 裡宣告一個 clk reg 並用 always 產生方波。`vc-Test.v` 本身不在這份 repo 裡（`../lab1/vc/` 沒有這個檔），所以無法確認它的週期；不過測試案例用的 `#20`、`#10000` 這些延遲都是以它的週期為單位在估算的。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|tester|t0.src.src": {
+      "sum": "`src`（`vc_TestRandDelaySource`）內部那個真正的 source 子 instance",
+      "naming": [
+        [
+          "t0",
+          "test harness 0",
+          "第 0 組測試裝置"
+        ],
+        [
+          "src",
+          "source",
+          "測試來源（送請求的一端）"
+        ],
+        [
+          "src",
+          "source (inner instance)",
+          "隨機延遲外殼裡包的那個基本 source"
+        ]
+      ],
+      "desc": "`t0.src.src` 這個路徑的第二段 `src`，是 `vc_TestRandDelaySource` 內部包的子 instance。從命名慣例看，外層的 RandDelay 版本應該是「基本的 vc_TestSource + 一個隨機延遲單元」組合而成，真正存測資的 `m` 陣列在這個內層 instance 裡。工具標成 hier-unresolved 是因為 `vc_TestRandDelaySource` 的原始檔不在這份 repo 裡（`../lab1/vc/` 只有 `vc-TestRandDelay.v` 等少數幾個檔，沒有 `vc-TestRandDelaySource.v` / `vc-TestRandDelaySink.v` / `vc-Test.v`），所以無法確認它的實際 module 名稱。它在測試裡唯一的用途就是當作 `t0.src.src.m[...]` 的前綴。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|tester|t0.src.src.m": {
+      "sum": "上述 source 內部存放輸入測資的記憶體陣列",
+      "naming": [
+        [
+          "t0",
+          "test harness 0",
+          "第 0 組測試裝置"
+        ],
+        [
+          "src",
+          "source",
+          "測試來源（送請求的一端）"
+        ],
+        [
+          "src",
+          "source (inner instance)",
+          "隨機延遲外殼裡包的那個基本 source"
+        ],
+        [
+          "m",
+          "memory array",
+          "存放測資 / 預期答案的陣列"
+        ]
+      ],
+      "desc": "測試案例用階層式路徑直接寫這個陣列，例如 `t0.src.src.m[ 7] = 67'h3_00000222_00000032;`。陣列索引就是測資的順序，index i 的輸入會對應到 sink 陣列 index i 的預期輸出。工具把它標成 hier-unresolved，是因為 `vc_TestRandDelaySource` 的原始檔不在這份 repo 裡，無法確認陣列的實際宣告；從用法推斷它是 `reg [W-1:0] m [0:1023]` 這種形狀，W 就是 instantiate 時給的訊息寬度參數。這種「從 testbench 伸手進去改別人內部變數」的寫法在合成用的 RTL 裡不能用，但在模擬的 testbench 裡是常見手法。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|tester|t0.sink.sink": {
+      "sum": "`sink`（`vc_TestRandDelaySink`）內部那個真正的 sink 子 instance",
+      "naming": [
+        [
+          "t0",
+          "test harness 0",
+          "第 0 組測試裝置"
+        ],
+        [
+          "sink",
+          "sink",
+          "測試接收端（收回應並比對答案）"
+        ],
+        [
+          "sink",
+          "sink (inner instance)",
+          "隨機延遲外殼裡包的那個基本 sink"
+        ]
+      ],
+      "desc": "`t0.sink.sink` 這個路徑的第二段 `sink`，是 `vc_TestRandDelaySink` 內部包的子 instance。從命名慣例看，外層的 RandDelay 版本應該是「基本的 vc_TestSink + 一個隨機延遲單元」組合而成，真正存測資的 `m` 陣列在這個內層 instance 裡。工具標成 hier-unresolved 是因為 `vc_TestRandDelaySink` 的原始檔不在這份 repo 裡（`../lab1/vc/` 只有 `vc-TestRandDelay.v` 等少數幾個檔，沒有 `vc-TestRandDelaySource.v` / `vc-TestRandDelaySink.v` / `vc-Test.v`），所以無法確認它的實際 module 名稱。它在測試裡唯一的用途就是當作 `t0.sink.sink.m[...]` 的前綴。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.t.v|tester|t0.sink.sink.m": {
+      "sum": "上述 sink 內部存放預期結果的記憶體陣列",
+      "naming": [
+        [
+          "t0",
+          "test harness 0",
+          "第 0 組測試裝置"
+        ],
+        [
+          "sink",
+          "sink",
+          "測試接收端（收回應並比對答案）"
+        ],
+        [
+          "sink",
+          "sink (inner instance)",
+          "隨機延遲外殼裡包的那個基本 sink"
+        ],
+        [
+          "m",
+          "memory array",
+          "存放測資 / 預期答案的陣列"
+        ]
+      ],
+      "desc": "測試案例用階層式路徑直接寫這個陣列，例如 `t0.sink.sink.m[ 7] = 64'h0000002e_0000000a;`。sink 會照順序把收到的結果和這裡的值比對，不符就報錯。工具把它標成 hier-unresolved，是因為 `vc_TestRandDelaySink` 的原始檔不在這份 repo 裡，無法確認陣列的實際宣告；從用法推斷它是 `reg [W-1:0] m [0:1023]` 這種形狀，W 就是 instantiate 時給的訊息寬度參數。這種「從 testbench 伸手進去改別人內部變數」的寫法在合成用的 RTL 裡不能用，但在模擬的 testbench 裡是常見手法。"
+    }
+  }
+}

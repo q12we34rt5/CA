@@ -1,0 +1,158 @@
+[
+ {
+  "key": "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "riscv_CoreDpathRegfile",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:404",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:10",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:28"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|raddr0",
+  "name": "raddr0",
+  "cat": "signal",
+  "module": "riscv_CoreDpathRegfile",
+  "kind": "input",
+  "decl": "input [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:405",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:11",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:24"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|rdata0",
+  "name": "rdata0",
+  "cat": "signal",
+  "module": "riscv_CoreDpathRegfile",
+  "kind": "output",
+  "decl": "output [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:406",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:12",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:24"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|raddr1",
+  "name": "raddr1",
+  "cat": "signal",
+  "module": "riscv_CoreDpathRegfile",
+  "kind": "input",
+  "decl": "input [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:407",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:13",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:25"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|rdata1",
+  "name": "rdata1",
+  "cat": "signal",
+  "module": "riscv_CoreDpathRegfile",
+  "kind": "output",
+  "decl": "output [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:408",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:14",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:25"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|wen_p",
+  "name": "wen_p",
+  "cat": "signal",
+  "module": "riscv_CoreDpathRegfile",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:409",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:15",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:30"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|waddr_p",
+  "name": "waddr_p",
+  "cat": "signal",
+  "module": "riscv_CoreDpathRegfile",
+  "kind": "input",
+  "decl": "input [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:410",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:16",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:30",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:31"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|wdata_p",
+  "name": "wdata_p",
+  "cat": "signal",
+  "module": "riscv_CoreDpathRegfile",
+  "kind": "input",
+  "decl": "input [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:411",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:17",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:31"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|registers",
+  "name": "registers",
+  "cat": "signal",
+  "module": "riscv_CoreDpathRegfile",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathRegfile.v:21",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:24",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:25",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:31",
+   "riscvstall/riscvstall-randdelay-sim.v:279",
+   "riscvstall/riscvstall-randdelay-sim.v:280",
+   "riscvstall/riscvstall-randdelay-sim.v:281",
+   "riscvstall/riscvstall-randdelay-sim.v:283",
+   "riscvstall/riscvstall-randdelay-sim.v:284",
+   "riscvstall/riscvstall-randdelay-sim.v:285",
+   "riscvstall/riscvstall-randdelay-sim.v:287",
+   "riscvstall/riscvstall-randdelay-sim.v:288"
+  ],
+  "n_occ": 68
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathRegfile.v||riscv_CoreDpathRegfile",
+  "name": "riscv_CoreDpathRegfile",
+  "cat": "module",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:402",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:8"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "`RISCV_CORE_DPATH_REGFILE_V",
+  "name": "RISCV_CORE_DPATH_REGFILE_V",
+  "cat": "macro",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathRegfile.v:5",
+   "riscvstall/riscvstall-CoreDpathRegfile.v:6"
+  ],
+  "n_occ": 2
+ }
+]

@@ -1,0 +1,512 @@
+{
+  "entities": {
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|clk": {
+      "sum": "imuldiv_IntMulDivIterative 的時脈，原封不動轉給底下的 imul 與 idiv",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "這個模組本身沒有任何暫存器，只有組合邏輯的多工與分流，所以 clk 唯一的用途就是透過 port 傳給兩個子模組 `imul`（`imuldiv_IntMulIterative`）和 `idiv`（`imuldiv_IntDivIterative`），真正的迭代狀態機是在那兩個裡面。由上層 `riscv_CoreDpath` 的 `imuldiv` instance 或 testbench 傳入。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|reset": {
+      "sum": "imuldiv_IntMulDivIterative 的 reset，同樣直接轉給 imul 與 idiv",
+      "naming": [
+        [
+          "reset",
+          "reset",
+          "重置"
+        ]
+      ],
+      "desc": "本模組沒有狀態可以重置，只是把 reset 接到 `imul` 和 `idiv` 的 `.reset`，讓兩個子單元的控制狀態機回到 idle、重新把 `mulreq_rdy` / `divreq_rdy` 拉起來。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivreq_msg_fn": {
+      "sum": "請求的 3-bit 運算種類碼，用來決定這筆請求要送給乘法器還是除法器",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "fn",
+          "function",
+          "運算種類"
+        ]
+      ],
+      "desc": "3 bits，編碼來自 include 進來的 imuldiv-MulDivReqMsg.v：`IMULDIV_MULDIVREQ_MSG_FUNC_MUL`(0)、`IMULDIV_MULDIVREQ_MSG_FUNC_DIV`(1)、`IMULDIV_MULDIVREQ_MSG_FUNC_DIVU`(2)、`IMULDIV_MULDIVREQ_MSG_FUNC_REM`(3)、`IMULDIV_MULDIVREQ_MSG_FUNC_REMU`(4)。它在三個地方被比對：`mulreq_val`（等於 MUL 才給乘法器）、`divreq_val`（不等於 MUL 就給除法器）、`divreq_msg_fn`（是 DIV 或 REM 就代表要做有號除法）。注意這個模組本身不會鎖住 fn，鎖住的工作在子模組裡。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivreq_msg_a": {
+      "sum": "請求的第一個 32-bit 運算元，同時接到乘法器和除法器",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "a",
+          "operand a",
+          "運算元 a：被乘數 / 被除數"
+        ]
+      ],
+      "desc": "32 bits，直接接到 `imul` 的 `.mulreq_msg_a` 與 `idiv` 的 `.divreq_msg_a`。兩個子模組都看得到這個值，但只有被 `mulreq_val` / `divreq_val` 選中的那一個會真的把它鎖進自己的暫存器。在 CPU 裡它接的是 `op0_mux_out_Xhl`（X 階段的第一個運算元）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivreq_msg_b": {
+      "sum": "請求的第二個 32-bit 運算元，同時接到乘法器和除法器",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "b",
+          "operand b",
+          "運算元 b：乘數 / 除數"
+        ]
+      ],
+      "desc": "32 bits，同時接到 `imul` 的 `.mulreq_msg_b` 和 `idiv` 的 `.divreq_msg_b`。在 CPU 裡由 `riscv_CoreDpath` 的 `op1_mux_out_Xhl` 驅動。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivreq_val": {
+      "sum": "上層說「這個 cycle 有一筆乘除法請求」的 valid 訊號",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "1 bit。它會被拆成兩條：`mulreq_val`（fn 是 MUL 時）和 `divreq_val`（fn 不是 MUL 時），分別送給 `imul` 與 `idiv`。要注意這兩條都額外 and 上了「另一個單元也 ready」（`divreq_rdy` / `mulreq_rdy`），所以必須兩個子單元同時有空，請求才會被送出去——這跟 `muldivreq_rdy = mulreq_rdy && divreq_rdy` 的條件是一致的。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivreq_rdy": {
+      "sum": "本單元可以接受新請求：乘法器和除法器都有空才為 1",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可以接收"
+        ]
+      ],
+      "desc": "`assign muldivreq_rdy = mulreq_rdy && divreq_rdy;`。雖然一筆請求只會用到其中一個子單元，但因為對外只有一組 val-rdy 介面、又無法在中途改變決定，所以保守地要求兩邊都 idle 才拉起 ready。往上接到 `riscv_CoreDpath` 的 `muldivreq_rdy`，再由 CoreCtrl 用來決定要不要 stall X 階段。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivresp_msg_result": {
+      "sum": "64-bit 結果輸出：依哪一邊 valid 從乘法器或除法器的結果中選一個",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "result",
+          "result",
+          "結果"
+        ]
+      ],
+      "desc": "多工器：`mulresp_val` 為 1 選 `mulresp_msg_result`，否則 `divresp_val` 為 1 選 `divresp_msg_result`，都沒有就是 `64'bx`。乘法時 64 bits 全部是乘積；除法時高 32 bits 是餘數、低 32 bits 是商。在 CPU 裡它接到 `riscv_CoreDpath` 的 `muldivresp_msg_result_Xhl`，再由 `muldiv_mux_sel_Xhl` 決定要取低半（mul / div / divu）還是高半（rem / remu）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivresp_val": {
+      "sum": "回應 valid：乘法器或除法器任一邊算完就為 1",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "`assign muldivresp_val = mulresp_val || divresp_val;`。因為同一時間只會有一筆請求在跑，正常情況下兩者不會同時為 1。CPU 端用它（配合 `muldivresp_rdy`）判斷乘除法結果好了沒，沒好就 stall X 階段。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|muldivresp_rdy": {
+      "sum": "上層是否願意收結果，同時接給乘法器和除法器當 resp ready",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法單元"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可以接收"
+        ]
+      ],
+      "desc": "1 bit 輸入，直接接到 `imul` 的 `.mulresp_rdy` 和 `idiv` 的 `.divresp_rdy`。子模組的控制狀態機會在 `resp_val && resp_rdy` 的那個 cycle 才離開 DONE 狀態、回到可接受新請求的狀態；所以上層不收，整個單元就會卡在那裡、`muldivreq_rdy` 保持 0。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|mulreq_val": {
+      "sum": "送給 imul 的請求 valid：這筆是乘法而且除法器也有空",
+      "naming": [
+        [
+          "mul",
+          "multiply",
+          "乘法"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "`( muldivreq_msg_fn == IMULDIV_MULDIVREQ_MSG_FUNC_MUL ) && muldivreq_val && divreq_rdy`。除了判斷 fn 是不是乘法之外，還要求 `divreq_rdy`，這樣 `mulreq_val` 才會跟對外的 `muldivreq_rdy` 條件一致（避免對上層說沒收、卻偷偷把請求塞進乘法器）。接到 `imul` 的 `.mulreq_val`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|divreq_val": {
+      "sum": "送給 idiv 的請求 valid：這筆不是乘法而且乘法器也有空",
+      "naming": [
+        [
+          "div",
+          "divide",
+          "除法"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "`( muldivreq_msg_fn != IMULDIV_MULDIVREQ_MSG_FUNC_MUL ) && muldivreq_val && mulreq_rdy`。也就是 DIV / DIVU / REM / REMU 四種都走除法器（除法器一次會同時算出商和餘數）。和 `mulreq_val` 對稱地 and 上另一邊的 ready。接到 `idiv` 的 `.divreq_val`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|divreq_msg_fn": {
+      "sum": "把 3-bit 的 muldiv func 壓成除法器要的 1-bit「有號 / 無號」旗標",
+      "naming": [
+        [
+          "div",
+          "divide",
+          "除法"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "fn",
+          "function",
+          "運算種類"
+        ]
+      ],
+      "desc": "1 bit（宣告是 `wire`，沒有寬度）：`( muldivreq_msg_fn == DIV || muldivreq_msg_fn == REM )`。DIV 和 REM 是有號運算所以給 1，DIVU / REMU 給 0，剛好對上 imuldiv-DivReqMsg.v 定義的 `IMULDIV_DIVREQ_MSG_FUNC_SIGNED`(1) 與 `IMULDIV_DIVREQ_MSG_FUNC_UNSIGNED`(0)。`imuldiv_IntDivIterativeCtrl` 就是拿它跟 `IMULDIV_DIVREQ_MSG_FUNC_SIGNED` 比對來產生 `is_op_signed`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|mulreq_rdy": {
+      "sum": "imul 回報「乘法器現在有空」的內部 wire",
+      "naming": [
+        [
+          "mul",
+          "multiply",
+          "乘法"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可以接收"
+        ]
+      ],
+      "desc": "由 `imul`（`imuldiv_IntMulIterative`）的 `.mulreq_rdy` output 驅動。兩個去處：和 `divreq_rdy` 相 and 成為對外的 `muldivreq_rdy`，以及被 and 進 `divreq_val`（除法請求也要等乘法器空著才送）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|divreq_rdy": {
+      "sum": "idiv 回報「除法器現在有空」的內部 wire",
+      "naming": [
+        [
+          "div",
+          "divide",
+          "除法"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可以接收"
+        ]
+      ],
+      "desc": "由 `idiv`（`imuldiv_IntDivIterative`）的 `.divreq_rdy` output 驅動。和 `mulreq_rdy` 相 and 成為 `muldivreq_rdy`，並被 and 進 `mulreq_val`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|mulresp_val": {
+      "sum": "imul 算完了、結果有效的內部 wire",
+      "naming": [
+        [
+          "mul",
+          "multiply",
+          "乘法"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "由 `imul` 的 `.mulresp_val` 驅動。它 or 上 `divresp_val` 成為對外的 `muldivresp_val`，同時當作結果多工器的最高優先選擇訊號（為 1 時 `muldivresp_msg_result` 取 `mulresp_msg_result`）。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|divresp_val": {
+      "sum": "idiv 算完了、結果有效的內部 wire",
+      "naming": [
+        [
+          "div",
+          "divide",
+          "除法"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "由 `idiv` 的 `.divresp_val` 驅動，or 進 `muldivresp_val`，並在 `mulresp_val` 為 0 時讓結果多工器選 `divresp_msg_result`。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|mulresp_msg_result": {
+      "sum": "imul 產生的 64-bit 乘積",
+      "naming": [
+        [
+          "mul",
+          "multiply",
+          "乘法"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "result",
+          "result",
+          "結果"
+        ]
+      ],
+      "desc": "64 bits，由 `imul` 的 `.mulresp_msg_result` 驅動，內容是 32×32 的完整有號乘積。當 `mulresp_val` 為 1 時被選成 `muldivresp_msg_result`。CPU 做 mul 指令時只會用到它的低 32 bits。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|divresp_msg_result": {
+      "sum": "idiv 產生的 64-bit 結果，高 32 是餘數、低 32 是商",
+      "naming": [
+        [
+          "div",
+          "divide",
+          "除法"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "result",
+          "result",
+          "結果"
+        ]
+      ],
+      "desc": "64 bits，由 `idiv` 的 `.divresp_msg_result` 驅動。除法器一次就把商和餘數都算出來打包在一起，所以 div / divu 取低半、rem / remu 取高半，這個選擇是在上層 `riscv_CoreDpath` 的 `muldiv_mux_sel_Xhl` 做的。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|imul": {
+      "sum": "迭代式乘法器 imuldiv_IntMulIterative 的實例，負責 MUL",
+      "naming": [
+        [
+          "i",
+          "integer",
+          "整數"
+        ],
+        [
+          "mul",
+          "multiply",
+          "乘法"
+        ]
+      ],
+      "desc": "`imuldiv_IntMulIterative` 的 instance。請求端接 `mulreq_val` / `mulreq_rdy` 與共用的 `muldivreq_msg_a` / `muldivreq_msg_b`（乘法不需要 fn，因為只有一種運算）；回應端輸出 `mulresp_msg_result` / `mulresp_val`，而 `.mulresp_rdy` 直接接上層的 `muldivresp_rdy`。內部是一個跑 32 次的移位相加狀態機。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v|imuldiv_IntMulDivIterative|idiv": {
+      "sum": "迭代式除法器 imuldiv_IntDivIterative 的實例，負責 DIV / DIVU / REM / REMU",
+      "naming": [
+        [
+          "i",
+          "integer",
+          "整數"
+        ],
+        [
+          "div",
+          "divide",
+          "除法"
+        ]
+      ],
+      "desc": "`imuldiv_IntDivIterative` 的 instance。比 `imul` 多一條 `.divreq_msg_fn`，接的是本模組算出來的 1-bit `divreq_msg_fn`（有號 / 無號）。請求端接 `divreq_val` / `divreq_rdy`，回應端輸出 `divresp_msg_result` / `divresp_val`，`.divresp_rdy` 同樣接 `muldivresp_rdy`。內部是跑 32 次的減法—移位狀態機，一次產生商與餘數。"
+    },
+    "imuldiv/imuldiv-IntMulDivIterative.v||imuldiv_IntMulDivIterative": {
+      "sum": "把迭代式乘法器與除法器包成單一 val-rdy 介面的整數乘除法單元",
+      "naming": [
+        [
+          "imuldiv",
+          "iterative integer multiply / divide",
+          "迭代式整數乘除法"
+        ],
+        [
+          "Int",
+          "integer",
+          "整數"
+        ],
+        [
+          "Mul",
+          "multiply",
+          "乘法"
+        ],
+        [
+          "Div",
+          "divide",
+          "除法"
+        ],
+        [
+          "Iterative",
+          "iterative",
+          "迭代式（分多個 cycle 算）"
+        ]
+      ],
+      "desc": "本身只有分流與多工的組合邏輯：依 `muldivreq_msg_fn` 把請求送給 `imul` 或 `idiv`，並把兩邊的回應 or / mux 成單一組輸出。對外的介面是 `muldivreq_*`（fn / a / b + val / rdy）與 `muldivresp_*`（result + val / rdy）。它被 `riscvstall/riscvstall-CoreDpath.v` 以 instance 名稱 `imuldiv` instantiate，也被 imuldiv-IntMulDivIterative.t.v 與 imuldiv-iterative-sim.v 直接測試。"
+    },
+    "`RISCV_INT_MULDIV_ITERATIVE_V": {
+      "sum": "imuldiv-IntMulDivIterative.v 的 include guard macro",
+      "naming": [
+        [
+          "RISCV_",
+          "RISC-V core",
+          "處理器的 macro 前綴"
+        ],
+        [
+          "INT",
+          "integer",
+          "整數"
+        ],
+        [
+          "MULDIV",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "ITERATIVE",
+          "iterative",
+          "迭代式"
+        ],
+        [
+          "_V",
+          "include guard",
+          "檔名_V：防止重複 include"
+        ]
+      ],
+      "desc": "檔案開頭用 ifndef / define 這個名字、結尾 endif 的 include guard，避免這個檔被多個檔案 include 時重複定義 `imuldiv_IntMulDivIterative`。它沒有值上的意義；名字用 RISCV_ 而不是 IMULDIV_ 前綴，和檔案所在的 imuldiv/ 目錄稍微不一致。"
+    }
+  }
+}

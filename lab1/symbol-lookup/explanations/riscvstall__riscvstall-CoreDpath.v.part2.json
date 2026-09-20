@@ -1,0 +1,249 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|inst_rs2_Dhl": {
+      "sum": "D 階段指令的 rs2 欄位（第二個來源暫存器編號）",
+      "naming": [["inst", "instruction", "指令"], ["rs2", "source register 2", "第二個來源暫存器"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "5-bit wire，由 `inst_msg_from_bits` 從 `inst_Dhl` 的 bits[24:20] 切出來。在 dpath 裡直接成為 `rf_raddr1_Dhl`，去讀 regfile 的讀埠 1；讀出的 `rf_rdata1_Dhl` 供 R-type 的 op1、以及 store 的寫入資料 `wdata_Dhl` 使用。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|inst_rd_Dhl": {
+      "sum": "D 階段指令的 rd 欄位（目的暫存器編號），在 dpath 裡其實沒被用到",
+      "naming": [["inst", "instruction", "指令"], ["rd", "destination register", "目的暫存器"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "5-bit wire，由 `inst_msg_from_bits` 從 `inst_Dhl` 的 bits[11:7] 切出來。不過在 `riscv_CoreDpath` 裡它宣告了、接上了，卻沒有任何地方讀它——真正決定寫回哪個暫存器的 `rf_waddr_Whl` 是由 `riscv_CoreCtrl` 的解碼表填 `rd` 之後 pipeline 過來的。所以這條 wire 在 dpath 側形同閒置。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|inst_shamt_Dhl": {
+      "sum": "D 階段指令的 shamt 欄位（立即位移量，5 bits）",
+      "naming": [["inst", "instruction", "指令"], ["shamt", "shift amount", "位移量"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "5-bit wire，由 `inst_msg_from_bits` 從指令 bits[24:20] 切出（slli / srli / srai 用來指定位移幾位）。它被零延伸成 `shamt_Dhl = { 27'b0, inst_shamt_Dhl }`，成為 op1 mux 的 `3'd1` 那一路（ctrl 的 `bm_shamt`）。目前 `riscv_CoreCtrl` 的解碼表把 SLLI / SRLI / SRAI 都註解掉了，所以這條路徑還沒有指令會走。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imm_i_Dhl": {
+      "sum": "D 階段解出的 I-type 立即值（有號延伸成 32 bits）",
+      "naming": [["imm", "immediate", "立即值"], ["i", "I-type", "I 型指令格式（addi、lw、jalr…）"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire，由 `inst_msg_from_bits` 從指令 bits[31:20] 有號延伸而來。用在兩個地方：op1 mux 的 `3'd4` 那一路（`bm_imm_i`，給 addi / ori / lw 當第二運算元或位址偏移），以及 `jumpreg_targ_pretruncate_Dhl = rf_rdata0_Dhl + imm_i_Dhl`（jalr 目標）。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imm_u_Dhl": {
+      "sum": "D 階段解出的 U-type 立即值（高 20 位常數，低 12 位補 0）",
+      "naming": [["imm", "immediate", "立即值"], ["u", "U-type", "U 型指令格式（lui、auipc）"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire，由 `inst_msg_from_bits` 把指令 bits[31:12] 放到高位、低 12 位補 0 得到。它是 op1 mux 的 `3'd2` 那一路（`bm_imm_u`）。`lui` 用 `am_0` + `bm_imm_u` + `alu_add`（0 + imm），`auipc` 用 `am_pc` + `bm_imm_u`（pc + imm）。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imm_uj_Dhl": {
+      "sum": "D 階段解出的 UJ-type 立即值（jal 的 PC 相對位移）",
+      "naming": [["imm", "immediate", "立即值"], ["uj", "UJ-type", "UJ 型指令格式（jal）"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire，由 `inst_msg_from_bits` 把 jal 指令中打散的位元重組並有號延伸而成。dpath 只用它算 `jump_targ_Dhl = pc_Dhl + imm_uj_Dhl`，這個目標位址再拉回 P 階段成為 `jump_targ_Phl`。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imm_s_Dhl": {
+      "sum": "D 階段解出的 S-type 立即值（store 的位址偏移）",
+      "naming": [["imm", "immediate", "立即值"], ["s", "S-type", "S 型指令格式（sw、sb、sh）"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire，由 `inst_msg_from_bits` 把指令 bits[31:25] 與 bits[11:7] 拼起來再有號延伸。它是 op1 mux 的 `3'd5` 那一路（`bm_imm_s`）：`sw` 的解碼列用 `am_rdat` + `bm_imm_s` + `alu_add`，ALU 算出的 `rs1 + imm` 就是 `dmemreq_msg_addr`。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imm_sb_Dhl": {
+      "sum": "D 階段解出的 SB-type 立即值（分支的 PC 相對位移）",
+      "naming": [["imm", "immediate", "立即值"], ["sb", "SB-type", "SB 型指令格式（beq、bne、blt…）"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire，由 `inst_msg_from_bits` 重組分支指令中打散的位移位元並有號延伸。主要用途是 `branch_targ_Dhl = pc_Dhl + imm_sb_Dhl`；它同時也接在 op1 mux 的 `3'd3` 那一路（`bm_imm_sb`），不過解碼表裡的分支指令都用 `bm_rdat` 比較兩個暫存器，所以那一路實際上沒被選過。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_targ_Dhl": {
+      "sum": "D 階段就算好的分支目標位址 pc+imm_sb",
+      "naming": [["branch", "branch", "分支"], ["targ", "target", "目標位址"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire：`assign branch_targ_Dhl = pc_Dhl + imm_sb_Dhl;`。位址在 D 就算好，但分支條件要到 X 才知道，所以它會先在 `!stall_Xhl` 時被存進 `branch_targ_Xhl`，等 X 階段確定成立再由 `branch_targ_Phl` 送回 next-PC mux。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|jump_targ_Dhl": {
+      "sum": "D 階段算好的 jal 目標位址 pc+imm_uj",
+      "naming": [["jump", "jump", "跳躍"], ["targ", "target", "目標位址"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire：`assign jump_targ_Dhl = pc_Dhl + imm_uj_Dhl;`。因為 `jal` 不需要任何條件判斷，`riscv_CoreCtrl` 在 D 階段就把 `brj_taken_Dhl` 拉起來、`pc_mux_sel_Phl` 設成 `pm_j`，這個值就直接經 `jump_targ_Phl` 成為下一個 PC，只會浪費一個 cycle 的 F。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rf_raddr0_Dhl": {
+      "sum": "送給 regfile 讀埠 0 的位址，等於指令的 rs1",
+      "naming": [["rf", "register file", "暫存器檔案"], ["raddr", "read address", "讀取位址（暫存器編號）"], ["0", "port 0", "第 0 個讀取埠"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "5-bit wire，宣告時就直接 `= inst_rs1_Dhl`。它接到 `rfile` 實例的 `raddr0`，同 cycle 組合讀出 `rf_rdata0_Dhl`。因為這顆核心沒有 bypass，讀到的值是否正確完全靠 `riscv_CoreCtrl` 的 `stall_hazard_Dhl` 把有相依的指令擋在 D 階段來保證。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rf_rdata0_Dhl": {
+      "sum": "regfile 讀埠 0 讀回的 rs1 值",
+      "naming": [["rf", "register file", "暫存器檔案"], ["rdata", "read data", "讀出的資料"], ["0", "port 0", "第 0 個讀取埠"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire，由 `rfile`（`riscv_CoreDpathRegfile`）的 `rdata0` 驅動，讀 x0 時為 0。兩個去處：op0 mux 的 `2'd0` 那一路（大部分算術指令的第一運算元），以及 `jumpreg_targ_pretruncate_Dhl = rf_rdata0_Dhl + imm_i_Dhl`（jalr 的目標位址）。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rf_raddr1_Dhl": {
+      "sum": "送給 regfile 讀埠 1 的位址，等於指令的 rs2",
+      "naming": [["rf", "register file", "暫存器檔案"], ["raddr", "read address", "讀取位址（暫存器編號）"], ["1", "port 1", "第 1 個讀取埠"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "5-bit wire，宣告時就直接 `= inst_rs2_Dhl`，接到 `rfile` 的 `raddr1`。R-type、branch、store 這些一次要讀兩個暫存器的指令才真的需要它；只用 rs1 的指令（如 addi）解碼表會把 `rs2_en_Dhl` 設成 `n`，讀出來的值就不會被 hazard 檢查採用。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rf_rdata1_Dhl": {
+      "sum": "regfile 讀埠 1 讀回的 rs2 值",
+      "naming": [["rf", "register file", "暫存器檔案"], ["rdata", "read data", "讀出的資料"], ["1", "port 1", "第 1 個讀取埠"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire，由 `rfile` 的 `rdata1` 驅動。兩個去處：op1 mux 的 `3'd0` 那一路（R-type / branch 的第二運算元），以及 `wdata_Dhl`——store 指令要寫進記憶體的值。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|jumpreg_targ_Dhl": {
+      "sum": "jalr 的目標位址：(rs1 + imm_i) 最低位清 0",
+      "naming": [["jump", "jump", "跳躍"], ["reg", "register", "暫存器（目標來自暫存器）"], ["targ", "target", "目標位址"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire：`assign jumpreg_targ_Dhl = {jumpreg_targ_pretruncate_Dhl[31:1], 1'b0};`，也就是把相加結果的 bit 0 強制清成 0，這是 RISC-V 對 `jalr` 的規定。它經 `jumpreg_targ_Phl` 接到 next-PC mux 的 `2'd3`。不過 `riscv_CoreCtrl` 的 JALR 解碼列目前被註解掉，這條路徑還沒有指令會觸發。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|jumpreg_targ_pretruncate_Dhl": {
+      "sum": "jalr 目標位址在清掉最低位之前的中間值",
+      "naming": [["jump", "jump", "跳躍"], ["reg", "register", "暫存器"], ["targ", "target", "目標位址"], ["pretruncate", "pre-truncate", "截斷前的值"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire，`= rf_rdata0_Dhl + imm_i_Dhl`，也就是 rs1 加上 I-type 立即值的原始結果。唯一的用途是被 `jumpreg_targ_Dhl` 取 [31:1] 後補一個 0，因為指令位址必須對齊 2 bytes。拆成兩條 wire 純粹是為了讓「相加」和「截斷」兩步看得清楚。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|shamt_Dhl": {
+      "sum": "把 5-bit 的 shamt 零延伸成 32 bits，供 op1 mux 使用",
+      "naming": [["shamt", "shift amount", "位移量"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire：`{ 27'b0, inst_shamt_Dhl }`。它是 op1 mux 的 `3'd1` 那一路（ctrl 的 `bm_shamt`），給 slli / srli / srai 這類立即位移指令當第二運算元；`riscv_CoreDpathAluShifter` 內部只看它的低 5 位。目前解碼表裡這些指令都被註解掉，所以尚未被選用。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|const0": {
+      "sum": "32-bit 常數 0，同時當 op0 和 op1 的一路 mux 輸入",
+      "naming": [["const", "constant", "常數"], ["0", "zero", "值為 0"]],
+      "desc": "`wire [31:0] const0 = 32'd0;`。它是 op0 mux 的 `2'd3`（ctrl 的 `am_0`，給 `lui` 用：0 + imm_u）和 op1 mux 的 `3'd6`（`bm_0`，給 `jal` 的 pc4+0、以及 `csrw` 的 rs1+0 用）。用一條具名的常數 wire 而不是直接寫 `32'd0`，是為了讓 mux 的每一路都有名字、波形上比較好看。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|op0_mux_out_Dhl": {
+      "sum": "D 階段選出的 ALU 第 0 個運算元",
+      "naming": [["op0", "operand 0", "第 0 個運算元"], ["mux", "multiplexer", "多工器"], ["out", "output", "輸出"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire，依 `op0_mux_sel_Dhl` 選 `rf_rdata0_Dhl`(0) / `pc_Dhl`(1) / `pc_plus4_Dhl`(2) / `const0`(3)，其餘為 32'bx。它在 `!stall_Xhl` 時被存進 `op0_mux_out_Xhl`，之後同時接到 `alu` 的 `in0` 和 `imuldiv` 的 `muldivreq_msg_a`。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|op1_mux_out_Dhl": {
+      "sum": "D 階段選出的 ALU 第 1 個運算元",
+      "naming": [["op1", "operand 1", "第 1 個運算元"], ["mux", "multiplexer", "多工器"], ["out", "output", "輸出"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire，依 `op1_mux_sel_Dhl` 從七路中選一路：`rf_rdata1_Dhl`(0)、`shamt_Dhl`(1)、`imm_u_Dhl`(2)、`imm_sb_Dhl`(3)、`imm_i_Dhl`(4)、`imm_s_Dhl`(5)、`const0`(6)。它在 `!stall_Xhl` 時被存進 `op1_mux_out_Xhl`，接到 `alu` 的 `in1` 與 `imuldiv` 的 `muldivreq_msg_b`。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wdata_Dhl": {
+      "sum": "D 階段的 store 寫入資料，就是 rs2 的值",
+      "naming": [["w", "write", "寫入"], ["data", "data", "資料"], ["_Dhl", "Decode stage", "解碼階段的訊號"]],
+      "desc": "32-bit wire：`wire [31:0] wdata_Dhl = rf_rdata1_Dhl;`。原始碼註解寫的是「wdata with bypassing」，但這個 stall 版本沒有 bypass mux，所以其實只是 `rf_rdata1_Dhl` 的別名。它在 `!stall_Xhl` 時被存進 `wdata_Xhl`，最後成為 `dmemreq_msg_data`。取單獨的名字是為了和 op1 那條路徑分開（store 的位址走 ALU、資料走這裡）。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_Xhl": {
+      "sum": "X 階段的 PC 暫存器，目前只作為 pipeline 中繼",
+      "naming": [["pc", "program counter", "程式計數器"], ["_Xhl", "eXecute stage", "執行階段的訊號"]],
+      "desc": "32-bit reg，在 `!stall_Xhl` 時從 `pc_Dhl` 更新。dpath 裡它唯一的用途是繼續往下傳給 `pc_Mhl`（再到 `pc_Whl`、`pc_debug`），並沒有參與任何運算——這條 PC 鏈主要是給模擬時追蹤 / 除錯用的。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_targ_Xhl": {
+      "sum": "X 階段的分支目標位址，分支成立時送回 next-PC mux",
+      "naming": [["branch", "branch", "分支"], ["targ", "target", "目標位址"], ["_Xhl", "eXecute stage", "執行階段的訊號"]],
+      "desc": "32-bit reg，在 `!stall_Xhl` 時從 `branch_targ_Dhl` 更新。它被 `assign branch_targ_Phl = branch_targ_Xhl;` 拉回 P 階段：當 `riscv_CoreCtrl` 判定 `brj_taken_Xhl` 時 `pc_mux_sel_Phl` 變成 `pm_b`，這個位址就成為下一個 PC，同時 F / D 的指令會被 `squash_Fhl` / `squash_Dhl` 作廢。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|op0_mux_out_Xhl": {
+      "sum": "X 階段的第 0 個運算元，同時餵給 ALU 和乘除法器",
+      "naming": [["op0", "operand 0", "第 0 個運算元"], ["mux", "multiplexer", "多工器"], ["out", "output", "輸出"], ["_Xhl", "eXecute stage", "執行階段的訊號"]],
+      "desc": "32-bit reg，在 `!stall_Xhl` 時從 `op0_mux_out_Dhl` 更新。它接到 `alu` 的 `in0`、`imuldiv` 的 `muldivreq_msg_a`，並參與分支條件邏輯（`diffSigns_Xhl` 以及 `branch_cond_lt_Xhl` / `branch_cond_geu_Xhl` 用到它的 bit 31）。乘除法迭代期間 X 會一直 stall，所以這個值會被凍住不變，保證運算元穩定。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|op1_mux_out_Xhl": {
+      "sum": "X 階段的第 1 個運算元，同時餵給 ALU 和乘除法器",
+      "naming": [["op1", "operand 1", "第 1 個運算元"], ["mux", "multiplexer", "多工器"], ["out", "output", "輸出"], ["_Xhl", "eXecute stage", "執行階段的訊號"]],
+      "desc": "32-bit reg，在 `!stall_Xhl` 時從 `op1_mux_out_Dhl` 更新。接到 `alu` 的 `in1` 與 `imuldiv` 的 `muldivreq_msg_b`，並提供 `diffSigns_Xhl` 以及 `branch_cond_ltu_Xhl` / `branch_cond_ge_Xhl` 所需的 bit 31。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wdata_Xhl": {
+      "sum": "X 階段的 store 資料，直接輸出成 dmemreq_msg_data",
+      "naming": [["w", "write", "寫入"], ["data", "data", "資料"], ["_Xhl", "eXecute stage", "執行階段的訊號"]],
+      "desc": "32-bit reg，在 `!stall_Xhl` 時從 `wdata_Dhl`（rs2 的值）更新。`assign dmemreq_msg_data = wdata_Xhl;` 讓它成為 store 要寫進記憶體的資料；dmem 請求正是在 X 階段送出的。它同時也往下存進 `wdata_Mhl`。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|alu_out_Xhl": {
+      "sum": "ALU 的 32-bit 運算結果（也是 load/store 的位址）",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"], ["out", "output", "輸出"], ["_Xhl", "eXecute stage", "執行階段的訊號"]],
+      "desc": "32-bit wire，由 `alu` 實例（`riscv_CoreDpathAlu`）的 `out` 驅動，運算種類由 `alu_fn_Xhl` 決定。三個去處：`dmemreq_msg_addr`（load / store 位址）、`execute_mux_out_Xhl` 的 `1'd0` 那一路（寫回值）、以及所有 `branch_cond_*_Xhl` 的判斷（等於 0 代表兩數相等，bit 31 代表減法結果為負）。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|diffSigns_Xhl": {
+      "sum": "兩個運算元的符號位是否不同，供比較類分支使用",
+      "naming": [["diff", "different", "不同的"], ["Signs", "signs", "正負號（最高位元）"], ["_Xhl", "eXecute stage", "執行階段的訊號"]],
+      "desc": "1-bit wire：`op0_mux_out_Xhl[31] ^ op1_mux_out_Xhl[31]`。做有號 / 無號比較時，如果兩數符號位不同，`alu_sub` 的結果可能溢位而不可信，所以 `branch_cond_lt_Xhl`、`branch_cond_ltu_Xhl`、`branch_cond_ge_Xhl`、`branch_cond_geu_Xhl` 這四條線在 `diffSigns_Xhl` 為 1 時改成直接看某一方的符號位，為 0 時才看減法結果的 bit 31。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|muldivresp_msg_result_Xhl": {
+      "sum": "乘除法器回傳的 64-bit 結果（上半 / 下半各有意義）",
+      "naming": [["muldiv", "multiply / divide", "乘除法"], ["resp", "response", "回應"], ["msg", "message", "訊息"], ["result", "result", "結果"], ["_Xhl", "eXecute stage", "執行階段的訊號"]],
+      "desc": "64-bit wire，由 `imuldiv` 實例（`imuldiv_IntMulDivIterative`）的 `muldivresp_msg_result` 驅動。乘法時是 64-bit 乘積；除法時 `imuldiv_IntDivIterative` 把餘數放在 [63:32]、商放在 [31:0]。`muldiv_mux_out_Xhl` 依 `muldiv_mux_sel_Xhl` 取下半（mul / div / divu）或上半（rem / remu）。只有 `muldivresp_val` 為 1 的那個 cycle 才有意義。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|muldiv_mux_out_Xhl": {
+      "sum": "從 64-bit 乘除法結果切出來的 32-bit 值",
+      "naming": [["muldiv", "multiply / divide", "乘除法"], ["mux", "multiplexer", "多工器"], ["out", "output", "輸出"], ["_Xhl", "eXecute stage", "執行階段的訊號"]],
+      "desc": "32-bit wire：`muldiv_mux_sel_Xhl == 1'd0` 取 `muldivresp_msg_result_Xhl[31:0]`，`1'd1` 取 `[63:32]`，其餘為 32'bx。它是 `execute_mux_out_Xhl` 的 `1'd1` 那一路，也就是 mul / div / rem 類指令要寫回暫存器的值。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|execute_mux_out_Xhl": {
+      "sum": "X 階段最終的運算結果：ALU 或乘除法二選一",
+      "naming": [["execute", "execute", "執行階段"], ["mux", "multiplexer", "多工器"], ["out", "output", "輸出"], ["_Xhl", "eXecute stage", "執行階段的訊號"]],
+      "desc": "32-bit wire：`execute_mux_sel_Xhl == 1'd0` 取 `alu_out_Xhl`，`1'd1` 取 `muldiv_mux_out_Xhl`。它在 `!stall_Mhl` 時被存進 `execute_mux_out_Mhl`，再經寫回 mux 送回 regfile。對 load / store / branch 這類指令控制器填 `em_x`，這個值不會被用到。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_Mhl": {
+      "sum": "M 階段的 PC 暫存器，只作為除錯用的 pipeline 中繼",
+      "naming": [["pc", "program counter", "程式計數器"], ["_Mhl", "Memory stage", "記憶體階段的訊號"]],
+      "desc": "32-bit reg，在 `!stall_Mhl` 時從 `pc_Xhl` 更新，再往下傳給 `pc_Whl`。dpath 裡沒有任何運算用到它，純粹是讓每個階段都保留「這條指令的位址」以便模擬時追蹤。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|execute_mux_out_Mhl": {
+      "sum": "M 階段保留的執行結果，非 load 指令的寫回值",
+      "naming": [["execute", "execute", "執行階段"], ["mux", "multiplexer", "多工器"], ["out", "output", "輸出"], ["_Mhl", "Memory stage", "記憶體階段的訊號"]],
+      "desc": "32-bit reg，在 `!stall_Mhl` 時從 `execute_mux_out_Xhl` 更新。它是寫回 mux 的 `1'd0` 那一路（`wb_mux_sel_Mhl == 0`，對應 ctrl 的 `wm_alu`），也就是 ALU / 乘除法結果要寫回 regfile 時走的路徑。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wdata_Mhl": {
+      "sum": "M 階段保留的 store 資料，實際上已經沒有人使用",
+      "naming": [["w", "write", "寫入"], ["data", "data", "資料"], ["_Mhl", "Memory stage", "記憶體階段的訊號"]],
+      "desc": "32-bit reg，在 `!stall_Mhl` 時從 `wdata_Xhl` 更新。不過 dmem 的請求（含 `dmemreq_msg_data`）是在 X 階段就送出的，所以這個 M 階段的副本在現在的程式碼裡沒有任何地方讀取——看起來是從別的版本（在 M 階段發記憶體請求）留下來的殘留訊號。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_lb_Mhl": {
+      "sum": "把 dmem 回來的最低 byte 做有號延伸（lb 用）",
+      "naming": [["dmem", "data memory", "資料記憶體"], ["resp", "response", "回應"], ["lb", "load byte", "載入一個 byte（有號）"], ["_Mhl", "Memory stage", "記憶體階段的訊號"]],
+      "desc": "32-bit wire：`{ {24{dmemresp_msg_data[7]}}, dmemresp_msg_data[7:0] }`，也就是把 bit 7 複製 24 次當高位。它是 `dmemresp_mux_out_Mhl` 的 `3'd1` 那一路（ctrl 的 `dmm_b`）。目前 `riscv_CoreCtrl` 的 `RISCV_INST_MSG_LB` 解碼列被註解掉，這條路徑還沒有指令會用到。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_lbu_Mhl": {
+      "sum": "把 dmem 回來的最低 byte 做零延伸（lbu 用）",
+      "naming": [["dmem", "data memory", "資料記憶體"], ["resp", "response", "回應"], ["lbu", "load byte unsigned", "載入一個 byte（無號）"], ["_Mhl", "Memory stage", "記憶體階段的訊號"]],
+      "desc": "32-bit wire：`{ {24{1'b0}}, dmemresp_msg_data[7:0] }`，高 24 位補 0。它是 `dmemresp_mux_out_Mhl` 的 `3'd2` 那一路（ctrl 的 `dmm_bu`）。和 lb 一樣，對應的解碼列目前被註解掉。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_lh_Mhl": {
+      "sum": "把 dmem 回來的低 halfword 做有號延伸（lh 用）",
+      "naming": [["dmem", "data memory", "資料記憶體"], ["resp", "response", "回應"], ["lh", "load halfword", "載入 2 bytes（有號）"], ["_Mhl", "Memory stage", "記憶體階段的訊號"]],
+      "desc": "32-bit wire：`{ {16{dmemresp_msg_data[15]}}, dmemresp_msg_data[15:0] }`。它是 `dmemresp_mux_out_Mhl` 的 `3'd3` 那一路（ctrl 的 `dmm_h`）；`RISCV_INST_MSG_LH` 的解碼列目前同樣被註解掉。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_lhu_Mhl": {
+      "sum": "把 dmem 回來的低 halfword 做零延伸（lhu 用）",
+      "naming": [["dmem", "data memory", "資料記憶體"], ["resp", "response", "回應"], ["lhu", "load halfword unsigned", "載入 2 bytes（無號）"], ["_Mhl", "Memory stage", "記憶體階段的訊號"]],
+      "desc": "32-bit wire：`{ {16{1'b0}}, dmemresp_msg_data[15:0] }`，高 16 位補 0。它是 `dmemresp_mux_out_Mhl` 的 `3'd4` 那一路（ctrl 的 `dmm_hu`），目前也還沒有指令會選到。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_mux_out_Mhl": {
+      "sum": "load 資料經過 subword 調整後的最終值",
+      "naming": [["dmem", "data memory", "資料記憶體"], ["resp", "response", "回應"], ["mux", "multiplexer", "多工器"], ["out", "output", "輸出"], ["_Mhl", "Memory stage", "記憶體階段的訊號"]],
+      "desc": "32-bit wire，依 `dmemresp_mux_sel_Mhl` 選：`3'd0` 原始 `dmemresp_msg_data`（lw）、`3'd1` `dmemresp_lb_Mhl`、`3'd2` `dmemresp_lbu_Mhl`、`3'd3` `dmemresp_lh_Mhl`、`3'd4` `dmemresp_lhu_Mhl`，其餘 32'bx。它是寫回 mux 的 `1'd1` 那一路，也就是 load 指令要寫回 rd 的值。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wb_mux_out_Mhl": {
+      "sum": "M 階段決定好的寫回值：執行結果或記憶體資料",
+      "naming": [["wb", "writeback", "寫回"], ["mux", "multiplexer", "多工器"], ["out", "output", "輸出"], ["_Mhl", "Memory stage", "記憶體階段的訊號"]],
+      "desc": "32-bit wire：`wb_mux_sel_Mhl == 1'd0` 取 `execute_mux_out_Mhl`，`1'd1` 取 `dmemresp_mux_out_Mhl`，其餘 32'bx。它在 `!stall_Whl` 時被存進 `wb_mux_out_Whl`。注意寫回 mux 放在 M 階段的尾端、而不是 W 階段開頭，這樣 W 階段就只剩單純的寫入動作。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_Whl": {
+      "sum": "W 階段的 PC 暫存器，供除錯 / 反組譯追蹤用",
+      "naming": [["pc", "program counter", "程式計數器"], ["_Whl", "Writeback stage", "寫回階段的訊號"]],
+      "desc": "32-bit reg，在 `!stall_Whl`（這份設計裡恆成立）時從 `pc_Mhl` 更新。它唯一的去處是再延遲一拍成為 `pc_debug`。模擬環境（例如 `riscvstall-sim.v` 的 trace 輸出）會用階層路徑窺看這些 PC 來對照執行到哪一條指令。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wb_mux_out_Whl": {
+      "sum": "W 階段真正要寫進 regfile 的 32-bit 值",
+      "naming": [["wb", "writeback", "寫回"], ["mux", "multiplexer", "多工器"], ["out", "output", "輸出"], ["_Whl", "Writeback stage", "寫回階段的訊號"]],
+      "desc": "32-bit reg，在 `!stall_Whl` 時從 `wb_mux_out_Mhl` 更新。它接到 `rfile` 的 `wdata_p`（在 `rf_wen_Whl` 為 1 且 `rf_waddr_Whl` 非 0 時寫入），同時也 `assign` 給輸出 `proc2csr_data_Whl`，讓 `csrw` 指令可以把這個值寫進 `riscv_CoreCtrl` 的 `csr_status` 回報給 testbench。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_debug": {
+      "sum": "把 W 階段的 PC 再延遲一拍，純粹給模擬除錯看",
+      "naming": [["pc", "program counter", "程式計數器"], ["debug", "debug", "除錯用"]],
+      "desc": "32-bit reg，無條件 `pc_debug <= pc_Whl;`（不受任何 stall 影響）。它不驅動任何邏輯，只是讓波形或 `$display` 能看到「剛剛完成的那條指令的 PC」。`riscv_CoreCtrl` 那邊有對應的 `ir_debug` 與 `inst_msg_disasm_debug`，兩者搭配就能印出 PC 加反組譯後的指令。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|inst_msg_from_bits": {
+      "sum": "riscv_InstMsgFromBits 的實例，把 32-bit 指令拆成各欄位",
+      "naming": [["inst", "instruction", "指令"], ["msg", "message", "訊息"], ["from_bits", "from bits", "從 bits 拆出欄位"]],
+      "desc": "`riscv_InstMsgFromBits`（定義在 `riscvstall-InstMsg.v`）的實例，輸入是 `inst_Dhl`。dpath 只接了它需要的輸出：`rs1`→`inst_rs1_Dhl`、`rs2`→`inst_rs2_Dhl`、`rd`→`inst_rd_Dhl`、`shamt`→`inst_shamt_Dhl`，以及五種立即值 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`；`opcode`、`funct3`、`funct7` 留空不接，因為解碼是 ctrl 的工作。`riscv_CoreCtrl` 裡也有一個同名的實例，接的是自己的 `ir_Dhl` 且只取暫存器編號。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rfile": {
+      "sum": "register file 的實例：D 階段讀兩個暫存器、W 階段寫一個",
+      "naming": [["rfile", "register file", "暫存器檔案"]],
+      "desc": "`riscv_CoreDpathRegfile` 的實例。讀埠接 D 階段：`raddr0`←`rf_raddr0_Dhl`（rs1）、`raddr1`←`rf_raddr1_Dhl`（rs2），輸出 `rf_rdata0_Dhl` / `rf_rdata1_Dhl`。寫埠接 W 階段：`wen_p`←`rf_wen_Whl`、`waddr_p`←`rf_waddr_Whl`、`wdata_p`←`wb_mux_out_Whl`，在 `clk` 正緣寫入。因為讀是組合、寫是正緣，同一個 cycle 內讀到的還是舊值，這也是為什麼 ctrl 需要 `stall_hazard_Dhl` 把相依的指令多擋一拍。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|alu": {
+      "sum": "主 ALU 的實例，在 X 階段做加減 / 位移 / 邏輯運算",
+      "naming": [["alu", "arithmetic logic unit", "算術邏輯單元"]],
+      "desc": "`riscv_CoreDpathAlu`（定義在 `riscvstall-CoreDpathAlu.v`）的實例：`in0`←`op0_mux_out_Xhl`、`in1`←`op1_mux_out_Xhl`、`fn`←`alu_fn_Xhl`、`out`→`alu_out_Xhl`。它內部用 `fn` 解碼出 addsub / shifter / logical / muldiv 四個子單元的控制碼，再用 `out_mux_sel` 選輸出。這顆核心的乘除法走獨立的 `imuldiv`，所以 ALU 內建的 `riscv_CoreDpathAluMulDiv` 在這裡不會被選到。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imuldiv": {
+      "sum": "迭代式乘除法器的實例，用 val-rdy 握手和 X 階段溝通",
+      "naming": [["imuldiv", "iterative multiply / divide", "迭代式乘除法單元"]],
+      "desc": "`imuldiv_IntMulDivIterative`（定義在 `imuldiv/imuldiv-IntMulDivIterative.v`）的實例。請求端：`muldivreq_msg_fn`←`muldivreq_msg_fn_Xhl`、`muldivreq_msg_a`←`op0_mux_out_Xhl`、`muldivreq_msg_b`←`op1_mux_out_Xhl`，加上 `muldivreq_val` / `muldivreq_rdy` 握手；回應端：`muldivresp_msg_result`→`muldivresp_msg_result_Xhl`，加上 `muldivresp_val` / `muldivresp_rdy`。它內部再分給 `imul`（`imuldiv_IntMulIterative`）和 `idiv`（`imuldiv_IntDivIterative`）兩個子單元，依 `muldivreq_msg_fn` 是不是 mul 決定走哪邊。因為是迭代式的，要花多個 cycle，期間 `riscv_CoreCtrl` 會用 `stall_muldiv_Xhl` 把 X 階段卡住。"
+    },
+    "riscvstall/riscvstall-CoreDpath.v||riscv_CoreDpath": {
+      "sum": "5 階段 RISC-V 核心的資料路徑 module，和 riscv_CoreCtrl 合起來就是 riscv_Core",
+      "naming": [["riscv", "RISC-V", "這顆 RISC-V 處理器"], ["Core", "core", "處理器核心"], ["Dpath", "datapath", "資料路徑"]],
+      "desc": "定義在 `riscvstall-CoreDpath.v`，被 `riscv_Core` 以實例名 `dpath` instantiate 一次。它包含 P / F / D / X / M / W 六段邏輯與其間的 pipeline 暫存器，負責「算資料」：next-PC mux、指令欄位拆解、regfile 讀寫、運算元 mux、ALU 與乘除法、load 資料的 subword 調整、寫回 mux。Port 可分四組：記憶體介面（`imemreq_msg_addr`、`dmemreq_msg_addr` / `dmemreq_msg_data` / `dmemresp_msg_data`）、ctrl→dpath 的控制訊號（各種 `*_mux_sel_*`、`alu_fn_Xhl`、`rf_wen_Whl`、`stall_*`…）、dpath→ctrl 的狀態訊號（`branch_cond_*_Xhl`、`proc2csr_data_Whl`）、以及乘除法器的 val-rdy 握手線。它 `include` 並 instantiate 了 `riscv_InstMsgFromBits`、`riscv_CoreDpathRegfile`、`riscv_CoreDpathAlu` 和 `imuldiv_IntMulDivIterative`。"
+    },
+    "`RISCV_CORE_DPATH_V": {
+      "sum": "riscvstall-CoreDpath.v 的 include guard macro",
+      "naming": [["RISCV_", "RISC-V core", "處理器本身的 macro 前綴"], ["CORE", "core", "處理器核心"], ["DPATH", "datapath", "資料路徑"], ["_V", "include guard", "檔名_V：防止同一個檔案被 include 兩次"]],
+      "desc": "include guard：檔案開頭 `ifndef RISCV_CORE_DPATH_V` / `define RISCV_CORE_DPATH_V`，檔尾 `endif`。`riscvstall-Core.v` 會 `include \"riscvstall-CoreDpath.v\"`，有了這個 guard，即使同一份檔案在多處被引入，`riscv_CoreDpath` 也只會被定義一次。它沒有值，只是個「已讀過」的旗標。"
+    }
+  }
+}

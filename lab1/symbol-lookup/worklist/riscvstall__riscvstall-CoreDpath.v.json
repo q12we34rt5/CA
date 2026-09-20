@@ -1,0 +1,1445 @@
+[
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:229",
+   "riscvstall/riscvstall-CoreDpath.v:128",
+   "riscvstall/riscvstall-CoreDpath.v:15",
+   "riscvstall/riscvstall-CoreDpath.v:154",
+   "riscvstall/riscvstall-CoreDpath.v:242",
+   "riscvstall/riscvstall-CoreDpath.v:301",
+   "riscvstall/riscvstall-CoreDpath.v:352",
+   "riscvstall/riscvstall-CoreDpath.v:373",
+   "riscvstall/riscvstall-CoreDpath.v:404",
+   "riscvstall/riscvstall-CoreDpath.v:428",
+   "riscvstall/riscvstall-CoreDpath.v:99"
+  ],
+  "n_occ": 11
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:230",
+   "riscvstall/riscvstall-CoreDpath.v:100",
+   "riscvstall/riscvstall-CoreDpath.v:129",
+   "riscvstall/riscvstall-CoreDpath.v:16",
+   "riscvstall/riscvstall-CoreDpath.v:429"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imemreq_msg_addr",
+  "name": "imemreq_msg_addr",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:234",
+   "riscvstall/riscvstall-CoreDpath.v:119",
+   "riscvstall/riscvstall-CoreDpath.v:20"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemreq_msg_addr",
+  "name": "dmemreq_msg_addr",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:238",
+   "riscvstall/riscvstall-CoreDpath.v:24",
+   "riscvstall/riscvstall-CoreDpath.v:272"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemreq_msg_data",
+  "name": "dmemreq_msg_data",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:239",
+   "riscvstall/riscvstall-CoreDpath.v:25",
+   "riscvstall/riscvstall-CoreDpath.v:273"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_msg_data",
+  "name": "dmemresp_msg_data",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:240",
+   "riscvstall/riscvstall-CoreDpath.v:26",
+   "riscvstall/riscvstall-CoreDpath.v:316",
+   "riscvstall/riscvstall-CoreDpath.v:319",
+   "riscvstall/riscvstall-CoreDpath.v:322",
+   "riscvstall/riscvstall-CoreDpath.v:325",
+   "riscvstall/riscvstall-CoreDpath.v:328"
+  ],
+  "n_occ": 9
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imem_initial_fetch_Fhl",
+  "name": "imem_initial_fetch_Fhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:243",
+   "riscvstall/riscvstall-CoreDpath.v:120",
+   "riscvstall/riscvstall-CoreDpath.v:30"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_mux_sel_Phl",
+  "name": "pc_mux_sel_Phl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input [1:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:244",
+   "riscvstall/riscvstall-CoreDpath.v:31",
+   "riscvstall/riscvstall-CoreDpath.v:87",
+   "riscvstall/riscvstall-CoreDpath.v:88",
+   "riscvstall/riscvstall-CoreDpath.v:89",
+   "riscvstall/riscvstall-CoreDpath.v:90"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|op0_mux_sel_Dhl",
+  "name": "op0_mux_sel_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input [1:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:245",
+   "riscvstall/riscvstall-CoreDpath.v:210",
+   "riscvstall/riscvstall-CoreDpath.v:211",
+   "riscvstall/riscvstall-CoreDpath.v:212",
+   "riscvstall/riscvstall-CoreDpath.v:213",
+   "riscvstall/riscvstall-CoreDpath.v:32"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|op1_mux_sel_Dhl",
+  "name": "op1_mux_sel_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input [2:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:246",
+   "riscvstall/riscvstall-CoreDpath.v:219",
+   "riscvstall/riscvstall-CoreDpath.v:220",
+   "riscvstall/riscvstall-CoreDpath.v:221",
+   "riscvstall/riscvstall-CoreDpath.v:222",
+   "riscvstall/riscvstall-CoreDpath.v:223",
+   "riscvstall/riscvstall-CoreDpath.v:224",
+   "riscvstall/riscvstall-CoreDpath.v:225",
+   "riscvstall/riscvstall-CoreDpath.v:33"
+  ],
+  "n_occ": 9
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|inst_Dhl",
+  "name": "inst_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:247",
+   "riscvstall/riscvstall-CoreDpath.v:34",
+   "riscvstall/riscvstall-CoreDpath.v:385"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|alu_fn_Xhl",
+  "name": "alu_fn_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input [3:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:248",
+   "riscvstall/riscvstall-CoreDpath.v:35",
+   "riscvstall/riscvstall-CoreDpath.v:420"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|muldivreq_msg_fn_Xhl",
+  "name": "muldivreq_msg_fn_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input [2:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:249",
+   "riscvstall/riscvstall-CoreDpath.v:36",
+   "riscvstall/riscvstall-CoreDpath.v:430"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|muldivreq_val",
+  "name": "muldivreq_val",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:250",
+   "riscvstall/riscvstall-CoreDpath.v:37",
+   "riscvstall/riscvstall-CoreDpath.v:433"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|muldivreq_rdy",
+  "name": "muldivreq_rdy",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:251",
+   "riscvstall/riscvstall-CoreDpath.v:38",
+   "riscvstall/riscvstall-CoreDpath.v:434"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|muldivresp_val",
+  "name": "muldivresp_val",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:252",
+   "riscvstall/riscvstall-CoreDpath.v:39",
+   "riscvstall/riscvstall-CoreDpath.v:436"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|muldivresp_rdy",
+  "name": "muldivresp_rdy",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:253",
+   "riscvstall/riscvstall-CoreDpath.v:40",
+   "riscvstall/riscvstall-CoreDpath.v:437"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|muldiv_mux_sel_Xhl",
+  "name": "muldiv_mux_sel_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:254",
+   "riscvstall/riscvstall-CoreDpath.v:282",
+   "riscvstall/riscvstall-CoreDpath.v:283",
+   "riscvstall/riscvstall-CoreDpath.v:41"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|execute_mux_sel_Xhl",
+  "name": "execute_mux_sel_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:255",
+   "riscvstall/riscvstall-CoreDpath.v:289",
+   "riscvstall/riscvstall-CoreDpath.v:290",
+   "riscvstall/riscvstall-CoreDpath.v:42"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_mux_sel_Mhl",
+  "name": "dmemresp_mux_sel_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input [2:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:256",
+   "riscvstall/riscvstall-CoreDpath.v:328",
+   "riscvstall/riscvstall-CoreDpath.v:329",
+   "riscvstall/riscvstall-CoreDpath.v:330",
+   "riscvstall/riscvstall-CoreDpath.v:331",
+   "riscvstall/riscvstall-CoreDpath.v:332",
+   "riscvstall/riscvstall-CoreDpath.v:43"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wb_mux_sel_Mhl",
+  "name": "wb_mux_sel_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:257",
+   "riscvstall/riscvstall-CoreDpath.v:341",
+   "riscvstall/riscvstall-CoreDpath.v:342",
+   "riscvstall/riscvstall-CoreDpath.v:44"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rf_wen_Whl",
+  "name": "rf_wen_Whl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:258",
+   "riscvstall/riscvstall-CoreDpath.v:409",
+   "riscvstall/riscvstall-CoreDpath.v:45"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rf_waddr_Whl",
+  "name": "rf_waddr_Whl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:259",
+   "riscvstall/riscvstall-CoreDpath.v:410",
+   "riscvstall/riscvstall-CoreDpath.v:46"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|squash_Fhl",
+  "name": "squash_Fhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:260",
+   "riscvstall/riscvstall-CoreDpath.v:107",
+   "riscvstall/riscvstall-CoreDpath.v:47"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|stall_Fhl",
+  "name": "stall_Fhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:261",
+   "riscvstall/riscvstall-CoreDpath.v:104",
+   "riscvstall/riscvstall-CoreDpath.v:132",
+   "riscvstall/riscvstall-CoreDpath.v:48"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|stall_Dhl",
+  "name": "stall_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:262",
+   "riscvstall/riscvstall-CoreDpath.v:155",
+   "riscvstall/riscvstall-CoreDpath.v:49"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|stall_Xhl",
+  "name": "stall_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:263",
+   "riscvstall/riscvstall-CoreDpath.v:243",
+   "riscvstall/riscvstall-CoreDpath.v:50"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|stall_Mhl",
+  "name": "stall_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:264",
+   "riscvstall/riscvstall-CoreDpath.v:302",
+   "riscvstall/riscvstall-CoreDpath.v:51"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|stall_Whl",
+  "name": "stall_Whl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:265",
+   "riscvstall/riscvstall-CoreDpath.v:353",
+   "riscvstall/riscvstall-CoreDpath.v:52"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_cond_eq_Xhl",
+  "name": "branch_cond_eq_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:269",
+   "riscvstall/riscvstall-CoreDpath.v:263",
+   "riscvstall/riscvstall-CoreDpath.v:264",
+   "riscvstall/riscvstall-CoreDpath.v:56"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_cond_ne_Xhl",
+  "name": "branch_cond_ne_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:270",
+   "riscvstall/riscvstall-CoreDpath.v:264",
+   "riscvstall/riscvstall-CoreDpath.v:57"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_cond_lt_Xhl",
+  "name": "branch_cond_lt_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:271",
+   "riscvstall/riscvstall-CoreDpath.v:265",
+   "riscvstall/riscvstall-CoreDpath.v:58"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_cond_ltu_Xhl",
+  "name": "branch_cond_ltu_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:272",
+   "riscvstall/riscvstall-CoreDpath.v:266",
+   "riscvstall/riscvstall-CoreDpath.v:59"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_cond_ge_Xhl",
+  "name": "branch_cond_ge_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:273",
+   "riscvstall/riscvstall-CoreDpath.v:267",
+   "riscvstall/riscvstall-CoreDpath.v:60"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_cond_geu_Xhl",
+  "name": "branch_cond_geu_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:274",
+   "riscvstall/riscvstall-CoreDpath.v:268",
+   "riscvstall/riscvstall-CoreDpath.v:61"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|proc2csr_data_Whl",
+  "name": "proc2csr_data_Whl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "output",
+  "decl": "output [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:275",
+   "riscvstall/riscvstall-CoreDpath.v:365",
+   "riscvstall/riscvstall-CoreDpath.v:62"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_plus4_Phl",
+  "name": "pc_plus4_Phl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:71",
+   "riscvstall/riscvstall-CoreDpath.v:81",
+   "riscvstall/riscvstall-CoreDpath.v:87"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_targ_Phl",
+  "name": "branch_targ_Phl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:72",
+   "riscvstall/riscvstall-CoreDpath.v:82",
+   "riscvstall/riscvstall-CoreDpath.v:88"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|jump_targ_Phl",
+  "name": "jump_targ_Phl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:73",
+   "riscvstall/riscvstall-CoreDpath.v:83",
+   "riscvstall/riscvstall-CoreDpath.v:89"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|jumpreg_targ_Phl",
+  "name": "jumpreg_targ_Phl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:74",
+   "riscvstall/riscvstall-CoreDpath.v:84",
+   "riscvstall/riscvstall-CoreDpath.v:90"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_mux_out_Phl",
+  "name": "pc_mux_out_Phl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:109",
+   "riscvstall/riscvstall-CoreDpath.v:115",
+   "riscvstall/riscvstall-CoreDpath.v:75",
+   "riscvstall/riscvstall-CoreDpath.v:86"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|reset_vector",
+  "name": "reset_vector",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:120",
+   "riscvstall/riscvstall-CoreDpath.v:130",
+   "riscvstall/riscvstall-CoreDpath.v:77"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_redirect_pending",
+  "name": "pc_redirect_pending",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:101",
+   "riscvstall/riscvstall-CoreDpath.v:105",
+   "riscvstall/riscvstall-CoreDpath.v:110",
+   "riscvstall/riscvstall-CoreDpath.v:115",
+   "riscvstall/riscvstall-CoreDpath.v:96"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_redirect_targ",
+  "name": "pc_redirect_targ",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:102",
+   "riscvstall/riscvstall-CoreDpath.v:109",
+   "riscvstall/riscvstall-CoreDpath.v:115",
+   "riscvstall/riscvstall-CoreDpath.v:97"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_mux_out_Phl_final",
+  "name": "pc_mux_out_Phl_final",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:114",
+   "riscvstall/riscvstall-CoreDpath.v:121",
+   "riscvstall/riscvstall-CoreDpath.v:133"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_Fhl",
+  "name": "pc_Fhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:126",
+   "riscvstall/riscvstall-CoreDpath.v:130",
+   "riscvstall/riscvstall-CoreDpath.v:133",
+   "riscvstall/riscvstall-CoreDpath.v:145",
+   "riscvstall/riscvstall-CoreDpath.v:156",
+   "riscvstall/riscvstall-randdelay-sim.v:213",
+   "riscvstall/riscvstall-randdelay-sim.v:215",
+   "riscvstall/riscvstall-randdelay-sim.v:217",
+   "riscvstall/riscvstall-sim.v:213",
+   "riscvstall/riscvstall-sim.v:215",
+   "riscvstall/riscvstall-sim.v:217"
+  ],
+  "n_occ": 11
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_plus4_Fhl",
+  "name": "pc_plus4_Fhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:143",
+   "riscvstall/riscvstall-CoreDpath.v:145",
+   "riscvstall/riscvstall-CoreDpath.v:157",
+   "riscvstall/riscvstall-CoreDpath.v:81"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_Dhl",
+  "name": "pc_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:151",
+   "riscvstall/riscvstall-CoreDpath.v:156",
+   "riscvstall/riscvstall-CoreDpath.v:182",
+   "riscvstall/riscvstall-CoreDpath.v:183",
+   "riscvstall/riscvstall-CoreDpath.v:211",
+   "riscvstall/riscvstall-CoreDpath.v:244"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_plus4_Dhl",
+  "name": "pc_plus4_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:152",
+   "riscvstall/riscvstall-CoreDpath.v:157",
+   "riscvstall/riscvstall-CoreDpath.v:212"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|inst_rs1_Dhl",
+  "name": "inst_rs1_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:167",
+   "riscvstall/riscvstall-CoreDpath.v:187",
+   "riscvstall/riscvstall-CoreDpath.v:387"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|inst_rs2_Dhl",
+  "name": "inst_rs2_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:168",
+   "riscvstall/riscvstall-CoreDpath.v:189",
+   "riscvstall/riscvstall-CoreDpath.v:388"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|inst_rd_Dhl",
+  "name": "inst_rd_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:169",
+   "riscvstall/riscvstall-CoreDpath.v:389"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|inst_shamt_Dhl",
+  "name": "inst_shamt_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:170",
+   "riscvstall/riscvstall-CoreDpath.v:201",
+   "riscvstall/riscvstall-CoreDpath.v:392"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imm_i_Dhl",
+  "name": "imm_i_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:171",
+   "riscvstall/riscvstall-CoreDpath.v:196",
+   "riscvstall/riscvstall-CoreDpath.v:223",
+   "riscvstall/riscvstall-CoreDpath.v:393"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imm_u_Dhl",
+  "name": "imm_u_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:172",
+   "riscvstall/riscvstall-CoreDpath.v:221",
+   "riscvstall/riscvstall-CoreDpath.v:396"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imm_uj_Dhl",
+  "name": "imm_uj_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:173",
+   "riscvstall/riscvstall-CoreDpath.v:183",
+   "riscvstall/riscvstall-CoreDpath.v:397"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imm_s_Dhl",
+  "name": "imm_s_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:174",
+   "riscvstall/riscvstall-CoreDpath.v:224",
+   "riscvstall/riscvstall-CoreDpath.v:394"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imm_sb_Dhl",
+  "name": "imm_sb_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:175",
+   "riscvstall/riscvstall-CoreDpath.v:182",
+   "riscvstall/riscvstall-CoreDpath.v:222",
+   "riscvstall/riscvstall-CoreDpath.v:395"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_targ_Dhl",
+  "name": "branch_targ_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:179",
+   "riscvstall/riscvstall-CoreDpath.v:182",
+   "riscvstall/riscvstall-CoreDpath.v:245"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|jump_targ_Dhl",
+  "name": "jump_targ_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:180",
+   "riscvstall/riscvstall-CoreDpath.v:183",
+   "riscvstall/riscvstall-CoreDpath.v:83"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rf_raddr0_Dhl",
+  "name": "rf_raddr0_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:187",
+   "riscvstall/riscvstall-CoreDpath.v:405"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rf_rdata0_Dhl",
+  "name": "rf_rdata0_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:188",
+   "riscvstall/riscvstall-CoreDpath.v:196",
+   "riscvstall/riscvstall-CoreDpath.v:210",
+   "riscvstall/riscvstall-CoreDpath.v:406"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rf_raddr1_Dhl",
+  "name": "rf_raddr1_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:189",
+   "riscvstall/riscvstall-CoreDpath.v:407"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rf_rdata1_Dhl",
+  "name": "rf_rdata1_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:190",
+   "riscvstall/riscvstall-CoreDpath.v:219",
+   "riscvstall/riscvstall-CoreDpath.v:230",
+   "riscvstall/riscvstall-CoreDpath.v:408"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|jumpreg_targ_Dhl",
+  "name": "jumpreg_targ_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:194",
+   "riscvstall/riscvstall-CoreDpath.v:197",
+   "riscvstall/riscvstall-CoreDpath.v:84"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|jumpreg_targ_pretruncate_Dhl",
+  "name": "jumpreg_targ_pretruncate_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:196",
+   "riscvstall/riscvstall-CoreDpath.v:197"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|shamt_Dhl",
+  "name": "shamt_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:201",
+   "riscvstall/riscvstall-CoreDpath.v:220"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|const0",
+  "name": "const0",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:205",
+   "riscvstall/riscvstall-CoreDpath.v:213",
+   "riscvstall/riscvstall-CoreDpath.v:225"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|op0_mux_out_Dhl",
+  "name": "op0_mux_out_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:209",
+   "riscvstall/riscvstall-CoreDpath.v:246"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|op1_mux_out_Dhl",
+  "name": "op1_mux_out_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:218",
+   "riscvstall/riscvstall-CoreDpath.v:247"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wdata_Dhl",
+  "name": "wdata_Dhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:230",
+   "riscvstall/riscvstall-CoreDpath.v:248"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_Xhl",
+  "name": "pc_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:236",
+   "riscvstall/riscvstall-CoreDpath.v:244",
+   "riscvstall/riscvstall-CoreDpath.v:303"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|branch_targ_Xhl",
+  "name": "branch_targ_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:237",
+   "riscvstall/riscvstall-CoreDpath.v:245",
+   "riscvstall/riscvstall-CoreDpath.v:82"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|op0_mux_out_Xhl",
+  "name": "op0_mux_out_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:238",
+   "riscvstall/riscvstall-CoreDpath.v:246",
+   "riscvstall/riscvstall-CoreDpath.v:262",
+   "riscvstall/riscvstall-CoreDpath.v:265",
+   "riscvstall/riscvstall-CoreDpath.v:268",
+   "riscvstall/riscvstall-CoreDpath.v:418",
+   "riscvstall/riscvstall-CoreDpath.v:431"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|op1_mux_out_Xhl",
+  "name": "op1_mux_out_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:239",
+   "riscvstall/riscvstall-CoreDpath.v:247",
+   "riscvstall/riscvstall-CoreDpath.v:262",
+   "riscvstall/riscvstall-CoreDpath.v:266",
+   "riscvstall/riscvstall-CoreDpath.v:267",
+   "riscvstall/riscvstall-CoreDpath.v:419",
+   "riscvstall/riscvstall-CoreDpath.v:432"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wdata_Xhl",
+  "name": "wdata_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:240",
+   "riscvstall/riscvstall-CoreDpath.v:248",
+   "riscvstall/riscvstall-CoreDpath.v:273",
+   "riscvstall/riscvstall-CoreDpath.v:305"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|alu_out_Xhl",
+  "name": "alu_out_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:258",
+   "riscvstall/riscvstall-CoreDpath.v:263",
+   "riscvstall/riscvstall-CoreDpath.v:265",
+   "riscvstall/riscvstall-CoreDpath.v:266",
+   "riscvstall/riscvstall-CoreDpath.v:267",
+   "riscvstall/riscvstall-CoreDpath.v:268",
+   "riscvstall/riscvstall-CoreDpath.v:272",
+   "riscvstall/riscvstall-CoreDpath.v:289",
+   "riscvstall/riscvstall-CoreDpath.v:421"
+  ],
+  "n_occ": 9
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|diffSigns_Xhl",
+  "name": "diffSigns_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:262",
+   "riscvstall/riscvstall-CoreDpath.v:265",
+   "riscvstall/riscvstall-CoreDpath.v:266",
+   "riscvstall/riscvstall-CoreDpath.v:267",
+   "riscvstall/riscvstall-CoreDpath.v:268"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|muldivresp_msg_result_Xhl",
+  "name": "muldivresp_msg_result_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [63:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:277",
+   "riscvstall/riscvstall-CoreDpath.v:282",
+   "riscvstall/riscvstall-CoreDpath.v:283",
+   "riscvstall/riscvstall-CoreDpath.v:435"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|muldiv_mux_out_Xhl",
+  "name": "muldiv_mux_out_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:281",
+   "riscvstall/riscvstall-CoreDpath.v:290"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|execute_mux_out_Xhl",
+  "name": "execute_mux_out_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:288",
+   "riscvstall/riscvstall-CoreDpath.v:304"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_Mhl",
+  "name": "pc_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:297",
+   "riscvstall/riscvstall-CoreDpath.v:303",
+   "riscvstall/riscvstall-CoreDpath.v:354"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|execute_mux_out_Mhl",
+  "name": "execute_mux_out_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:298",
+   "riscvstall/riscvstall-CoreDpath.v:304",
+   "riscvstall/riscvstall-CoreDpath.v:341"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wdata_Mhl",
+  "name": "wdata_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:299",
+   "riscvstall/riscvstall-CoreDpath.v:305"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_lb_Mhl",
+  "name": "dmemresp_lb_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:315",
+   "riscvstall/riscvstall-CoreDpath.v:329"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_lbu_Mhl",
+  "name": "dmemresp_lbu_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:318",
+   "riscvstall/riscvstall-CoreDpath.v:330"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_lh_Mhl",
+  "name": "dmemresp_lh_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:321",
+   "riscvstall/riscvstall-CoreDpath.v:331"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_lhu_Mhl",
+  "name": "dmemresp_lhu_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:324",
+   "riscvstall/riscvstall-CoreDpath.v:332"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|dmemresp_mux_out_Mhl",
+  "name": "dmemresp_mux_out_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:327",
+   "riscvstall/riscvstall-CoreDpath.v:342"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wb_mux_out_Mhl",
+  "name": "wb_mux_out_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:340",
+   "riscvstall/riscvstall-CoreDpath.v:355"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_Whl",
+  "name": "pc_Whl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:349",
+   "riscvstall/riscvstall-CoreDpath.v:354",
+   "riscvstall/riscvstall-CoreDpath.v:374"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|wb_mux_out_Whl",
+  "name": "wb_mux_out_Whl",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:350",
+   "riscvstall/riscvstall-CoreDpath.v:355",
+   "riscvstall/riscvstall-CoreDpath.v:365",
+   "riscvstall/riscvstall-CoreDpath.v:411"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|pc_debug",
+  "name": "pc_debug",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:371",
+   "riscvstall/riscvstall-CoreDpath.v:374",
+   "riscvstall/riscvstall-randdelay-sim.v:275",
+   "riscvstall/riscvstall-sim.v:275"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|inst_msg_from_bits",
+  "name": "inst_msg_from_bits",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "instance",
+  "decl": "riscv_InstMsgFromBits inst_msg_from_bits ( ... );",
+  "instance_of": "riscv_InstMsgFromBits",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:383"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|rfile",
+  "name": "rfile",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "instance",
+  "decl": "riscv_CoreDpathRegfile rfile ( ... );",
+  "instance_of": "riscv_CoreDpathRegfile",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:402",
+   "riscvstall/riscvstall-randdelay-sim.v:279",
+   "riscvstall/riscvstall-randdelay-sim.v:280",
+   "riscvstall/riscvstall-randdelay-sim.v:281",
+   "riscvstall/riscvstall-randdelay-sim.v:283",
+   "riscvstall/riscvstall-randdelay-sim.v:284",
+   "riscvstall/riscvstall-randdelay-sim.v:285",
+   "riscvstall/riscvstall-randdelay-sim.v:287",
+   "riscvstall/riscvstall-randdelay-sim.v:288",
+   "riscvstall/riscvstall-randdelay-sim.v:289",
+   "riscvstall/riscvstall-randdelay-sim.v:291",
+   "riscvstall/riscvstall-randdelay-sim.v:292"
+  ],
+  "n_occ": 65
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|alu",
+  "name": "alu",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "instance",
+  "decl": "riscv_CoreDpathAlu alu ( ... );",
+  "instance_of": "riscv_CoreDpathAlu",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:416"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v|riscv_CoreDpath|imuldiv",
+  "name": "imuldiv",
+  "cat": "signal",
+  "module": "riscv_CoreDpath",
+  "kind": "instance",
+  "decl": "imuldiv_IntMulDivIterative imuldiv ( ... );",
+  "instance_of": "imuldiv_IntMulDivIterative",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:426"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpath.v||riscv_CoreDpath",
+  "name": "riscv_CoreDpath",
+  "cat": "module",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:227",
+   "riscvstall/riscvstall-CoreDpath.v:13"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "`RISCV_CORE_DPATH_V",
+  "name": "RISCV_CORE_DPATH_V",
+  "cat": "macro",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpath.v:5",
+   "riscvstall/riscvstall-CoreDpath.v:6"
+  ],
+  "n_occ": 2
+ }
+]

@@ -1,0 +1,596 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-Core.v|riscv_Core|clk": {
+      "sum": "riscv_Core 的時脈輸入，同時餵給 ctrl、dpath 與 Core 內部的位址 hold 暫存器。",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "由 `Testbench` 產生的全域時脈，從 `riscv_Core` 的 port 進來後直接接到 `ctrl`（`riscv_CoreCtrl`）與 `dpath`（`riscv_CoreDpath`）。Core 本身只有一段 `always @ ( posedge clk )` 用到它，就是更新 `imemreq_msg_addr_hold` 的那段。整個 core 的暫存器都在 clk 正緣更新。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|reset": {
+      "sum": "riscv_Core 的同步 reset 輸入，會把 hold 住的 imem 位址設回 0x00080000。",
+      "naming": [
+        [
+          "reset",
+          "reset",
+          "重置"
+        ]
+      ],
+      "desc": "由 testbench 驅動的重置訊號，往下傳給 `ctrl` 與 `dpath`。在 Core 這一層，`reset` 為 1 時會在 clk 正緣把 `imemreq_msg_addr_hold` 設成 `32'h00080000`，也就是這個 core 的 reset vector（程式起始位址）。這樣第一筆 imem 請求即使被記憶體 stall 住，位址也是正確的。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_msg": {
+      "sum": "riscv_Core 送出的指令記憶體請求訊息（打包好的 67-bit bits）。",
+      "naming": [
+        [
+          "imemreq",
+          "instruction memory request",
+          "指令記憶體請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ]
+      ],
+      "desc": "寬度是 `VC_MEM_REQ_MSG_SZ`(32,32)，也就是 1 bit type + 32 bit addr + 2 bit len + 32 bit data 共 67 bits。它由 `imemreq_msg_to_bits` 這個 `vc_MemReqMsgToBits` 實例打包而成：type 固定是 `VC_MEM_REQ_MSG_TYPE_READ`（取指令只會讀）、addr 是 `imemreq_msg_addr`、len 固定 `2'd0`（代表整個 word 4 bytes）、data 是 `32'bx`（讀取不需要資料）。它跟 `imemreq_val` / `imemreq_rdy` 一起走 val-rdy 握手送到測試記憶體的 port 0。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_val": {
+      "sum": "ctrl 產生的 imem 請求 valid，表示這個 cycle 有一筆取指請求要送出。",
+      "naming": [
+        [
+          "imemreq",
+          "instruction memory request",
+          "指令記憶體請求"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "直接由 `ctrl` 的同名 output 驅動：在 `riscv_CoreCtrl` 裡 `imemreq_val = imemreq_pending_Fhl || imemreq_start_Fhl`，也就是「有一筆還沒被接受的請求」或「這個 cycle 想發新請求」時拉高。Core 裡除了往外送，還用它當作 `imemreq_msg_addr_hold` 的寫入條件之一（`imemreq_val && !imemreq_pending_Fhl` 時才更新 hold 值）。要跟 `imemreq_rdy` 同時為 1 才算握手成功。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_rdy": {
+      "sum": "指令記憶體回給 core 的 ready，表示這個 cycle 可以收下取指請求。",
+      "naming": [
+        [
+          "imemreq",
+          "instruction memory request",
+          "指令記憶體請求"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可接收"
+        ]
+      ],
+      "desc": "從外部（測試記憶體 port 0）進來，Core 只是原封不動接到 `ctrl`。`riscv_CoreCtrl` 用 `imemreq_val && imemreq_rdy` 組出 `imem_send_accepted_Fhl`，據此清掉 `imemreq_pending_Fhl`、關掉 `imem_initial_fetch_Fhl`。當它為 0 時請求得保持在線上，這正是 Core 需要 `imemreq_msg_addr_hold` 的原因。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|imemresp_msg": {
+      "sum": "指令記憶體回傳的回應訊息 bits，裡面包著取回來的 32-bit 指令。",
+      "naming": [
+        [
+          "imemresp",
+          "instruction memory response",
+          "指令記憶體回應"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ]
+      ],
+      "desc": "寬度是 `VC_MEM_RESP_MSG_SZ`(32) = 1 bit type + 2 bit len + 32 bit data 共 35 bits。Core 把它丟給 `imemresp_msg_from_bits`（`vc_MemRespMsgFromBits`）拆包，只取出 data 欄位變成 `imemresp_msg_data`，type 與 len 的 port 留空不接。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|imemresp_val": {
+      "sum": "指令記憶體回應的 valid，代表這個 cycle 線上有一筆取回來的指令。",
+      "naming": [
+        [
+          "imemresp",
+          "instruction memory response",
+          "指令記憶體回應"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "從外部進來後直接接給 `ctrl`。`riscv_CoreCtrl` 用它做兩件事：跟 `imemresp_rdy` 組成 `imem_consumed_Fhl`（回應被吃掉），以及 `stall_imem_Fhl = !imemresp_val`——沒有回應時 F 階段就 stall。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|imemresp_rdy": {
+      "sum": "core 告訴指令記憶體「我這個 cycle 可以收指令」。",
+      "naming": [
+        [
+          "imemresp",
+          "instruction memory response",
+          "指令記憶體回應"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可接收"
+        ]
+      ],
+      "desc": "由 `ctrl` 驅動，在 `riscv_CoreCtrl` 裡就是 `assign imemresp_rdy = !stall_Dhl;`——只要 D 階段沒有被 stall，F 階段就有空間把指令收下來送進 `ir_Dhl`。Core 只是把它從 `ctrl` 拉到頂層 port。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg": {
+      "sum": "riscv_Core 送出的資料記憶體請求訊息（load/store 的打包 bits）。",
+      "naming": [
+        [
+          "dmemreq",
+          "data memory request",
+          "資料記憶體請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ]
+      ],
+      "desc": "同樣是 67-bit 的 `VC_MEM_REQ_MSG_SZ`(32,32) 格式，由 `dmemreq_msg_to_bits` 打包：type 接 `dmemreq_msg_rw`（0=讀、1=寫）、addr 接 `dmemreq_msg_addr`（來自 dpath 的 ALU 結果）、len 接 `dmemreq_msg_len`（0=word、1=byte、2=halfword）、data 接 `dmemreq_msg_data`（store 要寫的值）。走 `dmemreq_val` / `dmemreq_rdy` 握手送到測試記憶體的 port 1。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_val": {
+      "sum": "ctrl 產生的 dmem 請求 valid，表示 M 階段這個 cycle 要存取資料記憶體。",
+      "naming": [
+        [
+          "dmemreq",
+          "data memory request",
+          "資料記憶體請求"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "由 `ctrl` 的同名 output 驅動，只有當 M 階段是有效的 load/store 指令時才會拉高。跟 `dmemreq_rdy` 同時為 1 才算送出成功。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_rdy": {
+      "sum": "資料記憶體回給 core 的 ready，表示可以收下這筆 load/store 請求。",
+      "naming": [
+        [
+          "dmemreq",
+          "data memory request",
+          "資料記憶體請求"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可接收"
+        ]
+      ],
+      "desc": "從外部進來後直接接到 `ctrl`。`riscv_CoreCtrl` 用它判斷 dmem 請求有沒有被接受；沒被接受就得讓 M 階段 stall，等到握手成功為止。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemresp_msg": {
+      "sum": "資料記憶體回傳的回應訊息 bits，裡面是 load 讀回來的資料。",
+      "naming": [
+        [
+          "dmemresp",
+          "data memory response",
+          "資料記憶體回應"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ]
+      ],
+      "desc": "35-bit 的 `VC_MEM_RESP_MSG_SZ`(32) 格式。Core 用 `dmemresp_msg_from_bits` 把它拆開，只取 data 欄位成為 `dmemresp_msg_data` 再送進 `dpath`；type 與 len 不接。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemresp_val": {
+      "sum": "資料記憶體回應的 valid，代表這個 cycle 有 load 的資料回來了。",
+      "naming": [
+        [
+          "dmemresp",
+          "data memory response",
+          "資料記憶體回應"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "從外部進來後直接接到 `ctrl`，用來判斷 M 階段的記憶體存取是否完成。若 load 還沒回應，`ctrl` 會讓 M 階段 stall。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemresp_rdy": {
+      "sum": "core 告訴資料記憶體「我可以收下這筆回應」。",
+      "naming": [
+        [
+          "dmemresp",
+          "data memory response",
+          "資料記憶體回應"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可接收"
+        ]
+      ],
+      "desc": "由 `ctrl` 驅動的 output，Core 只是把它接到頂層 port。它決定 M 階段這個 cycle 願不願意吃下記憶體回應。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|csr_status": {
+      "sum": "core 寫到 CSR 21 號（status）的值，testbench 用它判斷測試通過與否。",
+      "naming": [
+        [
+          "csr",
+          "control and status register",
+          "控制狀態暫存器"
+        ],
+        [
+          "status",
+          "status",
+          "狀態"
+        ]
+      ],
+      "desc": "32-bit output，由 `ctrl` 內部的一顆暫存器驅動：reset 時歸 0，之後當 W 階段執行 `csrw` 且 CSR 編號是 `12'd21` 時，把 `proc2csr_data_Whl` 存進來。`Testbench` 監看這個值來判斷測試程式回報的 pass/fail 碼。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|retire_valid": {
+      "sum": "這個 cycle 是否有一條指令真的從 W 階段退休（用來統計 IPC）。",
+      "naming": [
+        [
+          "retire",
+          "retire",
+          "指令退休（完成）"
+        ],
+        [
+          "valid",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "由 `ctrl` 驅動：`retire_valid = inst_val_Whl && !stall_Whl`，也就是 W 階段有有效指令且沒被 stall 時為 1。bubble 或 stall 的 cycle 會是 0。testbench / sim 用它數實際完成的指令數。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_msg_addr": {
+      "sum": "真正送進 imem 請求訊息的位址：pending 時用 hold 住的舊值，否則用新值。",
+      "naming": [
+        [
+          "imemreq",
+          "instruction memory request",
+          "指令記憶體請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ]
+      ],
+      "desc": "32-bit wire，由 Core 裡的 `assign` 決定：`imemreq_pending_Fhl` 為 1（上一筆請求還沒被記憶體收下）時取 `imemreq_msg_addr_hold`，否則取 dpath 算出來的 `imemreq_msg_addr_next`。結果接到 `imemreq_msg_to_bits` 的 `.addr`。這段是學生加的修改：val-rdy 協定要求 val 拉高後 msg 必須維持不變直到握手完成，而 dpath 的 PC 邏輯可能同時已經往前跑，所以必須 hold。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_msg_addr_next": {
+      "sum": "dpath 這個 cycle 算出來的「下一個要取指的位址」。",
+      "naming": [
+        [
+          "imemreq",
+          "instruction memory request",
+          "指令記憶體請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ],
+        [
+          "next",
+          "next value",
+          "下一個值"
+        ]
+      ],
+      "desc": "32-bit wire，接的是 `dpath` 的 `imemreq_msg_addr` output。在 `riscv_CoreDpath` 裡它等於：`imem_initial_fetch_Fhl` 為 1 時取 reset vector，否則取 PC mux 的輸出（含 branch 重導）。Core 把它送去給 `imemreq_msg_addr_hold` 存起來，並在沒有 pending 請求時直接當成 `imemreq_msg_addr` 用。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|imemresp_msg_data": {
+      "sum": "從 imem 回應訊息裡拆出來的 32-bit 指令。",
+      "naming": [
+        [
+          "imemresp",
+          "instruction memory response",
+          "指令記憶體回應"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "data",
+          "data",
+          "資料欄位"
+        ]
+      ],
+      "desc": "由 `imemresp_msg_from_bits` 從 `imemresp_msg` 的 data 欄位拆出來，接到 `ctrl` 的 `.imemresp_msg_data`。`riscv_CoreCtrl` 在 `!stall_Dhl` 時把它寫進 `ir_Dhl`，成為 D 階段要解碼的指令。只有在 `imemresp_val` 為 1 的 cycle 才有意義。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg_rw": {
+      "sum": "dmem 請求是讀還是寫（0=load、1=store）。",
+      "naming": [
+        [
+          "dmemreq",
+          "data memory request",
+          "資料記憶體請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "rw",
+          "read / write",
+          "讀 / 寫"
+        ]
+      ],
+      "desc": "1-bit wire，由 `ctrl` 產生（依 M 階段指令是 load 還是 store）。接到 `dmemreq_msg_to_bits` 的 `.type`，值的編碼就是 `VC_MEM_REQ_MSG_TYPE_READ`=0 / `VC_MEM_REQ_MSG_TYPE_WRITE`=1。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg_len": {
+      "sum": "dmem 存取的 byte 數（0=整個 word、1=byte、2=halfword）。",
+      "naming": [
+        [
+          "dmemreq",
+          "data memory request",
+          "資料記憶體請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "len",
+          "length",
+          "長度（byte 數）"
+        ]
+      ],
+      "desc": "2-bit wire，由 `ctrl` 的解碼表產生（`ml_w` / `ml_b` / `ml_h` 之類的欄位），接到 `dmemreq_msg_to_bits` 的 `.len`。lw/sw 用 0、lb/lbu/sb 用 1、lh/lhu/sh 用 2。注意 load 回來之後還要靠 `dmemresp_mux_sel_Mhl` 做 sign/zero extend。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg_addr": {
+      "sum": "load / store 要存取的記憶體位址，來自 dpath 的 ALU 結果。",
+      "naming": [
+        [
+          "dmemreq",
+          "data memory request",
+          "資料記憶體請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ]
+      ],
+      "desc": "32-bit wire，由 `dpath` 的同名 output 驅動（M 階段暫存下來的 ALU 輸出，也就是 base + offset）。接到 `dmemreq_msg_to_bits` 的 `.addr` 打包進 `dmemreq_msg`。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg_data": {
+      "sum": "store 指令要寫進記憶體的 32-bit 資料。",
+      "naming": [
+        [
+          "dmemreq",
+          "data memory request",
+          "資料記憶體請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ]
+      ],
+      "desc": "32-bit wire，由 `dpath` 輸出（M 階段的 rs2 值）。接到 `dmemreq_msg_to_bits` 的 `.data`。對 load 來說這個欄位沒有意義，記憶體會忽略它。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|dmemresp_msg_data": {
+      "sum": "從 dmem 回應訊息拆出來的 32-bit 讀回資料。",
+      "naming": [
+        [
+          "dmemresp",
+          "data memory response",
+          "資料記憶體回應"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ]
+      ],
+      "desc": "由 `dmemresp_msg_from_bits` 從 `dmemresp_msg` 的 data 欄位拆出，再送回 `dpath` 的 `.dmemresp_msg_data`。在 dpath 裡它會進入 `dmemresp_mux_sel_Mhl` 控制的多工器，依 lb/lbu/lh/lhu/lw 做對應的位元擷取與 sign/zero extend。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|pc_mux_sel_Phl": {
+      "sum": "ctrl 送給 dpath 的 next-PC 多工器選擇（2 bits）。",
+      "naming": [
+        [
+          "pc",
+          "program counter",
+          "程式計數器"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ],
+        [
+          "Phl",
+          "PC stage, high-level",
+          "PC 階段的訊號"
+        ]
+      ],
+      "desc": "2-bit wire，從 `ctrl` 接到 `dpath`。在 `riscv_CoreDpath` 裡：`2'd0` = `pc_plus4_Phl`（循序）、`2'd1` = `branch_targ_Phl`（分支目標）、`2'd2` = `jump_targ_Phl`（jal）、`2'd3` = `jumpreg_targ_Phl`（jalr）。Core 只負責把 ctrl 的輸出連到 dpath 的輸入。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|op0_mux_sel_Dhl": {
+      "sum": "ctrl 送給 dpath 的 ALU 第一個運算元多工器選擇（2 bits）。",
+      "naming": [
+        [
+          "op0",
+          "operand 0",
+          "第 0 個運算元"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ],
+        [
+          "Dhl",
+          "Decode stage, high-level",
+          "解碼階段的訊號"
+        ]
+      ],
+      "desc": "2-bit wire。在 `riscv_CoreDpath` 裡：`2'd0` = `rf_rdata0_Dhl`（rs1 的值）、`2'd1` = `pc_Dhl`（用於 auipc）、`2'd2` = `pc_plus4_Dhl`（用於 jal/jalr 存返回位址）、`2'd3` = 常數 0（用於 lui）。由 `ctrl` 的解碼表 `am_` 欄位產生。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|op1_mux_sel_Dhl": {
+      "sum": "ctrl 送給 dpath 的 ALU 第二個運算元多工器選擇（3 bits）。",
+      "naming": [
+        [
+          "op1",
+          "operand 1",
+          "第 1 個運算元"
+        ],
+        [
+          "mux",
+          "multiplexer",
+          "多工器"
+        ],
+        [
+          "sel",
+          "select",
+          "選擇訊號"
+        ],
+        [
+          "Dhl",
+          "Decode stage, high-level",
+          "解碼階段的訊號"
+        ]
+      ],
+      "desc": "3-bit wire。在 `riscv_CoreDpath` 裡：`3'd0` = `rf_rdata1_Dhl`（rs2）、`3'd1` = `shamt_Dhl`（位移量）、`3'd2` = `imm_u_Dhl`、`3'd3` = `imm_sb_Dhl`、`3'd4` = `imm_i_Dhl`、`3'd5` = `imm_s_Dhl`、`3'd6` = 常數 0。由 `ctrl` 的解碼表 `bm_` 欄位產生。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|inst_Dhl": {
+      "sum": "ctrl 把 D 階段的指令原文（32 bits）送給 dpath 取立即值與暫存器編號。",
+      "naming": [
+        [
+          "inst",
+          "instruction",
+          "指令"
+        ],
+        [
+          "Dhl",
+          "Decode stage, high-level",
+          "解碼階段的訊號"
+        ]
+      ],
+      "desc": "32-bit wire，來源是 `ctrl` 內部的 `ir_Dhl`（也就是從 `imemresp_msg_data` 鎖進來的指令）。dpath 拿它去切出 rs1/rs2 的 regfile 讀取位址、shamt，以及各種格式的立即值（`imm_i`、`imm_s`、`imm_sb`、`imm_u`、`imm_uj`）。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|alu_fn_Xhl": {
+      "sum": "ctrl 送給 dpath ALU 的 4-bit 功能碼。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ],
+        [
+          "Xhl",
+          "eXecute stage, high-level",
+          "執行階段的訊號"
+        ]
+      ],
+      "desc": "4-bit wire，從 `ctrl` 的解碼表（`alu_add`=0、`alu_sub`=1、`alu_sll`=2、`alu_or`=3、`alu_lt`=4、`alu_ltu`=5、`alu_and`=6、`alu_xor`=7、`alu_nor`=8、`alu_srl`=9、`alu_sra`=10）接到 `dpath`，再進 `riscv_CoreDpathAlu` 的 `fn` port。ALU 內部用它查表決定用哪個功能單元與該單元的子功能碼。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|muldivreq_msg_fn_Xhl": {
+      "sum": "ctrl 送給 dpath 乘除法單元的 3-bit 運算種類。",
+      "naming": [
+        [
+          "muldivreq",
+          "mul/div request",
+          "乘除法請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ],
+        [
+          "Xhl",
+          "eXecute stage, high-level",
+          "執行階段的訊號"
+        ]
+      ],
+      "desc": "3-bit wire，從 `ctrl` 解碼 mul/div/divu/rem/remu 指令後產生，接到 `dpath`，最後進入 `imuldiv` 迭代式乘除法器的請求訊息 fn 欄位。它決定要做乘法、有號 / 無號除法或取餘數。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|muldivreq_val": {
+      "sum": "ctrl 告訴乘除法單元「這個 cycle 有一筆乘除法請求」。",
+      "naming": [
+        [
+          "muldivreq",
+          "mul/div request",
+          "乘除法請求"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "1-bit wire，由 `ctrl` 產生、送進 `dpath` 裡的乘除法單元。跟 `muldivreq_rdy` 同時為 1 才算把運算交出去。Core 只是把兩個 module 的同名 port 接在一起。"
+    },
+    "riscvstall/riscvstall-Core.v|riscv_Core|muldivreq_rdy": {
+      "sum": "乘除法單元回報「我可以收下新的乘除法請求」。",
+      "naming": [
+        [
+          "muldivreq",
+          "mul/div request",
+          "乘除法請求"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可接收"
+        ]
+      ],
+      "desc": "1-bit wire，方向是 `dpath` → `ctrl`（雖然在 Core 的 port 對接上看起來一樣）。迭代式乘除法器忙碌時會拉低，`ctrl` 因此得讓 X 階段 stall。"
+    }
+  }
+}

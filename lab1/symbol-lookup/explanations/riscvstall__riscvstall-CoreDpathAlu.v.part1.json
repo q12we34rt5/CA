@@ -1,0 +1,326 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluAddSub|addsub_fn": {
+      "sum": "加減 / 比較單元的 2-bit 子功能碼（00=加、01=減、10=slt、11=sltu）。",
+      "naming": [
+        [
+          "addsub",
+          "add / subtract",
+          "加法 / 減法"
+        ],
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ]
+      ],
+      "desc": "2-bit input。`2'b00` 做加法、`2'b01` 做減法、`2'b10` 做有號 set-less-than、`2'b11` 做無號 set-less-than，其它值時 `result` 輸出 `32'bx`。它由上層 `riscv_CoreDpathAlu` 解碼表的 `fn_addsub` 欄位驅動（fn=0→00、fn=1→01、fn=4→10、fn=5→11）。注意只要不是 `2'b00`，內部就會把 `alu_b` 取二補數，所以減法與兩種比較共用同一個加法器。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluAddSub|alu_a": {
+      "sum": "加減 / 比較單元的第一個運算元（被減數 / 比較左邊）。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "a",
+          "A operand",
+          "第一個運算元"
+        ]
+      ],
+      "desc": "32-bit input，由上層 ALU 接 `in0`（也就是 datapath 的 `op0_mux_out_Xhl`，通常是 rs1）。它直接進加法器 `sum = alu_a + xB`，並且 `alu_a[31]` 會用來判斷正負號，決定 slt / sltu 的結果。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluAddSub|alu_b": {
+      "sum": "加減 / 比較單元的第二個運算元（減數 / 比較右邊）。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "b",
+          "B operand",
+          "第二個運算元"
+        ]
+      ],
+      "desc": "32-bit input，由上層 ALU 接 `in1`（`op1_mux_out_Xhl`，可能是 rs2 或立即值）。減法與比較時會先被取二補數變成 `xB` 再送進加法器；`alu_b[31]` 也參與 `diffSigns` 的計算。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluAddSub|result": {
+      "sum": "加減 / 比較單元的 32-bit 輸出。",
+      "naming": [
+        [
+          "result",
+          "result",
+          "運算結果"
+        ]
+      ],
+      "desc": "`output reg [31:0]`，由一段 `always @(*)` 組合邏輯決定：`addsub_fn` 是 00 或 01 時直接輸出 `sum`；是 10 或 11 時輸出 `{31'b0, 比較結果}`（只有最低位是 0 或 1）；其它情況輸出 `32'bx`。在上層它接到 `addsub_out`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluAddSub|xB": {
+      "sum": "送進加法器的第二個輸入：加法時是 alu_b，其餘情況是 -alu_b。",
+      "naming": [
+        [
+          "x",
+          "transformed / possibly negated",
+          "經過處理（可能取負）的"
+        ],
+        [
+          "B",
+          "B operand",
+          "第二個運算元"
+        ]
+      ],
+      "desc": "32-bit wire：`( addsub_fn != 2'b00 ) ? ( ~alu_b + 1 ) : alu_b`。也就是只有純加法保留原值，減法與 slt / sltu 都改成二補數的負值。這是「一個加法器同時做加、減、比較」的標準寫法。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluAddSub|sum": {
+      "sum": "加法器的輸出 alu_a + xB，加減法直接用它，比較則只看它的符號位。",
+      "naming": [
+        [
+          "sum",
+          "sum",
+          "加總結果"
+        ]
+      ],
+      "desc": "32-bit wire `= alu_a + xB`。`addsub_fn` 為 00/01 時它就是 `result`；為 10/11 時只有 `sum[31]`（符號位）會被拿來判斷 alu_a 是否小於 alu_b（在兩者正負號相同的情況下）。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluAddSub|diffSigns": {
+      "sum": "alu_a 與 alu_b 的最高位元是否不同。",
+      "naming": [
+        [
+          "diff",
+          "different",
+          "不同的"
+        ],
+        [
+          "Signs",
+          "signs",
+          "正負號 / 最高位元"
+        ]
+      ],
+      "desc": "1-bit wire `= alu_a[31] ^ alu_b[31]`。做比較時如果兩者符號不同，直接看 `alu_a[31]` 就能判斷大小（有號時負的比較小、無號時 MSB 為 1 的比較大），不必信任 `sum` —— 因為符號不同時相減可能溢位。符號相同時才退回去看 `sum[31]`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluShifter|shift_fn": {
+      "sum": "位移單元的 2-bit 子功能碼（00=左移、01=邏輯右移、11=算術右移）。",
+      "naming": [
+        [
+          "shift",
+          "shift",
+          "位移"
+        ],
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ]
+      ],
+      "desc": "2-bit input。`2'b00` = lsl（邏輯左移，對應 SLL）、`2'b01` = lsr（邏輯右移，SRL）、`2'b11` = asr（算術右移，SRA）；`2'b10` 沒有定義，會輸出 `32'bx`。由上層 `riscv_CoreDpathAlu` 的 `fn_shifter` 驅動（fn=2→00、fn=9→01、fn=10→11）。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluShifter|alu_a": {
+      "sum": "位移單元的「位移量」輸入（只用最低 5 bits）。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "a",
+          "A operand（在這個 module 裡是 shift amount）",
+          "第一個運算元，此處代表位移量"
+        ]
+      ],
+      "desc": "32-bit input，但實際只用 `alu_a[4:0]`（0–31）。注意上層實例化時是 `.alu_a (in1)`——跟其他功能單元相反，位移量來自 ALU 的 `in1`（op1，也就是 rs2 或 shamt）。原始碼的註解也寫著 `// Shift ammount`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluShifter|alu_b": {
+      "sum": "位移單元中「要被位移的那個值」。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "b",
+          "B operand（在這個 module 裡是 operand to shift）",
+          "第二個運算元，此處代表被位移的值"
+        ]
+      ],
+      "desc": "32-bit input。上層接的是 `.alu_b (in0)`，也就是 ALU 的 `in0`（op0 / rs1）。這個 module 刻意把 a、b 的角色跟 AddSub、Logical 對調，所以讀 code 時容易看錯。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluShifter|result": {
+      "sum": "位移單元的 32-bit 輸出。",
+      "naming": [
+        [
+          "result",
+          "result",
+          "運算結果"
+        ]
+      ],
+      "desc": "組合邏輯的三元運算鏈：`shift_fn` 00 → `alu_b << alu_a[4:0]`、01 → `alu_b >> alu_a[4:0]`、11 → `signed_result`（算術右移），其餘 → `32'bx`。在上層接到 `shifter_out`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluShifter|signed_alu_b": {
+      "sum": "把 alu_b 重新宣告成有號數，好讓 >>> 真的做算術右移。",
+      "naming": [
+        [
+          "signed",
+          "signed",
+          "有號數"
+        ],
+        [
+          "alu_b",
+          "ALU B operand",
+          "ALU 的第二個運算元（此處是被位移值）"
+        ]
+      ],
+      "desc": "`wire signed [31:0] signed_alu_b = alu_b;`。Verilog 的 `>>>` 只有在左運算元被宣告為 `signed` 時才會做符號延伸，否則跟 `>>` 一樣補 0。這個 wire 存在的唯一目的就是提供有號版本給 `signed_result`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluShifter|signed_result": {
+      "sum": "算術右移（SRA）的結果。",
+      "naming": [
+        [
+          "signed",
+          "signed",
+          "有號數"
+        ],
+        [
+          "result",
+          "result",
+          "結果"
+        ]
+      ],
+      "desc": "`wire signed [31:0] signed_result = signed_alu_b >>> alu_a[4:0];`。右移時用原本的最高位元補進來，因此負數右移仍然是負數。只有 `shift_fn == 2'b11` 時才會被 `result` 選用。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluLogical|logical_fn": {
+      "sum": "邏輯單元的 2-bit 子功能碼（00=AND、01=OR、10=XOR、11=NOR）。",
+      "naming": [
+        [
+          "logical",
+          "logical",
+          "邏輯運算"
+        ],
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ]
+      ],
+      "desc": "2-bit input，由上層 `riscv_CoreDpathAlu` 的 `fn_logical` 驅動：fn=6→00（AND）、fn=3→01（OR）、fn=7→10（XOR）、fn=8→11（NOR）。四個值都有定義，其他情況輸出 `32'bx`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluLogical|alu_a": {
+      "sum": "邏輯單元的第一個運算元。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "a",
+          "A operand",
+          "第一個運算元"
+        ]
+      ],
+      "desc": "32-bit input，上層接 `in0`（op0 / rs1）。四種運算都是逐位元（bitwise）作用在 `alu_a` 與 `alu_b` 上。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluLogical|alu_b": {
+      "sum": "邏輯單元的第二個運算元。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "b",
+          "B operand",
+          "第二個運算元"
+        ]
+      ],
+      "desc": "32-bit input，上層接 `in1`（op1 / rs2 或立即值）。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluLogical|result": {
+      "sum": "邏輯單元的 32-bit 輸出。",
+      "naming": [
+        [
+          "result",
+          "result",
+          "運算結果"
+        ]
+      ],
+      "desc": "純組合邏輯：`logical_fn` 00 → `alu_a & alu_b`、01 → `alu_a | alu_b`、10 → `alu_a ^ alu_b`、11 → `~( alu_a | alu_b )`（NOR），其餘 → `32'bx`。在上層接到 `logical_out`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|muldiv_fn": {
+      "sum": "乘除法單元的 3-bit 子功能碼（0=mul、1=div、2=divu、3=rem、4=remu）。",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘法 / 除法"
+        ],
+        [
+          "fn",
+          "function",
+          "功能碼"
+        ]
+      ],
+      "desc": "3-bit input，由上層 `riscv_CoreDpathAlu` 的 `fn_muldiv` 驅動（fn=11→3'b000、12→001、13→010、14→011、15→100）。其他值時 `result` 是 `32'bx`。要注意的是：在 riscvstall 這份設計裡，`riscv_CoreCtrl` 的 `alu_*` 常數只定義到 `alu_sra`=10，乘除法是交給獨立的 `imuldiv` 迭代式單元處理，所以這個 module 實際上不會被用到，比較像是保留 / 參考用的行為模型。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|alu_a": {
+      "sum": "乘除法單元的第一個運算元（被乘數 / 被除數）。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "a",
+          "A operand",
+          "第一個運算元"
+        ]
+      ],
+      "desc": "32-bit input，上層接 `in0`。它同時被用在有號路徑（先取絕對值成 `alu_a_u`）與無號路徑（`quotientu` / `remainderu` 直接用原值）；`alu_a[31]` 還決定了 `remainder` 的正負號。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|alu_b": {
+      "sum": "乘除法單元的第二個運算元（乘數 / 除數）。",
+      "naming": [
+        [
+          "alu",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "b",
+          "B operand",
+          "第二個運算元"
+        ]
+      ],
+      "desc": "32-bit input，上層接 `in1`。同樣分成有號（`alu_b_u` 取絕對值）與無號兩條路徑。若它是 0，除法與取餘的結果在模擬中會是 x。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|result": {
+      "sum": "乘除法單元的 32-bit 輸出。",
+      "naming": [
+        [
+          "result",
+          "result",
+          "運算結果"
+        ]
+      ],
+      "desc": "依 `muldiv_fn` 選擇：`3'd0` → `product`、`3'd1` → `quotient`（有號商）、`3'd2` → `quotientu`（無號商）、`3'd3` → `remainder`（有號餘數）、`3'd4` → `remainderu`（無號餘數），其餘 → `32'bx`。在上層接到 `muldiv_out`。"
+    },
+    "riscvstall/riscvstall-CoreDpathAlu.v|riscv_CoreDpathAluMulDiv|negative": {
+      "sum": "有號除法的結果該不該是負的。",
+      "naming": [
+        [
+          "negative",
+          "negative",
+          "負值"
+        ]
+      ],
+      "desc": "1-bit wire `= alu_a[31] ^ alu_b[31]`。兩個運算元一正一負時為 1。它只用來決定 `quotient` 要不要把絕對值除法的結果取二補數；餘數的正負號另外由 `alu_a[31]` 決定（RISC-V 規定餘數與被除數同號）。"
+    }
+  }
+}

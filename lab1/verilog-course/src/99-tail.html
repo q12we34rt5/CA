@@ -1,0 +1,130 @@
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/verilog.min.js"></script>
+<script>
+(function () {
+  // ---- table of contents, built from the chapter sections ----
+  var toc = document.getElementById('toc');
+  var box = document.getElementById('tocbox');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.ch'));
+  var links = {};
+  var lastPart = null;
+  sections.forEach(function (sec) {
+    var part = sec.getAttribute('data-part');
+    if (part !== lastPart) {
+      var p = document.createElement('li');
+      p.className = 'part';
+      p.textContent = part;
+      toc.appendChild(p);
+      lastPart = part;
+    }
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    a.href = '#' + sec.id;
+    var n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = sec.id.replace('ch', '');
+    a.appendChild(n);
+    a.appendChild(document.createTextNode(sec.getAttribute('data-nav')));
+    li.appendChild(a);
+    toc.appendChild(li);
+    links[sec.id] = a;
+  });
+
+  var narrow = window.matchMedia('(max-width: 900px)');
+  function syncToc() { box.open = !narrow.matches; }
+  syncToc();
+  if (narrow.addEventListener) narrow.addEventListener('change', syncToc);
+  toc.addEventListener('click', function (e) {
+    if (narrow.matches && e.target.closest('a')) box.open = false;
+  });
+
+  // ---- highlight the chapter currently in view ----
+  if ('IntersectionObserver' in window) {
+    var current = null;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        if (current) current.classList.remove('on');
+        current = links[en.target.id];
+        current.classList.add('on');
+      });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+
+  // ---- syntax highlighting (page still reads fine if the CDN is unreachable) ----
+  if (window.hljs) {
+    document.querySelectorAll('pre code.language-verilog').forEach(function (el) {
+      window.hljs.highlightElement(el);
+    });
+  }
+
+  // ---- chapter 14: cycle-by-cycle simulation of the iterative multiplier (8-bit) ----
+  var inA = document.getElementById('mulA');
+  var inB = document.getElementById('mulB');
+  var rowsEl = document.getElementById('mulRows');
+  var outEl = document.getElementById('mulOut');
+  var W = 8;
+
+  function bin(v, width) {
+    var s = (v >>> 0).toString(2);
+    while (s.length < width) s = '0' + s;
+    return s.slice(-width).replace(/(.{4})(?=.)/g, '$1 ');
+  }
+  function clamp(el) {
+    var v = parseInt(el.value, 10);
+    if (isNaN(v)) v = 0;
+    return Math.max(-127, Math.min(127, v));
+  }
+  function cell(tr, text, cls) {
+    var td = document.createElement('td');
+    if (cls) td.className = cls;
+    td.textContent = text;
+    tr.appendChild(td);
+  }
+  function simulate() {
+    var a = clamp(inA), b = clamp(inB);
+    var negative = (a < 0) !== (b < 0);
+    var A = Math.abs(a), B = Math.abs(b), R = 0, c = W - 1, cycle = 0;
+    rowsEl.textContent = '';
+
+    var tr = document.createElement('tr');
+    cell(tr, cycle++, 'num'); cell(tr, 'IDLE', 'num'); cell(tr, '–', 'num'); cell(tr, '–', 'num'); cell(tr, '–', 'num'); cell(tr, '–', 'num'); cell(tr, '–', 'num');
+    cell(tr, 'mulreq_go：載入 |a| = ' + A + '、|b| = ' + B + '，result 清 0，sign_reg = ' + (negative ? 1 : 0));
+    rowsEl.appendChild(tr);
+
+    for (;;) {
+      var lsb = B & 1;
+      tr = document.createElement('tr');
+      if (lsb) tr.className = 'hi';
+      cell(tr, cycle++, 'num'); cell(tr, 'CALC', 'num'); cell(tr, c, 'num');
+      cell(tr, bin(A, 16), 'num'); cell(tr, bin(B, 8), 'num'); cell(tr, lsb, 'num'); cell(tr, R, 'num');
+      var done = (c === 0);
+      cell(tr, (lsb ? 'result ← ' + R + ' + ' + A + ' = ' + (R + A) : 'result 不變') + '；a 左移、b 右移' + (done ? '；counter == 0 → SIGN' : ''));
+      rowsEl.appendChild(tr);
+      if (lsb) R += A;
+      A = (A << 1) & 0xffff;
+      B = B >> 1;
+      if (done) break;
+      c -= 1;
+    }
+
+    var out = negative ? -R : R;
+    tr = document.createElement('tr');
+    cell(tr, cycle, 'num'); cell(tr, 'SIGN', 'num'); cell(tr, '–', 'num');
+    cell(tr, bin(A, 16), 'num'); cell(tr, bin(B, 8), 'num'); cell(tr, '–', 'num'); cell(tr, R, 'num');
+    cell(tr, 'sign_reg = ' + (negative ? '1 → 輸出 ~result + 1 = ' : '0 → 輸出 result = ') + out + '；mulresp_go → IDLE');
+    rowsEl.appendChild(tr);
+
+    outEl.textContent = a + ' × ' + b + ' = ' + out;
+  }
+  if (inA && inB) {
+    inA.addEventListener('input', simulate);
+    inB.addEventListener('input', simulate);
+    simulate();
+  }
+})();
+</script>

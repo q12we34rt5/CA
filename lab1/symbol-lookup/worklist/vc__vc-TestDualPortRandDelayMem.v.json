@@ -1,0 +1,478 @@
+[
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|p_mem_sz",
+  "name": "p_mem_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "Pattern.v:72",
+   "riscvstall/riscvstall-randdelay-sim.v:91",
+   "riscvstall/riscvstall-sim.v:91",
+   "vc/vc-TestDualPortRandDelayMem.v:18",
+   "vc/vc-TestDualPortRandDelayMem.v:67"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|p_addr_sz",
+  "name": "p_addr_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "Pattern.v:73",
+   "riscvstall/riscvstall-randdelay-sim.v:92",
+   "riscvstall/riscvstall-sim.v:92",
+   "vc/vc-TestDualPortRandDelayMem.v:19",
+   "vc/vc-TestDualPortRandDelayMem.v:24",
+   "vc/vc-TestDualPortRandDelayMem.v:67"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|p_data_sz",
+  "name": "p_data_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "Pattern.v:74",
+   "riscvstall/riscvstall-randdelay-sim.v:93",
+   "riscvstall/riscvstall-sim.v:93",
+   "vc/vc-TestDualPortRandDelayMem.v:20",
+   "vc/vc-TestDualPortRandDelayMem.v:24",
+   "vc/vc-TestDualPortRandDelayMem.v:25",
+   "vc/vc-TestDualPortRandDelayMem.v:67"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|p_max_delay",
+  "name": "p_max_delay",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "Pattern.v:75",
+   "riscvstall/riscvstall-randdelay-sim.v:94",
+   "riscvstall/riscvstall-sim.v:94",
+   "vc/vc-TestDualPortRandDelayMem.v:107",
+   "vc/vc-TestDualPortRandDelayMem.v:21",
+   "vc/vc-TestDualPortRandDelayMem.v:93"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|c_req_msg_sz",
+  "name": "c_req_msg_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:24",
+   "vc/vc-TestDualPortRandDelayMem.v:34",
+   "vc/vc-TestDualPortRandDelayMem.v:46"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|c_resp_msg_sz",
+  "name": "c_resp_msg_sz",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:107",
+   "vc/vc-TestDualPortRandDelayMem.v:25",
+   "vc/vc-TestDualPortRandDelayMem.v:40",
+   "vc/vc-TestDualPortRandDelayMem.v:52",
+   "vc/vc-TestDualPortRandDelayMem.v:61",
+   "vc/vc-TestDualPortRandDelayMem.v:65",
+   "vc/vc-TestDualPortRandDelayMem.v:93"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:79",
+   "riscvstall/riscvstall-randdelay-sim.v:98",
+   "riscvstall/riscvstall-sim.v:98",
+   "vc/vc-TestDualPortRandDelayMem.v:109",
+   "vc/vc-TestDualPortRandDelayMem.v:27",
+   "vc/vc-TestDualPortRandDelayMem.v:69",
+   "vc/vc-TestDualPortRandDelayMem.v:95"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:80",
+   "riscvstall/riscvstall-randdelay-sim.v:99",
+   "riscvstall/riscvstall-sim.v:99",
+   "vc/vc-TestDualPortRandDelayMem.v:110",
+   "vc/vc-TestDualPortRandDelayMem.v:28",
+   "vc/vc-TestDualPortRandDelayMem.v:70",
+   "vc/vc-TestDualPortRandDelayMem.v:96"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq0_val",
+  "name": "memreq0_val",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:82",
+   "riscvstall/riscvstall-randdelay-sim.v:103",
+   "riscvstall/riscvstall-sim.v:103",
+   "vc/vc-TestDualPortRandDelayMem.v:32",
+   "vc/vc-TestDualPortRandDelayMem.v:72"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq0_rdy",
+  "name": "memreq0_rdy",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Pattern.v:83",
+   "riscvstall/riscvstall-randdelay-sim.v:104",
+   "riscvstall/riscvstall-sim.v:104",
+   "vc/vc-TestDualPortRandDelayMem.v:33",
+   "vc/vc-TestDualPortRandDelayMem.v:73"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq0_msg",
+  "name": "memreq0_msg",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "input",
+  "decl": "input [c_req_msg_sz-1:0]",
+  "lines": [
+   "Pattern.v:84",
+   "riscvstall/riscvstall-randdelay-sim.v:105",
+   "riscvstall/riscvstall-sim.v:105",
+   "vc/vc-TestDualPortRandDelayMem.v:34",
+   "vc/vc-TestDualPortRandDelayMem.v:74"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp0_val",
+  "name": "memresp0_val",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Pattern.v:85",
+   "riscvstall/riscvstall-randdelay-sim.v:109",
+   "riscvstall/riscvstall-sim.v:109",
+   "vc/vc-TestDualPortRandDelayMem.v:102",
+   "vc/vc-TestDualPortRandDelayMem.v:38"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp0_rdy",
+  "name": "memresp0_rdy",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:86",
+   "riscvstall/riscvstall-randdelay-sim.v:110",
+   "riscvstall/riscvstall-sim.v:110",
+   "vc/vc-TestDualPortRandDelayMem.v:103",
+   "vc/vc-TestDualPortRandDelayMem.v:39"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp0_msg",
+  "name": "memresp0_msg",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "output",
+  "decl": "output [c_resp_msg_sz-1:0]",
+  "lines": [
+   "Pattern.v:87",
+   "riscvstall/riscvstall-randdelay-sim.v:111",
+   "riscvstall/riscvstall-sim.v:111",
+   "vc/vc-TestDualPortRandDelayMem.v:104",
+   "vc/vc-TestDualPortRandDelayMem.v:40"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq1_val",
+  "name": "memreq1_val",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:89",
+   "riscvstall/riscvstall-randdelay-sim.v:115",
+   "riscvstall/riscvstall-sim.v:115",
+   "vc/vc-TestDualPortRandDelayMem.v:44",
+   "vc/vc-TestDualPortRandDelayMem.v:80"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq1_rdy",
+  "name": "memreq1_rdy",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Pattern.v:90",
+   "riscvstall/riscvstall-randdelay-sim.v:116",
+   "riscvstall/riscvstall-sim.v:116",
+   "vc/vc-TestDualPortRandDelayMem.v:45",
+   "vc/vc-TestDualPortRandDelayMem.v:81"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memreq1_msg",
+  "name": "memreq1_msg",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "input",
+  "decl": "input [c_req_msg_sz-1:0]",
+  "lines": [
+   "Pattern.v:91",
+   "riscvstall/riscvstall-randdelay-sim.v:117",
+   "riscvstall/riscvstall-sim.v:117",
+   "vc/vc-TestDualPortRandDelayMem.v:46",
+   "vc/vc-TestDualPortRandDelayMem.v:82"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp1_val",
+  "name": "memresp1_val",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Pattern.v:92",
+   "riscvstall/riscvstall-randdelay-sim.v:121",
+   "riscvstall/riscvstall-sim.v:121",
+   "vc/vc-TestDualPortRandDelayMem.v:116",
+   "vc/vc-TestDualPortRandDelayMem.v:50"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp1_rdy",
+  "name": "memresp1_rdy",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Pattern.v:93",
+   "riscvstall/riscvstall-randdelay-sim.v:122",
+   "riscvstall/riscvstall-sim.v:122",
+   "vc/vc-TestDualPortRandDelayMem.v:117",
+   "vc/vc-TestDualPortRandDelayMem.v:51"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|memresp1_msg",
+  "name": "memresp1_msg",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "output",
+  "decl": "output [c_resp_msg_sz-1:0]",
+  "lines": [
+   "Pattern.v:94",
+   "riscvstall/riscvstall-randdelay-sim.v:123",
+   "riscvstall/riscvstall-sim.v:123",
+   "vc/vc-TestDualPortRandDelayMem.v:118",
+   "vc/vc-TestDualPortRandDelayMem.v:52"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp0_val",
+  "name": "mem_memresp0_val",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:59",
+   "vc/vc-TestDualPortRandDelayMem.v:76",
+   "vc/vc-TestDualPortRandDelayMem.v:98"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp0_rdy",
+  "name": "mem_memresp0_rdy",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:60",
+   "vc/vc-TestDualPortRandDelayMem.v:77",
+   "vc/vc-TestDualPortRandDelayMem.v:99"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp0_msg",
+  "name": "mem_memresp0_msg",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "wire",
+  "decl": "wire [c_resp_msg_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:100",
+   "vc/vc-TestDualPortRandDelayMem.v:61",
+   "vc/vc-TestDualPortRandDelayMem.v:78"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp1_val",
+  "name": "mem_memresp1_val",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:112",
+   "vc/vc-TestDualPortRandDelayMem.v:63",
+   "vc/vc-TestDualPortRandDelayMem.v:84"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp1_rdy",
+  "name": "mem_memresp1_rdy",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:113",
+   "vc/vc-TestDualPortRandDelayMem.v:64",
+   "vc/vc-TestDualPortRandDelayMem.v:85"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem_memresp1_msg",
+  "name": "mem_memresp1_msg",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "wire",
+  "decl": "wire [c_resp_msg_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:114",
+   "vc/vc-TestDualPortRandDelayMem.v:65",
+   "vc/vc-TestDualPortRandDelayMem.v:86"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|mem",
+  "name": "mem",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "instance",
+  "decl": "vc_TestDualPortMem mem ( ... );",
+  "instance_of": "vc_TestDualPortMem",
+  "lines": [
+   "Pattern.v:122",
+   "riscvstall/riscvstall-randdelay-sim.v:154",
+   "riscvstall/riscvstall-sim.v:154",
+   "vc/vc-TestDualPortRandDelayMem.v:67"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|rand_delay0",
+  "name": "rand_delay0",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "instance",
+  "decl": "vc_TestRandDelay rand_delay0 ( ... );",
+  "instance_of": "vc_TestRandDelay",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:93"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v|vc_TestDualPortRandDelayMem|rand_delay1",
+  "name": "rand_delay1",
+  "cat": "signal",
+  "module": "vc_TestDualPortRandDelayMem",
+  "kind": "instance",
+  "decl": "vc_TestRandDelay rand_delay1 ( ... );",
+  "instance_of": "vc_TestRandDelay",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:107"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-TestDualPortRandDelayMem.v||vc_TestDualPortRandDelayMem",
+  "name": "vc_TestDualPortRandDelayMem",
+  "cat": "module",
+  "lines": [
+   "Pattern.v:70",
+   "riscvstall/riscvstall-randdelay-sim.v:89",
+   "riscvstall/riscvstall-sim.v:89",
+   "vc/vc-TestDualPortRandDelayMem.v:16"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`VC_TEST_DUAL_PORT_RAND_DELAY_MEM_V",
+  "name": "VC_TEST_DUAL_PORT_RAND_DELAY_MEM_V",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:8",
+   "vc/vc-TestDualPortRandDelayMem.v:9"
+  ],
+  "n_occ": 2
+ }
+]

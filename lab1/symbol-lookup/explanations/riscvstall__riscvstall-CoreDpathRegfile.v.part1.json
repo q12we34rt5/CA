@@ -1,0 +1,230 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|clk": {
+      "sum": "regfile 的時脈輸入，只有寫入埠會用到它",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "1-bit 時脈輸入，由 `riscv_CoreDpath` 的 `rfile` 實例接上 dpath 的 `clk`（再往上是 `riscv_Core` 的 `clk`）。在這個 module 裡 `clk` 只被寫入埠的 `always @( posedge clk )` 使用：正緣時若 `wen_p` 為 1 且 `waddr_p` 不是 0，就把 `wdata_p` 寫進 `registers`。兩個讀取埠 `rdata0` / `rdata1` 是純組合邏輯，完全不看 `clk`。"
+    },
+    "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|raddr0": {
+      "sum": "regfile 讀取埠 0 的暫存器編號（接 D 階段的 rs1）",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "addr",
+          "address",
+          "位址（這裡是暫存器編號）"
+        ],
+        [
+          "0",
+          "port 0",
+          "第 0 個讀取埠"
+        ]
+      ],
+      "desc": "5-bit 輸入，指定第 0 個讀取埠要讀哪一個暫存器（0～31）。由 `riscv_CoreDpath` 的 `rfile` 實例接上 `rf_raddr0_Dhl`，也就是 D 階段指令的 rs1 欄位 `inst_rs1_Dhl`。它直接索引 `registers` 陣列產生 `rdata0`，是純組合讀取，同一個 cycle 給位址就同一個 cycle 拿到資料；`raddr0` 為 0 時讀回來固定是 0（RISC-V 的 x0）。"
+    },
+    "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|rdata0": {
+      "sum": "regfile 讀取埠 0 讀出的 32-bit 值（D 階段的 rs1 值）",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ],
+        [
+          "0",
+          "port 0",
+          "第 0 個讀取埠"
+        ]
+      ],
+      "desc": "32-bit 組合輸出：`assign rdata0 = ( raddr0 == 0 ) ? 32'b0 : registers[raddr0];`，也就是讀 x0 時硬性回傳 0，其他編號直接讀 `registers` 陣列。在 `riscv_CoreDpath` 裡接到 `rf_rdata0_Dhl`，供 op0 mux（`op0_mux_out_Dhl` 的 `2'd0` 選項）與 `jumpreg_targ_Dhl` 的計算使用。這份 lab 的 pipeline 沒有 bypass，靠 `riscv_CoreCtrl` 的 `stall_hazard_Dhl` 把指令擋在 D 階段，直到前面的指令寫完 regfile，所以這裡讀到的一定是已經寫回的值。"
+    },
+    "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|raddr1": {
+      "sum": "regfile 讀取埠 1 的暫存器編號（接 D 階段的 rs2）",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "addr",
+          "address",
+          "位址（這裡是暫存器編號）"
+        ],
+        [
+          "1",
+          "port 1",
+          "第 1 個讀取埠"
+        ]
+      ],
+      "desc": "5-bit 輸入，指定第 1 個讀取埠要讀哪一個暫存器。由 `riscv_CoreDpath` 的 `rfile` 實例接上 `rf_raddr1_Dhl`，也就是 D 階段指令的 rs2 欄位 `inst_rs2_Dhl`。有兩個讀取埠是因為 R-type / store / branch 指令一次要讀 rs1 和 rs2 兩個暫存器。同樣是純組合讀取，為 0 時 `rdata1` 回傳 0。"
+    },
+    "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|rdata1": {
+      "sum": "regfile 讀取埠 1 讀出的 32-bit 值（D 階段的 rs2 值）",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ],
+        [
+          "1",
+          "port 1",
+          "第 1 個讀取埠"
+        ]
+      ],
+      "desc": "32-bit 組合輸出：`assign rdata1 = ( raddr1 == 0 ) ? 32'b0 : registers[raddr1];`。在 `riscv_CoreDpath` 裡接到 `rf_rdata1_Dhl`，被 op1 mux（`op1_mux_out_Dhl` 的 `3'd0` 選項）使用，同時也是 store 指令要寫進記憶體的資料來源 `wdata_Dhl`。"
+    },
+    "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|wen_p": {
+      "sum": "regfile 寫入致能，1 表示這個正緣要寫回暫存器",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "en",
+          "enable",
+          "致能"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣的輸入"
+        ]
+      ],
+      "desc": "1-bit 輸入。在 `riscv_CoreDpath` 的 `rfile` 實例接上 `rf_wen_Whl`，而那個訊號來自 `riscv_CoreCtrl` 的 `rf_wen_out_Whl = ( inst_val_Whl && !stall_Whl && rf_wen_Whl )` —— 也就是 W 階段真的有一條有效指令、沒有 stall、且解碼表把該指令的 rf wen 欄位設成 `y` 時才會是 1。只有在 `clk` 正緣、且 `wen_p` 為 1 且 `waddr_p != 0` 的情況下，`wdata_p` 才會被寫進 `registers`。"
+    },
+    "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|waddr_p": {
+      "sum": "regfile 寫入的目的暫存器編號（W 階段的 rd）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "addr",
+          "address",
+          "位址（暫存器編號）"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣的輸入"
+        ]
+      ],
+      "desc": "5-bit 輸入，指定要寫哪一個暫存器。由 `riscv_CoreDpath` 接上 `rf_waddr_Whl`，源頭是 `riscv_CoreCtrl` 解碼表 `cs` 的 rf waddr 欄位（一般指令填 `rd`，不寫回的指令填 `rx`），一路 pipeline 到 W 階段。寫入條件 `if ( wen_p && (waddr_p != 5'b0) )` 特別排除了編號 0，因為 RISC-V 的 x0 永遠是 0、不能被寫。"
+    },
+    "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|wdata_p": {
+      "sum": "regfile 要寫回的 32-bit 資料（W 階段的寫回值）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣的輸入"
+        ]
+      ],
+      "desc": "32-bit 輸入。在 `riscv_CoreDpath` 裡接的是 `wb_mux_out_Whl`，也就是寫回 mux 的結果：`wb_mux_sel_Mhl` 為 0 時是執行階段的結果 `execute_mux_out_Mhl`（ALU 或乘除法），為 1 時是 load 讀回並做過 sign/zero extend 的 `dmemresp_mux_out_Mhl`。它在 `clk` 正緣、`wen_p` 為 1 且 `waddr_p` 非 0 時被寫進 `registers[waddr_p]`。"
+    },
+    "riscvstall/riscvstall-CoreDpathRegfile.v|riscv_CoreDpathRegfile|registers": {
+      "sum": "32 個 32-bit 暫存器組成的陣列，就是 RISC-V 的 x0～x31 本體",
+      "naming": [
+        [
+          "registers",
+          "registers",
+          "暫存器（陣列）"
+        ]
+      ],
+      "desc": "`reg [31:0] registers[31:0];` 宣告 32 個 32-bit 的記憶元件，是 register file 真正存值的地方。寫入由 `clk` 正緣的 `always` 區塊負責（`registers[waddr_p] <= wdata_p`），讀取由兩個 `assign` 組合讀出給 `rdata0` / `rdata1`。注意 `registers[0]` 其實會被宣告出來但永遠寫不進去（寫入條件排除 `waddr_p == 0`），讀出時也被 mux 成常數 0，所以 x0 恆為 0。模擬時 testbench（例如 `riscvstall-randdelay-sim.v` 裡的 `$display`）會用階層路徑直接窺看這個陣列來印出暫存器內容。"
+    },
+    "riscvstall/riscvstall-CoreDpathRegfile.v||riscv_CoreDpathRegfile": {
+      "sum": "5 階段 RISC-V core 的 register file module：2 讀埠（組合）+ 1 寫埠（正緣）",
+      "naming": [
+        [
+          "riscv",
+          "RISC-V",
+          "這顆 RISC-V 處理器"
+        ],
+        [
+          "Core",
+          "core",
+          "處理器核心"
+        ],
+        [
+          "Dpath",
+          "datapath",
+          "資料路徑"
+        ],
+        [
+          "Regfile",
+          "register file",
+          "暫存器檔案（32 個通用暫存器）"
+        ]
+      ],
+      "desc": "定義在 `riscvstall-CoreDpathRegfile.v`，被 `riscv_CoreDpath` 以實例名 `rfile` instantiate 一次（透過 include` 引入）。Port 可分三組：讀埠 0（`raddr0` / `rdata0`）、讀埠 1（`raddr1` / `rdata1`）、寫埠（`clk` / `wen_p` / `waddr_p` / `wdata_p`）。兩個讀埠是純組合，D 階段給 rs1 / rs2 編號當個 cycle 就拿到值；寫埠在 `clk` 正緣同步寫入，由 W 階段驅動。x0 在讀寫兩邊都被特別處理成恆為 0。"
+    },
+    "`RISCV_CORE_DPATH_REGFILE_V": {
+      "sum": "riscvstall-CoreDpathRegfile.v 的 include guard macro",
+      "naming": [
+        [
+          "RISCV_",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "CORE",
+          "core",
+          "處理器核心"
+        ],
+        [
+          "DPATH",
+          "datapath",
+          "資料路徑"
+        ],
+        [
+          "REGFILE",
+          "register file",
+          "暫存器檔案"
+        ],
+        [
+          "_V",
+          "include guard",
+          "檔名_V：防止同一個檔案被 include 兩次"
+        ]
+      ],
+      "desc": "這是典型的 include guard：檔案開頭用 `ifndef RISCV_CORE_DPATH_REGFILE_V` 檢查、接著 `define` 它，檔尾 `endif`。因為 `riscvstall-CoreDpath.v` 會 include \"riscvstall-CoreDpathRegfile.v\"`，若多個檔案都引入同一份檔案，少了這個 guard 就會出現 `riscv_CoreDpathRegfile` 重複定義的錯誤。它本身沒有值，只當作「這個檔已經被讀過」的旗標。"
+    }
+  }
+}

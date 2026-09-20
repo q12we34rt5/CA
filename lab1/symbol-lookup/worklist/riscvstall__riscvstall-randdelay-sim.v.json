@@ -1,0 +1,430 @@
+[
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:14",
+   "riscvstall/riscvstall-randdelay-sim.v:17",
+   "riscvstall/riscvstall-randdelay-sim.v:205",
+   "riscvstall/riscvstall-randdelay-sim.v:346",
+   "riscvstall/riscvstall-randdelay-sim.v:44",
+   "riscvstall/riscvstall-randdelay-sim.v:55",
+   "riscvstall/riscvstall-randdelay-sim.v:98"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:15",
+   "riscvstall/riscvstall-randdelay-sim.v:196",
+   "riscvstall/riscvstall-randdelay-sim.v:197",
+   "riscvstall/riscvstall-randdelay-sim.v:314",
+   "riscvstall/riscvstall-randdelay-sim.v:45"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|status",
+  "name": "status",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:19",
+   "riscvstall/riscvstall-randdelay-sim.v:314",
+   "riscvstall/riscvstall-randdelay-sim.v:316",
+   "riscvstall/riscvstall-randdelay-sim.v:319",
+   "riscvstall/riscvstall-randdelay-sim.v:320",
+   "riscvstall/riscvstall-randdelay-sim.v:329",
+   "riscvstall/riscvstall-randdelay-sim.v:82"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|imemreq_msg",
+  "name": "imemreq_msg",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_REQ_MSG_SZ(32,32)-1:0]",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:105",
+   "riscvstall/riscvstall-randdelay-sim.v:25",
+   "riscvstall/riscvstall-randdelay-sim.v:60"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|imemreq_val",
+  "name": "imemreq_val",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:103",
+   "riscvstall/riscvstall-randdelay-sim.v:26",
+   "riscvstall/riscvstall-randdelay-sim.v:61"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|imemreq_rdy",
+  "name": "imemreq_rdy",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:104",
+   "riscvstall/riscvstall-randdelay-sim.v:27",
+   "riscvstall/riscvstall-randdelay-sim.v:62"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|imemresp_msg",
+  "name": "imemresp_msg",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_RESP_MSG_SZ(32)-1:0]",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:111",
+   "riscvstall/riscvstall-randdelay-sim.v:28",
+   "riscvstall/riscvstall-randdelay-sim.v:66"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|imemresp_val",
+  "name": "imemresp_val",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:109",
+   "riscvstall/riscvstall-randdelay-sim.v:29",
+   "riscvstall/riscvstall-randdelay-sim.v:67"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|dmemreq_msg",
+  "name": "dmemreq_msg",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_REQ_MSG_SZ(32,32)-1:0]",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:117",
+   "riscvstall/riscvstall-randdelay-sim.v:31",
+   "riscvstall/riscvstall-randdelay-sim.v:71"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|dmemreq_val",
+  "name": "dmemreq_val",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:115",
+   "riscvstall/riscvstall-randdelay-sim.v:32",
+   "riscvstall/riscvstall-randdelay-sim.v:72"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|dmemreq_rdy",
+  "name": "dmemreq_rdy",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:116",
+   "riscvstall/riscvstall-randdelay-sim.v:33",
+   "riscvstall/riscvstall-randdelay-sim.v:73"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|dmemresp_msg",
+  "name": "dmemresp_msg",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_RESP_MSG_SZ(32)-1:0]",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:123",
+   "riscvstall/riscvstall-randdelay-sim.v:34",
+   "riscvstall/riscvstall-randdelay-sim.v:77"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|dmemresp_val",
+  "name": "dmemresp_val",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:121",
+   "riscvstall/riscvstall-randdelay-sim.v:35",
+   "riscvstall/riscvstall-randdelay-sim.v:78"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|reset_mem",
+  "name": "reset_mem",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:41",
+   "riscvstall/riscvstall-randdelay-sim.v:45",
+   "riscvstall/riscvstall-randdelay-sim.v:46",
+   "riscvstall/riscvstall-randdelay-sim.v:99"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|reset_proc",
+  "name": "reset_proc",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:42",
+   "riscvstall/riscvstall-randdelay-sim.v:46",
+   "riscvstall/riscvstall-randdelay-sim.v:56"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|proc",
+  "name": "proc",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "instance",
+  "decl": "riscv_Core proc ( ... );",
+  "instance_of": "riscv_Core",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:175",
+   "riscvstall/riscvstall-randdelay-sim.v:179",
+   "riscvstall/riscvstall-randdelay-sim.v:210",
+   "riscvstall/riscvstall-randdelay-sim.v:212",
+   "riscvstall/riscvstall-randdelay-sim.v:213",
+   "riscvstall/riscvstall-randdelay-sim.v:214",
+   "riscvstall/riscvstall-randdelay-sim.v:215",
+   "riscvstall/riscvstall-randdelay-sim.v:217",
+   "riscvstall/riscvstall-randdelay-sim.v:221",
+   "riscvstall/riscvstall-randdelay-sim.v:223",
+   "riscvstall/riscvstall-randdelay-sim.v:224",
+   "riscvstall/riscvstall-randdelay-sim.v:225"
+  ],
+  "n_occ": 73
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|mem",
+  "name": "mem",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "instance",
+  "decl": "vc_TestDualPortRandDelayMem mem ( ... );",
+  "instance_of": "vc_TestDualPortRandDelayMem",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:154",
+   "riscvstall/riscvstall-randdelay-sim.v:96"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|fh",
+  "name": "fh",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "integer",
+  "decl": "integer",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:130",
+   "riscvstall/riscvstall-randdelay-sim.v:147",
+   "riscvstall/riscvstall-randdelay-sim.v:148",
+   "riscvstall/riscvstall-randdelay-sim.v:152"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|exe_filename",
+  "name": "exe_filename",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg [1023:0]",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:131",
+   "riscvstall/riscvstall-randdelay-sim.v:144",
+   "riscvstall/riscvstall-randdelay-sim.v:147",
+   "riscvstall/riscvstall-randdelay-sim.v:149",
+   "riscvstall/riscvstall-randdelay-sim.v:154",
+   "riscvstall/riscvstall-randdelay-sim.v:184"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|vcd_filename",
+  "name": "vcd_filename",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg [1023:0]",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:132",
+   "riscvstall/riscvstall-randdelay-sim.v:184",
+   "riscvstall/riscvstall-randdelay-sim.v:186"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|max_cycles",
+  "name": "max_cycles",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:133",
+   "riscvstall/riscvstall-randdelay-sim.v:163",
+   "riscvstall/riscvstall-randdelay-sim.v:164",
+   "riscvstall/riscvstall-randdelay-sim.v:351"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|verbose",
+  "name": "verbose",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:134",
+   "riscvstall/riscvstall-randdelay-sim.v:171",
+   "riscvstall/riscvstall-randdelay-sim.v:172",
+   "riscvstall/riscvstall-randdelay-sim.v:178",
+   "riscvstall/riscvstall-randdelay-sim.v:322"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|stats",
+  "name": "stats",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:135",
+   "riscvstall/riscvstall-randdelay-sim.v:168"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|vcd",
+  "name": "vcd",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:136",
+   "riscvstall/riscvstall-randdelay-sim.v:183"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|disasm",
+  "name": "disasm",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg [1:0]",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:137",
+   "riscvstall/riscvstall-randdelay-sim.v:191",
+   "riscvstall/riscvstall-randdelay-sim.v:192",
+   "riscvstall/riscvstall-randdelay-sim.v:206",
+   "riscvstall/riscvstall-randdelay-sim.v:272",
+   "riscvstall/riscvstall-randdelay-sim.v:277"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|i",
+  "name": "i",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "integer",
+  "decl": "integer",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:139"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|ipc",
+  "name": "ipc",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "real",
+  "decl": "real",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:311",
+   "riscvstall/riscvstall-randdelay-sim.v:323",
+   "riscvstall/riscvstall-randdelay-sim.v:332"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v|riscv_sim|cycle_count",
+  "name": "cycle_count",
+  "cat": "signal",
+  "module": "riscv_sim",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:344",
+   "riscvstall/riscvstall-randdelay-sim.v:347",
+   "riscvstall/riscvstall-randdelay-sim.v:351"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-randdelay-sim.v||riscv_sim",
+  "name": "riscv_sim",
+  "cat": "module",
+  "lines": [
+   "riscvstall/riscvstall-randdelay-sim.v:8"
+  ],
+  "n_occ": 1
+ }
+]

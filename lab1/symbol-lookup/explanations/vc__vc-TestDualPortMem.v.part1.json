@@ -1,0 +1,219 @@
+{
+  "entities": {
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|p_mem_sz": {
+      "sum": "vc_TestDualPortMem 的參數：實體測試記憶體大小（byte 數）",
+      "naming": [["p_", "parameter", "module 參數"], ["mem", "memory", "記憶體"], ["sz", "size", "大小"]],
+      "desc": "預設 1024，單位是 byte。它決定 `c_physical_addr_sz = $clog2(p_mem_sz)`（實體位址位元數）與 `c_num_blocks = p_mem_sz/c_data_byte_sz`（陣列 `m` 有幾個 word）。在 `riscvstall-sim.v` 與 `Pattern.v` 裡上層是傳 1<<20，也就是 1 MB 的測試記憶體。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|p_addr_sz": {
+      "sum": "vc_TestDualPortMem 的參數：記憶體請求訊息裡位址欄位的 bit 數",
+      "naming": [["p_", "parameter", "module 參數"], ["addr", "address", "位址"], ["sz", "size", "位元數"]],
+      "desc": "預設 8，本專案傳 32。它只影響「訊息格式」：`VC_MEM_REQ_MSG_SZ(p_addr_sz,p_data_sz)` 等 macro 用它算出 `memreq0_msg`/`memreq1_msg` 的總寬度與各欄位寬度，也用來參數化 `vc_MemReqMsgFromBits`。真正索引陣列時只取低 `c_physical_addr_sz` 位（見 `physical_byte_addr0_M`），高位會被截掉。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|p_data_sz": {
+      "sum": "vc_TestDualPortMem 的參數：一筆資料 / 一個 block 的 bit 數",
+      "naming": [["p_", "parameter", "module 參數"], ["data", "data", "資料"], ["sz", "size", "位元數"]],
+      "desc": "預設 32，本專案也是 32。它同時決定三件事：記憶體陣列 `m` 每格的寬度（`reg [p_data_sz-1:0] m[...]`）、請求 / 回應訊息中 data 欄位的寬度、以及 `c_data_byte_sz = p_data_sz/8`（每格幾個 byte，32 bit 就是 4）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_req_msg_sz": {
+      "sum": "vc_TestDualPortMem 的常數參數：一則記憶體請求訊息的總 bit 數",
+      "naming": [["c_", "constant", "不該從外面設定的常數"], ["req", "request", "請求"], ["msg", "message", "訊息"], ["sz", "size", "位元數"]],
+      "desc": "`` `VC_MEM_REQ_MSG_SZ(p_addr_sz,p_data_sz) `` = type + addr + len + data 的總和。以本專案的 32/32 來說是 1+32+2+32 = 67 bit。它決定 `memreq0_msg`、`memreq1_msg` 兩個輸入 port 的寬度。雖然寫成 `parameter`（因為要用到前面的參數），註解已經說明它不該從外部覆寫。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_resp_msg_sz": {
+      "sum": "vc_TestDualPortMem 的常數參數：一則記憶體回應訊息的總 bit 數",
+      "naming": [["c_", "constant", "不該從外面設定的常數"], ["resp", "response", "回應"], ["msg", "message", "訊息"], ["sz", "size", "位元數"]],
+      "desc": "`` `VC_MEM_RESP_MSG_SZ(p_data_sz) `` = type + len + data，32-bit 資料時是 1+2+32 = 35 bit。它決定 `memresp0_msg`、`memresp1_msg` 兩個輸出 port 的寬度，上層 `vc_TestDualPortRandDelayMem` 也拿同名常數去參數化 `vc_TestRandDelay`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|clk": {
+      "sum": "vc_TestDualPortMem 的時脈輸入",
+      "naming": [["clk", "clock", "時脈"]],
+      "desc": "驅動兩件事：正緣時把輸入的請求寫進請求緩衝暫存器（`memreq0_val_M` 等），以及正緣時把 store 資料寫進記憶體陣列 `m`。另外 `VC_ASSERT_NOT_X_POSEDGE_MSG` 的檢查也掛在它的正緣。由上層（`vc_TestDualPortRandDelayMem`、testbench）傳入。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|reset": {
+      "sum": "vc_TestDualPortMem 的同步 reset：把兩個 port 的請求 valid 清成 0",
+      "naming": [["reset", "reset", "重置"]],
+      "desc": "正緣時若為 1，就令 `memreq0_val_M <= 0`、`memreq1_val_M <= 0`，確保 reset 期間不會送出假的回應（因為 `memresp0_val` 直接等於 `memreq0_val_M`）。它不會清空記憶體內容 `m`——測試程式是用 $readmemh 把程式載進 `m` 的，所以這裡刻意不動資料。在 `riscvstall-sim.v` / `Pattern.v` 中接的是 `reset_mem`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_val": {
+      "sum": "port 0 請求介面的 valid 輸入（imem 取指請求有效）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["val", "valid", "這個 cycle 的請求有效"]],
+      "desc": "val-rdy 握手的 valid 端。在 `memresp0_rdy` 為 1 的正緣，它會被存進 `memreq0_val_M`，下一個 cycle 變成回應的 valid。在 `riscvstall-sim.v` 裡 port 0 接的是 CPU 的 `imemreq_val`（取指）。這個訊號也被 `VC_ASSERT_NOT_X_POSEDGE_MSG` 檢查不可為 x。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_rdy": {
+      "sum": "port 0 請求介面的 ready 輸出，直接等於 memresp0_rdy",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["rdy", "ready", "這個 cycle 可以收請求"]],
+      "desc": "由 `assign memreq0_rdy = memresp0_rdy` 驅動。因為這個測試記憶體是「嚴格 pipeline」：回應端不 ready 時整條線就停住，所以請求端的 ready 直接接回應端的 ready，不另外做流量控制。在 sim 檔裡 `memresp0_rdy` 被綁成 1'b1，因此 imem 永遠 ready。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg": {
+      "sum": "port 0 的請求訊息 bits（type/addr/len/data 打包在一起）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息本體"]],
+      "desc": "`c_req_msg_sz` 位元輸入，由 `memreq0_msg_from_bits`（`vc_MemReqMsgFromBits`）拆成 `memreq0_msg_type`、`memreq0_msg_addr`、`memreq0_msg_len`、`memreq0_msg_data`。只有在 `memreq0_val` 為 1 的那個 cycle 才有意義。sim 檔中接的是 CPU 的 `imemreq_msg`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_val": {
+      "sum": "port 0 回應介面的 valid 輸出",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["0", "port 0", "第 0 個記憶體埠"], ["val", "valid", "這個 cycle 的回應有效"]],
+      "desc": "`assign memresp0_val = memreq0_val_M`，也就是「上一拍收到的請求有效」就代表這一拍回應有效。記憶體固定是 1 cycle 延遲：cycle N 送請求、cycle N+1 拿到回應。reset 時 `memreq0_val_M` 被清 0，所以回應也跟著無效。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_rdy": {
+      "sum": "port 0 回應介面的 ready 輸入，同時也是整條 pipeline 的前進條件",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["0", "port 0", "第 0 個記憶體埠"], ["rdy", "ready", "收方這個 cycle 可以收回應"]],
+      "desc": "這是 port 0 最關鍵的控制訊號：它同時 (1) 當成請求緩衝暫存器的 enable（`if ( memresp0_rdy )` 才更新 `memreq0_val_M` 與各個 `_M` 欄位），(2) 直接 `assign` 給 `memreq0_rdy`。為 0 時整個 port 0 凍結在原地。在 `riscvstall-sim.v` 與 `Pattern.v` 的 imem 埠上它被接成常數 1。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_msg": {
+      "sum": "port 0 的回應訊息 bits（type/len/data 打包）",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息本體"]],
+      "desc": "`c_resp_msg_sz` 位元輸出，由 `memresp0_msg_to_bits`（`vc_MemRespMsgToBits`）把 `memresp0_msg_type_M`、`memresp0_msg_len_M`、`memresp0_msg_data_M` 打包而成。對 read 請求來說 data 欄位就是讀出的資料；對 write 請求 data 欄位仍會帶著當時讀到的舊值，收方會忽略它。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_val": {
+      "sum": "port 1 請求介面的 valid 輸入（dmem load/store 請求有效）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["val", "valid", "這個 cycle 的請求有效"]],
+      "desc": "與 `memreq0_val` 完全對稱，只是走的是另一組獨立的緩衝與回應邏輯。在 `riscvstall-sim.v` 裡 port 1 接的是 CPU 的 `dmemreq_val`（load / store）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_rdy": {
+      "sum": "port 1 請求介面的 ready 輸出，直接等於 memresp1_rdy",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["rdy", "ready", "這個 cycle 可以收請求"]],
+      "desc": "由 `assign memreq1_rdy = memresp1_rdy` 驅動，理由與 port 0 相同（嚴格 pipeline，不做額外緩衝）。CPU 端的 `dmemreq_rdy` 就是接這個訊號。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg": {
+      "sum": "port 1 的請求訊息 bits",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息本體"]],
+      "desc": "`c_req_msg_sz` 位元輸入，由 `memreq1_msg_from_bits` 拆成 type / addr / len / data 四個欄位。store 指令的資料就放在其中的 data 欄位，len 欄位決定要寫幾個 byte（0 代表整個 word）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_val": {
+      "sum": "port 1 回應介面的 valid 輸出",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["1", "port 1", "第 1 個記憶體埠"], ["val", "valid", "這個 cycle 的回應有效"]],
+      "desc": "`assign memresp1_val = memreq1_val_M`，即上一拍成功接下的 dmem 請求在這一拍產生回應。CPU 的 `dmemresp_val` 就是它（經過上層的隨機延遲模組之後）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_rdy": {
+      "sum": "port 1 回應介面的 ready 輸入，兼作 port 1 pipeline 的 enable",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["1", "port 1", "第 1 個記憶體埠"], ["rdy", "ready", "收方這個 cycle 可以收回應"]],
+      "desc": "和 port 0 一樣身兼兩職：控制請求緩衝 `memreq1_val_M` / `memreq1_msg_*_M` 是否更新，並直接驅動 `memreq1_rdy`。為 0 時 port 1 整個停住（但不影響 port 0）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_msg": {
+      "sum": "port 1 的回應訊息 bits",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息本體"]],
+      "desc": "`c_resp_msg_sz` 位元輸出，由 `memresp1_msg_to_bits` 把 type / len / data 打包。load 指令讀回來的資料就是從這裡回到 CPU 的 `dmemresp_msg`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_physical_addr_sz": {
+      "sum": "實體位址的 bit 數，等於 $clog2(p_mem_sz)",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["physical", "physical", "實體（真正存在的記憶體）"], ["addr", "address", "位址"], ["sz", "size", "位元數"]],
+      "desc": "localparam，`$clog2(p_mem_sz)`；p_mem_sz = 1<<20 時是 20。請求訊息裡的位址可能有 32 位元，這裡只取低 20 位（`memreq0_msg_addr_M[c_physical_addr_sz-1:0]`）當作 `physical_byte_addr0_M`，超出記憶體範圍的高位直接被截掉。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_data_byte_sz": {
+      "sum": "每一格（block）有幾個 byte，等於 p_data_sz/8",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["data", "data", "資料"], ["byte", "byte", "位元組"], ["sz", "size", "數量"]],
+      "desc": "localparam，32-bit 資料時是 4。用來算 `c_num_blocks`（總格數）、`c_block_offset_sz`（block 內 byte 偏移的位元數），以及把 byte 位址換算成 block 位址（`physical_byte_addr0_M/c_data_byte_sz`）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_num_blocks": {
+      "sum": "記憶體一共有幾個 word（陣列 m 的深度）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["num", "number of", "數量"], ["blocks", "blocks", "區塊 / word"]],
+      "desc": "localparam `p_mem_sz/c_data_byte_sz`；1 MB、32-bit word 時是 262144。它決定 `reg [p_data_sz-1:0] m[c_num_blocks-1:0]` 的深度。`Pattern.v` 裡也有一個對應的 `c_mem_num_words` 在載入程式時用到。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_physical_block_addr_sz": {
+      "sum": "block（word）位址的 bit 數，等於 $clog2(c_num_blocks)",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["physical", "physical", "實體"], ["block", "block", "區塊 / word"], ["addr", "address", "位址"], ["sz", "size", "位元數"]],
+      "desc": "localparam，1 MB / 4 byte 時是 18。它是 `physical_block_addr0_M`、`physical_block_addr1_M` 這兩條用來索引陣列 `m` 的訊號的寬度。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_block_offset_sz": {
+      "sum": "block 內 byte 偏移量的 bit 數，等於 $clog2(c_data_byte_sz)",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["block", "block", "區塊 / word"], ["offset", "offset", "偏移量"], ["sz", "size", "位元數"]],
+      "desc": "localparam，32-bit word（4 byte）時是 2。它是 `block_offset0_M`/`block_offset1_M` 的寬度，也就是位址最低 2 位，用來決定要從 word 的第幾個 byte 開始讀寫（做非對齊 / byte / halfword 存取用）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_read": {
+      "sum": "請求 type 欄位代表「讀」的編碼（1'd0）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["read", "read", "讀取"]],
+      "desc": "localparam，值是 `` `VC_MEM_REQ_MSG_TYPE_READ ``＝1'd0，只是方便閱讀的別名。實際判斷寫入時用的是它的反面（`memreq0_msg_type_M == c_write`），所以 type 不是 write 就當成 read 處理——讀取本來就無條件進行。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_write": {
+      "sum": "請求 type 欄位代表「寫」的編碼（1'd1）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["write", "write", "寫入"]],
+      "desc": "localparam，值是 `` `VC_MEM_REQ_MSG_TYPE_WRITE ``＝1'd1。被 `write_en0_M = memreq0_val_M && ( memreq0_msg_type_M == c_write )` 與 port 1 的對應式子用來判斷是否要在正緣把資料寫進陣列 `m`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_req_msg_type_sz": {
+      "sum": "請求訊息中 type 欄位的 bit 數（1）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["req", "request", "請求"], ["msg", "message", "訊息"], ["type", "type", "請求種類欄位"], ["sz", "size", "位元數"]],
+      "desc": "localparam，展開自 `` `VC_MEM_REQ_MSG_TYPE_SZ(p_addr_sz,p_data_sz) ``，固定是 1。用來宣告 `memreq0_msg_type` / `memreq1_msg_type` 這兩條 wire 以及對應的 `_M` 暫存器寬度。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_req_msg_addr_sz": {
+      "sum": "請求訊息中 addr 欄位的 bit 數（等於 p_addr_sz）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["req", "request", "請求"], ["msg", "message", "訊息"], ["addr", "address", "位址欄位"], ["sz", "size", "位元數"]],
+      "desc": "localparam，展開自 `` `VC_MEM_REQ_MSG_ADDR_SZ(p_addr_sz,p_data_sz) ``，實際就是 p_addr_sz（本專案 32）。用來宣告 `memreq0_msg_addr`、`memreq0_msg_addr_M` 等訊號。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_req_msg_len_sz": {
+      "sum": "請求訊息中 len 欄位的 bit 數（32-bit 資料時為 2）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["req", "request", "請求"], ["msg", "message", "訊息"], ["len", "length", "存取長度欄位"], ["sz", "size", "位元數"]],
+      "desc": "localparam，展開自 `` `VC_MEM_REQ_MSG_LEN_SZ(p_addr_sz,p_data_sz) `` = $clog2(p_data_sz/8)，32-bit 時是 2（可表示 0~3 個 byte，0 另外代表整個 word）。它是 `memreq0_msg_len`、`memreq0_msg_len_M` 的寬度，而 `memreq0_msg_len_modified_M` 則刻意多一位（`[c_req_msg_len_sz:0]`）以便放得下 4。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_req_msg_data_sz": {
+      "sum": "請求訊息中 data 欄位的 bit 數（等於 p_data_sz）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["req", "request", "請求"], ["msg", "message", "訊息"], ["data", "data", "資料欄位"], ["sz", "size", "位元數"]],
+      "desc": "localparam，展開自 `` `VC_MEM_REQ_MSG_DATA_SZ(p_addr_sz,p_data_sz) ``，即 p_data_sz（32）。除了宣告 `memreq0_msg_data`/`memreq1_msg_data` 之外，還被用在 `c_req_msg_data_sz/8`（= 4）當作 len 為 0 時的「整個 word」長度。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_resp_msg_type_sz": {
+      "sum": "回應訊息中 type 欄位的 bit 數（1）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["resp", "response", "回應"], ["msg", "message", "訊息"], ["type", "type", "回應種類欄位"], ["sz", "size", "位元數"]],
+      "desc": "localparam，`` `VC_MEM_RESP_MSG_TYPE_SZ(p_data_sz) `` 固定是 1。用來宣告 `memresp0_msg_type_M` / `memresp1_msg_type_M`，而這兩條線只是把請求的 type 原封不動回傳。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_resp_msg_len_sz": {
+      "sum": "回應訊息中 len 欄位的 bit 數（32-bit 資料時為 2）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["resp", "response", "回應"], ["msg", "message", "訊息"], ["len", "length", "長度欄位"], ["sz", "size", "位元數"]],
+      "desc": "localparam，`` `VC_MEM_RESP_MSG_LEN_SZ(p_data_sz) `` = $clog2(p_data_sz/8) = 2。回應把請求的 len 照抄回去（`memresp0_msg_len_M = memreq0_msg_len_M`），讓 CPU 知道這筆回應對應的是幾個 byte 的存取。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|c_resp_msg_data_sz": {
+      "sum": "回應訊息中 data 欄位的 bit 數（等於 p_data_sz）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["resp", "response", "回應"], ["msg", "message", "訊息"], ["data", "data", "資料欄位"], ["sz", "size", "位元數"]],
+      "desc": "localparam，即 32。它是 `read_data0_M`、`read_data1_M`、`memresp0_msg_data_M` 等訊號的寬度，也就是回傳給 CPU 的讀取資料寬度。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_type": {
+      "sum": "從 port 0 請求 bits 拆出來的 type 欄位（0=讀、1=寫）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["type", "type", "請求種類"]],
+      "desc": "1 位元 wire，由 `memreq0_msg_from_bits` 的 `.type` 輸出驅動。它在 `memresp0_rdy` 的正緣被存進 `memreq0_msg_type_M`，下一拍才拿來比對 `c_write` 決定要不要寫記憶體。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_addr": {
+      "sum": "從 port 0 請求 bits 拆出來的 byte 位址欄位",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["addr", "address", "位址"]],
+      "desc": "`c_req_msg_addr_sz`（32）位元 wire，來自 `memreq0_msg_from_bits`。它是 byte 位址，會先被存進 `memreq0_msg_addr_M`，下一拍才被截成 `physical_byte_addr0_M` 並拆成 block 位址與 block 內偏移。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_len": {
+      "sum": "從 port 0 請求 bits 拆出來的存取長度欄位（0 代表整個 word）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["len", "length", "存取的 byte 數"]],
+      "desc": "2 位元 wire，1 = 1 byte、2 = 2 byte、0 = 整個 4 byte word（3 這個值在 RISC-V 用不到）。暫存成 `memreq0_msg_len_M` 之後，由 `memreq0_msg_len_modified_M` 把 0 轉換成 4 再用於寫入迴圈。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_data": {
+      "sum": "從 port 0 請求 bits 拆出來的寫入資料欄位",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["data", "data", "資料"]],
+      "desc": "32 位元 wire，只有 store（type = `c_write`）時才有意義。它被存進 `memreq0_msg_data_M`，寫入迴圈再從它的最低位 byte 開始，一次取一個 byte 寫進 `m`。port 0 在本專案接的是取指，所以實際上幾乎只做讀。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_from_bits": {
+      "sum": "port 0 的 vc_MemReqMsgFromBits 實例：把請求 bits 拆成欄位",
+      "naming": [["memreq0", "memory request port 0", "第 0 個記憶體埠的請求"], ["msg", "message", "訊息"], ["from_bits", "from bits", "從 bits 拆出欄位"]],
+      "desc": "`vc_MemReqMsgFromBits#(p_addr_sz,p_data_sz)` 的實例，`.bits(memreq0_msg)` 進、`.type/.addr/.len/.data` 出，對應到 `memreq0_msg_type`、`memreq0_msg_addr`、`memreq0_msg_len`、`memreq0_msg_data`。它內部只是一堆 `assign` 切位元範圍，是純組合邏輯。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_type": {
+      "sum": "從 port 1 請求 bits 拆出來的 type 欄位（0=讀、1=寫）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["type", "type", "請求種類"]],
+      "desc": "1 位元 wire，由 `memreq1_msg_from_bits` 驅動。port 1 接的是 dmem，所以 load 會是 0、store 會是 1；它暫存成 `memreq1_msg_type_M` 後參與 `write_en1_M` 的判斷。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_addr": {
+      "sum": "從 port 1 請求 bits 拆出來的 byte 位址欄位",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["addr", "address", "位址"]],
+      "desc": "32 位元 wire，是 load / store 的目標 byte 位址（CPU 端由 ALU 算出）。經 `memreq1_msg_addr_M` 暫存後截成 `physical_byte_addr1_M` 使用。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_len": {
+      "sum": "從 port 1 請求 bits 拆出來的存取長度欄位",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["len", "length", "存取的 byte 數"]],
+      "desc": "2 位元 wire：1 = lb/sb 的 1 byte、2 = lh/sh 的 2 byte、0 = lw/sw 的整個 word。經 `memreq1_msg_len_M`、再由 `memreq1_msg_len_modified_M` 把 0 換成 4 後控制寫入幾個 byte。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_data": {
+      "sum": "從 port 1 請求 bits 拆出來的寫入資料欄位（store 的資料）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["data", "data", "資料"]],
+      "desc": "32 位元 wire。store 時 CPU 會把要寫的值放在這裡（byte / halfword 存取時資料靠右對齊），寫入迴圈從最低位 byte 起依 `memreq1_msg_len_modified_M` 個 byte 搬進 `m`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_from_bits": {
+      "sum": "port 1 的 vc_MemReqMsgFromBits 實例：把請求 bits 拆成欄位",
+      "naming": [["memreq1", "memory request port 1", "第 1 個記憶體埠的請求"], ["msg", "message", "訊息"], ["from_bits", "from bits", "從 bits 拆出欄位"]],
+      "desc": "與 `memreq0_msg_from_bits` 同型的 `vc_MemReqMsgFromBits#(p_addr_sz,p_data_sz)` 實例，輸入 `memreq1_msg`，輸出 port 1 的 type / addr / len / data 四條 wire。"
+    }
+  }
+}

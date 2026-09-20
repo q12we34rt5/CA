@@ -1,0 +1,942 @@
+[
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Testbench.v:62",
+   "riscvstall/riscvstall-Core.v:101",
+   "riscvstall/riscvstall-Core.v:15",
+   "riscvstall/riscvstall-Core.v:158",
+   "riscvstall/riscvstall-Core.v:229",
+   "riscvstall/riscvstall-randdelay-sim.v:55",
+   "riscvstall/riscvstall-sim.v:55"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Testbench.v:63",
+   "riscvstall/riscvstall-Core.v:102",
+   "riscvstall/riscvstall-Core.v:159",
+   "riscvstall/riscvstall-Core.v:16",
+   "riscvstall/riscvstall-Core.v:230",
+   "riscvstall/riscvstall-randdelay-sim.v:56",
+   "riscvstall/riscvstall-sim.v:56"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_msg",
+  "name": "imemreq_msg",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "output",
+  "decl": "output [`VC_MEM_REQ_MSG_SZ(32,32)-1:0]",
+  "lines": [
+   "Testbench.v:65",
+   "riscvstall/riscvstall-Core.v:120",
+   "riscvstall/riscvstall-Core.v:20",
+   "riscvstall/riscvstall-randdelay-sim.v:60",
+   "riscvstall/riscvstall-sim.v:60"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_val",
+  "name": "imemreq_val",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Testbench.v:66",
+   "riscvstall/riscvstall-Core.v:105",
+   "riscvstall/riscvstall-Core.v:163",
+   "riscvstall/riscvstall-Core.v:21",
+   "riscvstall/riscvstall-randdelay-sim.v:61",
+   "riscvstall/riscvstall-sim.v:61"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_rdy",
+  "name": "imemreq_rdy",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Testbench.v:67",
+   "riscvstall/riscvstall-Core.v:164",
+   "riscvstall/riscvstall-Core.v:22",
+   "riscvstall/riscvstall-randdelay-sim.v:62",
+   "riscvstall/riscvstall-sim.v:62"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemresp_msg",
+  "name": "imemresp_msg",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "input",
+  "decl": "input [`VC_MEM_RESP_MSG_SZ(32)-1:0]",
+  "lines": [
+   "Testbench.v:68",
+   "riscvstall/riscvstall-Core.v:138",
+   "riscvstall/riscvstall-Core.v:26",
+   "riscvstall/riscvstall-randdelay-sim.v:66",
+   "riscvstall/riscvstall-sim.v:66"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemresp_val",
+  "name": "imemresp_val",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Testbench.v:69",
+   "riscvstall/riscvstall-Core.v:166",
+   "riscvstall/riscvstall-Core.v:27",
+   "riscvstall/riscvstall-randdelay-sim.v:67",
+   "riscvstall/riscvstall-sim.v:67"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemresp_rdy",
+  "name": "imemresp_rdy",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Testbench.v:70",
+   "riscvstall/riscvstall-Core.v:167",
+   "riscvstall/riscvstall-Core.v:28"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg",
+  "name": "dmemreq_msg",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "output",
+  "decl": "output [`VC_MEM_REQ_MSG_SZ(32,32)-1:0]",
+  "lines": [
+   "Testbench.v:72",
+   "riscvstall/riscvstall-Core.v:129",
+   "riscvstall/riscvstall-Core.v:32",
+   "riscvstall/riscvstall-randdelay-sim.v:71",
+   "riscvstall/riscvstall-sim.v:71"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_val",
+  "name": "dmemreq_val",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Testbench.v:73",
+   "riscvstall/riscvstall-Core.v:174",
+   "riscvstall/riscvstall-Core.v:33",
+   "riscvstall/riscvstall-randdelay-sim.v:72",
+   "riscvstall/riscvstall-sim.v:72"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_rdy",
+  "name": "dmemreq_rdy",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Testbench.v:74",
+   "riscvstall/riscvstall-Core.v:175",
+   "riscvstall/riscvstall-Core.v:34",
+   "riscvstall/riscvstall-randdelay-sim.v:73",
+   "riscvstall/riscvstall-sim.v:73"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemresp_msg",
+  "name": "dmemresp_msg",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "input",
+  "decl": "input [`VC_MEM_RESP_MSG_SZ(32)-1:0]",
+  "lines": [
+   "Testbench.v:75",
+   "riscvstall/riscvstall-Core.v:146",
+   "riscvstall/riscvstall-Core.v:38",
+   "riscvstall/riscvstall-randdelay-sim.v:77",
+   "riscvstall/riscvstall-sim.v:77"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemresp_val",
+  "name": "dmemresp_val",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "Testbench.v:76",
+   "riscvstall/riscvstall-Core.v:176",
+   "riscvstall/riscvstall-Core.v:39",
+   "riscvstall/riscvstall-randdelay-sim.v:78",
+   "riscvstall/riscvstall-sim.v:78"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemresp_rdy",
+  "name": "dmemresp_rdy",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Testbench.v:77",
+   "riscvstall/riscvstall-Core.v:177",
+   "riscvstall/riscvstall-Core.v:40"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|csr_status",
+  "name": "csr_status",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "output",
+  "decl": "output [31:0]",
+  "lines": [
+   "Testbench.v:79",
+   "riscvstall/riscvstall-Core.v:216",
+   "riscvstall/riscvstall-Core.v:44",
+   "riscvstall/riscvstall-randdelay-sim.v:82",
+   "riscvstall/riscvstall-sim.v:82"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|retire_valid",
+  "name": "retire_valid",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "Testbench.v:80",
+   "riscvstall/riscvstall-Core.v:220",
+   "riscvstall/riscvstall-Core.v:48"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_msg_addr",
+  "name": "imemreq_msg_addr",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:110",
+   "riscvstall/riscvstall-Core.v:117",
+   "riscvstall/riscvstall-Core.v:51"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_msg_addr_next",
+  "name": "imemreq_msg_addr_next",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:106",
+   "riscvstall/riscvstall-Core.v:112",
+   "riscvstall/riscvstall-Core.v:234",
+   "riscvstall/riscvstall-Core.v:52"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemresp_msg_data",
+  "name": "imemresp_msg_data",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:141",
+   "riscvstall/riscvstall-Core.v:165",
+   "riscvstall/riscvstall-Core.v:53"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg_rw",
+  "name": "dmemreq_msg_rw",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:125",
+   "riscvstall/riscvstall-Core.v:172",
+   "riscvstall/riscvstall-Core.v:55"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg_len",
+  "name": "dmemreq_msg_len",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [1:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:127",
+   "riscvstall/riscvstall-Core.v:173",
+   "riscvstall/riscvstall-Core.v:56"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg_addr",
+  "name": "dmemreq_msg_addr",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:126",
+   "riscvstall/riscvstall-Core.v:238",
+   "riscvstall/riscvstall-Core.v:57"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg_data",
+  "name": "dmemreq_msg_data",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:128",
+   "riscvstall/riscvstall-Core.v:239",
+   "riscvstall/riscvstall-Core.v:58"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemresp_msg_data",
+  "name": "dmemresp_msg_data",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:149",
+   "riscvstall/riscvstall-Core.v:240",
+   "riscvstall/riscvstall-Core.v:59"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|pc_mux_sel_Phl",
+  "name": "pc_mux_sel_Phl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [1:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:181",
+   "riscvstall/riscvstall-Core.v:244",
+   "riscvstall/riscvstall-Core.v:61"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|op0_mux_sel_Dhl",
+  "name": "op0_mux_sel_Dhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [1:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:182",
+   "riscvstall/riscvstall-Core.v:245",
+   "riscvstall/riscvstall-Core.v:62"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|op1_mux_sel_Dhl",
+  "name": "op1_mux_sel_Dhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [2:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:183",
+   "riscvstall/riscvstall-Core.v:246",
+   "riscvstall/riscvstall-Core.v:63"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|inst_Dhl",
+  "name": "inst_Dhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:184",
+   "riscvstall/riscvstall-Core.v:247",
+   "riscvstall/riscvstall-Core.v:64"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|alu_fn_Xhl",
+  "name": "alu_fn_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [3:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:185",
+   "riscvstall/riscvstall-Core.v:248",
+   "riscvstall/riscvstall-Core.v:65"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|muldivreq_msg_fn_Xhl",
+  "name": "muldivreq_msg_fn_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [2:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:186",
+   "riscvstall/riscvstall-Core.v:249",
+   "riscvstall/riscvstall-Core.v:66"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|muldivreq_val",
+  "name": "muldivreq_val",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:187",
+   "riscvstall/riscvstall-Core.v:250",
+   "riscvstall/riscvstall-Core.v:67"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|muldivreq_rdy",
+  "name": "muldivreq_rdy",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:188",
+   "riscvstall/riscvstall-Core.v:251",
+   "riscvstall/riscvstall-Core.v:68"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|muldivresp_val",
+  "name": "muldivresp_val",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:189",
+   "riscvstall/riscvstall-Core.v:252",
+   "riscvstall/riscvstall-Core.v:69"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|muldivresp_rdy",
+  "name": "muldivresp_rdy",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:190",
+   "riscvstall/riscvstall-Core.v:253",
+   "riscvstall/riscvstall-Core.v:70"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|muldiv_mux_sel_Xhl",
+  "name": "muldiv_mux_sel_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:191",
+   "riscvstall/riscvstall-Core.v:254",
+   "riscvstall/riscvstall-Core.v:71"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|execute_mux_sel_Xhl",
+  "name": "execute_mux_sel_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:192",
+   "riscvstall/riscvstall-Core.v:255",
+   "riscvstall/riscvstall-Core.v:72"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemresp_mux_sel_Mhl",
+  "name": "dmemresp_mux_sel_Mhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [2:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:193",
+   "riscvstall/riscvstall-Core.v:256",
+   "riscvstall/riscvstall-Core.v:73"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|wb_mux_sel_Mhl",
+  "name": "wb_mux_sel_Mhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:194",
+   "riscvstall/riscvstall-Core.v:257",
+   "riscvstall/riscvstall-Core.v:74"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|rf_wen_Whl",
+  "name": "rf_wen_Whl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:195",
+   "riscvstall/riscvstall-Core.v:258",
+   "riscvstall/riscvstall-Core.v:75"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|rf_waddr_Whl",
+  "name": "rf_waddr_Whl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [4:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:196",
+   "riscvstall/riscvstall-Core.v:259",
+   "riscvstall/riscvstall-Core.v:76"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|stall_Fhl",
+  "name": "stall_Fhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:198",
+   "riscvstall/riscvstall-Core.v:261",
+   "riscvstall/riscvstall-Core.v:77"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|stall_Dhl",
+  "name": "stall_Dhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:199",
+   "riscvstall/riscvstall-Core.v:262",
+   "riscvstall/riscvstall-Core.v:78"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|stall_Xhl",
+  "name": "stall_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:200",
+   "riscvstall/riscvstall-Core.v:263",
+   "riscvstall/riscvstall-Core.v:79"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|stall_Mhl",
+  "name": "stall_Mhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:201",
+   "riscvstall/riscvstall-Core.v:264",
+   "riscvstall/riscvstall-Core.v:80"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|stall_Whl",
+  "name": "stall_Whl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:202",
+   "riscvstall/riscvstall-Core.v:265",
+   "riscvstall/riscvstall-Core.v:81"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|squash_Fhl",
+  "name": "squash_Fhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:197",
+   "riscvstall/riscvstall-Core.v:260",
+   "riscvstall/riscvstall-Core.v:82"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imem_initial_fetch_Fhl",
+  "name": "imem_initial_fetch_Fhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:168",
+   "riscvstall/riscvstall-Core.v:243",
+   "riscvstall/riscvstall-Core.v:83"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_pending_Fhl",
+  "name": "imemreq_pending_Fhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:105",
+   "riscvstall/riscvstall-Core.v:111",
+   "riscvstall/riscvstall-Core.v:169",
+   "riscvstall/riscvstall-Core.v:84"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|branch_cond_eq_Xhl",
+  "name": "branch_cond_eq_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:206",
+   "riscvstall/riscvstall-Core.v:269",
+   "riscvstall/riscvstall-Core.v:86"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|branch_cond_ne_Xhl",
+  "name": "branch_cond_ne_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:207",
+   "riscvstall/riscvstall-Core.v:270",
+   "riscvstall/riscvstall-Core.v:87"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|branch_cond_lt_Xhl",
+  "name": "branch_cond_lt_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:208",
+   "riscvstall/riscvstall-Core.v:271",
+   "riscvstall/riscvstall-Core.v:88"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|branch_cond_ltu_Xhl",
+  "name": "branch_cond_ltu_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:209",
+   "riscvstall/riscvstall-Core.v:272",
+   "riscvstall/riscvstall-Core.v:89"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|branch_cond_ge_Xhl",
+  "name": "branch_cond_ge_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:210",
+   "riscvstall/riscvstall-Core.v:273",
+   "riscvstall/riscvstall-Core.v:90"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|branch_cond_geu_Xhl",
+  "name": "branch_cond_geu_Xhl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:211",
+   "riscvstall/riscvstall-Core.v:274",
+   "riscvstall/riscvstall-Core.v:91"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|proc2csr_data_Whl",
+  "name": "proc2csr_data_Whl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:212",
+   "riscvstall/riscvstall-Core.v:275",
+   "riscvstall/riscvstall-Core.v:92"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_msg_addr_hold",
+  "name": "imemreq_msg_addr_hold",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:103",
+   "riscvstall/riscvstall-Core.v:106",
+   "riscvstall/riscvstall-Core.v:111",
+   "riscvstall/riscvstall-Core.v:99"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemreq_msg_to_bits",
+  "name": "imemreq_msg_to_bits",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "instance",
+  "decl": "vc_MemReqMsgToBits imemreq_msg_to_bits ( ... );",
+  "instance_of": "vc_MemReqMsgToBits",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:114"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemreq_msg_to_bits",
+  "name": "dmemreq_msg_to_bits",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "instance",
+  "decl": "vc_MemReqMsgToBits dmemreq_msg_to_bits ( ... );",
+  "instance_of": "vc_MemReqMsgToBits",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:123"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|imemresp_msg_from_bits",
+  "name": "imemresp_msg_from_bits",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "instance",
+  "decl": "vc_MemRespMsgFromBits imemresp_msg_from_bits ( ... );",
+  "instance_of": "vc_MemRespMsgFromBits",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:136"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dmemresp_msg_from_bits",
+  "name": "dmemresp_msg_from_bits",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "instance",
+  "decl": "vc_MemRespMsgFromBits dmemresp_msg_from_bits ( ... );",
+  "instance_of": "vc_MemRespMsgFromBits",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:144"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|ctrl",
+  "name": "ctrl",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "instance",
+  "decl": "riscv_CoreCtrl ctrl ( ... );",
+  "instance_of": "riscv_CoreCtrl",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:156",
+   "riscvstall/riscvstall-randdelay-sim.v:175",
+   "riscvstall/riscvstall-randdelay-sim.v:179",
+   "riscvstall/riscvstall-randdelay-sim.v:210",
+   "riscvstall/riscvstall-randdelay-sim.v:212",
+   "riscvstall/riscvstall-randdelay-sim.v:214",
+   "riscvstall/riscvstall-randdelay-sim.v:221",
+   "riscvstall/riscvstall-randdelay-sim.v:223",
+   "riscvstall/riscvstall-randdelay-sim.v:224",
+   "riscvstall/riscvstall-randdelay-sim.v:225",
+   "riscvstall/riscvstall-randdelay-sim.v:226",
+   "riscvstall/riscvstall-randdelay-sim.v:228"
+  ],
+  "n_occ": 73
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v|riscv_Core|dpath",
+  "name": "dpath",
+  "cat": "signal",
+  "module": "riscv_Core",
+  "kind": "instance",
+  "decl": "riscv_CoreDpath dpath ( ... );",
+  "instance_of": "riscv_CoreDpath",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:227",
+   "riscvstall/riscvstall-randdelay-sim.v:213",
+   "riscvstall/riscvstall-randdelay-sim.v:215",
+   "riscvstall/riscvstall-randdelay-sim.v:217",
+   "riscvstall/riscvstall-randdelay-sim.v:275",
+   "riscvstall/riscvstall-randdelay-sim.v:279",
+   "riscvstall/riscvstall-randdelay-sim.v:280",
+   "riscvstall/riscvstall-randdelay-sim.v:281",
+   "riscvstall/riscvstall-randdelay-sim.v:283",
+   "riscvstall/riscvstall-randdelay-sim.v:284",
+   "riscvstall/riscvstall-randdelay-sim.v:285",
+   "riscvstall/riscvstall-randdelay-sim.v:287"
+  ],
+  "n_occ": 73
+ },
+ {
+  "key": "riscvstall/riscvstall-Core.v||riscv_Core",
+  "name": "riscv_Core",
+  "cat": "module",
+  "lines": [
+   "Testbench.v:60",
+   "riscvstall/riscvstall-Core.v:13",
+   "riscvstall/riscvstall-randdelay-sim.v:53",
+   "riscvstall/riscvstall-sim.v:53"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`RISCV_CORE_V",
+  "name": "RISCV_CORE_V",
+  "cat": "macro",
+  "lines": [
+   "riscvstall/riscvstall-Core.v:5",
+   "riscvstall/riscvstall-Core.v:6"
+  ],
+  "n_occ": 2
+ }
+]

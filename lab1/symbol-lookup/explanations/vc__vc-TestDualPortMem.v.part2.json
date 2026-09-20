@@ -1,0 +1,189 @@
+{
+  "entities": {
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_val_M": {
+      "sum": "port 0 請求緩衝暫存器裡的 valid 位元，也直接當成回應的 valid",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["val", "valid", "有效"], ["_M", "memory access stage", "記憶體存取階段（請求被鎖住後的那一拍）"]],
+      "desc": "1 位元 reg。正緣時：`reset` 為 1 就清 0；否則只有在 `memresp0_rdy` 為 1 時才吃進 `memreq0_val`。它決定 `memresp0_val`，也是 `write_en0_M` 的必要條件（無效的請求不能改記憶體）。後綴 `_M` 表示這是「請求已進入記憶體存取階段」的版本。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_type_M": {
+      "sum": "port 0 被鎖住的請求 type（讀 / 寫）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["type", "type", "請求種類"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "1 位元 reg，在 `memresp0_rdy` 為 1 的正緣從 `memreq0_msg_type` 取樣。它有兩個用途：和 `c_write` 比對產生 `write_en0_M`，以及原封不動放進回應訊息（`memresp0_msg_type_M`）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_addr_M": {
+      "sum": "port 0 被鎖住的請求位址",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["addr", "address", "位址"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`c_req_msg_addr_sz` 位元 reg，在 `memresp0_rdy` 為 1 的正緣從 `memreq0_msg_addr` 取樣。它的低 `c_physical_addr_sz` 位被取出成 `physical_byte_addr0_M`，再拆成 block 位址與 block 內偏移去存取陣列 `m`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_len_M": {
+      "sum": "port 0 被鎖住的存取長度（0 表示整個 word）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["len", "length", "長度"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`c_req_msg_len_sz`（2）位元 reg。它一方面被 `memreq0_msg_len_modified_M` 轉換成實際 byte 數控制寫入迴圈，另一方面直接成為回應的 `memresp0_msg_len_M` 回傳給發起端。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_data_M": {
+      "sum": "port 0 被鎖住的寫入資料",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["data", "data", "資料"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "32 位元 reg，只有 `write_en0_M` 成立時才會被用到：寫入迴圈從它的 bit 0 開始，一次取 8 位元（`memreq0_msg_data_M[ (wr0_i*8) +: 8 ]`）寫進記憶體對應的 byte。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_val_M": {
+      "sum": "port 1 請求緩衝暫存器裡的 valid 位元，也就是回應的 valid",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["val", "valid", "有效"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "1 位元 reg，`reset` 時清 0，否則在 `memresp1_rdy` 為 1 的正緣吃進 `memreq1_val`。驅動 `memresp1_val`，並且是 `write_en1_M` 的必要條件。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_type_M": {
+      "sum": "port 1 被鎖住的請求 type（load / store）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["type", "type", "請求種類"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "1 位元 reg。等於 `c_write` 時（且 `memreq1_val_M` 為 1）就讓 `write_en1_M` 成立，在正緣把 store 資料寫進 `m`；同時也照抄進回應訊息。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_addr_M": {
+      "sum": "port 1 被鎖住的請求位址",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["addr", "address", "位址"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`c_req_msg_addr_sz` 位元 reg，由它截出 `physical_byte_addr1_M`，再算出 `physical_block_addr1_M` 與 `block_offset1_M`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_len_M": {
+      "sum": "port 1 被鎖住的存取長度",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["len", "length", "長度"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "2 位元 reg，經 `memreq1_msg_len_modified_M` 換算後決定 store 要寫幾個 byte；同時原值被放回回應訊息的 len 欄位。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_data_M": {
+      "sum": "port 1 被鎖住的 store 資料",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["data", "data", "資料"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "32 位元 reg，在 `write_en1_M` 成立的正緣被逐 byte 搬進 `m[physical_block_addr1_M]`，從 `block_offset1_M` 指定的位置開始。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|m": {
+      "sum": "vc_TestDualPortMem 真正存放程式與資料的記憶體陣列",
+      "naming": [["m", "memory array", "記憶體陣列本體"]],
+      "desc": "`reg [p_data_sz-1:0] m[c_num_blocks-1:0]`，也就是 c_num_blocks 個 32-bit word。兩個 port 都可以同時組合讀（`read_block0_M`、`read_block1_M`）並在正緣各自寫入。testbench（`riscvstall-sim.v`、`Pattern.v`）是用階層路徑加 $readmemh 之類的方式直接把測試程式載進這個陣列，所以 `reset` 不會清空它。注意：如果兩個 port 在同一個 cycle 寫同一格，程式碼沒有任何仲裁，結果取決於模擬器。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq0_msg_len_modified_M": {
+      "sum": "port 0 換算後的實際存取 byte 數（把 len=0 變成 4）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["len", "length", "長度"], ["modified", "modified", "修正過的"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`wire [c_req_msg_len_sz:0]`（比 len 欄位多一位，才放得下 4）。式子是：`memreq0_msg_len_M == 0` 時取 `c_req_msg_data_sz/8`（= 4，代表整個 word），否則就是原來的 len。它是寫入 for 迴圈 `wr0_i` 的上界，決定要複製幾個 byte。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memreq1_msg_len_modified_M": {
+      "sum": "port 1 換算後的實際存取 byte 數（len=0 → 4）",
+      "naming": [["mem", "memory", "記憶體"], ["req", "request", "請求"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["len", "length", "長度"], ["modified", "modified", "修正過的"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "與 port 0 的版本相同邏輯，供 `wr1_i` 的寫入迴圈使用：sb 寫 1 個 byte、sh 寫 2 個、sw（len=0）寫 4 個。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|physical_byte_addr0_M": {
+      "sum": "port 0 截斷後的實體 byte 位址",
+      "naming": [["physical", "physical", "實體記憶體"], ["byte", "byte", "位元組"], ["addr", "address", "位址"], ["0", "port 0", "第 0 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`memreq0_msg_addr_M[c_physical_addr_sz-1:0]`，也就是只留下能索引到這塊測試記憶體的低位（1 MB 時是 20 位），高位被直接丟掉。再由它除以 `c_data_byte_sz` 得到 block 位址、取低位得到 block 內偏移。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|physical_byte_addr1_M": {
+      "sum": "port 1 截斷後的實體 byte 位址",
+      "naming": [["physical", "physical", "實體記憶體"], ["byte", "byte", "位元組"], ["addr", "address", "位址"], ["1", "port 1", "第 1 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`memreq1_msg_addr_M[c_physical_addr_sz-1:0]`。load / store 的位址經過這一步之後就不會超出陣列 `m` 的範圍（但也代表位址錯誤不會被偵測，只會繞回低位）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|physical_block_addr0_M": {
+      "sum": "port 0 要存取的 word 在陣列 m 裡的索引",
+      "naming": [["physical", "physical", "實體記憶體"], ["block", "block", "區塊 / word"], ["addr", "address", "位址"], ["0", "port 0", "第 0 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`physical_byte_addr0_M/c_data_byte_sz`，即 byte 位址除以 4。用在 `read_block0_M = m[physical_block_addr0_M]`（組合讀）與寫入迴圈 `m[physical_block_addr0_M][...]`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|physical_block_addr1_M": {
+      "sum": "port 1 要存取的 word 在陣列 m 裡的索引",
+      "naming": [["physical", "physical", "實體記憶體"], ["block", "block", "區塊 / word"], ["addr", "address", "位址"], ["1", "port 1", "第 1 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`physical_byte_addr1_M/c_data_byte_sz`，供 `read_block1_M` 讀取與 store 寫入使用。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|block_offset0_M": {
+      "sum": "port 0 位址在 word 內的 byte 偏移（位址低 2 位）",
+      "naming": [["block", "block", "區塊 / word"], ["offset", "offset", "偏移量"], ["0", "port 0", "第 0 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`physical_byte_addr0_M[c_block_offset_sz-1:0]`，值 0~3。讀取時用 `read_block0_M >> (block_offset0_M*8)` 把要的 byte 移到最低位；寫入時用來決定從 word 的哪個 byte 開始寫。這就是這個測試記憶體能支援未對齊存取的原因。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|block_offset1_M": {
+      "sum": "port 1 位址在 word 內的 byte 偏移",
+      "naming": [["block", "block", "區塊 / word"], ["offset", "offset", "偏移量"], ["1", "port 1", "第 1 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`physical_byte_addr1_M[c_block_offset_sz-1:0]`，用法與 port 0 相同（讀時右移、寫時定位起始 byte）。lb/lh 這類存取就是靠它把資料對齊。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|read_block0_M": {
+      "sum": "port 0 讀出來的整個 word（尚未依偏移對齊）",
+      "naming": [["read", "read", "讀取"], ["block", "block", "區塊 / word"], ["0", "port 0", "第 0 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`wire [p_data_sz-1:0] read_block0_M = m[physical_block_addr0_M]`，是組合讀，所以同一拍就能拿到資料。接著被右移成 `read_data0_M`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|read_block1_M": {
+      "sum": "port 1 讀出來的整個 word",
+      "naming": [["read", "read", "讀取"], ["block", "block", "區塊 / word"], ["1", "port 1", "第 1 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`m[physical_block_addr1_M]` 的組合讀取結果，之後右移 `block_offset1_M*8` 位得到 `read_data1_M`。注意讀取和同一拍的寫入是分開的：寫入用非阻塞賦值，所以同一個 cycle 讀到的仍是舊內容。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|read_data0_M": {
+      "sum": "port 0 對齊後要回傳的讀取資料",
+      "naming": [["read", "read", "讀取"], ["data", "data", "資料"], ["0", "port 0", "第 0 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`read_block0_M >> (block_offset0_M*8)`，把目標 byte 移到最低位。它直接成為 `memresp0_msg_data_M` 放進回應訊息。要注意這裡沒有依 len 遮蔽高位（原本用 for 迴圈逐 byte 組出來的版本被註解掉了），所以 lb/lh 時高位仍帶著同一個 word 的其他 byte，必須由 CPU 端自己做 sign/zero extend 與截斷。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|read_data1_M": {
+      "sum": "port 1 對齊後要回傳的讀取資料",
+      "naming": [["read", "read", "讀取"], ["data", "data", "資料"], ["1", "port 1", "第 1 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`read_block1_M >> (block_offset1_M*8)`，成為 `memresp1_msg_data_M`，也就是 load 指令拿到的資料。同樣沒有依 len 截斷，CPU 的記憶體回應多工器（sign / zero extend）負責處理。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|write_en0_M": {
+      "sum": "port 0 這一拍是否要寫記憶體",
+      "naming": [["write", "write", "寫入"], ["en", "enable", "致能"], ["0", "port 0", "第 0 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`memreq0_val_M && ( memreq0_msg_type_M == c_write )`：緩衝裡有有效請求而且是寫型別才成立。它是正緣寫入迴圈的條件。由於本專案 port 0 接的是取指，這條線平常都是 0。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|write_en1_M": {
+      "sum": "port 1 這一拍是否要寫記憶體",
+      "naming": [["write", "write", "寫入"], ["en", "enable", "致能"], ["1", "port 1", "第 1 個記憶體埠"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`memreq1_val_M && ( memreq1_msg_type_M == c_write )`，也就是 store 指令的請求進到緩衝時才為 1，控制那一段逐 byte 的 `m[...] <=` 寫入。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|wr0_i": {
+      "sum": "port 0 寫入迴圈的迴圈變數（第幾個 byte）",
+      "naming": [["wr", "write", "寫入"], ["0", "port 0", "第 0 個記憶體埠"], ["i", "index", "迴圈索引"]],
+      "desc": "`integer`，在 `always @( posedge clk )` 裡從 0 數到 `memreq0_msg_len_modified_M - 1`，每一圈把 `memreq0_msg_data_M[ (wr0_i*8) +: 8 ]` 寫進 `m[physical_block_addr0_M][ (block_offset0_M*8) + (wr0_i*8) +: 8 ]`。它是行為級模擬用的變數，不對應實際硬體。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|wr1_i": {
+      "sum": "port 1 寫入迴圈的迴圈變數（第幾個 byte）",
+      "naming": [["wr", "write", "寫入"], ["1", "port 1", "第 1 個記憶體埠"], ["i", "index", "迴圈索引"]],
+      "desc": "`integer`，作用與 `wr0_i` 相同，只是搬的是 port 1（dmem）的 store 資料。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_msg_type_M": {
+      "sum": "port 0 回應訊息的 type 欄位（照抄請求的 type）",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["type", "type", "種類"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`wire ... = memreq0_msg_type_M`，讓收方知道這則回應對應的是讀還是寫。它接到 `memresp0_msg_to_bits` 的 `.type`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_msg_len_M": {
+      "sum": "port 0 回應訊息的 len 欄位（照抄請求的 len）",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["len", "length", "長度"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`= memreq0_msg_len_M`，接到 `memresp0_msg_to_bits` 的 `.len`。注意回傳的是原始的 len（0 代表整個 word），不是換算後的 `memreq0_msg_len_modified_M`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_msg_data_M": {
+      "sum": "port 0 回應訊息的 data 欄位（讀出來的資料）",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["0", "port 0", "第 0 個記憶體埠"], ["msg", "message", "訊息"], ["data", "data", "資料"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`= read_data0_M`，接到 `memresp0_msg_to_bits` 的 `.data`。即使是寫入請求這條線也會帶著讀出的舊值，只是收方會忽略。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_msg_type_M": {
+      "sum": "port 1 回應訊息的 type 欄位",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["type", "type", "種類"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`= memreq1_msg_type_M`，讓 CPU 分辨這是 load 還是 store 的回應（store 的回應只是用來完成握手）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_msg_len_M": {
+      "sum": "port 1 回應訊息的 len 欄位",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["len", "length", "長度"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`= memreq1_msg_len_M`，原樣回傳這次存取的長度欄位，接到 `memresp1_msg_to_bits` 的 `.len`。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_msg_data_M": {
+      "sum": "port 1 回應訊息的 data 欄位（load 讀回來的資料）",
+      "naming": [["mem", "memory", "記憶體"], ["resp", "response", "回應"], ["1", "port 1", "第 1 個記憶體埠"], ["msg", "message", "訊息"], ["data", "data", "資料"], ["_M", "memory access stage", "記憶體存取階段"]],
+      "desc": "`= read_data1_M`，是 CPU load 指令最終拿到的位元。因為沒有按 len 遮罩，CPU 端需要自己處理 byte / halfword 的延伸。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp0_msg_to_bits": {
+      "sum": "port 0 的 vc_MemRespMsgToBits 實例：把回應欄位打包成 bits",
+      "naming": [["memresp0", "memory response port 0", "第 0 個記憶體埠的回應"], ["msg", "message", "訊息"], ["to_bits", "to bits", "打包成 bits"]],
+      "desc": "`vc_MemRespMsgToBits#(p_data_sz)` 的實例，把 `memresp0_msg_type_M` / `memresp0_msg_len_M` / `memresp0_msg_data_M` 組成 `memresp0_msg` 輸出。純組合邏輯（內部是幾個 `assign` 指定位元範圍）。"
+    },
+    "vc/vc-TestDualPortMem.v|vc_TestDualPortMem|memresp1_msg_to_bits": {
+      "sum": "port 1 的 vc_MemRespMsgToBits 實例",
+      "naming": [["memresp1", "memory response port 1", "第 1 個記憶體埠的回應"], ["msg", "message", "訊息"], ["to_bits", "to bits", "打包成 bits"]],
+      "desc": "同型的 `vc_MemRespMsgToBits#(p_data_sz)` 實例，輸出 `memresp1_msg`，也就是傳回 CPU 的 dmem 回應訊息。"
+    },
+    "`VC_TEST_DUAL_PORT_MEM_V": {
+      "sum": "vc-TestDualPortMem.v 的 include guard macro",
+      "naming": [["VC", "Verilog Components", "vc 元件庫前綴"], ["TEST", "test", "測試用"], ["DUAL_PORT", "dual port", "雙埠"], ["MEM", "memory", "記憶體"], ["_V", "include guard", "檔名_V：防止重複 include"]],
+      "desc": "檔頭的 ifndef / define 與檔尾的 endif 組成 include guard，避免 `vc_TestDualPortMem` 這個 module 因為被多個檔案引入而重複定義。例如 `vc-TestDualPortRandDelayMem.v` 會引入本檔，testbench 可能又引一次，靠它擋掉。"
+    },
+    "vc/vc-TestDualPortMem.v||vc_TestDualPortMem": {
+      "sum": "行為級雙埠測試記憶體：固定 1 cycle 延遲，供 imem / dmem 共用",
+      "naming": [["vc", "Verilog Components", "共用元件庫前綴"], ["Test", "test", "測試用（非合成）"], ["DualPort", "dual port", "兩個獨立的存取埠"], ["Mem", "memory", "記憶體"]],
+      "desc": "用參數 p_mem_sz / p_addr_sz / p_data_sz 設定大小與訊息格式，port 分成四組 val-rdy 介面：memreq0 / memresp0（本專案接 imem）與 memreq1 / memresp1（接 dmem）。內部流程是：`vc_MemReqMsgFromBits` 拆欄位 → 在 `memresp*_rdy` 為 1 的正緣把請求鎖進 `_M` 暫存器 → 同一拍組合讀出 `m` 並在正緣寫入 → `vc_MemRespMsgToBits` 打包回應，所以回應固定比請求晚一個 cycle。兩個 port 的 rdy 都直接接回應端的 rdy（嚴格 pipeline，不能背壓緩衝）。它被 `vc_TestDualPortRandDelayMem` 以實例名 `mem` instantiate，再被 `riscvstall-sim.v` 與 `Pattern.v` 使用；支援任意對齊與長度的存取，還用 `VC_ASSERT_NOT_X_POSEDGE_MSG` 檢查四條 val/rdy 不可為 x。"
+    }
+  }
+}

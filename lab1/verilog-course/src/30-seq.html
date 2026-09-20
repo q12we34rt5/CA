@@ -1,0 +1,194 @@
+<!-- ============================================================ ch7 -->
+<section class="ch" id="ch7" data-part="循序邏輯" data-nav="posedge clk → 正反器">
+<p class="eyebrow">第 7 章 · 循序邏輯</p>
+<h2><code>always @(posedge clk)</code>：長出 D 正反器</h2>
+<p>到目前為止的電路都沒有記憶。要「記住」東西，需要 <b>D 正反器 (D flip-flop)</b>：它只在 <code>clk</code> 從 0 變 1 的那一瞬間（上升緣，posedge）看一眼輸入 <code>D</code>，把值抄到輸出 <code>Q</code>，其餘時間 <code>Q</code> 完全不動。</p>
+
+<div class="ex">
+<div class="src">vc/vc-StateElements.v · 第 14–24 行</div>
+<pre><code class="language-verilog">module vc_DFF_pf #( parameter W = 1 )
+(
+  input              clk,
+  input      [W-1:0] d_p,
+  output reg [W-1:0] q_np
+);
+  always @( posedge clk )
+    q_np &lt;= d_p;
+endmodule</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 222" role="img" aria-label="左：D 正反器符號。右：時序圖，q_np 只在每個 clk 上升緣更新成當時 d_p 的值，d_p 在兩個上升緣之間的短暫脈衝不會被取樣到。">
+  <text x="30" y="77">d_p</text><path class="w" d="M30 85H90"/>
+  <rect class="r" x="90" y="60" width="80" height="90"/><text x="98" y="89">D</text><text x="153" y="89">Q</text>
+  <path class="rl" d="M90 122l10 8l-10 8"/>
+  <path class="w" d="M170 85H240"/><text x="200" y="77">q_np</text>
+  <text class="cb" x="30" y="122">clk</text><path class="c" d="M30 130H90"/>
+  <text class="zh sq" x="130" y="172" text-anchor="middle">W 顆 D 正反器</text>
+
+  <text class="cb" x="292" y="67" text-anchor="end">clk</text><text x="292" y="127" text-anchor="end">d_p</text><text class="sq" x="292" y="187" text-anchor="end">q_np</text>
+  <path class="re" d="M340 40V204M420 40V204M500 40V204M580 40V204M660 40V204"/>
+  <path class="c" style="stroke-dasharray:none" d="M300 75H340V50H380V75H420V50H460V75H500V50H540V75H580V50H620V75H660V50H700"/>
+  <path class="w" d="M300 135H360V110H440V135H470V110H490V135H550V110H700"/>
+  <path class="wm" d="M300 170H340M300 195H340"/><text class="s mut" x="316" y="186">x</text>
+  <path class="rl" style="stroke-width:2" d="M340 195H420V170H500V195H580V170H700"/>
+  <circle class="r" cx="340" cy="135" r="3.5"/><circle class="r" cx="420" cy="110" r="3.5"/><circle class="r" cx="500" cy="135" r="3.5"/><circle class="r" cx="580" cy="110" r="3.5"/><circle class="r" cx="660" cy="110" r="3.5"/>
+  <text class="zh s mut" x="480" y="102" text-anchor="middle">沒被取樣到</text>
+  <text class="zh s sq" x="340" y="216" text-anchor="middle">↑ 上升緣</text>
+</svg>
+</div>
+<figcaption><b>正反器只在上升緣（銅色虛線）「拍照」。</b>圓點是每次拍到的值。<code>d_p</code> 在兩個上升緣之間的短脈衝完全不影響 <code>q_np</code>。第一個上升緣之前 <code>q_np</code> 是未知值 x。</figcaption>
+</figure>
+</div>
+<p>這就是為什麼同步電路好設計：組合邏輯在兩個上升緣之間可以亂跳、慢慢算，只要在下一個上升緣前穩定下來就好。</p>
+
+<h3>reset 和 enable：只是在 D 前面多一顆 mux</h3>
+<div class="ex">
+<div class="src">vc/vc-StateElements.v · 第 38–39 行、第 55–56 行</div>
+<pre><code class="language-verilog">// vc_RDFF_pf                             // vc_EDFF_pf
+always @( posedge clk )                   always @( posedge clk )
+  q_np &lt;= reset_p ? RESET_VALUE : d_p;      if ( en_p ) q_np &lt;= d_p;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 190" role="img" aria-label="左：同步 reset 是在 D 前面放一顆 mux，reset_p 為 1 時選 RESET_VALUE。右：enable 是在 D 前面放一顆 mux，en_p 為 0 時把 Q 接回 D 保持原值，en_p 為 1 時載入 d_p。">
+  <text class="hd" x="20" y="22">vc_RDFF_pf：同步 reset</text>
+  <text x="20" y="64">RESET_VALUE</text><path class="w" d="M20 72H110"/><text x="20" y="110">d_p</text><path class="w" d="M20 118H110"/>
+  <path class="k" d="M110 50L136 60V130L110 140Z"/><text class="s" x="115" y="76">1</text><text class="s" x="115" y="122">0</text>
+  <path class="w" d="M136 95H190"/>
+  <rect class="r" x="190" y="60" width="70" height="80"/><text x="197" y="99">D</text><text x="244" y="99">Q</text><path class="rl" d="M190 118l10 7l-10 7"/>
+  <path class="c" d="M170 125H190"/><text class="s cb" x="166" y="129" text-anchor="end">clk</text>
+  <path class="w" d="M260 95H330"/><text x="290" y="87">q_np</text>
+  <path class="c" d="M123 136V166"/><text class="cb" x="132" y="170">reset_p</text>
+  <path class="wm" d="M355 10V180"/>
+  <text class="hd" x="375" y="22">vc_EDFF_pf：enable</text>
+  <text x="390" y="110">d_p</text><path class="w" d="M390 118H470"/>
+  <path class="k" d="M470 50L496 60V130L470 140Z"/><text class="s" x="475" y="76">0</text><text class="s" x="475" y="122">1</text>
+  <path class="w" d="M496 95H550"/>
+  <rect class="r" x="550" y="60" width="70" height="80"/><text x="557" y="99">D</text><text x="604" y="99">Q</text><path class="rl" d="M550 118l10 7l-10 7"/>
+  <path class="c" d="M530 125H550"/><text class="s cb" x="526" y="129" text-anchor="end">clk</text>
+  <path class="w" d="M620 95H700"/><text x="664" y="87">q_np</text>
+  <circle class="d" cx="650" cy="95" r="3"/><path class="w" d="M650 95V40H440V72H470"/>
+  <path class="c" d="M483 136V166"/><text class="cb" x="492" y="170">en_p</text>
+</svg>
+</div>
+<figcaption><b>在時脈區塊裡，「沒寫 else」是合法而且常用的。</b>右邊 <code>if ( en_p )</code> 沒有 else，意思是「en 為 0 時保持原值」，硬體上就是把 Q 繞回來餵給自己。（對比<a href="#ch6">第 6 章</a>：同樣少寫 else，在 <code>@(*)</code> 裡是 bug，在 <code>@(posedge clk)</code> 裡是 enable。）</figcaption>
+</figure>
+</div>
+
+<p>lab1 的 datapath 把兩者合在一起用。下面這段就是「有 reset、有 enable 的 32 位元暫存器」，<code>!stall_Fhl</code> 扮演 enable 的角色：</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 126–135 行</div>
+<pre><code class="language-verilog">reg  [31:0] pc_Fhl;
+
+always @ (posedge clk) begin
+  if( reset ) begin
+    pc_Fhl &lt;= reset_vector;            // reset 優先
+  end
+  else if( !stall_Fhl ) begin
+    pc_Fhl &lt;= pc_mux_out_Phl_final;    // 沒 stall 才更新
+  end                                  // 否則：保持原值
+end</code></pre>
+</div>
+<div class="note"><b>同步 vs 非同步 reset</b><p>lab1 全部使用<b>同步</b> reset：敏感列表只有 <code>posedge clk</code>，reset 只是 D 前面的一顆 mux，要等到上升緣才生效。你在別處可能看到 <code>always @(posedge clk or posedge reset)</code>，那是非同步 reset，會用到正反器上專用的 reset 腳。</p></div>
+<p><b>Latch 與 flip-flop 的差別：</b><code>vc-StateElements.v</code> 後半的 <code>vc_Latch_hl</code> 是 latch——只要 <code>clk</code> 為高，輸出就一路跟著輸入變（透明）；flip-flop 只在邊緣那一瞬間取樣。lab1 的處理器本體只用 flip-flop。</p>
+</section>
+
+<!-- ============================================================ ch8 -->
+<section class="ch" id="ch8" data-part="循序邏輯" data-nav="= 與 &lt;= 的差別">
+<p class="eyebrow">第 8 章 · 循序邏輯</p>
+<h2><code>=</code> 與 <code>&lt;=</code>：blocking 與 non-blocking</h2>
+<p>Verilog 有兩種賦值符號，差別只在同一個 <code>always</code> 區塊裡有多行的時候才看得出來：</p>
+<ul>
+  <li><code>=</code>（blocking）：像軟體一樣，<b>這行做完才做下一行</b>，下一行看到的是新值。</li>
+  <li><code>&lt;=</code>（non-blocking）：所有右邊的值在時脈邊緣<b>同時取樣</b>，然後全部<b>一起更新</b>。這正是一排真實正反器的行為。</li>
+</ul>
+
+<div class="ex">
+<div class="src mine">示意範例</div>
+<pre><code class="language-verilog">always @(posedge clk) begin        always @(posedge clk) begin
+  b &lt;= a;                            b = a;
+  c &lt;= b;   // 用的是「舊的」b        c = b;    // 用的是「剛更新的」b，也就是 a
+end                                end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 200" role="img" aria-label="左：使用 non-blocking 賦值，a 進入正反器 b，b 的輸出再進入正反器 c，形成兩級移位暫存器。右：使用 blocking 賦值，a 同時直接接到 b 和 c 兩個正反器，兩者永遠相同。">
+  <text class="hd" x="20" y="22">&lt;= ：兩顆串接，資料每個週期前進一格</text>
+  <text x="30" y="87">a</text><path class="w" d="M30 95H90"/>
+  <rect class="r" x="90" y="60" width="70" height="70"/><text x="125" y="99" text-anchor="middle">b</text><path class="rl" d="M90 110l9 6l-9 6"/>
+  <path class="w" d="M160 95H220"/>
+  <rect class="r" x="220" y="60" width="70" height="70"/><text x="255" y="99" text-anchor="middle">c</text><path class="rl" d="M220 110l9 6l-9 6"/>
+  <path class="w" d="M290 95H335"/>
+  <path class="wm" d="M355 10V190"/>
+  <text class="hd" x="375" y="22">= ：c 直接拿到 a</text>
+  <text x="390" y="102">a</text><path class="w" d="M390 110H430"/><circle class="d" cx="430" cy="110" r="3"/>
+  <path class="w" d="M430 110V75H470M430 110V150H470"/>
+  <rect class="r" x="470" y="50" width="70" height="50"/><text x="505" y="79" text-anchor="middle">b</text><path class="rl" d="M470 84l8 5l-8 5"/>
+  <rect class="r" x="470" y="125" width="70" height="50"/><text x="505" y="154" text-anchor="middle">c</text><path class="rl" d="M470 159l8 5l-8 5"/>
+  <path class="w" d="M540 75H600M540 150H600"/>
+  <text class="zh wr" x="560" y="117">b、c 永遠相同</text>
+</svg>
+</div>
+<figcaption><b>只差一個符號，電路結構完全不同。</b>左邊是管線暫存器 (pipeline register) 的基本形狀；右邊通常不是你要的。</figcaption>
+</figure>
+</div>
+
+<div class="note"><b>lab1 遵守的鐵則（你也照做就對了）</b>
+<p><code>always @(posedge clk)</code> 裡面一律用 <code>&lt;=</code>；<code>always @(*)</code> 裡面一律用 <code>=</code>。不要在同一個區塊混用。</p></div>
+<p>你可以在 <code>riscvstall-CoreDpath.v</code> 驗證：<code>pc_Dhl &lt;= pc_Fhl;</code>（第 156 行）與 <code>pc_Xhl &lt;= pc_Dhl;</code>（第 244 行）寫在不同的 <code>always</code> 區塊，但因為都用 <code>&lt;=</code>，在同一個上升緣，<code>pc_Xhl</code> 拿到的一定是 <code>pc_Dhl</code> 的<b>舊值</b>——PC 才會乖乖地每個週期往下一級管線移動一格。</p>
+</section>
+
+<!-- ============================================================ ch9 -->
+<section class="ch" id="ch9" data-part="循序邏輯" data-nav="陣列：Register File">
+<p class="eyebrow">第 9 章 · 循序邏輯</p>
+<h2>記憶體陣列：Register File</h2>
+<p><code>reg [31:0] registers[31:0];</code> 有兩個範圍：名字<b>前面</b>的 <code>[31:0]</code> 是每一格的寬度，名字<b>後面</b>的 <code>[31:0]</code> 是有幾格。所以這是 32 個 32 位元暫存器，也就是 RISC-V 的 x0–x31。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathRegfile.v · 第 20–32 行</div>
+<pre><code class="language-verilog">reg [31:0] registers[31:0];
+
+// Combinational read ports
+assign rdata0 = ( raddr0 == 0 ) ? 32'b0 : registers[raddr0];
+assign rdata1 = ( raddr1 == 0 ) ? 32'b0 : registers[raddr1];
+
+// Write port is active only when wen is asserted
+always @( posedge clk )
+begin
+  if ( wen_p &amp;&amp; (waddr_p != 5'b0) )
+    registers[waddr_p] &lt;= wdata_p;
+end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 335" role="img" aria-label="Register file 的結構：寫入位址經過解碼器產生每個暫存器各自的 enable；寫入資料同時接到所有暫存器；所有暫存器的輸出接到兩個 32 選 1 多工器，分別由 raddr0 和 raddr1 選擇；位址為 0 時再用一顆 mux 強制輸出 0。">
+  <text x="20" y="62">waddr_p</text><path class="w" d="M20 70H110M82 76l8 -12"/><text class="s" x="92" y="62">5</text>
+  <text class="cb" x="20" y="122">wen_p</text><path class="c" d="M20 130H110"/>
+  <rect class="k" x="110" y="40" width="90" height="120"/><text class="zh" x="155" y="98" text-anchor="middle">解碼器</text><text class="s mut" x="155" y="116" text-anchor="middle">5 → 32</text>
+  <path class="c" d="M200 70H300M200 130H300M200 150H220V240H300"/>
+  <text x="232" y="16">wdata_p</text><path class="w" d="M260 24V222H300M260 52H300M260 112H300"/><circle class="d" cx="260" cy="52" r="3"/><circle class="d" cx="260" cy="112" r="3"/>
+  <rect class="r" x="300" y="40" width="90" height="40"/><text x="345" y="58" text-anchor="middle">reg[1]</text>
+  <rect class="r" x="300" y="100" width="90" height="40"/><text x="345" y="118" text-anchor="middle">reg[2]</text>
+  <rect class="r" x="300" y="210" width="90" height="40"/><text x="345" y="228" text-anchor="middle">reg[31]</text>
+  <text class="s cb" x="304" y="76">en</text><text class="s cb" x="304" y="136">en</text><text class="s cb" x="304" y="246">en</text>
+  <text class="mut" x="341" y="182">⋮</text>
+  <path class="w" d="M390 60H430M390 120H430M390 230H430"/>
+  <path class="w" style="stroke-width:4" d="M430 40V300"/>
+  <text class="zh s mut" x="438" y="174">所有暫存器的輸出</text>
+  <path class="w" d="M430 60H500M430 90H500M430 120H500M430 220H500M430 250H500M430 280H500"/>
+  <path class="k" d="M500 40L526 52V128L500 140Z"/><path class="k" d="M500 200L526 212V288L500 300Z"/>
+  <text class="s mut" x="513" y="94" text-anchor="middle" style="font-size:9px">32:1</text><text class="s mut" x="513" y="254" text-anchor="middle" style="font-size:9px">32:1</text>
+  <path class="c" d="M513 46V24"/><text class="cb" x="478" y="16">raddr0</text>
+  <path class="c" d="M513 294V316"/><text class="cb" x="522" y="322">raddr1</text>
+  <path class="w" d="M526 90H560V102H590M572 68H590"/><text class="s" x="534" y="72">32'b0</text>
+  <path class="k" d="M590 50L612 58V112L590 120Z"/>
+  <path class="w" d="M612 85H710"/><text x="660" y="77">rdata0</text>
+  <path class="c" d="M601 54V30"/><text class="s cb" x="608" y="30">raddr0 == 0</text>
+  <path class="w" d="M526 250H560V262H590M572 228H590"/><text class="s" x="534" y="232">32'b0</text>
+  <path class="k" d="M590 210L612 218V272L590 280Z"/>
+  <path class="w" d="M612 245H710"/><text x="660" y="237">rdata1</text>
+  <path class="c" d="M601 276V300"/><text class="s cb" x="608" y="306">raddr1 == 0</text>
+</svg>
+</div>
+<figcaption><b>用變數當索引「讀」陣列 = 一顆大 mux；用變數當索引「寫」陣列 = 解碼器 + 每格各自的 enable。</b>讀取走 <code>assign</code>，所以是組合的（位址一變資料就出來）；寫入在 <code>posedge clk</code>，要等上升緣。<code>waddr_p != 5'b0</code> 讓 x0 永遠寫不進去，讀的時候又強制回傳 0，這就是 RISC-V「x0 恆為零」的硬體實作。</figcaption>
+</figure>
+</div>
+<p>小型陣列會像上圖一樣用正反器實作。大型記憶體（例如 <code>vc-TestDualPortMem.v</code> 裡 1 MB 的測試記憶體）在真實晶片上會換成專用的 SRAM 區塊；在 lab1 裡它只用於模擬，不需要合成。</p>
+</section>

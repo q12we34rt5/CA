@@ -1,0 +1,349 @@
+{
+  "entities": {
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|clk": {
+      "sum": "乘法器 dpath 的時脈，所有暫存器都在它的正緣更新",
+      "naming": [["clk", "clock", "時脈"]],
+      "desc": "唯一的 always @(posedge clk) block 就靠它。每個正緣：`counter_reg`、`a_reg`、`b_reg` 無條件更新，`sign_reg` 在 `sign_en` 為 1 時更新，`result_reg` 在 `result_en` 為 1 時更新。由頂層 `imuldiv_IntMulIterative` 的 `clk` 傳進來。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|reset": {
+      "sum": "乘法器 dpath 宣告了但完全沒有使用的重置輸入",
+      "naming": [["reset", "reset", "重置"]],
+      "desc": "port list 裡有宣告，頂層也把 `reset` 接進來，但這個 module 的程式碼裡從頭到尾沒有引用它——dpath 的暫存器沒有 reset 值。實務上不會出問題，因為 `imuldiv_IntMulIterativeCtrl` 會被 reset 拉回 `STATE_IDLE`，而 IDLE 狀態會把 `a_reg`、`b_reg`、`result_reg`、`counter_reg` 全部重新載入，殘留的 x 值不會流到結果。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|mulreq_msg_a": {
+      "sum": "dpath 收到的 32-bit 被乘數，只在載入那個 cycle 被取用",
+      "naming": [
+        ["mul", "multiply", "乘法"],
+        ["req", "request", "請求"],
+        ["msg", "message", "訊息欄位"],
+        ["a", "operand a", "運算元 a（被乘數）"]
+      ],
+      "desc": "從頂層傳進來的 32-bit 二補數。dpath 對它做兩件事：用 `mulreq_msg_a[31]` 參與 `sign_next` 的 XOR，以及透過 `unsigned_a` 取絕對值後經 `a_mux_out` 載入 `a_reg`。這兩件事都只在 `STATE_IDLE`（`a_mux_sel` 與 `sign_en` 皆為 load/1）那個 cycle 有效，之後 dpath 就只靠 `a_reg` 運作，外面的 `mulreq_msg_a` 怎麼變都無所謂。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|mulreq_msg_b": {
+      "sum": "dpath 收到的 32-bit 乘數，只在載入那個 cycle 被取用",
+      "naming": [
+        ["mul", "multiply", "乘法"],
+        ["req", "request", "請求"],
+        ["msg", "message", "訊息欄位"],
+        ["b", "operand b", "運算元 b（乘數）"]
+      ],
+      "desc": "32-bit 二補數乘數。`mulreq_msg_b[31]` 與 a 的最高位 XOR 得到 `sign_next`；絕對值 `unsigned_b` 經 `b_mux_out` 載入 `b_reg`。載入後每一輪 `b_reg` 右移一位，用 `b_lsb` 逐位決定加不加。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|mulresp_msg_result": {
+      "sum": "dpath 輸出的 64-bit 乘法結果（已套用正負號）",
+      "naming": [
+        ["mul", "multiply", "乘法"],
+        ["resp", "response", "回應"],
+        ["msg", "message", "訊息欄位"],
+        ["result", "result", "結果"]
+      ],
+      "desc": "`assign mulresp_msg_result = signed_result_mux_out;`，也就是 `result_reg` 依 `sign_mux_sel` 決定要不要取二補數之後的值。它是純組合輸出，任何時候都在跳動；只有 ctrl 拉起 `mulresp_val`（`STATE_SIGN`）時才是正確答案，因為那時 `result_en` 已經為 0、`result_reg` 被凍住。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|counter": {
+      "sum": "dpath 回報給 ctrl 的剩餘迭代輪數（= counter_reg）",
+      "naming": [["counter", "counter", "計數器"]],
+      "desc": "`assign counter = counter_reg;` 直接把暫存器值送出去。載入時為 31，`STATE_CALC` 每個 cycle 減 1；ctrl 看到 `counter == 0` 就知道最後一輪正在進行，下個 cycle 可以轉到 `STATE_SIGN`。5 bit 剛好數 0–31，共 32 輪對應 32 位乘數。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|sign": {
+      "sum": "dpath 回報給 ctrl 的「結果應為負」旗標（= sign_reg）",
+      "naming": [["sign", "sign", "正負號（1 = 負）"]],
+      "desc": "`assign sign = sign_reg;`。`sign_reg` 在載入那個 cycle 存下 `mulreq_msg_a[31] ^ mulreq_msg_b[31]`，也就是兩個運算元異號時為 1。ctrl 收到後原封不動 `assign sign_mux_sel = sign` 送回來，控制 `signed_result_mux_out`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|b_lsb": {
+      "sum": "dpath 回報給 ctrl 的 b_reg 最低位，決定這一輪加不加",
+      "naming": [
+        ["b", "operand b", "運算元 b（乘數）"],
+        ["lsb", "least significant bit", "最低位元"]
+      ],
+      "desc": "`assign b_lsb = b_reg[0];`。這是 shift-add 演算法每一輪要看的那一位乘數：因為 `b_reg` 每輪右移，第 i 輪的 `b_reg[0]` 就是原本乘數的第 i 位。ctrl 用 `assign add_mux_sel = b_lsb` 把它轉成加法器 mux 的選擇訊號，1 就把已經左移 i 位的 `a_reg` 加進 `result_reg`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|sign_en": {
+      "sum": "控制輸入：這個 cycle 要不要把 sign_next 寫進 sign_reg",
+      "naming": [
+        ["sign", "sign", "正負號"],
+        ["en", "enable", "寫入致能"]
+      ],
+      "desc": "來自 ctrl 的 `cs[5]`。在 always block 裡 `if (sign_en) sign_reg <= sign_next;`。只有 `STATE_IDLE` 為 1，所以正負號在接受請求的那一刻就決定，整個運算過程不會被外部改變的 `mulreq_msg_a/b` 影響。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|result_en": {
+      "sum": "控制輸入：這個 cycle 要不要更新 64-bit 累加器 result_reg",
+      "naming": [
+        ["result", "result", "結果 / 累加器"],
+        ["en", "enable", "寫入致能"]
+      ],
+      "desc": "來自 ctrl 的 `cs[4]`。`if (result_en) result_reg <= result_mux_out;`。IDLE 為 1（把累加器清成 0）、CALC 為 1（每輪累加）、SIGN 為 0（凍結結果讓外部讀取）。如果 SIGN 時沒關掉，`result_mux_out` 會是 x 而把答案毀掉。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|cntr_mux_sel": {
+      "sum": "控制輸入：counter 要載入 31（0）還是減一（1）",
+      "naming": [
+        ["cntr", "counter", "計數器"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "來自 ctrl 的 `cs[3]`，用來選 `counter_mux_out`：等於 `op_load`(0) 時給 31，等於 `op_next`(1) 時給 `counter_reg - 1`，其他給 5'bx。`counter_reg` 沒有 enable，每個 cycle 都會被寫入，所以在 `STATE_SIGN`（此訊號為 x）時 `counter_reg` 會變成 x——這沒關係，因為回到 IDLE 就會重新載入 31。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|a_mux_sel": {
+      "sum": "控制輸入：a_reg 要載入運算元（0）還是載入左移後的值（1）",
+      "naming": [
+        ["a", "operand a", "運算元 a（被乘數）"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "來自 ctrl 的 `cs[2]`，選 `a_mux_out`。`op_load`(0) 給 `{32'b0, unsigned_a}`，把 32-bit 絕對值零擴充成 64-bit；`op_next`(1) 給 `a_shift_out = a_reg << 1`。每輪左移代表這一位乘數的權重是 2^i，所以加進累加器的是「被乘數 × 2^i」。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|b_mux_sel": {
+      "sum": "控制輸入：b_reg 要載入運算元（0）還是右移一位（1）",
+      "naming": [
+        ["b", "operand b", "運算元 b（乘數）"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "來自 ctrl 的 `cs[1]`，選 `b_mux_out`。`op_load`(0) 給 `unsigned_b`；`op_next`(1) 給 `b_shift_out = b_reg >> 1`（邏輯右移，補 0）。每輪右移把下一位乘數送到 `b_reg[0]`，於是 32 輪剛好掃完 32 位。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|result_mux_sel": {
+      "sum": "控制輸入：累加器要清零（0）還是寫入 add_mux_out（1）",
+      "naming": [
+        ["result", "result", "結果 / 累加器"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "來自 ctrl 的 `cs[0]`，選 `result_mux_out`。`op_load`(0) 給 64'b0，在 IDLE 把累加器歸零；`op_next`(1) 給 `add_mux_out`。這一層只管「重新開始 vs. 繼續累加」，至於繼續累加時要不要真的加，由 `add_mux_sel` 那一層決定。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|add_mux_sel": {
+      "sum": "控制輸入：這一輪累加器保持原值（0）還是加上 a_reg（1）",
+      "naming": [
+        ["add", "add / adder", "加法器"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "來自 ctrl，但 ctrl 只是把 dpath 自己的 `b_lsb` 轉接回來。`add_old`(0) 選 `result_reg`（這一位乘數是 0，不加）；`add_next`(1) 選 `add_out = result_reg + a_reg`（這一位是 1，把左移後的被乘數加進去）。這是整個乘法器唯一真正做算術的地方。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|sign_mux_sel": {
+      "sum": "控制輸入：輸出結果要用原值（0）還是取二補數（1）",
+      "naming": [
+        ["sign", "sign", "正負號"],
+        ["mux", "multiplexer", "多工器"],
+        ["sel", "select", "選擇訊號"]
+      ],
+      "desc": "來自 ctrl 的 `assign sign_mux_sel = sign`，實際上就是 dpath 自己的 `sign_reg` 繞一圈回來。`sign_u`(0) 選 `result_reg`，`sign_s`(1) 選 `~result_reg + 1`。因為整個迭代過程都是對絕對值做無號乘法，正負號留到最後一步才補上。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|op_x": {
+      "sum": "dpath 的 localparam：運算元 mux 的 don't-care 值 1'dx",
+      "naming": [
+        ["op", "operand / operation", "運算元載入方式"],
+        ["x", "don't care", "不在乎"]
+      ],
+      "desc": "`localparam op_x = 1'dx;`，代表「這個 cycle 不在乎 mux 選哪邊」。有趣的是 dpath 自己其實沒有用到 `op_x`（它只用 `op_load` 與 `op_next` 做比較），這個常數是為了和 ctrl 裡同名的 `op_x` 對應而定義的；ctrl 在 `STATE_SIGN` 那一列填的就是 x。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|op_load": {
+      "sum": "dpath 的 localparam：值 1'd0，代表「載入新的運算元」",
+      "naming": [
+        ["op", "operand / operation", "運算元載入方式"],
+        ["load", "load", "載入初始值"]
+      ],
+      "desc": "`localparam op_load = 1'd0;`。`counter_mux_out`、`a_mux_out`、`b_mux_out`、`result_mux_out` 四個 mux 都拿自己的 sel 和它比較：相等就走「開始新一筆乘法」那條路（counter=31、a={32'b0,unsigned_a}、b=unsigned_b、result=0）。ctrl 在 `STATE_IDLE` 那一列全部填 `op_load`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|op_next": {
+      "sum": "dpath 的 localparam：值 1'd1，代表「推進到下一輪」",
+      "naming": [
+        ["op", "operand / operation", "運算元載入方式"],
+        ["next", "next", "下一輪的值"]
+      ],
+      "desc": "`localparam op_next = 1'd1;`。四個 mux 和它比較後走迭代那條路：counter 減一、a 左移、b 右移、result 寫入 `add_mux_out`。ctrl 在 `STATE_CALC` 那一列全部填 `op_next`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|add_x": {
+      "sum": "dpath 的 localparam：加法器 mux 的 don't-care 值 1'dx（未被使用）",
+      "naming": [
+        ["add", "add / adder", "加法器"],
+        ["x", "don't care", "不在乎"]
+      ],
+      "desc": "`localparam add_x = 1'dx;`。從程式碼看來這個常數宣告後沒有被任何地方引用——`add_mux_out` 只比對 `add_old` 與 `add_next`，而 `add_mux_sel` 永遠等於 `b_lsb`（不會是 x，除非 `b_reg` 本身是 x）。它存在只是為了和 `op_x`、`sign_x` 保持命名對稱。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|add_old": {
+      "sum": "dpath 的 localparam：值 1'd0，代表「這一輪不加，沿用舊的累加值」",
+      "naming": [
+        ["add", "add / adder", "加法器"],
+        ["old", "old value", "舊值（不做加法）"]
+      ],
+      "desc": "`localparam add_old = 1'd0;`，用在 `add_mux_out` 的第一個分支：`add_mux_sel == add_old` 時選 `result_reg` 本身。因為 `add_mux_sel` 就是 `b_lsb`，這條路對應「乘數這一位是 0」，所以累加器原封不動。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|add_next": {
+      "sum": "dpath 的 localparam：值 1'd1，代表「這一輪把 a_reg 加進累加器」",
+      "naming": [
+        ["add", "add / adder", "加法器"],
+        ["next", "next value", "加完之後的新值"]
+      ],
+      "desc": "`localparam add_next = 1'd1;`，用在 `add_mux_out` 的第二個分支：選 `add_out = result_reg + a_reg`。對應「乘數這一位是 1」，把已左移 i 位的被乘數累加進去。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|sign_x": {
+      "sum": "dpath 的 localparam：正負號 mux 的 don't-care 值 1'dx（未被使用）",
+      "naming": [
+        ["sign", "sign", "正負號"],
+        ["x", "don't care", "不在乎"]
+      ],
+      "desc": "`localparam sign_x = 1'dx;`。和 `add_x` 一樣，宣告了但程式碼裡沒有引用；`signed_result_mux_out` 只比對 `sign_u` 與 `sign_s`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|sign_u": {
+      "sum": "dpath 的 localparam：值 1'd0，代表結果為正、直接輸出",
+      "naming": [
+        ["sign", "sign", "正負號"],
+        ["u", "unsigned / positive", "不取負（結果為正）"]
+      ],
+      "desc": "`localparam sign_u = 1'd0;`，用在 `signed_result_mux_out`：`sign_mux_sel == sign_u` 時輸出 `result_reg` 原值。對應兩個運算元同號（`sign_reg` 為 0）的情況。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|sign_s": {
+      "sum": "dpath 的 localparam：值 1'd1，代表結果為負、要取二補數",
+      "naming": [
+        ["sign", "sign", "正負號"],
+        ["s", "signed / negative", "取負（結果為負）"]
+      ],
+      "desc": "`localparam sign_s = 1'd1;`，用在 `signed_result_mux_out`：輸出 `~result_reg + 1'b1`（64-bit 二補數取負）。對應兩個運算元異號（`sign_reg` 為 1）的情況。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|counter_mux_out": {
+      "sum": "counter 多工器的輸出：下一個 cycle 要寫進 counter_reg 的值",
+      "naming": [
+        ["counter", "counter", "計數器"],
+        ["mux", "multiplexer", "多工器"],
+        ["out", "output", "輸出"]
+      ],
+      "desc": "5-bit 組合 wire。`cntr_mux_sel == op_load` 時是 31，`== op_next` 時是 `counter_reg - 1'b1`，否則 5'bx。它無條件在每個 clk 正緣寫進 `counter_reg`（沒有 enable）。載入 31 而不是 32，是因為 CALC 狀態會在 counter 從 31 數到 0 的期間執行，總共剛好 32 個 cycle。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|sign_next": {
+      "sum": "組合算出的結果正負號：兩個運算元最高位的 XOR",
+      "naming": [
+        ["sign", "sign", "正負號"],
+        ["next", "next value", "下一個 cycle 要存進暫存器的值"]
+      ],
+      "desc": "`wire sign_next = mulreq_msg_a[31] ^ mulreq_msg_b[31];`。兩數異號時為 1（結果為負）。它在 `sign_en` 為 1（也就是 `STATE_IDLE`）的正緣被寫進 `sign_reg`，之後整個運算過程都用暫存起來的版本，不再看外部訊號。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|unsigned_a": {
+      "sum": "被乘數的絕對值，負數就先取二補數變正",
+      "naming": [
+        ["unsigned", "unsigned", "無號（取絕對值）"],
+        ["a", "operand a", "運算元 a（被乘數）"]
+      ],
+      "desc": "`mulreq_msg_a[31]` 為 1 時是 `~mulreq_msg_a + 1'b1`，否則就是 `mulreq_msg_a` 本身。這個乘法器的做法是「先把兩個運算元都變成正數，用無號 shift-add 算，最後再依 `sign_reg` 補回符號」，所以迭代過程不必處理二補數的符號擴充。它只在 `a_mux_sel == op_load` 時經 `a_mux_out` 進入 `a_reg`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|unsigned_b": {
+      "sum": "乘數的絕對值，負數就先取二補數變正",
+      "naming": [
+        ["unsigned", "unsigned", "無號（取絕對值）"],
+        ["b", "operand b", "運算元 b（乘數）"]
+      ],
+      "desc": "`mulreq_msg_b[31]` 為 1 時是 `~mulreq_msg_b + 1'b1`，否則就是原值。變成正數後，`b_reg` 每輪右移補 0 才有正確意義（若是負數做邏輯右移，符號位會被當成一般位元而算錯）。只在 `b_mux_sel == op_load` 時載入 `b_reg`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|a_mux_out": {
+      "sum": "a 多工器輸出：下個 cycle 要寫進 a_reg 的 64-bit 值",
+      "naming": [
+        ["a", "operand a", "運算元 a（被乘數）"],
+        ["mux", "multiplexer", "多工器"],
+        ["out", "output", "輸出"]
+      ],
+      "desc": "64-bit 組合 wire。`a_mux_sel == op_load` 時是 `{32'b0, unsigned_a}`（把 32-bit 絕對值零擴充到 64-bit，因為之後要左移 31 次、最大會用到第 62 位）；`== op_next` 時是 `a_shift_out`（左移一位）；否則 64'bx。每個 clk 正緣無條件寫進 `a_reg`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|b_mux_out": {
+      "sum": "b 多工器輸出：下個 cycle 要寫進 b_reg 的 32-bit 值",
+      "naming": [
+        ["b", "operand b", "運算元 b（乘數）"],
+        ["mux", "multiplexer", "多工器"],
+        ["out", "output", "輸出"]
+      ],
+      "desc": "32-bit 組合 wire。`b_mux_sel == op_load` 時是 `unsigned_b`；`== op_next` 時是 `b_shift_out`（右移一位）；否則 32'bx。每個 clk 正緣無條件寫進 `b_reg`，所以 32 輪之後 `b_reg` 會被移成全 0。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|counter_reg": {
+      "sum": "5-bit 迭代計數器暫存器，從 31 數到 0",
+      "naming": [
+        ["counter", "counter", "計數器"],
+        ["reg", "register", "暫存器"]
+      ],
+      "desc": "每個 clk 正緣無條件寫入 `counter_mux_out`（沒有 enable 訊號）。`STATE_IDLE` 載入 31，`STATE_CALC` 每 cycle 減 1，`STATE_SIGN` 因為 `cntr_mux_sel` 是 x 而變成 x。它透過 `assign counter = counter_reg` 送給 ctrl，ctrl 用 `counter == 0` 判斷最後一輪。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|sign_reg": {
+      "sum": "1-bit 暫存器，記住這筆乘法的結果該不該取負",
+      "naming": [
+        ["sign", "sign", "正負號"],
+        ["reg", "register", "暫存器"]
+      ],
+      "desc": "`if (sign_en) sign_reg <= sign_next;`，只有 `STATE_IDLE` 會寫入。之所以要暫存，是因為送出結果時（32 個 cycle 之後）外部的 `mulreq_msg_a/b` 早就換成別的值了。它經 `sign` → ctrl → `sign_mux_sel` 繞回來控制 `signed_result_mux_out`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|a_reg": {
+      "sum": "64-bit 被乘數暫存器，每一輪左移一位",
+      "naming": [
+        ["a", "operand a", "運算元 a（被乘數）"],
+        ["reg", "register", "暫存器"]
+      ],
+      "desc": "每個正緣無條件寫入 `a_mux_out`。載入時是被乘數絕對值零擴充成 64-bit，CALC 的第 i 輪它的值是「絕對值 × 2^i」。加法器 `add_out = result_reg + a_reg` 直接吃它，所以當乘數第 i 位是 1 時，加進去的正好是這一位該貢獻的部分積。做成 64-bit 是為了容納 32×32 的完整乘積。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|b_reg": {
+      "sum": "32-bit 乘數暫存器，每一輪右移一位，最低位決定要不要加",
+      "naming": [
+        ["b", "operand b", "運算元 b（乘數）"],
+        ["reg", "register", "暫存器"]
+      ],
+      "desc": "每個正緣無條件寫入 `b_mux_out`。載入乘數絕對值後，CALC 每輪做邏輯右移，於是 `b_reg[0]`（即 `b_lsb`）依序是乘數的第 0、1、2… 位。這一位透過 ctrl 的 `add_mux_sel` 決定該輪加不加 `a_reg`。32 輪跑完 `b_reg` 會變成 0。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|result_reg": {
+      "sum": "64-bit 累加器，存放到目前為止累加的部分積",
+      "naming": [
+        ["result", "result", "結果"],
+        ["reg", "register", "暫存器"]
+      ],
+      "desc": "`if (result_en) result_reg <= result_mux_out;`。IDLE 清成 0，CALC 每輪寫入 `add_mux_out`（加或不加），SIGN 因為 `result_en` 為 0 而凍結。32 輪結束時它是兩個絕對值的無號乘積，接著經 `signed_result_mux_out` 補上符號送出去。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|a_shift_out": {
+      "sum": "a_reg 左移一位的組合結果，是下一輪的被乘數",
+      "naming": [
+        ["a", "operand a", "運算元 a（被乘數）"],
+        ["shift", "shift", "移位"],
+        ["out", "output", "輸出"]
+      ],
+      "desc": "`wire [63:0] a_shift_out = a_reg << 1;`。CALC 狀態下 `a_mux_out` 選它寫回 `a_reg`，讓被乘數的權重每輪乘 2。因為是 64-bit 左移，移出去的最高位會被丟掉；但被乘數最多只有 32 位有效、最多左移 31 次，所以不會遺失有效資料。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|b_shift_out": {
+      "sum": "b_reg 右移一位的組合結果，是下一輪的乘數",
+      "naming": [
+        ["b", "operand b", "運算元 b（乘數）"],
+        ["shift", "shift", "移位"],
+        ["out", "output", "輸出"]
+      ],
+      "desc": "`wire [31:0] b_shift_out = b_reg >> 1;`，邏輯右移、最高位補 0。CALC 狀態下寫回 `b_reg`，把下一位乘數推到最低位。因為載入的是絕對值（非負），用邏輯右移而不是算術右移才正確。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|add_out": {
+      "sum": "64-bit 加法器輸出：累加器加上目前的被乘數",
+      "naming": [
+        ["add", "add / adder", "加法器"],
+        ["out", "output", "輸出"]
+      ],
+      "desc": "`wire [63:0] add_out = result_reg + a_reg;`。這是整個乘法器唯一的算術單元，每個 cycle 都在算，但只有 `add_mux_sel`（= `b_lsb`）為 1 時它的結果才會被 `add_mux_out` 選中寫回 `result_reg`。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|add_mux_out": {
+      "sum": "條件加法的結果：這一輪累加器該變成什麼",
+      "naming": [
+        ["add", "add / adder", "加法器"],
+        ["mux", "multiplexer", "多工器"],
+        ["out", "output", "輸出"]
+      ],
+      "desc": "64-bit wire。`add_mux_sel == add_old`(0) 時是 `result_reg`（維持原值），`== add_next`(1) 時是 `add_out`，否則 64'bx。它再送進 `result_mux_out` 的 `op_next` 分支。這兩層 mux 合起來的意思是：IDLE 歸零、CALC 時依乘數這一位決定加或不加。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|result_mux_out": {
+      "sum": "累加器多工器輸出：下個 cycle 要寫進 result_reg 的值",
+      "naming": [
+        ["result", "result", "結果 / 累加器"],
+        ["mux", "multiplexer", "多工器"],
+        ["out", "output", "輸出"]
+      ],
+      "desc": "64-bit wire。`result_mux_sel == op_load`(0) 時是 64'b0（開始新一筆乘法），`== op_next`(1) 時是 `add_mux_out`，否則 64'bx。只有 `result_en` 為 1 時才真的寫進 `result_reg`，所以 `STATE_SIGN` 的 x 值不會造成問題。"
+    },
+    "imuldiv/imuldiv-IntMulIterative.v|imuldiv_IntMulIterativeDpath|signed_result_mux_out": {
+      "sum": "最終輸出多工器：把無號乘積依 sign 決定要不要取負",
+      "naming": [
+        ["signed", "signed", "有號（補上正負號）"],
+        ["result", "result", "結果"],
+        ["mux", "multiplexer", "多工器"],
+        ["out", "output", "輸出"]
+      ],
+      "desc": "64-bit wire。`sign_mux_sel == sign_u`(0) 時是 `result_reg`，`== sign_s`(1) 時是 `~result_reg + 1'b1`，否則 64'bx。它直接 `assign` 給 `mulresp_msg_result`。因為 `sign_mux_sel` 就是暫存起來的 `sign_reg`，不會出現 x（除非還沒載入過任何請求）。"
+    }
+  }
+}

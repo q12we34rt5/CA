@@ -1,0 +1,244 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|squash_Phl": {
+      "sum": "riscv_CoreCtrl 的 P 階段作廢訊號，固定接 0 的 dummy 訊號",
+      "naming": [["squash", "squash", "作廢"], ["Phl", "PC stage, high-level", "決定下一個 PC 的階段"]],
+      "desc": "`wire squash_Phl = 1'b0;`。P 階段只是算下一個 PC，沒有「指令」可以作廢，所以程式碼註解直接寫 Dummy Squash Signal。它只被 `bubble_next_Phl = ( squash_Phl || stall_Phl )` 用到，讓各階段的 bubble 算式保持一致的寫法。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|stall_Phl": {
+      "sum": "riscv_CoreCtrl 的 P 階段 stall，直接等於 stall_Fhl",
+      "naming": [["stall", "stall", "暫停"], ["Phl", "PC stage, high-level", "決定下一個 PC 的階段"]],
+      "desc": "`wire stall_Phl = stall_Fhl;`。F 卡住時 PC 也不能往前推進，所以兩者綁在一起。它唯一的用途是餵給 `bubble_next_Phl`：P 被 stall 的那個 cycle，送進 F 的會是一個 bubble（因為同一個 PC 的指令已經在 F 裡了）。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bubble_next_Phl": {
+      "sum": "riscv_CoreCtrl 算出下一拍要送進 F 階段的 bubble 位元",
+      "naming": [["bubble", "bubble", "氣泡（空指令）"], ["next", "next value", "下一個 cycle 的值"], ["Phl", "PC stage, high-level", "決定下一個 PC 的階段"]],
+      "desc": "`wire bubble_next_Phl = ( squash_Phl || stall_Phl );`。因為 `squash_Phl` 固定為 0，實際上等於 `stall_Fhl`。它在 `posedge clk`（且 `!stall_Fhl`）時被寫進 `bubble_Fhl`。注意 F 沒 stall 時 `stall_Phl` 也是 0，所以正常情況下寫進去的是 0，代表有真的指令流進 F。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bubble_Fhl": {
+      "sum": "riscv_CoreCtrl 記錄 F 階段這一拍裝的是不是氣泡（沒有有效指令）",
+      "naming": [["bubble", "bubble", "氣泡（空指令）"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "1-bit `reg`。reset 時清成 0，之後在 `!stall_Fhl` 的正緣載入 `bubble_next_Phl`。它決定 `inst_val_Fhl = (!bubble_Fhl && !squash_Fhl)`，也是 `bubble_next_Fhl` 在不需要插氣泡時的保留值。和其他階段不同，它 reset 成 0 而不是 1，因為 reset 之後第一個取指請求就已經在路上了。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|imem_idle": {
+      "sum": "riscv_CoreCtrl 的 imem 握手狀態機常數：目前沒有在飛的取指請求",
+      "naming": [["imem", "instruction memory", "指令記憶體"], ["idle", "idle", "閒置"]],
+      "desc": "`localparam imem_idle = 1'b0;`，是 `imem_state_Fhl` 的兩個狀態之一。reset 時狀態設成它；`imem_consumed_Fhl`（回應被收走）時也回到它。判斷 `imem_state_Fhl == imem_idle` 是 `imem_ready_to_send_Fhl` 的條件之一——閒置才可以發下一個請求。這是學生為了處理 imem 握手而新增的狀態機。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|imem_wait": {
+      "sum": "riscv_CoreCtrl 的 imem 握手狀態機常數：請求已送出、正在等回應",
+      "naming": [["imem", "instruction memory", "指令記憶體"], ["wait", "wait", "等待"]],
+      "desc": "`localparam imem_wait = 1'b1;`。當 `imem_send_accepted_Fhl`（req 握手成功）時 `imem_state_Fhl` 轉到這個狀態，代表 req 與 resp 之間有一筆交易在飛。在這個狀態下如果發生 `squash_Fhl`，就會把 `imem_abandoned_Fhl` 設成 1，表示回來的那筆指令要丟掉。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|imem_state_Fhl": {
+      "sum": "riscv_CoreCtrl 的 imem 請求/回應握手狀態機（idle / wait）",
+      "naming": [["imem", "instruction memory", "指令記憶體"], ["state", "state", "狀態"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "1-bit `reg`，兩個狀態是 `imem_idle` 與 `imem_wait`。reset 回 idle；`imem_send_accepted_Fhl` 時轉 wait；`imem_consumed_Fhl` 時轉回 idle（注意 send 的優先權比 consume 高）。它被 `imem_ready_to_send_Fhl` 用來決定可不可以發下一個請求，也被 `imem_abandoned_Fhl` 的邏輯用來判斷「現在有沒有請求在飛」。這是學生加在原版程式碼上的握手管理邏輯。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|imem_send_accepted_Fhl": {
+      "sum": "riscv_CoreCtrl 判斷取指請求在這個 cycle 被記憶體收下",
+      "naming": [["imem", "instruction memory", "指令記憶體"], ["send", "send", "送出"], ["accepted", "accepted", "被接受"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "`wire imem_send_accepted_Fhl = imemreq_val && imemreq_rdy;`，就是 req 通道的 go 訊號。它一次觸發三件事：`imem_state_Fhl` 轉到 `imem_wait`、`imemreq_pending_Fhl` 清 0、`imem_initial_fetch_Fhl` 清 0（之後就不再用 reset vector）。它也是 `imem_abandoned_Fhl` 判斷有請求在飛的條件之一。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|imem_consumed_Fhl": {
+      "sum": "riscv_CoreCtrl 判斷指令回應在這個 cycle 被收走",
+      "naming": [["imem", "instruction memory", "指令記憶體"], ["consumed", "consumed", "被消耗 / 收走"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "`wire imem_consumed_Fhl = imemresp_val && imemresp_rdy;`，也就是 resp 通道的 go 訊號（等價於「指令這一拍會被寫進 `ir_Dhl`」）。它讓 `imem_state_Fhl` 回到 `imem_idle`、清掉 `imem_abandoned_Fhl`，並讓 `imem_ready_to_send_Fhl` 在同一個 cycle 就成立，好讓取指可以背靠背連續發送而不浪費 cycle。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|imem_ready_to_send_Fhl": {
+      "sum": "riscv_CoreCtrl 判斷現在可以再發一個取指請求",
+      "naming": [["imem", "instruction memory", "指令記憶體"], ["ready", "ready", "準備好"], ["to_send", "to send", "可以送出"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "`wire imem_ready_to_send_Fhl = (imem_state_Fhl == imem_idle) || imem_consumed_Fhl;`。第一項是本來就閒著；第二項讓「回應剛好在這個 cycle 被收走」也算閒置，因此不用等狀態機下一拍才回 idle，可以立刻發下一個請求。它是 `imemreq_start_Fhl` 的必要條件。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|imemreq_start_Fhl": {
+      "sum": "riscv_CoreCtrl 判斷這個 cycle 要新發起一個取指請求",
+      "naming": [["imem", "instruction memory", "指令記憶體"], ["req", "request", "請求"], ["start", "start", "開始發起"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "`wire imemreq_start_Fhl = !stall_Dhl && imem_ready_to_send_Fhl;`：D 階段沒被卡住（表示 pipeline 消化得動新指令）而且 imem 通道空著。它直接參與 `imemreq_val = imemreq_pending_Fhl || imemreq_start_Fhl`，並在請求沒被立刻接受時把 `imemreq_pending_Fhl` 設成 1。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|inst_val_Fhl": {
+      "sum": "riscv_CoreCtrl 判斷 F 階段目前是否有有效指令",
+      "naming": [["inst", "instruction", "指令"], ["val", "valid", "有效"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "`wire inst_val_Fhl = (!bubble_Fhl && !squash_Fhl);`：既不是氣泡也沒有被分支作廢。和其他階段的 `inst_val_*` 寫法一致。不過從程式碼看來，這個版本的 CoreCtrl 並沒有真的拿它去做別的判斷（F 階段的 bubble 傳遞是用 `bubble_sel_Fhl` 那條路），它比較像是為了完整性而保留。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|stall_imem_Fhl": {
+      "sum": "riscv_CoreCtrl 的 F 階段 stall 條件：指令還沒從 imem 回來",
+      "naming": [["stall", "stall", "暫停"], ["imem", "instruction memory", "指令記憶體"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "`wire stall_imem_Fhl = !imemresp_val;`。因為 `ir_Dhl` 是直接吃 `imemresp_msg_data`，沒有回應就沒有可用的指令，所以 F 必須原地等。它和 `stall_Dhl` 一起組成 `stall_Fhl`。這也代表：每次記憶體延遲（例如 randdelay 版本的測試）都會直接反映成 F 階段的 stall cycle。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|imem_abandoned_Fhl": {
+      "sum": "riscv_CoreCtrl 的旗標：在飛的那筆取指請求已被分支作廢，回來要丟掉",
+      "naming": [["imem", "instruction memory", "指令記憶體"], ["abandoned", "abandoned", "已放棄"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "1-bit `reg`。當 `squash_Fhl` 發生、而且此時確實有請求在飛（`imem_state_Fhl == imem_wait`、或 `imemreq_pending_Fhl`、或 `imem_send_accepted_Fhl`）時設成 1；reset 或 `imem_consumed_Fhl`（該筆回應被收走）時清 0。它唯一的用途是進到 `bubble_sel_Fhl`，讓那筆走錯路的指令被轉成氣泡而不是真的執行。這是學生為了「取指請求已送出但分支才決定要跳」這個情況加的補救邏輯。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bubble_sel_Fhl": {
+      "sum": "riscv_CoreCtrl 判斷 F 階段這一拍要往 D 送氣泡",
+      "naming": [["bubble", "bubble", "氣泡（空指令）"], ["sel", "select", "選擇訊號"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "`wire bubble_sel_Fhl = ( squash_Fhl || stall_Fhl || imem_abandoned_Fhl );`。比其他階段多了 `imem_abandoned_Fhl` 這一項，用來丟掉分支前就已經發出去、現在才回來的那筆指令。它只被 `bubble_next_Fhl` 使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bubble_next_Fhl": {
+      "sum": "riscv_CoreCtrl 算出下一拍要寫進 bubble_Dhl 的值",
+      "naming": [["bubble", "bubble", "氣泡（空指令）"], ["next", "next value", "下一個 cycle 的值"], ["Fhl", "Fetch stage, high-level", "取指階段的訊號"]],
+      "desc": "`bubble_sel_Fhl` 為 1 就是 1'b1（插氣泡），否則保留 `bubble_Fhl`。寫成三段式的 `? :` 只是為了和其他階段格式一致，最後一項 1'bx 在邏輯上永遠走不到。它在 `!stall_Dhl` 的正緣與 `ir_Dhl` 一起被寫進 `bubble_Dhl`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|ir_Dhl": {
+      "sum": "riscv_CoreCtrl 的 D 階段指令暫存器，存著正在解碼的 32-bit 指令",
+      "naming": [["ir", "instruction register", "指令暫存器"], ["Dhl", "Decode stage, high-level", "解碼階段的訊號"]],
+      "desc": "32-bit `reg`，在 `!stall_Dhl` 的正緣從 `imemresp_msg_data` 載入。它是整個解碼邏輯的輸入：`casez ( ir_Dhl )` 產生控制訊號包 `cs`、`inst_msg_from_bits` 從它拆出 rs1/rs2/rd、`csr_addr_Dhl = ir_Dhl[31:20]`、`assign inst_Dhl = ir_Dhl` 送給 dpath，另外 `inst_msg_disasm_D` 也用它印出組語。注意它沒有 reset 值，reset 期間靠 `bubble_Dhl` 為 1 來保證內容不被當真。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bubble_Dhl": {
+      "sum": "riscv_CoreCtrl 記錄 D 階段裝的是不是氣泡",
+      "naming": [["bubble", "bubble", "氣泡（空指令）"], ["Dhl", "Decode stage, high-level", "解碼階段的訊號"]],
+      "desc": "1-bit `reg`。reset 時設成 1（開機時 D 裡沒有指令），之後在 `!stall_Dhl` 的正緣載入 `bubble_next_Fhl`。它決定 `inst_val_Dhl = ( !bubble_Dhl && !squash_Dhl )`，而 `inst_val_Dhl` 又決定 `brj_taken_Dhl`、`stall_hazard_Dhl`、`stall_muldiv_Dhl` 是否成立。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|n": {
+      "sum": "riscv_CoreCtrl 解碼表用的常數 no = 1'd0",
+      "naming": [["n", "no", "否 / 不啟用"]],
+      "desc": "`localparam n = 1'd0;`。解碼表裡所有「是否」欄位都用它填 0，例如 rs1_en、rs2_en、muldiv_en、rf_wen、csr_wen。例如 LUI 那一行的 `rs1 en` 欄填 `n`，表示這條指令不需要讀 rs1，因此 `stall_hazard_Dhl` 不會把 rs1 拿去比對。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|y": {
+      "sum": "riscv_CoreCtrl 解碼表用的常數 yes = 1'd1",
+      "naming": [["y", "yes", "是 / 啟用"]],
+      "desc": "`localparam y = 1'd1;`。解碼表第一欄 inst val（這條指令合法嗎）全部填 `y`，其他布林欄位如 rs1_en、rf_wen 也用它填 1。`cs[`RISCV_INST_MSG_INST_VAL]` 為 0 時（表示 `casez` 沒有任何一行命中，`cs` 維持全 x）會觸發檔案最後的 illegal instruction 檢查。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|rx": {
+      "sum": "riscv_CoreCtrl 解碼表用的暫存器編號 don't care（5'bx）",
+      "naming": [["r", "register", "暫存器"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam rx = 5'bx;`。用在解碼表的 rf waddr 欄位，給那些不寫暫存器的指令（SW、BNE、BLT、CSRW）。因為這些指令的 `rf_wen` 是 `n`，寫入位址是什麼都無所謂，填 x 可以讓綜合工具自由最佳化，模擬時也容易看出「這個值不該被使用」。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|r0": {
+      "sum": "riscv_CoreCtrl 解碼表用的暫存器編號 0（x0）",
+      "naming": [["r", "register", "暫存器"], ["0", "zero", "0 號暫存器"]],
+      "desc": "`localparam r0 = 5'd0;`，代表 RISC-V 的 x0（恆為 0 的暫存器）。它是為了讓解碼表能明確指定「寫到 x0」（等於丟棄結果）而定義的常數，不過從目前這份解碼表看來還沒有任何一行用到它，填 don't care 的都用 `rx`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|br_x": {
+      "sum": "riscv_CoreCtrl 的分支種類常數：don't care（3'bx）",
+      "naming": [["br", "branch", "分支"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam br_x = 3'bx;`，填在解碼表的 br type 欄位表示這條指令跟分支無關、值可以是任何東西。目前這份解碼表的非分支指令都改填 `br_none` 而不是 `br_x`，所以它實際上沒被用到，但保留著讓表格可以在需要時填 x。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|br_none": {
+      "sum": "riscv_CoreCtrl 的分支種類常數：這不是分支指令（3'd0）",
+      "naming": [["br", "branch", "分支"], ["none", "none", "不是分支"]],
+      "desc": "`localparam br_none = 3'd0;`。解碼表裡 LUI、AUIPC、ADDI、ORI、ADD、LW、SW、JAL、CSRW 的 br type 欄都填它。它經 `br_sel_Dhl` 打拍變成 `br_sel_Xhl`，而 X 階段的 `bne_taken_Xhl` / `blt_taken_Xhl` 都要求 `br_sel_Xhl` 等於特定值，所以填 `br_none` 就保證不會誤判成分支成立。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|br_beq": {
+      "sum": "riscv_CoreCtrl 的分支種類常數：BEQ（3'd1），目前解碼表未使用",
+      "naming": [["br", "branch", "分支"], ["beq", "branch if equal", "相等就分支"]],
+      "desc": "`localparam br_beq = 3'd1;`。要支援 BEQ 時，解碼表的 `RISCV_INST_MSG_BEQ` 那一行（目前被註解掉）要填它，並且在 X 階段補一條類似 `( br_sel_Xhl == br_beq ) && branch_cond_eq_Xhl` 的判斷加進 `any_br_taken_Xhl`。目前這兩處都沒有，所以這個常數還沒有被任何程式碼比對。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|br_bne": {
+      "sum": "riscv_CoreCtrl 的分支種類常數：BNE（3'd2），目前唯一被比對的相等類分支",
+      "naming": [["br", "branch", "分支"], ["bne", "branch if not equal", "不相等就分支"]],
+      "desc": "`localparam br_bne = 3'd2;`。解碼表裡 `RISCV_INST_MSG_BNE` 那一行填它，經 `br_sel_Dhl` → `br_sel_Xhl` 傳到 X 階段，被 `bne_taken_Xhl = ( ( br_sel_Xhl == br_bne ) && branch_cond_ne_Xhl )` 比對。注意 BNE 的 ALU 功能碼填 `alu_xor`，因為 dpath 是用「xor 結果是否為 0」來判斷相等。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|br_blt": {
+      "sum": "riscv_CoreCtrl 的分支種類常數：BLT（3'd3）",
+      "naming": [["br", "branch", "分支"], ["blt", "branch if less than", "小於就分支（有號）"]],
+      "desc": "`localparam br_blt = 3'd3;`。解碼表裡 `RISCV_INST_MSG_BLT` 那一行填它，X 階段由 `blt_taken_Xhl = ( ( br_sel_Xhl == br_blt ) && branch_cond_lt_Xhl )` 比對。BLT 的 ALU 功能碼填 `alu_sub`，因為 dpath 的 `branch_cond_lt_Xhl` 要看減法結果的正負號。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|br_bltu": {
+      "sum": "riscv_CoreCtrl 的分支種類常數：BLTU（3'd4），目前解碼表未使用",
+      "naming": [["br", "branch", "分支"], ["bltu", "branch if less than, unsigned", "小於就分支（無號）"]],
+      "desc": "`localparam br_bltu = 3'd4;`。對應無號比較的分支指令。解碼表的 `RISCV_INST_MSG_BLTU` 那一行被註解掉，X 階段也沒有對應的 taken 判斷，所以這個常數目前沒有被任何地方比對；補指令時要搭配 dpath 的 `branch_cond_ltu_Xhl`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|br_bge": {
+      "sum": "riscv_CoreCtrl 的分支種類常數：BGE（3'd5），目前解碼表未使用",
+      "naming": [["br", "branch", "分支"], ["bge", "branch if greater or equal", "大於等於就分支（有號）"]],
+      "desc": "`localparam br_bge = 3'd5;`。要支援 BGE 時解碼表填它，並在 X 階段用 `branch_cond_ge_Xhl` 判斷。目前 `RISCV_INST_MSG_BGE` 在 `casez` 裡被註解掉，因此這個編碼還沒有被用到。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|br_bgeu": {
+      "sum": "riscv_CoreCtrl 的分支種類常數：BGEU（3'd6），目前解碼表未使用",
+      "naming": [["br", "branch", "分支"], ["bgeu", "branch if greater or equal, unsigned", "大於等於就分支（無號）"]],
+      "desc": "`localparam br_bgeu = 3'd6;`，是 `br_sel` 這個 3-bit 欄位目前定義的最大值。對應 dpath 的 `branch_cond_geu_Xhl`。解碼表中 `RISCV_INST_MSG_BGEU` 那一行被註解掉，所以尚未被使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|pm_x": {
+      "sum": "riscv_CoreCtrl 的 PC 多工器常數：don't care（2'bx）",
+      "naming": [["pm", "PC mux", "PC 多工器"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam pm_x = 2'bx;`，程式碼註解就寫 Don't care。給那些不會影響 PC 選擇的指令用。目前解碼表的每一行都明確填了 `pm_p`、`pm_b` 或 `pm_j`，所以它還沒被用到。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|pm_p": {
+      "sum": "riscv_CoreCtrl 的 PC 多工器常數：選 pc+4（2'd0）",
+      "naming": [["pm", "PC mux", "PC 多工器"], ["p", "pc plus 4", "循序的下一個 PC"]],
+      "desc": "`localparam pm_p = 2'd0;`。解碼表裡所有非跳躍指令都填它，同時 `pc_mux_sel_Phl` 的預設值（沒有分支也沒有 jump 時）也是它。對應 `riscv_CoreDpath` 的 `pc_mux_sel_Phl == 2'd0` → `pc_plus4_Phl`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|pm_b": {
+      "sum": "riscv_CoreCtrl 的 PC 多工器常數：選分支目標位址（2'd1）",
+      "naming": [["pm", "PC mux", "PC 多工器"], ["b", "branch target", "分支目標"]],
+      "desc": "`localparam pm_b = 2'd1;`。BNE、BLT 在解碼表裡填它，但真正讓 PC 改變的是 X 階段：`pc_mux_sel_Phl` 的第一優先是 `brj_taken_Xhl ? pm_b`。對應 dpath 的 `branch_targ_Phl`（由 X 階段的 `branch_targ_Xhl` 拉回來）。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|pm_j": {
+      "sum": "riscv_CoreCtrl 的 PC 多工器常數：選 jump 目標位址（2'd2）",
+      "naming": [["pm", "PC mux", "PC 多工器"], ["j", "jump target", "跳躍目標"]],
+      "desc": "`localparam pm_j = 2'd2;`。JAL 在解碼表填它，並且 JAL 的 j taken 欄填 `y`，所以 D 階段就會讓 `brj_taken_Dhl` 成立，`pc_mux_sel_Phl` 於是選用 `pc_mux_sel_Dhl`（就是 `pm_j`）。對應 dpath 的 `jump_targ_Phl`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|pm_r": {
+      "sum": "riscv_CoreCtrl 的 PC 多工器常數：選 jump register 目標（2'd3），目前未使用",
+      "naming": [["pm", "PC mux", "PC 多工器"], ["r", "jump register", "以暫存器內容當跳躍目標"]],
+      "desc": "`localparam pm_r = 2'd3;`，是給 JALR 用的。對應 dpath 的 `jumpreg_targ_Phl`。因為解碼表裡 `RISCV_INST_MSG_JALR` 那一行被註解掉，所以目前沒有指令會產生這個選擇值。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|am_x": {
+      "sum": "riscv_CoreCtrl 的 op0 多工器常數：don't care（2'bx）",
+      "naming": [["am", "operand-A (op0) mux", "運算元 0 多工器"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam am_x = 2'bx;`。給完全不用 ALU 的指令填在 op0 muxsel 欄。目前解碼表每一行都明確給了 `am_rdat` / `am_pc` / `am_pc4` / `am_0`，所以尚未被使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|am_rdat": {
+      "sum": "riscv_CoreCtrl 的 op0 多工器常數：用 rs1 讀出的值（2'd0）",
+      "naming": [["am", "operand-A (op0) mux", "運算元 0 多工器"], ["rdat", "read data", "從暫存器讀出的資料"]],
+      "desc": "`localparam am_rdat = 2'd0;`，註解寫「Use output of bypass mux for rs1」（這個 stall 版本沒有 bypass，實際上就是 regfile 的 `rf_rdata0_Dhl`）。解碼表裡 ADDI、ORI、ADD、LW、SW、BNE、BLT、CSRW 都用它，同時這些行的 rs1 en 欄也填 `y`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|am_pc": {
+      "sum": "riscv_CoreCtrl 的 op0 多工器常數：用目前的 PC（2'd1）",
+      "naming": [["am", "operand-A (op0) mux", "運算元 0 多工器"], ["pc", "program counter", "程式計數器"]],
+      "desc": "`localparam am_pc = 2'd1;`，對應 dpath 的 `pc_Dhl`。只有 AUIPC 用它：AUIPC 要算「PC + U-type immediate」，所以 op0 選 PC、op1 選 `bm_imm_u`、ALU 做 `alu_add`。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|am_pc4": {
+      "sum": "riscv_CoreCtrl 的 op0 多工器常數：用 PC+4（2'd2）",
+      "naming": [["am", "operand-A (op0) mux", "運算元 0 多工器"], ["pc4", "pc plus 4", "PC 加 4"]],
+      "desc": "`localparam am_pc4 = 2'd2;`，對應 dpath 的 `pc_plus4_Dhl`。JAL 用它：把 PC+4 當 op0、op1 選 `bm_0`、ALU 做加法，結果就是要寫回 rd 的 return address。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|am_0": {
+      "sum": "riscv_CoreCtrl 的 op0 多工器常數：用常數 0（2'd3）",
+      "naming": [["am", "operand-A (op0) mux", "運算元 0 多工器"], ["0", "constant zero", "常數 0"]],
+      "desc": "`localparam am_0 = 2'd3;`，對應 dpath 的 `const0`。LUI 用它：0 加上 U-type immediate 就是 LUI 要寫回的值。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bm_x": {
+      "sum": "riscv_CoreCtrl 的 op1 多工器常數：don't care（3'bx）",
+      "naming": [["bm", "operand-B (op1) mux", "運算元 1 多工器"], ["x", "don't care", "不在乎"]],
+      "desc": "`localparam bm_x = 3'bx;`，註解寫 Don't care。給不使用 op1 的指令用；目前解碼表每一行都明確給了值，所以還沒被用到。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bm_rdat": {
+      "sum": "riscv_CoreCtrl 的 op1 多工器常數：用 rs2 讀出的值（3'd0）",
+      "naming": [["bm", "operand-B (op1) mux", "運算元 1 多工器"], ["rdat", "read data", "從暫存器讀出的資料"]],
+      "desc": "`localparam bm_rdat = 3'd0;`，對應 dpath 的 `rf_rdata1_Dhl`。ADD、BNE、BLT 用它（這些行的 rs2 en 欄也填 `y`，所以 `stall_hazard_Dhl` 會檢查 rs2 的相依性）。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bm_shamt": {
+      "sum": "riscv_CoreCtrl 的 op1 多工器常數：用指令裡的位移量（3'd1）",
+      "naming": [["bm", "operand-B (op1) mux", "運算元 1 多工器"], ["shamt", "shift amount", "位移量"]],
+      "desc": "`localparam bm_shamt = 3'd1;`，對應 dpath 的 `shamt_Dhl`（由 `riscv_InstMsgFromBits` 從指令中抽出）。是給 SLLI / SRLI / SRAI 這類立即位移指令用的；因為那幾行在解碼表裡被註解掉，目前尚未使用。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bm_imm_u": {
+      "sum": "riscv_CoreCtrl 的 op1 多工器常數：用 U-type immediate（3'd2）",
+      "naming": [["bm", "operand-B (op1) mux", "運算元 1 多工器"], ["imm", "immediate", "立即值"], ["u", "U-type", "U 型指令格式"]],
+      "desc": "`localparam bm_imm_u = 3'd2;`，對應 dpath 的 `imm_u_Dhl`（指令高 20 位左移 12 位）。LUI 與 AUIPC 用它。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bm_imm_sb": {
+      "sum": "riscv_CoreCtrl 的 op1 多工器常數：用 SB-type（分支）immediate（3'd3）",
+      "naming": [["bm", "operand-B (op1) mux", "運算元 1 多工器"], ["imm", "immediate", "立即值"], ["sb", "SB-type", "SB 型（分支）指令格式"]],
+      "desc": "`localparam bm_imm_sb = 3'd3;`，對應 dpath 的 `imm_sb_Dhl`。分支目標位址在 dpath 裡是另外算的（`branch_targ_Xhl`），所以目前解碼表的 BNE、BLT 的 op1 是選 `bm_rdat` 來做比較，這個常數實際上沒有被任何一行用到。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bm_imm_i": {
+      "sum": "riscv_CoreCtrl 的 op1 多工器常數：用 I-type immediate（3'd4）",
+      "naming": [["bm", "operand-B (op1) mux", "運算元 1 多工器"], ["imm", "immediate", "立即值"], ["i", "I-type", "I 型指令格式"]],
+      "desc": "`localparam bm_imm_i = 3'd4;`，對應 dpath 的 `imm_i_Dhl`（指令 [31:20] 的有號延伸）。ADDI、ORI 用它做立即值運算，LW 用它當位址偏移量（base + offset）。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bm_imm_s": {
+      "sum": "riscv_CoreCtrl 的 op1 多工器常數：用 S-type（store）immediate（3'd5）",
+      "naming": [["bm", "operand-B (op1) mux", "運算元 1 多工器"], ["imm", "immediate", "立即值"], ["s", "S-type", "S 型（store）指令格式"]],
+      "desc": "`localparam bm_imm_s = 3'd5;`，對應 dpath 的 `imm_s_Dhl`。只有 SW 用它：store 的偏移量欄位分散在指令的兩個地方，所以要用 S-type 的組法。注意 SW 的 rs2 en 仍填 `y`，因為要寫出去的資料是從 rs2 讀的。"
+    },
+    "riscvstall/riscvstall-CoreCtrl.v|riscv_CoreCtrl|bm_0": {
+      "sum": "riscv_CoreCtrl 的 op1 多工器常數：用常數 0（3'd6）",
+      "naming": [["bm", "operand-B (op1) mux", "運算元 1 多工器"], ["0", "constant zero", "常數 0"]],
+      "desc": "`localparam bm_0 = 3'd6;`，對應 dpath 的 `const0`。JAL 用它（PC+4 加 0）；CSRW 也用它（把 rs1 的值加 0 原封不動送到寫回路徑，最後經 `proc2csr_data_Whl` 寫進 `csr_status`）。"
+    }
+  }
+}

@@ -1,0 +1,276 @@
+{
+  "entities": {
+    "imuldiv/imuldiv-iterative-sim.v|sim|clk": {
+      "sum": "sim testbench 自己產生的時脈，週期 10 個時間單位",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "`reg clk = 1'b0;` 搭配 `always #5 clk = ~clk;`，所以半週期 5、週期 10。它接到 `imuldiv` 這個 instance 的 `clk`，也是 `always @ ( posedge clk )` 區塊（計數 cycle、印結果）的觸發來源。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|src_msg_fn": {
+      "sum": "要送給乘除法器的 3-bit 功能碼，由命令列 +op= 參數決定",
+      "naming": [
+        [
+          "src",
+          "source",
+          "來源端（測試程式扮演送資料的一方）"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "fn",
+          "function",
+          "運算種類"
+        ]
+      ],
+      "desc": "`reg [2:0]`。initial 區塊用 `$value$plusargs(\"op=%s\", op_type)` 讀命令列參數，再用 case 把字串 mul / div / divu / rem / remu 轉成 `IMULDIV_MULDIVREQ_MSG_FUNC_MUL` … `IMULDIV_MULDIVREQ_MSG_FUNC_REMU`（定義在 `imuldiv-MulDivReqMsg.v`）。它接到 instance 的 `muldivreq_msg_fn`，最後也被用來決定要印哪一種格式的結果。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|src_msg_a": {
+      "sum": "要送給乘除法器的 32-bit 運算元 A，由命令列 +a= 參數決定",
+      "naming": [
+        [
+          "src",
+          "source",
+          "來源端（測試程式扮演送資料的一方）"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "a",
+          "operand A",
+          "運算元 A"
+        ]
+      ],
+      "desc": "`reg [31:0]`，用 `$value$plusargs(\"a=%d\", src_msg_a)` 讀十進位輸入，讀不到就印錯誤並 `$finish`。接到 instance 的 `muldivreq_msg_a`，結束時也拿來印算式左邊的數字。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|src_msg_b": {
+      "sum": "要送給乘除法器的 32-bit 運算元 B，由命令列 +b= 參數決定",
+      "naming": [
+        [
+          "src",
+          "source",
+          "來源端（測試程式扮演送資料的一方）"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "b",
+          "operand B",
+          "運算元 B"
+        ]
+      ],
+      "desc": "`reg [31:0]`，用 `$value$plusargs(\"b=%d\", src_msg_b)` 讀入。接到 instance 的 `muldivreq_msg_b`。典型用法像 `./imuldiv-iterative-sim +op=div +a=100 +b=7`。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|src_val": {
+      "sum": "testbench 送出的 request valid，只拉高到握手成功為止",
+      "naming": [
+        [
+          "src",
+          "source",
+          "來源端（測試程式扮演送資料的一方）"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "`reg`，初值 0；initial 區塊把運算元都設好之後才設成 1。`always @ ( posedge clk )` 裡只要看到 `src_val` 是 1 就在下個 cycle 清成 0，所以請求只送一拍，剛好在 `muldivreq_go` 那個 cycle 被乘除法器吃走。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|src_rdy": {
+      "sum": "乘除法器回報的 request ready",
+      "naming": [
+        [
+          "src",
+          "source",
+          "來源端（測試程式扮演送資料的一方）"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可接收"
+        ]
+      ],
+      "desc": "`wire`，接 instance 的 `muldivreq_rdy`。它只有在乘除法器處於閒置狀態時是 1；testbench 用 `src_val && src_rdy` 組成 `muldivreq_go` 判斷運算什麼時候真正開始。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|sink_msg": {
+      "sum": "從乘除法器收回來的 64-bit 結果",
+      "naming": [
+        [
+          "sink",
+          "sink",
+          "接收端（測試程式扮演收資料的一方）"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ]
+      ],
+      "desc": "`wire [63:0]`，接 instance 的 `muldivresp_msg_result`。印結果時依運算種類取不同部分：mul 印整個 64 bit、div / divu 印 `sink_msg[31:0]`（商）、rem / remu 印 `sink_msg[63:32]`（餘數）。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|sink_val": {
+      "sum": "乘除法器回報「結果好了」的 valid",
+      "naming": [
+        [
+          "sink",
+          "sink",
+          "接收端（測試程式扮演收資料的一方）"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "`wire`，接 instance 的 `muldivresp_val`。和 `sink_rdy` 組成 `muldivresp_go`，成立時 testbench 印出結果與 cycle 數並 `$finish`。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|sink_rdy": {
+      "sum": "testbench 的 response ready，固定綁成 1",
+      "naming": [
+        [
+          "sink",
+          "sink",
+          "接收端（測試程式扮演收資料的一方）"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可接收"
+        ]
+      ],
+      "desc": "`wire sink_rdy = 1'b1;`——測試程式永遠準備好收結果，所以不會在回應端造成反壓，量到的 cycle 數就是乘除法器本身的延遲。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|muldivreq_go": {
+      "sum": "請求握手成功的那個 cycle（testbench 這一側的判斷）",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "go",
+          "val && rdy",
+          "握手成功"
+        ]
+      ],
+      "desc": "`wire muldivreq_go = src_val && src_rdy;`。它在 `always` 區塊裡有兩個作用：把 `busy` 設成 1，以及從這個 clk 邊緣開始累加 `cycle_count`（註解說明因為模擬會在最後一個 cycle flop 進暫存器之前就結束，所以要從運算元被吃進去的那個邊緣開始數才準）。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|muldivresp_go": {
+      "sum": "結果握手成功的那個 cycle（testbench 這一側的判斷）",
+      "naming": [
+        [
+          "muldiv",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "go",
+          "val && rdy",
+          "握手成功"
+        ]
+      ],
+      "desc": "`wire muldivresp_go = sink_val && sink_rdy;`，因為 `sink_rdy` 恆為 1，其實就等於 `sink_val`。成立時印出算式、印出 `Cycle Count`，然後 `$finish` 結束模擬。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|reset": {
+      "sum": "testbench 產生的 reset，前 10 個時間單位為 1",
+      "naming": [
+        [
+          "reset",
+          "reset",
+          "重置"
+        ]
+      ],
+      "desc": "`reg reset = 1'b1;`，initial 區塊 `#10 reset = 1'b0;`。也就是模擬開始的頭兩個 clk 半週期把乘除法器的狀態機壓在 IDLE，之後才開始送請求。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|op_type": {
+      "sum": "存放命令列 +op= 字串的暫存器（1024 bit 當字串用）",
+      "naming": [
+        [
+          "op",
+          "operation",
+          "運算"
+        ],
+        [
+          "type",
+          "type",
+          "種類"
+        ]
+      ],
+      "desc": "`reg [1023:0]`，Verilog 用大寬度的 reg 來裝字串。`$value$plusargs(\"op=%s\", op_type)` 把命令列上的字串塞進來，接著 `case ( op_type )` 比對 \"mul\" / \"div\" / \"divu\" / \"rem\" / \"remu\"；沒指定或不認得就印訊息並 `$finish`。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|imuldiv": {
+      "sum": "被測的乘除法器實例——注意是「分開版」imuldiv_IntMulDivIterative",
+      "naming": [
+        [
+          "imuldiv",
+          "iterative multiply / divide",
+          "迭代式乘除法器"
+        ]
+      ],
+      "desc": "`imuldiv_IntMulDivIterative` 的實例。這個檔案 `include 的是 `imuldiv-IntMulDivIterative.v`，也就是裡面各放一顆 `imuldiv_IntMulIterative` 與 `imuldiv_IntDivIterative` 的分開版本，**不是** 合併版的 `imuldiv_IntMulDivIterativeComb`；合併版目前只有它自己的單元測試 `imuldiv/imuldiv-IntMulDivIterativeCombined.t.v` 會用到。接線很單純：請求端接 `src_*`，回應端接 `sink_*`。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|busy": {
+      "sum": "旗標：運算已經開始，用來讓 cycle_count 繼續累加",
+      "naming": [
+        [
+          "busy",
+          "busy",
+          "忙碌中"
+        ]
+      ],
+      "desc": "`reg busy = 1'b0;`，在 `muldivreq_go` 的那個 clk 邊緣設成 1，之後就一直保持 1（沒有清除邏輯，因為模擬在結果出來時就 `$finish` 了）。`cycle_count` 的累加條件是 `muldivreq_go || busy`。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v|sim|cycle_count": {
+      "sum": "計數器：從請求被接受起算，這筆運算花了幾個 cycle",
+      "naming": [
+        [
+          "cycle",
+          "clock cycle",
+          "時脈週期"
+        ],
+        [
+          "count",
+          "count",
+          "計數"
+        ]
+      ],
+      "desc": "`reg [31:0]`，初值 0，在 `muldivreq_go || busy` 時每個 clk 正緣加 1。結果出來時用 `$display( \"Cycle Count = %d\", cycle_count )` 印出來——這就是這支 sim 程式的主要用途：量測不同運算元下迭代式乘除法器實際花的 cycle 數。"
+    },
+    "imuldiv/imuldiv-iterative-sim.v||sim": {
+      "sum": "imuldiv-iterative-sim.v 的頂層測試模組：用命令列參數跑一筆乘除法並印出結果與 cycle 數",
+      "naming": [
+        [
+          "sim",
+          "simulator",
+          "模擬程式（testbench）"
+        ]
+      ],
+      "desc": "這不是硬體，而是一支獨立的模擬程式。流程是：產生時脈與 reset → 用 `$value$plusargs` 讀 `+op=`、`+a=`、`+b=` 三個命令列參數 → 拉一拍 `src_val` 把請求送進 `imuldiv` → 等 `muldivresp_go` → 印出算式結果與 `cycle_count` 後 `$finish`。開頭的 initial 還會 `$dumpfile(\"dump.vcd\")` / `$dumpvars` 產生波形檔方便除錯。它 `include 的是 `imuldiv-IntMulDivIterative.v`（分開版），所以量到的是分開版的效能；要測合併版 `imuldiv_IntMulDivIterativeComb` 得用 `imuldiv/imuldiv-IntMulDivIterativeCombined.t.v`。和 `.t.v` 單元測試不同的是，這支程式不檢查答案對錯，只負責印出來給人看。"
+    }
+  }
+}

@@ -1,0 +1,129 @@
+<!-- ============================================================ ch16 -->
+<section class="ch" id="ch16" data-part="模擬與測試" data-nav="Testbench：不會變成電路的語法">
+<p class="eyebrow">第 16 章 · 模擬與測試</p>
+<h2>Testbench：<b>不會</b>變成電路的那一半 Verilog</h2>
+<p>Verilog 其實是兩種語言混在一起：一半描述硬體（前面 15 章），另一半是<b>只給模擬器執行的測試程式</b>。後者有延遲、有印字、能讀檔，行為就像一般的軟體程式——因此<b>無法合成、也畫不出電路圖</b>。<code>Testbench.v</code>、<code>Pattern.v</code> 和所有 <code>*.t.v</code> 檔都屬於這一類。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 250" role="img" aria-label="Testbench 模組的結構：裡面例化了待測的處理器 riscv_Core 和測試用的 Pattern。Pattern 提供 clk 與 reset，並扮演指令記憶體與資料記憶體回應處理器的請求，最後從 csr_status 判定測試通過或失敗。">
+  <rect class="grp" x="14" y="28" width="672" height="208" rx="6"/><text class="s mut" x="24" y="22">module Testbench;　← 沒有任何 port，它就是整個模擬世界</text>
+  <rect class="k" x="50" y="60" width="200" height="158"/><text x="150" y="132" text-anchor="middle">riscv_Core  proc</text><text class="zh s mut" x="150" y="152" text-anchor="middle">待測電路（可合成）</text>
+  <rect class="gh" x="450" y="60" width="200" height="158"/><text x="550" y="112" text-anchor="middle">Pattern  pattern</text>
+  <text class="zh s mut" x="550" y="136" text-anchor="middle">產生 clk / reset</text><text class="zh s mut" x="550" y="154" text-anchor="middle">內含測試用記憶體</text><text class="zh s mut" x="550" y="172" text-anchor="middle">判定 PASSED / FAILED</text>
+  <path class="c" d="M450 85H253" marker-end="url(#ahc)"/><text class="s cb" x="350" y="79" text-anchor="middle">clk, reset_proc</text>
+  <path class="w" d="M250 115H447" marker-end="url(#ah)"/><text class="s" x="350" y="109" text-anchor="middle">imemreq (val/rdy/msg)</text>
+  <path class="w" d="M450 145H253" marker-end="url(#ah)"/><text class="s" x="350" y="139" text-anchor="middle">imemresp</text>
+  <path class="w" d="M253 175H447" marker-start="url(#ah)" marker-end="url(#ah)"/><text class="s" x="350" y="169" text-anchor="middle">dmemreq / dmemresp</text>
+  <path class="w" d="M250 203H447" marker-end="url(#ah)"/><text class="s" x="350" y="197" text-anchor="middle">csr_status, retire_valid</text>
+</svg>
+</div>
+<figcaption><b>這張是方塊圖，不是電路圖。</b>左邊是會被做成晶片的部分；右邊的 <code>Pattern</code> 只存在於模擬器裡，用軟體的方式假扮時脈產生器、記憶體和裁判。</figcaption>
+</figure>
+
+<h3>產生時脈與 reset</h3>
+<div class="ex">
+<div class="src">Pattern.v · 第 47–61 行</div>
+<pre><code class="language-verilog">initial begin
+  clk = 1'b0;                 // initial：模擬開始時執行一次
+end
+
+always #5 clk = ~clk;         // 每過 5 個時間單位反相一次 → 週期 10
+
+initial begin
+  reset_proc = 1'b1;
+  reset_mem  = 1'b1;
+
+  repeat ( p_reset_cycles ) @( negedge clk );   // 等 2 個下降緣
+
+  reset_proc = 1'b0;
+  reset_mem  = 1'b0;
+end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 172" role="img" aria-label="Pattern.v 產生的波形：clk 從 0 開始，每 5 個時間單位反相一次；reset_proc 從時間 0 保持為 1，直到第二個 clk 下降緣也就是時間 20 才降為 0。">
+  <text class="cb" x="90" y="64" text-anchor="end">clk</text><text x="90" y="119" text-anchor="end">reset_proc</text>
+  <path class="re" d="M230 36V132M360 36V132"/>
+  <text class="s sq" x="230" y="28" text-anchor="middle">negedge ①</text><text class="s sq" x="360" y="28" text-anchor="middle">negedge ②</text>
+  <path class="a" style="stroke-width:1.5" d="M100 42V36H165V42"/><text class="s ac" x="132" y="28" text-anchor="middle">#5</text>
+  <path class="c" style="stroke-dasharray:none" d="M100 70H165V50H230V70H295V50H360V70H425V50H490V70H555V50H620V70"/>
+  <path class="w" d="M100 105H360V125H620"/>
+  <path class="w" style="stroke-width:1" d="M100 145H620M100 145v5M165 145v5M230 145v5M295 145v5M360 145v5M425 145v5M490 145v5M555 145v5M620 145v5"/>
+  <g text-anchor="middle"><text class="s mut" x="100" y="164">0</text><text class="s mut" x="165" y="164">5</text><text class="s mut" x="230" y="164">10</text><text class="s mut" x="295" y="164">15</text><text class="s mut" x="360" y="164">20</text><text class="s mut" x="425" y="164">25</text><text class="s mut" x="490" y="164">30</text><text class="s mut" x="555" y="164">35</text><text class="s mut" x="620" y="164">40</text></g>
+</svg>
+</div>
+<figcaption><b>能畫的是「時間軸」而不是電路。</b><code>#5</code> 是「等 5 個時間單位」，真實硬體裡沒有這種東西（時脈來自石英振盪器或 PLL），所以帶 <code>#</code> 的程式碼只能模擬。</figcaption>
+</figure>
+</div>
+
+<h3>模擬專用語法速查</h3>
+<div class="tbl"><table>
+<thead><tr><th>語法</th><th>作用</th><th>lab1 出處</th></tr></thead>
+<tbody>
+<tr><td><code>initial begin … end</code></td><td>模擬時間 0 開始，從上到下執行<b>一次</b></td><td>Pattern.v 47、53、109 行</td></tr>
+<tr><td><code>#5</code>、<code>#20 $finish;</code></td><td>延遲若干時間單位再往下做</td><td>Pattern.v 51、210 行</td></tr>
+<tr><td><code>@( negedge clk )</code></td><td>當作敘述使用時：<b>停在這裡等</b>下一個下降緣</td><td>Pattern.v 57 行</td></tr>
+<tr><td><code>repeat ( n ) 敘述</code></td><td>重複 n 次（真的迴圈，會隨模擬時間執行）</td><td>Pattern.v 57 行</td></tr>
+<tr><td><code>$display( "fmt", … )</code></td><td>就是 <code>printf</code>。<code>%d</code> <code>%x</code> <code>%s</code> <code>%f</code>；<code>%m</code> 印出目前模組的階層路徑</td><td>Pattern.v 186–206 行</td></tr>
+<tr><td><code>$finish</code></td><td>結束模擬</td><td>Pattern.v 118 行</td></tr>
+<tr><td><code>$time</code></td><td>目前的模擬時間</td><td>vc-Assert.v</td></tr>
+<tr><td><code>$value$plusargs( "exe=%s", var )</code></td><td>讀命令列的 <code>+exe=檔名</code> 參數；有給就回傳 1</td><td>Pattern.v 114 行</td></tr>
+<tr><td><code>$readmemh( file, mem.mem.m, … )</code></td><td>把十六進位文字檔（<code>.vmh</code>）載入記憶體陣列。<code>mem.mem.m</code> 是<b>階層式參照</b>：直接伸手進子模組的子模組拿訊號，只有 testbench 能這樣做</td><td>Pattern.v 122 行</td></tr>
+<tr><td><code>$fopen</code> / <code>$fclose</code></td><td>開關檔案；這裡只用來檢查檔案存不存在</td><td>Pattern.v 115–120 行</td></tr>
+<tr><td><code>$dumpfile</code> / <code>$dumpvars( 0, Testbench )</code></td><td>把 <code>Testbench</code> 以下所有訊號的波形寫進 <code>.vcd</code> 檔，之後用 GTKWave 觀看</td><td>Pattern.v 148–149 行</td></tr>
+<tr><td><code>integer</code>、<code>real</code>、<code>$itor()</code></td><td>軟體式的整數、浮點數變數與型別轉換。用來算 IPC = 指令數 ÷ 週期數</td><td>Pattern.v 101、178、195 行</td></tr>
+<tr><td><code>reg [1023:0] exe_filename;</code></td><td>Verilog 沒有字串型別：字串就是很寬的 <code>reg</code>，每個字元 8 位元。所以 <code>{ exe_filename[1023:32], ".vcd" }</code> 是「砍掉最後 4 個字元 <code>.vmh</code>，接上 <code>.vcd</code>」</td><td>Pattern.v 102、145 行</td></tr>
+<tr><td><code>task … endtask</code></td><td>可重複呼叫的測試程序（像沒有回傳值的函式），裡面可以有延遲</td><td>imuldiv-*ReqMsg.t.v</td></tr>
+<tr><td><code>===</code>、<code>!==</code></td><td>連 x 和 z 都逐位元比對的「全等」。一般 <code>==</code> 碰到 x 結果就是 x；要判斷「這個訊號是不是 x」只能用 <code>===</code></td><td>InstMsg.v 352 行：<code>msg === 32'bx</code></td></tr>
+</tbody></table></div>
+
+<p><code>Pattern.v</code> 裡也有看起來像硬體的部分：第 160–173 行的 <code>num_cycles</code>、<code>num_inst</code> 計數器用的是標準的 <code>always @(posedge clk)</code> + <code>&lt;=</code>，就是<a href="#ch7">第 7 章</a>的暫存器加上 <code>+ 1</code>。它只是剛好住在 testbench 裡而已。</p>
+
+<h3>執行模擬時可用的參數</h3>
+<p>這些都是 <code>Pattern.v</code> 用 <code>$value$plusargs</code> 讀取的：</p>
+<div class="ex">
+<pre><code>./riscvstall-sim +exe=riscv-add.vmh +stats=1 +vcd=1
+
+  +exe=&lt;檔名&gt;        要執行的程式（必填，.vmh 格式）
+  +max-cycles=&lt;N&gt;    超過 N 個週期就判定 timeout（預設 100000）
+  +verbose=1         結束時印出 num_cycles / num_inst / ipc
+  +stats=1           效果相同（會把 verbose 一併打開）
+  +vcd=1             輸出波形檔 riscv-add.vcd</code></pre>
+</div>
+<div class="note"><b>強烈建議</b><p>用 <code>+vcd=1</code> 產生波形，用 GTKWave 打開，把 <code>state_reg</code>、<code>a_reg</code>、<code>b_reg</code>、<code>result_reg</code> 拉出來看，對照<a href="#ch14">第 14 章</a>的模擬表格。看過一次真實波形，「每個上升緣所有暫存器同時更新」這件事就會變成直覺。</p></div>
+</section>
+
+<!-- ============================================================ ch17 -->
+<section class="ch" id="ch17" data-part="模擬與測試" data-nav="速查：語法 → 硬體">
+<p class="eyebrow">第 17 章 · 總整理</p>
+<h2>速查表：看到這個語法，腦中要浮現什麼</h2>
+<div class="tbl"><table>
+<thead><tr><th>你看到</th><th>腦中畫出</th><th>章</th></tr></thead>
+<tbody>
+<tr><td><code>module</code> / <code>input</code> / <code>output</code></td><td>有接腳的方塊</td><td class="num"><a href="#ch1">1</a></td></tr>
+<tr><td><code>wire [31:0] x</code></td><td>32 條線的匯流排</td><td class="num"><a href="#ch2">2</a></td></tr>
+<tr><td><code>x[7:0]</code>、<code>{a, b}</code>、<code>{24{s}}</code>、<code>&lt;&lt; 1</code></td><td>純接線，零成本</td><td class="num"><a href="#ch5">5</a></td></tr>
+<tr><td><code>assign y = a &amp; b;</code></td><td>邏輯閘（多位元就是一排）</td><td class="num"><a href="#ch3">3</a></td></tr>
+<tr><td><code>+</code>、<code>-</code>、<code>==</code></td><td>加法器、比較器</td><td class="num"><a href="#ch3">3</a></td></tr>
+<tr><td><code>*</code>、<code>/</code>、<code>%</code></td><td>很大很慢的一坨組合邏輯</td><td class="num"><a href="#ch3">3</a></td></tr>
+<tr><td><code>s ? a : b</code>、串接的 <code>? :</code></td><td>梯形的 mux</td><td class="num"><a href="#ch4">4</a></td></tr>
+<tr><td><code>always @(*)</code> + <code>if</code> / <code>case</code> + <code>=</code></td><td>mux 或查表（記得給預設值，否則長出 latch）</td><td class="num"><a href="#ch6">6</a></td></tr>
+<tr><td><code>always @(posedge clk)</code> + <code>&lt;=</code></td><td>D 正反器</td><td class="num"><a href="#ch7">7</a></td></tr>
+<tr><td>時脈區塊裡的 <code>if (reset)</code> / <code>if (en)</code></td><td>正反器前面的 mux；沒寫 else = 保持原值</td><td class="num"><a href="#ch7">7</a></td></tr>
+<tr><td><code>reg [31:0] r[31:0]</code></td><td>一疊暫存器；讀 = 大 mux，寫 = 解碼器 + enable</td><td class="num"><a href="#ch9">9</a></td></tr>
+<tr><td><code>ModName inst ( .p(w) );</code></td><td>放一顆子電路，把腳接到線上</td><td class="num"><a href="#ch10">10</a></td></tr>
+<tr><td><code>parameter</code> / <code>localparam</code> / <code>`define</code></td><td>沒有硬體——只是合成前的常數代換</td><td class="num"><a href="#ch10">10</a>, <a href="#ch11">11</a></td></tr>
+<tr><td><code>casez</code> 與 <code>?</code></td><td>只比對部分位元的樣式比較器</td><td class="num"><a href="#ch11">11</a></td></tr>
+<tr><td><code>generate for</code></td><td>同一塊電路複製 N 份</td><td class="num"><a href="#ch12">12</a></td></tr>
+<tr><td><code>state_reg</code> + <code>state_next</code> + 兩個 <code>case</code></td><td>狀態機：一個暫存器夾在兩塊查表中間</td><td class="num"><a href="#ch13">13</a></td></tr>
+<tr><td><code>initial</code>、<code>#5</code>、<code>$display</code>…</td><td>沒有硬體——只給模擬器跑的軟體</td><td class="num"><a href="#ch16">16</a></td></tr>
+</tbody></table></div>
+
+<h3>下一步</h3>
+<ol>
+  <li>打開 <code>imuldiv-IntMulIterative.v</code>，不看<a href="#ch14">第 14 章</a>的圖，自己在紙上把 datapath 畫出來，再對答案。</li>
+  <li>對 <code>imuldiv-IntDivIterative.v</code>（除法器）做同樣的事。它的結構和乘法器幾乎對稱，是最好的練習題。</li>
+  <li>讀 <code>riscvstall-CoreDpath.v</code>：先圈出所有 <code>always @(posedge clk)</code>，其中 F、D、X、M、W 五個就是管線的分界線。</li>
+  <li>最後再看 <code>riscvstall-CoreCtrl.v</code>。它很長，但 80% 是 <code>localparam</code> 定義和那張 <code>casez</code> 控制表。</li>
+</ol>
+</section>

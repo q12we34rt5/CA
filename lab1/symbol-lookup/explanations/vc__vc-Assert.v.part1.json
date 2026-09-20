@@ -1,0 +1,419 @@
+{
+  "entities": {
+    "`VC_ASSERT_V": {
+      "sum": "vc-Assert.v 的 include guard，防止這個檔被重複 `include",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["_V", "Verilog file guard", "檔名_V：include guard"]
+      ],
+      "desc": "檔案開頭 `ifndef VC_ASSERT_V / `define VC_ASSERT_V、結尾 `endif 把整份檔案包起來。`vc-StateElements.v` 和其他多個 vc 元件都會 include 這個檔，有 guard 才不會重複 `define 同一批 macro（Verilog 重複 define 會出警告）。它沒有值，只是「已讀過」的標記。"
+    },
+    "`VC_ERROR_CHECK_START_TIME": {
+      "sum": "常數 macro（值 120）：模擬時間超過這個值之後，assertion 才會開始報錯",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ERROR", "error", "錯誤"],
+        ["CHECK", "check", "檢查"],
+        ["START", "start", "開始"],
+        ["TIME", "time", "模擬時間"]
+      ],
+      "desc": "`define VC_ERROR_CHECK_START_TIME 120，單位是模擬時間；原始碼註解說明假設 clock 週期是 10 ns，所以 120 大約是前 12 個 cycle。用意是：設計剛開機、還沒被 reset 成合法狀態之前，很多訊號都是 x，這時報錯只是雜訊。`VC_ERROR、`VC_WARNING、`VC_ERROR_1ARG、`VC_ERROR_2ARG 這四個 macro 都以 if ($time > `VC_ERROR_CHECK_START_TIME) 開頭，所以所有 assertion 都間接受它控制。如果測試很早就出問題卻沒看到錯誤訊息，很可能就是還沒過這個時間點。"
+    },
+    "`VC_ERROR": {
+      "sum": "最基本的錯誤回報 macro：印出 RTL-ERROR 訊息（不帶額外數值）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ERROR", "error", "錯誤"]
+      ],
+      "desc": "`VC_ERROR(msg) 展開成 if ($time > `VC_ERROR_CHECK_START_TIME) $display( \" RTL-ERROR ( time = %d ) %m : %s\", $time, msg )。%m 是 Verilog 的特殊格式，會印出目前所在的階層式路徑（哪個 module 的哪個 instance），所以看錯誤訊息就知道是哪一顆元件出問題。注意它展開出來是一個 if 敘述，必須放在 always / initial 區塊裡才合法。它被 `VC_ASSERT、`VC_ERRCHK、`VC_ASSERT_NOT_X_MSG 呼叫。"
+    },
+    "`VC_WARNING": {
+      "sum": "和 VC_ERROR 同款，但印出的是 RTL-WARNING 而不是 RTL-ERROR",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["WARNING", "warning", "警告"]
+      ],
+      "desc": "`VC_WARNING(msg) 展開成 if ($time > `VC_ERROR_CHECK_START_TIME) $display( \" RTL-WARNING ( time = %d ) %m : %s\", $time, msg )。和 `VC_ERROR 唯一的差別是字串前綴，用在「不正常但還不到必須停下來」的狀況。從程式碼看來這份 lab 裡沒有其他 macro 或 module 呼叫它。"
+    },
+    "`VC_ERROR_1ARG": {
+      "sum": "錯誤回報 macro，除了訊息外再印一個十六進位數值",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ERROR", "error", "錯誤"],
+        ["1ARG", "one argument", "多帶一個引數"]
+      ],
+      "desc": "`VC_ERROR_1ARG(msg, arg1) 展開成 if ($time > `VC_ERROR_CHECK_START_TIME) $display( \" RTL-ERROR ( time = %d ) %m : %s : 0x%0x\", $time, msg, arg1 )，也就是在訊息後面接上 arg1 的十六進位值。它被 `VC_ERRCHK_1ARG 以及所有 one-hot 檢查（`VC_ASSERT_1HOT_MSG、`VC_ASSERT_1HOT_OR_ZERO_MSG 等）使用——one-hot 檢查失敗時把那條線的實際值印出來，才知道到底同時有幾個 bit 被拉起來。"
+    },
+    "`VC_ERROR_2ARG": {
+      "sum": "錯誤回報 macro，訊息後面印兩個十六進位數值",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ERROR", "error", "錯誤"],
+        ["2ARG", "two arguments", "多帶兩個引數"]
+      ],
+      "desc": "`VC_ERROR_2ARG(msg, arg1, arg2) 展開成 $display( \" RTL-ERROR ( time = %d ) %m : %s : 0x%0x 0x%0x\", $time, msg, arg1, arg2 )，同樣包在 if ($time > `VC_ERROR_CHECK_START_TIME) 裡。典型用途是印出「期望值 vs 實際值」兩個數字。它被 `VC_ASSERT_2ARG 和 `VC_ERRCHK_2ARG 呼叫。"
+    },
+    "`VC_ASSERT": {
+      "sum": "斷言 macro：條件為真就什麼都不做，為假就印 assertion failed 錯誤",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言：宣稱這個條件必須成立"]
+      ],
+      "desc": "`VC_ASSERT(goodcond, msg) 展開成 if (goodcond); else `VC_ERROR( ({\"assertion failed : \", msg}) )。注意第一個分支是空敘述加分號——這是刻意的寫法，意思是「條件成立時不做事」，錯誤處理全放在 else。參數名是 goodcond（好的條件），所以傳進去的應該是「正常情況下會是 true」的條件，和 `VC_ERRCHK 的 badcond 剛好相反。它被 `VC_ASSERT_POSEDGE 包成 always 版本。"
+    },
+    "`VC_ASSERT_1ARG": {
+      "sum": "斷言 macro，失敗時額外印一個數值；不過它的實作看起來有 bug",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1ARG", "one argument", "多帶一個引數"]
+      ],
+      "desc": "`VC_ASSERT_1ARG(goodcond, msg, arg1) 展開成 if (goodcond); else `VC_ERROR( ({\"assertion failed : \",msg}), arg1 )。問題在於它呼叫的是只吃一個參數的 `VC_ERROR，卻傳了兩個引數——對照旁邊的 `VC_ASSERT_2ARG（正確地呼叫 `VC_ERROR_2ARG），這裡應該要呼叫 `VC_ERROR_1ARG 才對。從程式碼看來這是原始碼的 bug，只是因為目前沒有檔案使用這個 macro，所以不會在編譯時爆出來。"
+    },
+    "`VC_ASSERT_2ARG": {
+      "sum": "斷言 macro，失敗時額外印兩個數值（例如期望值與實際值）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["2ARG", "two arguments", "多帶兩個引數"]
+      ],
+      "desc": "`VC_ASSERT_2ARG(goodcond, msg, arg1, arg2) 展開成 if (goodcond); else `VC_ERROR_2ARG( ({\"assertion failed : \",msg}), arg1, arg2 )。條件成立就什麼都不做，不成立則印出訊息加上兩個十六進位數值。它是這一組裡唯一把 _2ARG 對應關係寫對的（`VC_ASSERT_1ARG 就寫錯了）。從程式碼看來這份 lab 沒有實際使用它。"
+    },
+    "`VC_ASSERT_POSEDGE": {
+      "sum": "把 VC_ASSERT 包成 always @(posedge clk) 版本，每個上升緣檢查一次",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["POSEDGE", "positive edge", "時脈上升緣"]
+      ],
+      "desc": "`VC_ASSERT_POSEDGE(clk, goodcond, msg) 展開成 always @(posedge clk) `VC_ASSERT( goodcond, msg )。因為它自己帶了 always，所以要寫在 module 本體（不是在 always 區塊裡面）。「在正緣檢查」的好處是這時候所有訊號都已經穩定，不會抓到組合邏輯切換過程中的暫態值。"
+    },
+    "`VC_ERRCHK": {
+      "sum": "錯誤檢查 macro：條件為真（代表出事了）就報錯，和 VC_ASSERT 邏輯相反",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ERRCHK", "error check", "錯誤檢查"]
+      ],
+      "desc": "`VC_ERRCHK(badcond, msg) 展開成 if (!(badcond)); else `VC_ERROR( msg )。參數名是 badcond：傳進去的條件為真就表示發生了不該發生的事，這時才印錯誤。和 `VC_ASSERT 的差別純粹是傳條件的方向（一個傳「應該成立的」、一個傳「不該成立的」），選哪個看哪種寫法比較讀得順。另外它不會在訊息前面加 \"assertion failed : \"，直接印你給的 msg。"
+    },
+    "`VC_ERRCHK_1ARG": {
+      "sum": "錯誤檢查 macro，報錯時額外印一個數值",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ERRCHK", "error check", "錯誤檢查"],
+        ["1ARG", "one argument", "多帶一個引數"]
+      ],
+      "desc": "`VC_ERRCHK_1ARG(badcond, msg, arg1) 展開成 if (!(badcond)); else `VC_ERROR_1ARG( msg, arg1 )。badcond 成立時印出訊息與 arg1 的十六進位值。它的 macro 對應關係是正確的（不像 `VC_ASSERT_1ARG 那樣寫錯）。"
+    },
+    "`VC_ERRCHK_2ARG": {
+      "sum": "錯誤檢查 macro，報錯時額外印兩個數值",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ERRCHK", "error check", "錯誤檢查"],
+        ["2ARG", "two arguments", "多帶兩個引數"]
+      ],
+      "desc": "`VC_ERRCHK_2ARG(badcond, msg, arg1, arg2) 展開成 if (!(badcond)); else `VC_ERROR_2ARG( msg, arg1, arg2 )。適合印出「兩個本來應該相等卻不相等」的值。"
+    },
+    "`VC_ERRCHK_POSEDGE": {
+      "sum": "把 VC_ERRCHK 包成 always @(posedge clk) 版本",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ERRCHK", "error check", "錯誤檢查"],
+        ["POSEDGE", "positive edge", "時脈上升緣"]
+      ],
+      "desc": "`VC_ERRCHK_POSEDGE(clk, badcond, msg) 展開成 always @(posedge clk) `VC_ERRCHK( badcond, msg )。自帶 always，所以寫在 module 本體裡。每個上升緣檢查一次 badcond 有沒有成立。"
+    },
+    "`VC_ERRCHK_NEGEDGE": {
+      "sum": "把 VC_ERRCHK 包成 always @(negedge clk) 版本",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ERRCHK", "error check", "錯誤檢查"],
+        ["NEGEDGE", "negative edge", "時脈下降緣"]
+      ],
+      "desc": "`VC_ERRCHK_NEGEDGE(clk, badcond, msg) 展開成 always @(negedge clk) `VC_ERRCHK( badcond, msg )。用在要檢查的訊號是在 clk 低電位（或負緣）才穩定的場合，例如 vc 函式庫裡那些帶 _n 後綴的訊號。"
+    },
+    "`VC_PROPAGATE_X": {
+      "sum": "把輸入的 x 傳染給輸出：輸入含 x 時就故意讓輸出也變成 x",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["PROPAGATE", "propagate", "傳播 / 傳染"],
+        ["X", "unknown value x", "未知值 x"]
+      ],
+      "desc": "`VC_PROPAGATE_X(i, o) 展開成 if ((|(i ^ i)) == 1'b0); else o = o + 1'bx。判斷式 i ^ i 的技巧是：任何確定的 bit 跟自己 XOR 都是 0，但 x ^ x 仍然是 x，所以只要 i 裡面有任何一位是 x，reduction OR 的結果就不是 0，條件就會走到 else。else 裡把 o 加上 1'bx 讓輸出整個變成 x。用意是避免「輸入明明壞了、輸出卻算出一個看起來正常的值」，讓錯誤在模擬中浮出來。注意它用的是阻塞指派 =，所以要寫在 always @(*) 這類組合邏輯區塊裡。從程式碼看來這份 lab 沒有使用它。"
+    },
+    "`VC_ASSERT_NOT_X_MSG": {
+      "sum": "檢查一條線不含 x，附帶自訂訊息；是所有 not-x 檢查的核心",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["NOT_X", "not x", "不可以是未知值 x"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_NOT_X_MSG(net, msg) 展開成 if ((|(net ^ net)) == 1'b0); else `VC_ERROR( ({\"x assertion failed : \",msg}) )。判斷原理和 `VC_PROPAGATE_X 一樣：net ^ net 只有在 net 含 x 時才不為 0。它本身只是一個 if 敘述，必須放在 always 區塊裡，所以實務上大多是透過 `VC_ASSERT_NOT_X_ALWAYS_MSG / `VC_ASSERT_NOT_X_POSEDGE_MSG / `VC_ASSERT_NOT_X_NEGEDGE_MSG 這三個包好 always 的版本使用。"
+    },
+    "`VC_ASSERT_NOT_X_ALWAYS_MSG": {
+      "sum": "把 not-x 檢查包成 always @* 版本：訊號一變動就檢查",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["NOT_X", "not x", "不可以是 x"],
+        ["ALWAYS", "always block", "用 always @* 持續檢查"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_NOT_X_ALWAYS_MSG(net, msg) 展開成 always @* `VC_ASSERT_NOT_X_MSG(net, msg)。因為是 always @*，net 每變一次就檢查一次——最嚴格，但也最容易在組合邏輯切換的暫態抓到假警報，所以一般寫測試時會優先用 POSEDGE 版本。它自帶 always，要寫在 module 本體。"
+    },
+    "`VC_ASSERT_NOT_X_POSEDGE_MSG": {
+      "sum": "在每個 clk 上升緣檢查一條線不是 x，是這份 lab 裡實際用到的 assertion",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["NOT_X", "not x", "不可以是 x"],
+        ["POSEDGE", "positive edge", "時脈上升緣"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_NOT_X_POSEDGE_MSG(clk, net, msg) 展開成 always @(posedge clk) `VC_ASSERT_NOT_X_MSG(net, msg)。這是整份 lab 最常真正被使用的 assertion：`vc_TestDualPortMem` 用它檢查 memreq0_val / memresp0_rdy / memreq1_val / memresp1_rdy 四條 val-rdy 握手線不可以是 x（握手線是 x 會讓整個協定行為變得無法判斷）；`vc_ELatch_hl` 也用它檢查 `en_p`。錯誤訊息裡的 msg 通常就直接寫該訊號的名字，方便在一堆輸出中定位。"
+    },
+    "`VC_ASSERT_NOT_X_NEGEDGE_MSG": {
+      "sum": "在每個 clk 下降緣檢查一條線不是 x",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["NOT_X", "not x", "不可以是 x"],
+        ["NEGEDGE", "negative edge", "時脈下降緣"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_NOT_X_NEGEDGE_MSG(clk, net, msg) 展開成 always @(negedge clk) `VC_ASSERT_NOT_X_MSG(net, msg)。用在那些以負緣為基準的訊號上：`vc-StateElements.v` 裡的 `vc_EDFF_nf` 和 `vc_ELatch_ll` 都用它檢查自己的 `en_n` 不是 x。"
+    },
+    "`VC_ASSERT_NOT_X": {
+      "sum": "VC_ASSERT_NOT_X_MSG 的簡寫版，訊息留空",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["NOT_X", "not x", "不可以是 x"]
+      ],
+      "desc": "`VC_ASSERT_NOT_X(net) 直接展開成 `VC_ASSERT_NOT_X_MSG(net, \"\")，也就是同樣的檢查但不附訊息。錯誤輸出只會有 %m 的階層路徑，沒有訊號名稱，所以同一個 module 裡有多個檢查時會比較難分辨是哪一條線出問題——建議還是用帶 MSG 的版本。同樣需要放在 always 區塊裡。"
+    },
+    "`VC_ASSERT_NOT_X_ALWAYS": {
+      "sum": "always @* 版 not-x 檢查的簡寫，訊息留空",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["NOT_X", "not x", "不可以是 x"],
+        ["ALWAYS", "always block", "用 always @* 持續檢查"]
+      ],
+      "desc": "`VC_ASSERT_NOT_X_ALWAYS(net) 展開成 `VC_ASSERT_NOT_X_ALWAYS_MSG(net, \"\")，等於 always @* 每次 net 變動就檢查一次、但不印訊號名。自帶 always，寫在 module 本體。"
+    },
+    "`VC_ASSERT_NOT_X_POSEDGE": {
+      "sum": "正緣版 not-x 檢查的簡寫，訊息留空",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["NOT_X", "not x", "不可以是 x"],
+        ["POSEDGE", "positive edge", "時脈上升緣"]
+      ],
+      "desc": "`VC_ASSERT_NOT_X_POSEDGE(clk, net) 展開成 `VC_ASSERT_NOT_X_POSEDGE_MSG(clk, net, \"\")。功能與帶 MSG 的版本相同，只是錯誤訊息裡不會有訊號名稱。`vc_TestDualPortMem` 選的是帶 MSG 的版本，因為它一次檢查四條線，需要分辨是哪一條。"
+    },
+    "`VC_ASSERT_NOT_X_NEGEDGE": {
+      "sum": "負緣版 not-x 檢查的簡寫，訊息留空",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["NOT_X", "not x", "不可以是 x"],
+        ["NEGEDGE", "negative edge", "時脈下降緣"]
+      ],
+      "desc": "`VC_ASSERT_NOT_X_NEGEDGE(clk, net) 展開成 `VC_ASSERT_NOT_X_NEGEDGE_MSG(clk, net, \"\")。在每個下降緣檢查 net 不含 x，不附訊號名稱。"
+    },
+    "`VC_IS_1HOT": {
+      "sum": "判斷式 macro：一條線是否恰好只有一個 bit 為 1（one-hot）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["IS", "is", "是否為"],
+        ["1HOT", "one-hot", "恰好只有一位是 1 的編碼"]
+      ],
+      "desc": "`VC_IS_1HOT( net ) 展開成 ( |net && (((net-1) & net) == 1'b0) )。兩個條件缺一不可：|net 確保至少有一位是 1（排除全 0），((net-1) & net) == 0 是經典的位元技巧——把最低的那個 1 清掉後如果整條線變成 0，就代表原本只有一個 1。它本身不報錯，只是一個布林運算式，被 `VC_ASSERT_1HOT_MSG 和 `VC_ASSERT_1HOT 當條件使用。典型場合是檢查 one-hot 編碼的 mux 選擇線或狀態機。"
+    },
+    "`VC_ASSERT_1HOT_MSG": {
+      "sum": "斷言一條線是 one-hot，失敗時印出訊息與該線實際值",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_MSG( net, msg ) 展開成 if ( `VC_IS_1HOT( net ) ); else `VC_ERROR_1ARG( ({\"one hot assertion failed : \",msg}), net )。失敗時走 `VC_ERROR_1ARG，所以會把 net 的實際值以十六進位印出來——這很重要，因為看到值才知道是全 0 還是有兩位同時被拉起來。它是所有 1HOT 檢查的核心，三個包了 always 的版本（ALWAYS / POSEDGE / NEGEDGE）都是呼叫它。"
+    },
+    "`VC_ASSERT_1HOT_ALWAYS_MSG": {
+      "sum": "把 one-hot 斷言包成 always @(*) 版本，帶自訂訊息",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["ALWAYS", "always block", "用 always @(*) 持續檢查"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_ALWAYS_MSG( net, msg ) 展開成 always @(*) `VC_ASSERT_1HOT_MSG( net, msg )。net 一變動就檢查，最嚴格；但組合邏輯在切換瞬間可能短暫同時有兩位為 1，容易誤報，所以實務上常改用 POSEDGE 版本。自帶 always，寫在 module 本體。"
+    },
+    "`VC_ASSERT_1HOT_POSEDGE_MSG": {
+      "sum": "在每個 clk 上升緣斷言一條線是 one-hot，帶自訂訊息",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["POSEDGE", "positive edge", "時脈上升緣"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_POSEDGE_MSG( clk, net, msg ) 展開成 always @( posedge clk ) `VC_ASSERT_1HOT_MSG( net, msg )。只在正緣檢查，這時組合邏輯已經穩定，不會被暫態誤導。自帶 always。從程式碼看來這份 lab 沒有實際使用它。"
+    },
+    "`VC_ASSERT_1HOT_NEGEDGE_MSG": {
+      "sum": "在每個 clk 下降緣斷言一條線是 one-hot，帶自訂訊息",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["NEGEDGE", "negative edge", "時脈下降緣"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_NEGEDGE_MSG( clk, net, msg ) 展開成 always @( negedge clk ) `VC_ASSERT_1HOT_MSG( net, msg )。用在以負緣為時序基準的訊號（帶 _n 後綴那類）。自帶 always。"
+    },
+    "`VC_ASSERT_1HOT": {
+      "sum": "one-hot 斷言的無訊息版：失敗時只印固定字串與該線的值",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"]
+      ],
+      "desc": "`VC_ASSERT_1HOT( net ) 展開成 if ( `VC_IS_1HOT( net ) ); else `VC_ERROR_1ARG( ({\"one hot assertion failed\"}), net )。它不像其他 _MSG 簡寫版那樣轉呼叫 _MSG 版本，而是自己寫了一份，所以錯誤字串後面不會有 \" : \" 分隔。它本身只是 if 敘述，要放在 always 區塊裡。"
+    },
+    "`VC_ASSERT_1HOT_ALWAYS": {
+      "sum": "always @(*) 版 one-hot 斷言的簡寫，訊息留空",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["ALWAYS", "always block", "用 always @(*) 持續檢查"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_ALWAYS( net ) 展開成 always @(*) `VC_ASSERT_1HOT_MSG( net, \"\" )。注意它呼叫的是 _MSG 版本並傳空字串，而不是上面那個自己寫一份的 `VC_ASSERT_1HOT，所以錯誤訊息會是 \"one hot assertion failed : \" 後面接一個空白。自帶 always。"
+    },
+    "`VC_ASSERT_1HOT_POSEDGE": {
+      "sum": "正緣版 one-hot 斷言的簡寫，訊息留空",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["POSEDGE", "positive edge", "時脈上升緣"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_POSEDGE( clk, net ) 展開成 always @( posedge clk ) `VC_ASSERT_1HOT_MSG( net, \"\" )。每個上升緣檢查 net 是否恰好一位為 1，失敗時印出 net 的值但不印訊號名稱。自帶 always。"
+    },
+    "`VC_ASSERT_1HOT_NEGEDGE": {
+      "sum": "負緣版 one-hot 斷言的簡寫，訊息留空",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["NEGEDGE", "negative edge", "時脈下降緣"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_NEGEDGE( clk, net ) 展開成 always @( negedge clk ) `VC_ASSERT_1HOT_MSG( net, \"\" )。每個下降緣檢查一次，用在負緣時序的訊號上。自帶 always。"
+    },
+    "`VC_IS_1HOT_OR_ZERO": {
+      "sum": "判斷式 macro：一條線是否最多只有一個 bit 為 1（允許全 0）",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["IS", "is", "是否為"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["OR_ZERO", "or zero", "或者全部為 0"]
+      ],
+      "desc": "`VC_IS_1HOT_OR_ZERO( net ) 展開成 ( ((net-1) & net) == 1'b0 )——就是 `VC_IS_1HOT 拿掉 |net 那一半。全 0 時 net-1 會變成全 1，和 0 做 AND 仍是 0，所以也算通過。適用於「平常沒有任何請求、有請求時只能有一個」的場合，例如某些 val 訊號或 one-hot 的 enable 群。它只是布林運算式，被 `VC_ASSERT_1HOT_OR_ZERO_MSG 和 `VC_ASSERT_1HOT_OR_ZERO 當條件使用。"
+    },
+    "`VC_ASSERT_1HOT_OR_ZERO_MSG": {
+      "sum": "斷言一條線最多只有一位為 1，失敗時印出訊息與該線實際值",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["OR_ZERO", "or zero", "或者全部為 0"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_OR_ZERO_MSG( net, msg ) 展開成 if ( `VC_IS_1HOT_OR_ZERO( net ) ); else `VC_ERROR_1ARG( ({\"one hot or zero assertion failed : \",msg}), net )。失敗代表至少有兩位同時為 1，錯誤訊息會把 net 的值印出來方便判斷是哪幾位。它是這組 OR_ZERO 檢查的核心，三個 always 版本都呼叫它。"
+    },
+    "`VC_ASSERT_1HOT_OR_ZERO_ALWAYS_MSG": {
+      "sum": "把 one-hot-or-zero 斷言包成 always @(*) 版本，帶自訂訊息",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["OR_ZERO", "or zero", "或者全部為 0"],
+        ["ALWAYS", "always block", "用 always @(*) 持續檢查"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_OR_ZERO_ALWAYS_MSG( net, msg ) 展開成 always @(*) `VC_ASSERT_1HOT_OR_ZERO_MSG( net, msg )。net 一變動就檢查，最嚴格也最容易在組合邏輯暫態誤報。自帶 always，寫在 module 本體。"
+    },
+    "`VC_ASSERT_1HOT_OR_ZERO_POSEDGE_MSG": {
+      "sum": "在每個 clk 上升緣斷言一條線最多一位為 1，帶自訂訊息",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["OR_ZERO", "or zero", "或者全部為 0"],
+        ["POSEDGE", "positive edge", "時脈上升緣"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_OR_ZERO_POSEDGE_MSG( clk, net, msg ) 展開成 always @( posedge clk ) `VC_ASSERT_1HOT_OR_ZERO_MSG( net, msg )。只在正緣檢查，避開組合邏輯切換時的暫態。自帶 always。"
+    },
+    "`VC_ASSERT_1HOT_OR_ZERO_NEGEDGE_MSG": {
+      "sum": "在每個 clk 下降緣斷言一條線最多一位為 1，帶自訂訊息",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["OR_ZERO", "or zero", "或者全部為 0"],
+        ["NEGEDGE", "negative edge", "時脈下降緣"],
+        ["MSG", "message", "附帶自訂訊息"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_OR_ZERO_NEGEDGE_MSG( clk, net, msg ) 展開成 always @( negedge clk ) `VC_ASSERT_1HOT_OR_ZERO_MSG( net, msg )。用在以負緣為時序基準的訊號上。自帶 always。"
+    },
+    "`VC_ASSERT_1HOT_OR_ZERO": {
+      "sum": "one-hot-or-zero 斷言的無訊息版：失敗時只印固定字串與該線的值",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["OR_ZERO", "or zero", "或者全部為 0"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_OR_ZERO( net ) 展開成 if ( `VC_IS_1HOT_OR_ZERO( net ) ); else `VC_ERROR_1ARG( ({\"one hot or zero assertion failed\"}), net )。和 `VC_ASSERT_1HOT 一樣是自己寫一份而不是轉呼叫 _MSG 版本，所以訊息後面沒有 \" : \" 分隔。它只是 if 敘述，要放在 always 區塊裡。"
+    },
+    "`VC_ASSERT_1HOT_OR_ZERO_ALWAYS": {
+      "sum": "always @(*) 版 one-hot-or-zero 斷言的簡寫，訊息留空",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["OR_ZERO", "or zero", "或者全部為 0"],
+        ["ALWAYS", "always block", "用 always @(*) 持續檢查"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_OR_ZERO_ALWAYS( net ) 展開成 always @(*) `VC_ASSERT_1HOT_OR_ZERO_MSG( net, \"\" )。注意它轉呼叫的是帶 MSG 的版本並傳空字串，而不是上面那個獨立寫的 `VC_ASSERT_1HOT_OR_ZERO。自帶 always。"
+    },
+    "`VC_ASSERT_1HOT_OR_ZERO_POSEDGE": {
+      "sum": "正緣版 one-hot-or-zero 斷言的簡寫，訊息留空",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["OR_ZERO", "or zero", "或者全部為 0"],
+        ["POSEDGE", "positive edge", "時脈上升緣"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_OR_ZERO_POSEDGE( clk, net ) 展開成 always @( posedge clk ) `VC_ASSERT_1HOT_OR_ZERO_MSG( net, \"\" )。每個上升緣檢查一次，失敗時印出 net 的值但不印訊號名稱。自帶 always。"
+    },
+    "`VC_ASSERT_1HOT_OR_ZERO_NEGEDGE": {
+      "sum": "負緣版 one-hot-or-zero 斷言的簡寫，訊息留空",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["ASSERT", "assert", "斷言"],
+        ["1HOT", "one-hot", "恰好只有一位是 1"],
+        ["OR_ZERO", "or zero", "或者全部為 0"],
+        ["NEGEDGE", "negative edge", "時脈下降緣"]
+      ],
+      "desc": "`VC_ASSERT_1HOT_OR_ZERO_NEGEDGE( clk, net ) 展開成 always @( negedge clk ) `VC_ASSERT_1HOT_OR_ZERO_MSG( net, \"\" )。每個下降緣檢查一次，用在負緣時序的訊號上。自帶 always。"
+    }
+  }
+}

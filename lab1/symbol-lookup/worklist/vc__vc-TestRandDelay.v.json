@@ -1,0 +1,360 @@
+[
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|p_msg_sz",
+  "name": "p_msg_sz",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-TestRandDelay.v:12",
+   "vc/vc-TestRandDelay.v:22",
+   "vc/vc-TestRandDelay.v:28"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|p_max_delay",
+  "name": "p_max_delay",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-TestRandDelay.v:13",
+   "vc/vc-TestRandDelay.v:40",
+   "vc/vc-TestRandDelay.v:46"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:109",
+   "vc/vc-TestDualPortRandDelayMem.v:95",
+   "vc/vc-TestRandDelay.v:15",
+   "vc/vc-TestRandDelay.v:41",
+   "vc/vc-TestRandDelay.v:45",
+   "vc/vc-TestRandDelay.v:58",
+   "vc/vc-TestRandDelay.v:87"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:110",
+   "vc/vc-TestDualPortRandDelayMem.v:96",
+   "vc/vc-TestRandDelay.v:16",
+   "vc/vc-TestRandDelay.v:59",
+   "vc/vc-TestRandDelay.v:88"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|in_val",
+  "name": "in_val",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:112",
+   "vc/vc-TestDualPortRandDelayMem.v:98",
+   "vc/vc-TestRandDelay.v:113",
+   "vc/vc-TestRandDelay.v:122",
+   "vc/vc-TestRandDelay.v:140",
+   "vc/vc-TestRandDelay.v:143",
+   "vc/vc-TestRandDelay.v:151",
+   "vc/vc-TestRandDelay.v:20",
+   "vc/vc-TestRandDelay.v:74"
+  ],
+  "n_occ": 9
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|in_rdy",
+  "name": "in_rdy",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "output",
+  "decl": "output reg",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:113",
+   "vc/vc-TestDualPortRandDelayMem.v:99",
+   "vc/vc-TestRandDelay.v:142",
+   "vc/vc-TestRandDelay.v:150",
+   "vc/vc-TestRandDelay.v:158",
+   "vc/vc-TestRandDelay.v:21"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|in_msg",
+  "name": "in_msg",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "input",
+  "decl": "input [p_msg_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:100",
+   "vc/vc-TestDualPortRandDelayMem.v:114",
+   "vc/vc-TestRandDelay.v:172",
+   "vc/vc-TestRandDelay.v:22"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|out_val",
+  "name": "out_val",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "output",
+  "decl": "output reg",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:102",
+   "vc/vc-TestDualPortRandDelayMem.v:116",
+   "vc/vc-TestRandDelay.v:143",
+   "vc/vc-TestRandDelay.v:151",
+   "vc/vc-TestRandDelay.v:159",
+   "vc/vc-TestRandDelay.v:26"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|out_rdy",
+  "name": "out_rdy",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:103",
+   "vc/vc-TestDualPortRandDelayMem.v:117",
+   "vc/vc-TestRandDelay.v:122",
+   "vc/vc-TestRandDelay.v:142",
+   "vc/vc-TestRandDelay.v:150",
+   "vc/vc-TestRandDelay.v:27",
+   "vc/vc-TestRandDelay.v:74"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|out_msg",
+  "name": "out_msg",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "output",
+  "decl": "output [p_msg_sz-1:0]",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:104",
+   "vc/vc-TestDualPortRandDelayMem.v:118",
+   "vc/vc-TestRandDelay.v:172",
+   "vc/vc-TestRandDelay.v:28"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|rand_num",
+  "name": "rand_num",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "vc/vc-TestRandDelay.v:141",
+   "vc/vc-TestRandDelay.v:142",
+   "vc/vc-TestRandDelay.v:143",
+   "vc/vc-TestRandDelay.v:37",
+   "vc/vc-TestRandDelay.v:42",
+   "vc/vc-TestRandDelay.v:46",
+   "vc/vc-TestRandDelay.v:74"
+  ],
+  "n_occ": 9
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|rand_delay_en",
+  "name": "rand_delay_en",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "vc/vc-TestRandDelay.v:140",
+   "vc/vc-TestRandDelay.v:148",
+   "vc/vc-TestRandDelay.v:156",
+   "vc/vc-TestRandDelay.v:52",
+   "vc/vc-TestRandDelay.v:60"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|rand_delay_next",
+  "name": "rand_delay_next",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "vc/vc-TestRandDelay.v:141",
+   "vc/vc-TestRandDelay.v:149",
+   "vc/vc-TestRandDelay.v:157",
+   "vc/vc-TestRandDelay.v:53",
+   "vc/vc-TestRandDelay.v:61"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|rand_delay",
+  "name": "rand_delay",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "vc/vc-TestRandDelay.v:122",
+   "vc/vc-TestRandDelay.v:148",
+   "vc/vc-TestRandDelay.v:149",
+   "vc/vc-TestRandDelay.v:150",
+   "vc/vc-TestRandDelay.v:151",
+   "vc/vc-TestRandDelay.v:54",
+   "vc/vc-TestRandDelay.v:62"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|rand_delay_pf",
+  "name": "rand_delay_pf",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "instance",
+  "decl": "vc_ERDFF_pf rand_delay_pf ( ... );",
+  "instance_of": "vc_ERDFF_pf",
+  "lines": [
+   "vc/vc-TestRandDelay.v:56"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|zero_cycle_delay",
+  "name": "zero_cycle_delay",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-TestRandDelay.v:113",
+   "vc/vc-TestRandDelay.v:140",
+   "vc/vc-TestRandDelay.v:74"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|c_state_sz",
+  "name": "c_state_sz",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestRandDelay.v:80",
+   "vc/vc-TestRandDelay.v:84",
+   "vc/vc-TestRandDelay.v:85"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|c_state_idle",
+  "name": "c_state_idle",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestRandDelay.v:112",
+   "vc/vc-TestRandDelay.v:123",
+   "vc/vc-TestRandDelay.v:138",
+   "vc/vc-TestRandDelay.v:81",
+   "vc/vc-TestRandDelay.v:89"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|c_state_delay",
+  "name": "c_state_delay",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "localparam",
+  "decl": "localparam",
+  "lines": [
+   "vc/vc-TestRandDelay.v:114",
+   "vc/vc-TestRandDelay.v:121",
+   "vc/vc-TestRandDelay.v:146",
+   "vc/vc-TestRandDelay.v:82"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|state_next",
+  "name": "state_next",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "reg",
+  "decl": "reg [c_state_sz-1:0]",
+  "lines": [
+   "vc/vc-TestRandDelay.v:104",
+   "vc/vc-TestRandDelay.v:114",
+   "vc/vc-TestRandDelay.v:123",
+   "vc/vc-TestRandDelay.v:84",
+   "vc/vc-TestRandDelay.v:92"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v|vc_TestRandDelay|state",
+  "name": "state",
+  "cat": "signal",
+  "module": "vc_TestRandDelay",
+  "kind": "reg",
+  "decl": "reg [c_state_sz-1:0]",
+  "lines": [
+   "vc/vc-TestRandDelay.v:104",
+   "vc/vc-TestRandDelay.v:106",
+   "vc/vc-TestRandDelay.v:136",
+   "vc/vc-TestRandDelay.v:85",
+   "vc/vc-TestRandDelay.v:89",
+   "vc/vc-TestRandDelay.v:92"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "vc/vc-TestRandDelay.v||vc_TestRandDelay",
+  "name": "vc_TestRandDelay",
+  "cat": "module",
+  "lines": [
+   "vc/vc-TestDualPortRandDelayMem.v:107",
+   "vc/vc-TestDualPortRandDelayMem.v:93",
+   "vc/vc-TestRandDelay.v:10"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_TEST_RAND_DELAY_V",
+  "name": "VC_TEST_RAND_DELAY_V",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-TestRandDelay.v:5",
+   "vc/vc-TestRandDelay.v:6"
+  ],
+  "n_occ": 2
+ }
+]

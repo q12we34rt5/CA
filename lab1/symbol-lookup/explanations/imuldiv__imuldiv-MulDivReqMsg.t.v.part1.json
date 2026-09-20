@@ -1,0 +1,213 @@
+{
+  "entities": {
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|msg_test": {
+      "sum": "imuldiv-MulDivReqMsg 單元測試裡「用 macro 逐欄填進去」的那份 67-bit 請求訊息",
+      "naming": [
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "test",
+          "test",
+          "受測的"
+        ]
+      ],
+      "desc": "一個 67 bit 的 reg，寬度由 `IMULDIV_MULDIVREQ_MSG_SZ` 決定。在 `t1_do_test` / `t2_do_test` 裡，測試用 `IMULDIV_MULDIVREQ_MSG_FUNC_FIELD`、`IMULDIV_MULDIVREQ_MSG_A_FIELD`、`IMULDIV_MULDIVREQ_MSG_B_FIELD` 這三個 macro 當 bit range，把 `func`、`a`、`b` 一欄一欄寫進 `msg_test`。它同時也接到 `muldivreq_msg_to_str` 這個 instance 的 `msg` 輸入，好讓測試可以去看它印出來的字串。整個測試的重點就是：用 macro 切欄位填出來的 `msg_test`，必須等於用串接寫出來的 `msg_ref`。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|msg_ref": {
+      "sum": "同一組 func/a/b 改用 `{func, a, b}` 串接寫出來的參考訊息，拿來和 `msg_test` 比對",
+      "naming": [
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "ref",
+          "reference",
+          "參考答案"
+        ]
+      ],
+      "desc": "和 `msg_test` 同寬（67 bit）的 reg，但值是直接用串接 `{ func, a, b }` 產生的。因為 macro 定義的欄位順序就是 func 在最高位、接著 a、最低位是 b，兩種寫法應該得到一模一樣的 bit pattern。`VC_TEST_EQ` 就是比較 `msg_test` 與 `msg_ref`，不相等代表 `IMULDIV_MULDIVREQ_MSG_*_FIELD` 這些 macro 的範圍定錯了。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|muldivreq_msg_to_str": {
+      "sum": "`imuldiv_MulDivReqMsgToStr` 的實例，把 `msg_test` 轉成人看得懂的字串供測試檢查",
+      "naming": [
+        [
+          "muldivreq",
+          "multiply/divide request",
+          "乘除法請求"
+        ],
+        [
+          "msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "to",
+          "to",
+          "轉成"
+        ],
+        [
+          "str",
+          "string",
+          "字串"
+        ]
+      ],
+      "desc": "instantiate `imuldiv_MulDivReqMsgToStr`，唯一的 port `msg` 接到 `msg_test`。這個 module 內部會把 msg 解成 func/a/b，並在 `full_str`（20 字元的完整描述，例如 \"div   42, 1\"）與 `tiny_str`（2 字元的縮寫，例如 \"/ \"、\"/u\"）兩個 reg 裡產生字串。測試用階層式路徑 `muldivreq_msg_to_str.full_str` / `muldivreq_msg_to_str.tiny_str` 把字串抓出來，當作 `VC_TEST_EQ` 的說明文字印在測試輸出上，方便看出是哪一筆測資失敗。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|func": {
+      "sum": "`t1_do_test` / `t2_do_test` 這兩個 task 的功能碼輸入參數",
+      "naming": [
+        [
+          "func",
+          "function",
+          "功能碼"
+        ]
+      ],
+      "desc": "task 的 input，寬度 `IMULDIV_MULDIVREQ_MSG_FUNC_SZ` = 3 bit。呼叫端傳進來的是 `mul` / `div` / `divu` / `rem` / `remu` 這些 localparam。task 內部把它寫進 `msg_test` 的 FUNC 欄位，也放進 `msg_ref` 串接的最高位。注意 Verilog 的 task 參數是靜態的，所以這兩個 task 不能同時被平行呼叫。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|a": {
+      "sum": "`t1_do_test` / `t2_do_test` 的第一個 32-bit 運算元輸入參數",
+      "naming": [
+        [
+          "a",
+          "operand a",
+          "第一個運算元（被乘數 / 被除數）"
+        ]
+      ],
+      "desc": "task 的 input，寬度 `IMULDIV_MULDIVREQ_MSG_A_SZ` = 32 bit，對應訊息中的 `IMULDIV_MULDIVREQ_MSG_A_FIELD`（bit 63:32）。測試會傳 32'd00、32'd42、32'd18 這類常數進來，task 把它同時寫進 `msg_test` 的 A 欄位與 `msg_ref` 的串接中間段。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|b": {
+      "sum": "`t1_do_test` / `t2_do_test` 的第二個 32-bit 運算元輸入參數",
+      "naming": [
+        [
+          "b",
+          "operand b",
+          "第二個運算元（乘數 / 除數）"
+        ]
+      ],
+      "desc": "task 的 input，寬度 `IMULDIV_MULDIVREQ_MSG_B_SZ` = 32 bit，對應 `IMULDIV_MULDIVREQ_MSG_B_FIELD`（bit 31:0，也就是訊息的最低 32 bit）。和 `a` 一樣同時寫進 `msg_test` 與 `msg_ref`，用來驗證欄位切法正確。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v||tester": {
+      "sum": "imuldiv-MulDivReqMsg 的單元測試 top module（testbench 本體）",
+      "naming": [
+        [
+          "tester",
+          "tester",
+          "測試模組"
+        ]
+      ],
+      "desc": "沒有 port 的 testbench top。內容依序是：`VC_TEST_SUITE_BEGIN` 開場、幾個功能碼 localparam、`msg_test` / `msg_ref` 兩個訊息 reg、一個 `imuldiv_MulDivReqMsgToStr` 的實例，然後是兩個測試案例——case 1 \"TestBasicFullStr\" 與 case 2 \"TestBasicTinyStr\"，最後 `VC_TEST_SUITE_END( 2 )` 宣告共 2 個 case。兩個 case 做的事其實一樣（驗證用 `_FIELD` macro 填欄位 == 用串接填），差別只在 `VC_TEST_EQ` 顯示訊息時用的是 `full_str` 還是 `tiny_str`。vc 測試框架的原始檔（`vc-Test.v`、`vc-TestRandDelaySource.v`、`vc-TestRandDelaySink.v`）並不在這份 repo 裡（`../lab1/vc/` 只有 `vc-TestRandDelay.v`、`vc-TestDualPortMem.v` 等幾個檔），所以以下說明是從使用方式推得的。 這個測試不需要 clk，純粹是組合邏輯 / 立即賦值的檢查。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|t1_do_test": {
+      "sum": "測試案例 1（TestBasicFullStr） 用的 helper task：填一筆訊息並比對兩種寫法",
+      "naming": [
+        [
+          "t1",
+          "test case 1",
+          "第 1 個測試案例專用"
+        ],
+        [
+          "do",
+          "do",
+          "執行"
+        ],
+        [
+          "test",
+          "test",
+          "一次測試"
+        ]
+      ],
+      "desc": "這是在 `tester` 裡用 `task ... endtask` 定義的 helper（工具中把它列成 implicit，是因為 task 的宣告形式和一般 signal 不同）。它收 `func`、`a`、`b` 三個參數，先用 `IMULDIV_MULDIVREQ_MSG_*_FIELD` macro 把三個欄位寫進 `msg_test`，再用 `msg_ref = { func, a, b }` 產生參考值，等 `#1` 讓 `muldivreq_msg_to_str` 的字串更新後呼叫 `VC_TEST_EQ` 比對兩者，最後 `#9` 湊成 10 個時間單位。在 `VC_TEST_EQ` 中顯示的是 `muldivreq_msg_to_str.full_str`。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|t2_do_test": {
+      "sum": "測試案例 2（TestBasicTinyStr） 用的 helper task：填一筆訊息並比對兩種寫法",
+      "naming": [
+        [
+          "t2",
+          "test case 2",
+          "第 2 個測試案例專用"
+        ],
+        [
+          "do",
+          "do",
+          "執行"
+        ],
+        [
+          "test",
+          "test",
+          "一次測試"
+        ]
+      ],
+      "desc": "這是在 `tester` 裡用 `task ... endtask` 定義的 helper（工具中把它列成 implicit，是因為 task 的宣告形式和一般 signal 不同）。它收 `func`、`a`、`b` 三個參數，先用 `IMULDIV_MULDIVREQ_MSG_*_FIELD` macro 把三個欄位寫進 `msg_test`，再用 `msg_ref = { func, a, b }` 產生參考值，等 `#1` 讓 `muldivreq_msg_to_str` 的字串更新後呼叫 `VC_TEST_EQ` 比對兩者，最後 `#9` 湊成 10 個時間單位。在 `VC_TEST_EQ` 中顯示的是 `muldivreq_msg_to_str.tiny_str`。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|mul": {
+      "sum": "測試裡代表「乘法」的功能碼常數（`IMULDIV_MULDIVREQ_MSG_FUNC_MUL`，值為 3'd0）",
+      "naming": [
+        [
+          "mul",
+          "multiply",
+          "乘法"
+        ]
+      ],
+      "desc": "localparam，取自 `IMULDIV_MULDIVREQ_MSG_FUNC_MUL`，值是 3'd0（3 bit）。在兩個測試案例裡當成 `t1_do_test` / `t2_do_test` 的 `func` 參數，被寫進訊息的 `IMULDIV_MULDIVREQ_MSG_FUNC_FIELD`（bit 66:64）。五種功能碼各跑三筆測資，是為了確認 func 欄位在任何編碼下都能正確被切出來；`imuldiv_MulDivReqMsgToStr` 看到這個值會印成 \"mul\" / \"* \"。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|div": {
+      "sum": "測試裡代表「有號除法（取商）」的功能碼常數（`IMULDIV_MULDIVREQ_MSG_FUNC_DIV`，值為 3'd1）",
+      "naming": [
+        [
+          "div",
+          "divide",
+          "除法"
+        ]
+      ],
+      "desc": "localparam，取自 `IMULDIV_MULDIVREQ_MSG_FUNC_DIV`，值是 3'd1（3 bit）。在兩個測試案例裡當成 `t1_do_test` / `t2_do_test` 的 `func` 參數，被寫進訊息的 `IMULDIV_MULDIVREQ_MSG_FUNC_FIELD`（bit 66:64）。五種功能碼各跑三筆測資，是為了確認 func 欄位在任何編碼下都能正確被切出來；`imuldiv_MulDivReqMsgToStr` 看到這個值會印成 \"div\" / \"/ \"。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|divu": {
+      "sum": "測試裡代表「無號除法（取商）」的功能碼常數（`IMULDIV_MULDIVREQ_MSG_FUNC_DIVU`，值為 3'd2）",
+      "naming": [
+        [
+          "div",
+          "divide",
+          "除法"
+        ],
+        [
+          "u",
+          "unsigned",
+          "無號"
+        ]
+      ],
+      "desc": "localparam，取自 `IMULDIV_MULDIVREQ_MSG_FUNC_DIVU`，值是 3'd2（3 bit）。在兩個測試案例裡當成 `t1_do_test` / `t2_do_test` 的 `func` 參數，被寫進訊息的 `IMULDIV_MULDIVREQ_MSG_FUNC_FIELD`（bit 66:64）。五種功能碼各跑三筆測資，是為了確認 func 欄位在任何編碼下都能正確被切出來；`imuldiv_MulDivReqMsgToStr` 看到這個值會印成 \"divu\" / \"/u\"。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|rem": {
+      "sum": "測試裡代表「有號取餘數」的功能碼常數（`IMULDIV_MULDIVREQ_MSG_FUNC_REM`，值為 3'd3）",
+      "naming": [
+        [
+          "rem",
+          "remainder",
+          "餘數"
+        ]
+      ],
+      "desc": "localparam，取自 `IMULDIV_MULDIVREQ_MSG_FUNC_REM`，值是 3'd3（3 bit）。在兩個測試案例裡當成 `t1_do_test` / `t2_do_test` 的 `func` 參數，被寫進訊息的 `IMULDIV_MULDIVREQ_MSG_FUNC_FIELD`（bit 66:64）。五種功能碼各跑三筆測資，是為了確認 func 欄位在任何編碼下都能正確被切出來；`imuldiv_MulDivReqMsgToStr` 看到這個值會印成 \"rem\"。"
+    },
+    "imuldiv/imuldiv-MulDivReqMsg.t.v|tester|remu": {
+      "sum": "測試裡代表「無號取餘數」的功能碼常數（`IMULDIV_MULDIVREQ_MSG_FUNC_REMU`，值為 3'd4）",
+      "naming": [
+        [
+          "rem",
+          "remainder",
+          "餘數"
+        ],
+        [
+          "u",
+          "unsigned",
+          "無號"
+        ]
+      ],
+      "desc": "localparam，取自 `IMULDIV_MULDIVREQ_MSG_FUNC_REMU`，值是 3'd4（3 bit）。在兩個測試案例裡當成 `t1_do_test` / `t2_do_test` 的 `func` 參數，被寫進訊息的 `IMULDIV_MULDIVREQ_MSG_FUNC_FIELD`（bit 66:64）。五種功能碼各跑三筆測資，是為了確認 func 欄位在任何編碼下都能正確被切出來；`imuldiv_MulDivReqMsgToStr` 看到這個值會印成 \"remu\"。"
+    }
+  }
+}

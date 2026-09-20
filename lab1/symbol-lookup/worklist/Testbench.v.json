@@ -1,0 +1,329 @@
+[
+ {
+  "key": "Testbench.v|Testbench|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:35",
+   "Testbench.v:62",
+   "Testbench.v:96"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|reset_proc",
+  "name": "reset_proc",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:36",
+   "Testbench.v:63",
+   "Testbench.v:97"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|reset_mem",
+  "name": "reset_mem",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:37",
+   "Testbench.v:98"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "Testbench.v|Testbench|status",
+  "name": "status",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "Testbench.v:39",
+   "Testbench.v:79",
+   "Testbench.v:99"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|retire_valid",
+  "name": "retire_valid",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:100",
+   "Testbench.v:40",
+   "Testbench.v:80"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|imemreq_msg",
+  "name": "imemreq_msg",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_REQ_MSG_SZ(32,32)-1:0]",
+  "lines": [
+   "Testbench.v:104",
+   "Testbench.v:46",
+   "Testbench.v:65"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|imemreq_val",
+  "name": "imemreq_val",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:102",
+   "Testbench.v:47",
+   "Testbench.v:66"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|imemreq_rdy",
+  "name": "imemreq_rdy",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:103",
+   "Testbench.v:48",
+   "Testbench.v:67"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|imemresp_msg",
+  "name": "imemresp_msg",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_RESP_MSG_SZ(32)-1:0]",
+  "lines": [
+   "Testbench.v:107",
+   "Testbench.v:49",
+   "Testbench.v:68"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|imemresp_val",
+  "name": "imemresp_val",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:105",
+   "Testbench.v:50",
+   "Testbench.v:69"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|imemresp_rdy",
+  "name": "imemresp_rdy",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:106",
+   "Testbench.v:51",
+   "Testbench.v:70"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|dmemreq_msg",
+  "name": "dmemreq_msg",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_REQ_MSG_SZ(32,32)-1:0]",
+  "lines": [
+   "Testbench.v:111",
+   "Testbench.v:53",
+   "Testbench.v:72"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|dmemreq_val",
+  "name": "dmemreq_val",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:109",
+   "Testbench.v:54",
+   "Testbench.v:73"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|dmemreq_rdy",
+  "name": "dmemreq_rdy",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:110",
+   "Testbench.v:55",
+   "Testbench.v:74"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|dmemresp_msg",
+  "name": "dmemresp_msg",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire [`VC_MEM_RESP_MSG_SZ(32)-1:0]",
+  "lines": [
+   "Testbench.v:114",
+   "Testbench.v:56",
+   "Testbench.v:75"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|dmemresp_val",
+  "name": "dmemresp_val",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:112",
+   "Testbench.v:57",
+   "Testbench.v:76"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|dmemresp_rdy",
+  "name": "dmemresp_rdy",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "Testbench.v:113",
+   "Testbench.v:58",
+   "Testbench.v:77"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "Testbench.v|Testbench|proc",
+  "name": "proc",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "instance",
+  "decl": "riscv_Core proc ( ... );",
+  "instance_of": "riscv_Core",
+  "lines": [
+   "Testbench.v:60"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "Testbench.v|Testbench|pattern",
+  "name": "pattern",
+  "cat": "signal",
+  "module": "Testbench",
+  "kind": "instance",
+  "decl": "Pattern pattern ( ... );",
+  "instance_of": "Pattern",
+  "lines": [
+   "Testbench.v:94"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "Testbench.v||Testbench",
+  "name": "Testbench",
+  "cat": "module",
+  "lines": [
+   "Pattern.v:149",
+   "Testbench.v:33"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "`RISCV_TESTBENCH_V",
+  "name": "RISCV_TESTBENCH_V",
+  "cat": "macro",
+  "lines": [
+   "Testbench.v:5",
+   "Testbench.v:6"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "`PATTERN_MAX_DELAY",
+  "name": "PATTERN_MAX_DELAY",
+  "cat": "macro",
+  "lines": [
+   "Testbench.v:17",
+   "Testbench.v:18",
+   "Testbench.v:89"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`PATTERN_RESET_CYCLES",
+  "name": "PATTERN_RESET_CYCLES",
+  "cat": "macro",
+  "lines": [
+   "Testbench.v:21",
+   "Testbench.v:22",
+   "Testbench.v:90"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`PATTERN_DEFAULT_MAX_CYCLES",
+  "name": "PATTERN_DEFAULT_MAX_CYCLES",
+  "cat": "macro",
+  "lines": [
+   "Testbench.v:25",
+   "Testbench.v:26",
+   "Testbench.v:91"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`PATTERN_IS_RAND_DELAY",
+  "name": "PATTERN_IS_RAND_DELAY",
+  "cat": "macro",
+  "lines": [
+   "Testbench.v:29",
+   "Testbench.v:30",
+   "Testbench.v:92"
+  ],
+  "n_occ": 3
+ }
+]

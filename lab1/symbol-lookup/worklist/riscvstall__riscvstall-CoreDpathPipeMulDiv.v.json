@@ -1,0 +1,591 @@
+[
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:12",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:54"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|reset",
+  "name": "reset",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:13",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:55"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_msg_fn",
+  "name": "muldivreq_msg_fn",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input [2:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:15",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:70"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_msg_a",
+  "name": "muldivreq_msg_a",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:16",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:71"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_msg_b",
+  "name": "muldivreq_msg_b",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:17",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:72"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_val",
+  "name": "muldivreq_val",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:18",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:34"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_rdy",
+  "name": "muldivreq_rdy",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:19",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:33",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:34"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivresp_msg_result",
+  "name": "muldivresp_msg_result",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "output",
+  "decl": "output [63:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:153",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:21"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivresp_val",
+  "name": "muldivresp_val",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "output",
+  "decl": "output",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:157",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:22"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivresp_rdy",
+  "name": "muldivresp_rdy",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:161",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:23"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|stall_Xhl",
+  "name": "stall_Xhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:25",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:51",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:74"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|stall_Mhl",
+  "name": "stall_Mhl",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:26",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:52",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:77"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|stall_X2hl",
+  "name": "stall_X2hl",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:27"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|stall_X3hl",
+  "name": "stall_X3hl",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:28"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|muldivreq_go",
+  "name": "muldivreq_go",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:34",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:69"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|fn_reg",
+  "name": "fn_reg",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "reg",
+  "decl": "reg [2:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:139",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:140",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:141",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:142",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:143",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:40",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:56",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:70"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|a_reg",
+  "name": "a_reg",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:102",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:103",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:109",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:110",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:133",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:41",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:57",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:71",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:98"
+  ],
+  "n_occ": 10
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|b_reg",
+  "name": "b_reg",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "reg",
+  "decl": "reg [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:104",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:105",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:109",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:110",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:42",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:58",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:72",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:98"
+  ],
+  "n_occ": 9
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|result1_reg",
+  "name": "result1_reg",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "reg",
+  "decl": "reg [63:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:43",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:60",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:78",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:82"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|result2_reg",
+  "name": "result2_reg",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "reg",
+  "decl": "reg [63:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:44",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:61",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:82",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:83"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|result3_reg",
+  "name": "result3_reg",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "reg",
+  "decl": "reg [63:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:153",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:45",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:62",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:83"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val0_reg",
+  "name": "val0_reg",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:47",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:51",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:59",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:64",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:73",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:75"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val1_reg",
+  "name": "val1_reg",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:48",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:52",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:65",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:79"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val2_reg",
+  "name": "val2_reg",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:49",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:66",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:84",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:85"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val3_reg",
+  "name": "val3_reg",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "reg",
+  "decl": "reg",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:157",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:161",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:50",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:67",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:85"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val1_next",
+  "name": "val1_next",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:51",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:79"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|val2_next",
+  "name": "val2_next",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:52",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:84"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|sign",
+  "name": "sign",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:121",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:127",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:98"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|a_unsign",
+  "name": "a_unsign",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:102",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:114",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:115",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:116"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|b_unsign",
+  "name": "b_unsign",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:104",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:114",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:115",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:116"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|quotientu",
+  "name": "quotientu",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:109",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:141",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:143"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|remainderu",
+  "name": "remainderu",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:110",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:141",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:143"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|product_raw",
+  "name": "product_raw",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [63:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:114",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:121",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:122"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|quotient_raw",
+  "name": "quotient_raw",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:115",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:127",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:128"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|remainder_raw",
+  "name": "remainder_raw",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:116",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:133",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:134"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|product",
+  "name": "product",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [63:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:120",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:139"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|quotient",
+  "name": "quotient",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:126",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:140",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:142"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|remainder",
+  "name": "remainder",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [31:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:132",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:140",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:142"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|result0",
+  "name": "result0",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire [63:0]",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:138",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:78"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v|riscv_CoreDpathPipeMulDiv|stall",
+  "name": "stall",
+  "cat": "signal",
+  "module": "riscv_CoreDpathPipeMulDiv",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:161",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:33",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:81"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`RISCV_PIPE_MULDIV_ITERATIVE_V",
+  "name": "RISCV_PIPE_MULDIV_ITERATIVE_V",
+  "cat": "macro",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:5",
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:6"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "riscvstall/riscvstall-CoreDpathPipeMulDiv.v||riscv_CoreDpathPipeMulDiv",
+  "name": "riscv_CoreDpathPipeMulDiv",
+  "cat": "module",
+  "lines": [
+   "riscvstall/riscvstall-CoreDpathPipeMulDiv.v:10"
+  ],
+  "n_occ": 1
+ }
+]

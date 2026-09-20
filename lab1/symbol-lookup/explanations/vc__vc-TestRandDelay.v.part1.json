@@ -1,0 +1,119 @@
+{
+  "entities": {
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|p_msg_sz": {
+      "sum": "vc_TestRandDelay 的參數：被延遲的訊息有幾個 bit",
+      "naming": [["p_", "parameter", "module 參數"], ["msg", "message", "訊息"], ["sz", "size", "位元數"]],
+      "desc": "預設 1，決定 `in_msg` 與 `out_msg` 的寬度。這個 module 不在乎訊息內容是什麼（它只做 `assign out_msg = in_msg`），所以任何 val-rdy 通道都能用。在 `vc_TestDualPortRandDelayMem` 中傳入的是 `c_resp_msg_sz`（35 bit 的記憶體回應）。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|p_max_delay": {
+      "sum": "vc_TestRandDelay 的參數：隨機延遲的上限 cycle 數",
+      "naming": [["p_", "parameter", "module 參數"], ["max", "maximum", "最大"], ["delay", "delay", "延遲週期數"]],
+      "desc": "預設 0。generate 區塊依它選兩種寫法：等於 0 時 `rand_num` 固定寫 0（訊息零延遲直通）；大於 0 時每個正緣都重抽 `rand_num <= {$random} % p_max_delay`，也就是 0 ~ p_max_delay-1。上層 `vc_TestDualPortRandDelayMem` 把自己的 `p_max_delay` 直接傳下來。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|clk": {
+      "sum": "vc_TestRandDelay 的時脈輸入",
+      "naming": [["clk", "clock", "時脈"]],
+      "desc": "驅動三個時序元件：`rand_num` 的隨機數更新、狀態暫存器 `state` 的更新，以及延遲計數器 `rand_delay_pf`（`vc_ERDFF_pf`）。由 `vc_TestDualPortRandDelayMem` 傳入。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|reset": {
+      "sum": "vc_TestRandDelay 的同步 reset：回到 idle 並清空延遲計數",
+      "naming": [["reset", "reset", "重置"]],
+      "desc": "正緣時若為 1，`state <= c_state_idle`；同時它接到 `rand_delay_pf` 的 `.reset_p`，把 `rand_delay` 清成 32'b0。注意 `rand_num` 不受 reset 影響，仍每個 cycle 照抽。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|in_val": {
+      "sum": "輸入側的 valid：上游（記憶體）有一則訊息要送",
+      "naming": [["in", "input interface", "輸入介面（上游來的）"], ["val", "valid", "有效"]],
+      "desc": "1 位元輸入，接的是 `vc_TestDualPortMem` 的 `memresp*_val`。它決定 `zero_cycle_delay`、決定 idle 狀態要不要進入 delay 狀態，也直接參與輸出 `out_val = in_val && (rand_num == 0)`（idle）或 `in_val && (rand_delay == 0)`（delay）。換句話說，沒有輸入訊息時這個 module 不會憑空產生輸出。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|in_rdy": {
+      "sum": "輸入側的 ready 輸出：延遲數完且下游收得下時才為 1",
+      "naming": [["in", "input interface", "輸入介面"], ["rdy", "ready", "可以收"]],
+      "desc": "`output reg`，由狀態輸出的 always 區塊決定：idle 狀態是 `out_rdy && (rand_num == 0)`，delay 狀態是 `out_rdy && (rand_delay == 0)`。它接回記憶體的 `memresp*_rdy`，而記憶體又把它接成 `memreq*_rdy`，所以延遲期間整條記憶體通道會被反壓住——這正是「隨機延遲」對 CPU 產生 stall 的路徑。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|in_msg": {
+      "sum": "輸入側的訊息 bits（會被原樣送到輸出）",
+      "naming": [["in", "input interface", "輸入介面"], ["msg", "message", "訊息本體"]],
+      "desc": "`p_msg_sz` 位元輸入，唯一的用途是 `assign out_msg = in_msg`。這個 module 沒有把訊息存起來，所以延遲期間上游必須一直維持同樣的 `in_msg`（記憶體確實會維持，因為它的請求緩衝被 `in_rdy` 擋住了）。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|out_val": {
+      "sum": "輸出側的 valid：延遲時間到了才把訊息放行",
+      "naming": [["out", "output interface", "輸出介面（往下游）"], ["val", "valid", "有效"]],
+      "desc": "`output reg`。idle 狀態為 `in_val && (rand_num == 0)`；delay 狀態為 `in_val && (rand_delay == 0)`，也就是計數器數到 0 的那個 cycle 才放行。它接到上層的 `memresp*_val`，最終成為 CPU 看到的 imemresp/dmemresp valid。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|out_rdy": {
+      "sum": "輸出側的 ready 輸入：下游這個 cycle 收不收",
+      "naming": [["out", "output interface", "輸出介面"], ["rdy", "ready", "可以收"]],
+      "desc": "1 位元輸入，來自上層的 `memresp*_rdy`（`riscvstall-sim.v` 綁成 1'b1）。它參與 `zero_cycle_delay`、`in_rdy` 的計算，以及 delay 狀態要不要回到 idle 的條件 `in_val && out_rdy && (rand_delay == 0)`。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|out_msg": {
+      "sum": "輸出側的訊息 bits，直接等於 in_msg",
+      "naming": [["out", "output interface", "輸出介面"], ["msg", "message", "訊息本體"]],
+      "desc": "`assign out_msg = in_msg`，沒有任何暫存或延遲。只有在 `out_val` 與 `out_rdy` 同時為 1 的那個 cycle 這些 bits 才算被送出去；其他時間它仍會跟著上游變動。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|rand_num": {
+      "sum": "每個 cycle 重抽的隨機數，決定下一則訊息要等幾個 cycle",
+      "naming": [["rand", "random", "隨機"], ["num", "number", "數值"]],
+      "desc": "32 位元 reg。`p_max_delay == 0` 時每個正緣都寫 0；否則寫 `{$random} % p_max_delay`（大括號把 $random 當成無號值，避免取到負數）。它有兩個用途：判斷 `zero_cycle_delay`（等於 0 就不必進 delay 狀態），以及在進入 delay 狀態時當作計數器初值（`rand_delay_next = rand_num - 1`）。因為每個 cycle 都重抽，真正被採用的是訊息抵達那一拍的值。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|rand_delay_en": {
+      "sum": "延遲計數器的 enable（要不要載入 / 遞減）",
+      "naming": [["rand", "random", "隨機"], ["delay", "delay", "延遲"], ["en", "enable", "致能"]],
+      "desc": "`reg`，在狀態輸出的組合 always 裡指定，接到 `rand_delay_pf` 的 `.en_p`。idle 狀態時為 `in_val && !zero_cycle_delay`（有訊息且需要等待才載入初值）；delay 狀態時為 `rand_delay > 0`（還沒數完才繼續遞減）；default 分支給 1'bx 以便在狀態異常時被發現。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|rand_delay_next": {
+      "sum": "下一個 cycle 要存進延遲計數器的值",
+      "naming": [["rand", "random", "隨機"], ["delay", "delay", "延遲"], ["_next", "next value", "下一個 cycle 的值"]],
+      "desc": "32 位元 `reg`（組合邏輯），接到 `rand_delay_pf` 的 `.d_p`。idle 狀態時是 `(rand_num > 0) ? rand_num - 1 : rand_num`，也就是把剛抽到的隨機數減 1 當作要等的 cycle 數；delay 狀態時是 `rand_delay - 1`，每拍倒數一次。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|rand_delay": {
+      "sum": "目前還要再等幾個 cycle 的倒數計數器值",
+      "naming": [["rand", "random", "隨機"], ["delay", "delay", "延遲"]],
+      "desc": "32 位元 wire，由 `rand_delay_pf`（`vc_ERDFF_pf`）的 `.q_np` 驅動。等於 0 就代表延遲結束：delay 狀態下 `in_rdy`、`out_val` 才會拉起來，狀態也才會回到 `c_state_idle`。reset 時被清成 0。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|rand_delay_pf": {
+      "sum": "存放延遲倒數計數值的 vc_ERDFF_pf 實例",
+      "naming": [["rand", "random", "隨機"], ["delay", "delay", "延遲"], ["_pf", "positive-edge flip-flop", "正緣觸發的 flip-flop"]],
+      "desc": "`vc_ERDFF_pf#(32,32'b0)`：帶 enable 與同步 reset 的 32 位元暫存器（行為是 `if ( reset_p || en_p ) q_np <= reset_p ? RESET_VALUE : d_p`）。接線為 `.reset_p(reset)`、`.en_p(rand_delay_en)`、`.d_p(rand_delay_next)`、`.q_np(rand_delay)`，也就是這個 module 的延遲倒數器。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|zero_cycle_delay": {
+      "sum": "判斷這則訊息可以不進延遲狀態、當拍直接送出",
+      "naming": [["zero", "zero", "零"], ["cycle", "cycle", "週期"], ["delay", "delay", "延遲"]],
+      "desc": "`wire zero_cycle_delay = in_val && out_rdy && (rand_num == 0)`：輸入有效、下游收得下、而且這拍抽到的隨機數是 0。成立時狀態機留在 `c_state_idle`、也不載入計數器（`rand_delay_en` 為 0），訊息在同一個 cycle 就完成握手。`p_max_delay` 為 0 時 `rand_num` 恆為 0，所以整個模組就退化成一條直通線。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|c_state_sz": {
+      "sum": "狀態暫存器的位元數（1）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["state", "state", "狀態"], ["sz", "size", "位元數"]],
+      "desc": "localparam = 1，因為這個狀態機只有 idle 與 delay 兩個狀態。它是 `state` 與 `state_next` 的寬度。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|c_state_idle": {
+      "sum": "狀態編碼：閒置（等訊息進來）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["state", "state", "狀態"], ["idle", "idle", "閒置"]],
+      "desc": "localparam 1'b0。reset 後的初始狀態。在這個狀態下用 `rand_num` 判斷要不要延遲：`in_val && !zero_cycle_delay` 就載入計數器並轉到 `c_state_delay`，否則維持原地（零延遲時當拍就把訊息放行）。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|c_state_delay": {
+      "sum": "狀態編碼：延遲中（倒數等待）",
+      "naming": [["c_", "constant", "module 內的 localparam"], ["state", "state", "狀態"], ["delay", "delay", "延遲"]],
+      "desc": "localparam 1'b1。在這個狀態下 `rand_delay` 每拍遞減；直到 `in_val && out_rdy && (rand_delay == 0)` 才把訊息送出並回到 `c_state_idle`。延遲期間 `in_rdy` 與 `out_val` 都是 0（除非計數已歸零），等於把上游的記憶體卡住。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|state_next": {
+      "sum": "狀態機下一個狀態的組合邏輯結果",
+      "naming": [["state", "state", "狀態"], ["_next", "next value", "下一個 cycle 的值"]],
+      "desc": "`reg [c_state_sz-1:0]`，在 `always @(*)` 裡算：預設維持 `state`；idle 時若 `in_val && !zero_cycle_delay` 則變 `c_state_delay`；delay 時若 `in_val && out_rdy && (rand_delay == 0)` 則變回 `c_state_idle`。它在正緣被寫進 `state`。"
+    },
+    "vc/vc-TestRandDelay.v|vc_TestRandDelay|state": {
+      "sum": "vc_TestRandDelay 的狀態暫存器（idle / delay）",
+      "naming": [["state", "state", "狀態"]],
+      "desc": "1 位元 reg，`always @( posedge clk )` 裡 reset 時設成 `c_state_idle`，否則吃 `state_next`。兩個組合 always 區塊（狀態轉移、狀態輸出）都用 `case ( state )` 分支，決定 `rand_delay_en`、`rand_delay_next`、`in_rdy`、`out_val` 這四個輸出。"
+    },
+    "vc/vc-TestRandDelay.v||vc_TestRandDelay": {
+      "sum": "在 val-rdy 通道上插入隨機 cycle 延遲的測試用模組",
+      "naming": [["vc", "Verilog Components", "共用元件庫前綴"], ["Test", "test", "測試用（非合成）"], ["RandDelay", "random delay", "隨機延遲"]],
+      "desc": "參數為 `p_msg_sz`（訊息寬度）與 `p_max_delay`（最大延遲）。port 分兩組 val-rdy 介面：`in_val`/`in_rdy`/`in_msg` 與 `out_val`/`out_rdy`/`out_msg`。內部是一個兩狀態機（`c_state_idle`、`c_state_delay`）加上一個倒數計數器 `rand_delay_pf`：訊息抵達時抽 `rand_num` 決定等幾拍，等待期間把 `in_rdy`、`out_val` 壓成 0，數完才完成握手。訊息 bits 完全不暫存（`assign out_msg = in_msg`），所以上游必須在延遲期間保持資料穩定。它被 `vc_TestDualPortRandDelayMem` instantiate 兩次（`rand_delay0`、`rand_delay1`），用來讓記憶體回應時間變得不可預期，檢驗 CPU 的握手與 stall 邏輯。"
+    },
+    "`VC_TEST_RAND_DELAY_V": {
+      "sum": "vc-TestRandDelay.v 的 include guard macro",
+      "naming": [["VC", "Verilog Components", "vc 元件庫前綴"], ["TEST", "test", "測試用"], ["RAND_DELAY", "random delay", "隨機延遲"], ["_V", "include guard", "檔名_V：防止重複 include"]],
+      "desc": "檔頭的 ifndef / define 與檔尾的 endif 保證 `vc_TestRandDelay` 只被定義一次。本檔也引入 vc-StateElements.v（為了使用 `vc_ERDFF_pf`），那個檔同樣有自己的 guard。"
+    }
+  }
+}

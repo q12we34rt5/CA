@@ -1,0 +1,429 @@
+[
+ {
+  "key": "`VC_ASSERT_V",
+  "name": "VC_ASSERT_V",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:5",
+   "vc/vc-Assert.v:6"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "`VC_ERROR_CHECK_START_TIME",
+  "name": "VC_ERROR_CHECK_START_TIME",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:11",
+   "vc/vc-Assert.v:18",
+   "vc/vc-Assert.v:22",
+   "vc/vc-Assert.v:26",
+   "vc/vc-Assert.v:30"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "`VC_ERROR",
+  "name": "VC_ERROR",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:17",
+   "vc/vc-Assert.v:39",
+   "vc/vc-Assert.v:43",
+   "vc/vc-Assert.v:55",
+   "vc/vc-Assert.v:83"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "`VC_WARNING",
+  "name": "VC_WARNING",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:21"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ERROR_1ARG",
+  "name": "VC_ERROR_1ARG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:118",
+   "vc/vc-Assert.v:134",
+   "vc/vc-Assert.v:157",
+   "vc/vc-Assert.v:173",
+   "vc/vc-Assert.v:25",
+   "vc/vc-Assert.v:59"
+  ],
+  "n_occ": 6
+ },
+ {
+  "key": "`VC_ERROR_2ARG",
+  "name": "VC_ERROR_2ARG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:29",
+   "vc/vc-Assert.v:47",
+   "vc/vc-Assert.v:63"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_ASSERT",
+  "name": "VC_ASSERT",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:37",
+   "vc/vc-Assert.v:51"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "`VC_ASSERT_1ARG",
+  "name": "VC_ASSERT_1ARG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:41"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_2ARG",
+  "name": "VC_ASSERT_2ARG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:45"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_POSEDGE",
+  "name": "VC_ASSERT_POSEDGE",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:49"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ERRCHK",
+  "name": "VC_ERRCHK",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:53",
+   "vc/vc-Assert.v:67",
+   "vc/vc-Assert.v:71"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_ERRCHK_1ARG",
+  "name": "VC_ERRCHK_1ARG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:57"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ERRCHK_2ARG",
+  "name": "VC_ERRCHK_2ARG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:61"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ERRCHK_POSEDGE",
+  "name": "VC_ERRCHK_POSEDGE",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:65"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ERRCHK_NEGEDGE",
+  "name": "VC_ERRCHK_NEGEDGE",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:69"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_PROPAGATE_X",
+  "name": "VC_PROPAGATE_X",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:77"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_NOT_X_MSG",
+  "name": "VC_ASSERT_NOT_X_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:81",
+   "vc/vc-Assert.v:87",
+   "vc/vc-Assert.v:91",
+   "vc/vc-Assert.v:95",
+   "vc/vc-Assert.v:98"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "`VC_ASSERT_NOT_X_ALWAYS_MSG",
+  "name": "VC_ASSERT_NOT_X_ALWAYS_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:101",
+   "vc/vc-Assert.v:85"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "`VC_ASSERT_NOT_X_POSEDGE_MSG",
+  "name": "VC_ASSERT_NOT_X_POSEDGE_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:104",
+   "vc/vc-Assert.v:89",
+   "vc/vc-StateElements.v:164",
+   "vc/vc-TestDualPortMem.v:330",
+   "vc/vc-TestDualPortMem.v:331",
+   "vc/vc-TestDualPortMem.v:332",
+   "vc/vc-TestDualPortMem.v:333"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "`VC_ASSERT_NOT_X_NEGEDGE_MSG",
+  "name": "VC_ASSERT_NOT_X_NEGEDGE_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:107",
+   "vc/vc-Assert.v:93",
+   "vc/vc-StateElements.v:118",
+   "vc/vc-StateElements.v:210"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "`VC_ASSERT_NOT_X",
+  "name": "VC_ASSERT_NOT_X",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:97"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_NOT_X_ALWAYS",
+  "name": "VC_ASSERT_NOT_X_ALWAYS",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:100"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_NOT_X_POSEDGE",
+  "name": "VC_ASSERT_NOT_X_POSEDGE",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:103"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_NOT_X_NEGEDGE",
+  "name": "VC_ASSERT_NOT_X_NEGEDGE",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:106"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_IS_1HOT",
+  "name": "VC_IS_1HOT",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:113",
+   "vc/vc-Assert.v:117",
+   "vc/vc-Assert.v:133"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_MSG",
+  "name": "VC_ASSERT_1HOT_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:116",
+   "vc/vc-Assert.v:122",
+   "vc/vc-Assert.v:126",
+   "vc/vc-Assert.v:130",
+   "vc/vc-Assert.v:138",
+   "vc/vc-Assert.v:142",
+   "vc/vc-Assert.v:146"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_ALWAYS_MSG",
+  "name": "VC_ASSERT_1HOT_ALWAYS_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:120"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_POSEDGE_MSG",
+  "name": "VC_ASSERT_1HOT_POSEDGE_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:124"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_NEGEDGE_MSG",
+  "name": "VC_ASSERT_1HOT_NEGEDGE_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:128"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT",
+  "name": "VC_ASSERT_1HOT",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:132"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_ALWAYS",
+  "name": "VC_ASSERT_1HOT_ALWAYS",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:136"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_POSEDGE",
+  "name": "VC_ASSERT_1HOT_POSEDGE",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:140"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_NEGEDGE",
+  "name": "VC_ASSERT_1HOT_NEGEDGE",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:144"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_IS_1HOT_OR_ZERO",
+  "name": "VC_IS_1HOT_OR_ZERO",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:152",
+   "vc/vc-Assert.v:156",
+   "vc/vc-Assert.v:172"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_OR_ZERO_MSG",
+  "name": "VC_ASSERT_1HOT_OR_ZERO_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:155",
+   "vc/vc-Assert.v:161",
+   "vc/vc-Assert.v:165",
+   "vc/vc-Assert.v:169",
+   "vc/vc-Assert.v:177",
+   "vc/vc-Assert.v:181",
+   "vc/vc-Assert.v:185"
+  ],
+  "n_occ": 7
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_OR_ZERO_ALWAYS_MSG",
+  "name": "VC_ASSERT_1HOT_OR_ZERO_ALWAYS_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:159"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_OR_ZERO_POSEDGE_MSG",
+  "name": "VC_ASSERT_1HOT_OR_ZERO_POSEDGE_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:163"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_OR_ZERO_NEGEDGE_MSG",
+  "name": "VC_ASSERT_1HOT_OR_ZERO_NEGEDGE_MSG",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:167"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_OR_ZERO",
+  "name": "VC_ASSERT_1HOT_OR_ZERO",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:171"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_OR_ZERO_ALWAYS",
+  "name": "VC_ASSERT_1HOT_OR_ZERO_ALWAYS",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:175"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_OR_ZERO_POSEDGE",
+  "name": "VC_ASSERT_1HOT_OR_ZERO_POSEDGE",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:179"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_ASSERT_1HOT_OR_ZERO_NEGEDGE",
+  "name": "VC_ASSERT_1HOT_OR_ZERO_NEGEDGE",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-Assert.v:183"
+  ],
+  "n_occ": 1
+ }
+]

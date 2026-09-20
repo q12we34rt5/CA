@@ -1,0 +1,1260 @@
+{
+  "entities": {
+    "`RISCV_INST_MSG_CSRW": {
+      "sum": "csrw 指令的比對 pattern（opcode 1110011、funct3 001、rd 固定為 00000）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "CSRW",
+          "CSR write",
+          "寫入控制狀態暫存器"
+        ]
+      ],
+      "desc": "展開成 `32'b???????_?????_?????_001_00000_1110011`，固定的部分是 opcode = 1110011（SYSTEM）、funct3 = 001、以及 rd 欄位（bit 11:7）= 00000。它其實是 RISC-V 標準 csrrw 的 pseudo instruction：rd = x0 代表「只寫不讀」。在這份作業裡 CSR 是拿來把測試結果 / 統計數字回報給 testbench 用的。`riscv_CoreCtrl` 的解碼表已經實作這一行：`bm_0` + `alu_add`（等於把 rs1 原封不動送出去）、`RF_WEN`=n、`CSR_WEN`=y。"
+    },
+    "`RISCV_INST_MSG_J_EN": {
+      "sum": "控制 bundle cs 中「無條件跳躍」欄位的位元範圍，展開成 37:37（1 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "J",
+          "jump",
+          "無條件跳躍"
+        ],
+        [
+          "EN",
+          "enable",
+          "啟用"
+        ]
+      ],
+      "desc": "展開成 `37:37`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_J_EN]`。只有 jal（以及之後要補的 jalr）填 `y`，其他指令填 `n`。`riscv_CoreCtrl` 用 `brj_taken_Dhl = ( inst_val_Dhl && !stall_Dhl && cs[`RISCV_INST_MSG_J_EN] )`：只要 D 階段是有效且沒有被 stall 的 jump，就立刻在 D 階段改 PC 並 squash 後面的指令。"
+    },
+    "`RISCV_INST_MSG_BR_SEL": {
+      "sum": "控制 bundle cs 中「條件分支」欄位的位元範圍，展開成 36:34（3 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "BR",
+          "branch",
+          "條件分支"
+        ],
+        [
+          "SEL",
+          "select",
+          "選擇"
+        ]
+      ],
+      "desc": "展開成 `36:34`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_BR_SEL]`。3 bit，對應 `riscv_CoreCtrl` 的 `br_none`(0) / `br_beq`(1) / `br_bne`(2) / `br_blt`(3) / `br_bltu`(4) / `br_bge`(5) / `br_bgeu`(6)。取出成 `wire [2:0] br_sel_Dhl = cs[`RISCV_INST_MSG_BR_SEL];`，再往下傳到 X 階段決定要用哪種條件判斷 ALU 結果。"
+    },
+    "`RISCV_INST_MSG_PC_SEL": {
+      "sum": "控制 bundle cs 中「程式計數器」欄位的位元範圍，展開成 33:32（2 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "PC",
+          "program counter",
+          "程式計數器"
+        ],
+        [
+          "SEL",
+          "select",
+          "選擇"
+        ]
+      ],
+      "desc": "展開成 `33:32`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_PC_SEL]`。2 bit，對應 `pm_p`(0)=pc+4、`pm_b`(1)=分支目標、`pm_j`(2)=jump 目標、`pm_r`(3)=jalr 的暫存器目標。取出成 `wire [1:0] pc_mux_sel_Dhl = cs[`RISCV_INST_MSG_PC_SEL];`，送給 `riscv_CoreDpath` 的 PC 多工器。"
+    },
+    "`RISCV_INST_MSG_RS1_EN": {
+      "sum": "控制 bundle cs 中「第一來源暫存器」欄位的位元範圍，展開成 29:29（1 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "RS1",
+          "source register 1",
+          "第一來源暫存器"
+        ],
+        [
+          "EN",
+          "enable",
+          "啟用"
+        ]
+      ],
+      "desc": "展開成 `29:29`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_RS1_EN]`。這條指令是否真的會讀 rs1。取出成 `wire rs1_en_Dhl = cs[`RISCV_INST_MSG_RS1_EN];`，用在 hazard 判斷：只有 `rs1_en_Dhl` 為 1 時，D 階段的 rs1 和後面階段的寫回目標相撞才需要 stall / bypass。lui、jal 這種不讀暫存器的指令填 `n`，可以避免不必要的 stall。"
+    },
+    "`RISCV_INST_MSG_RS2_EN": {
+      "sum": "控制 bundle cs 中「第二來源暫存器」欄位的位元範圍，展開成 25:25（1 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "RS2",
+          "source register 2",
+          "第二來源暫存器"
+        ],
+        [
+          "EN",
+          "enable",
+          "啟用"
+        ]
+      ],
+      "desc": "展開成 `25:25`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_RS2_EN]`。這條指令是否真的會讀 rs2。取出成 `wire rs2_en_Dhl = cs[`RISCV_INST_MSG_RS2_EN];`，同樣只用於 hazard 判斷。注意 sw 雖然 op1 用的是 imm_s，但它要把 rs2 的值寫進記憶體，所以解碼表裡 `RS2_EN` 仍然是 `y`。"
+    },
+    "`RISCV_INST_MSG_OP0_SEL": {
+      "sum": "控制 bundle cs 中「ALU 的第 0 個運算元」欄位的位元範圍，展開成 31:30（2 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "OP0",
+          "operand 0",
+          "ALU 的第 0 個運算元"
+        ],
+        [
+          "SEL",
+          "select",
+          "選擇"
+        ]
+      ],
+      "desc": "展開成 `31:30`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_OP0_SEL]`。2 bit，對應 `am_rdat`(0)=bypass 後的 rs1 值、`am_pc`(1)=目前 PC、`am_pc4`(2)=PC+4、`am_0`(3)=常數 0。`assign op0_mux_sel_Dhl = cs[`RISCV_INST_MSG_OP0_SEL];` 直接當成 CoreCtrl 的輸出送給 dpath。"
+    },
+    "`RISCV_INST_MSG_OP1_SEL": {
+      "sum": "控制 bundle cs 中「ALU 的第 1 個運算元」欄位的位元範圍，展開成 28:26（3 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "OP1",
+          "operand 1",
+          "ALU 的第 1 個運算元"
+        ],
+        [
+          "SEL",
+          "select",
+          "選擇"
+        ]
+      ],
+      "desc": "展開成 `28:26`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_OP1_SEL]`。3 bit，對應 `bm_rdat`(0)=bypass 後的 rs2 值、`bm_shamt`(1)、`bm_imm_u`(2)、`bm_imm_sb`(3)、`bm_imm_i`(4)、`bm_imm_s`(5)、`bm_0`(6)。`assign op1_mux_sel_Dhl = cs[`RISCV_INST_MSG_OP1_SEL];` 送給 dpath 的 op1 多工器。"
+    },
+    "`RISCV_INST_MSG_ALU_FN": {
+      "sum": "控制 bundle cs 中「算術邏輯單元」欄位的位元範圍，展開成 24:21（4 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "ALU",
+          "arithmetic logic unit",
+          "算術邏輯單元"
+        ],
+        [
+          "FN",
+          "function",
+          "要做哪種運算"
+        ]
+      ],
+      "desc": "展開成 `24:21`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_ALU_FN]`。4 bit，對應 `alu_add`(0) / `alu_sub`(1) / `alu_sll`(2) / `alu_or`(3) / `alu_lt`(4) / `alu_ltu`(5) / `alu_and`(6) / `alu_xor`(7) / `alu_nor`(8) / `alu_srl`(9) / `alu_sra`(10)。取出成 `wire [3:0] alu_fn_Dhl = cs[`RISCV_INST_MSG_ALU_FN];`，傳到 X 階段給 `riscv_CoreDpathAlu` 的 `fn`。load / store 也用 `alu_add`，因為位址就是 rs1 + imm。"
+    },
+    "`RISCV_INST_MSG_MULDIV_FN": {
+      "sum": "控制 bundle cs 中「乘除法」欄位的位元範圍，展開成 20:18（3 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "MULDIV",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "FN",
+          "function",
+          "功能碼"
+        ]
+      ],
+      "desc": "展開成 `20:18`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_MULDIV_FN]`。3 bit，對應 `md_mul`(0) / `md_div`(1) / `md_divu`(2) / `md_rem`(3) / `md_remu`(4)。取出成 `wire [2:0] muldivreq_msg_fn_Dhl = cs[`RISCV_INST_MSG_MULDIV_FN];`，打包進送給乘除法單元的 request 訊息。目前解碼表每一行都填 `md_x`（don't care），因為 RISCV32M 指令還沒實作。"
+    },
+    "`RISCV_INST_MSG_MULDIV_EN": {
+      "sum": "控制 bundle cs 中「乘除法」欄位的位元範圍，展開成 17:17（1 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "MULDIV",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "EN",
+          "enable",
+          "啟用"
+        ]
+      ],
+      "desc": "展開成 `17:17`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_MULDIV_EN]`。這條指令要不要發 request 給乘除法單元。取出成 `wire muldivreq_val_Dhl = cs[`RISCV_INST_MSG_MULDIV_EN];`，直接當 val-rdy 握手的 val。目前解碼表每一行都是 `n`。"
+    },
+    "`RISCV_INST_MSG_MULDIV_SEL": {
+      "sum": "控制 bundle cs 中「乘除法」欄位的位元範圍，展開成 16:16（1 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "MULDIV",
+          "multiply / divide",
+          "乘除法"
+        ],
+        [
+          "SEL",
+          "select",
+          "選擇"
+        ]
+      ],
+      "desc": "展開成 `16:16`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_MULDIV_SEL]`。1 bit，對應 `mdm_l`(0)=取 64-bit 結果的低半（mul / div / divu）、`mdm_u`(1)=取高半（rem / remu）。取出成 `wire muldiv_mux_sel_Dhl = cs[`RISCV_INST_MSG_MULDIV_SEL];`。目前解碼表都填 `mdm_x`。"
+    },
+    "`RISCV_INST_MSG_EX_SEL": {
+      "sum": "控制 bundle cs 中「執行階段」欄位的位元範圍，展開成 15:15（1 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "EX",
+          "execute stage",
+          "執行階段"
+        ],
+        [
+          "SEL",
+          "select",
+          "選擇"
+        ]
+      ],
+      "desc": "展開成 `15:15`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_EX_SEL]`。1 bit，對應 `em_alu`(0)=用 ALU 輸出、`em_md`(1)=用乘除法單元輸出。取出成 `wire execute_mux_sel_Dhl = cs[`RISCV_INST_MSG_EX_SEL];`，決定 X 階段的結果從哪裡來。"
+    },
+    "`RISCV_INST_MSG_MEM_REQ": {
+      "sum": "控制 bundle cs 中「資料記憶體」欄位的位元範圍，展開成 14:13（2 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "MEM",
+          "data memory",
+          "資料記憶體"
+        ],
+        [
+          "REQ",
+          "request",
+          "請求種類"
+        ]
+      ],
+      "desc": "展開成 `14:13`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_MEM_REQ]`。2 bit，對應 `nr`(0)=不發請求、`ld`(1)=load、`st`(2)=store。CoreCtrl 由它導出兩個訊號：`dmemreq_msg_rw_Dhl = ( cs[`RISCV_INST_MSG_MEM_REQ] == st )`（1=寫）與 `dmemreq_val_Dhl = ( cs[`RISCV_INST_MSG_MEM_REQ] != nr )`（要不要發請求）。"
+    },
+    "`RISCV_INST_MSG_MEM_LEN": {
+      "sum": "控制 bundle cs 中「資料記憶體」欄位的位元範圍，展開成 12:11（2 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "MEM",
+          "data memory",
+          "資料記憶體"
+        ],
+        [
+          "LEN",
+          "length",
+          "存取長度"
+        ]
+      ],
+      "desc": "展開成 `12:11`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_MEM_LEN]`。2 bit，對應 `ml_w`(0)=整個 word、`ml_b`(1)=1 byte、`ml_h`(2)=2 bytes。取出成 `wire [1:0] dmemreq_msg_len_Dhl = cs[`RISCV_INST_MSG_MEM_LEN];`，打包進 dmem request 的 len 欄位。不存取記憶體的指令填 `ml_x`。"
+    },
+    "`RISCV_INST_MSG_MEM_SEL": {
+      "sum": "控制 bundle cs 中「記憶體讀回的資料」欄位的位元範圍，展開成 10:8（3 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "MEM",
+          "data memory response",
+          "記憶體讀回的資料"
+        ],
+        [
+          "SEL",
+          "select",
+          "選擇"
+        ]
+      ],
+      "desc": "展開成 `10:8`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_MEM_SEL]`。3 bit，對應 `dmm_w`(0) / `dmm_b`(1) / `dmm_bu`(2) / `dmm_h`(3) / `dmm_hu`(4)，決定 load 回來的 word 要怎麼取出子欄位並做符號或零延伸（lb vs lbu、lh vs lhu）。取出成 `wire [2:0] dmemresp_mux_sel_Dhl = cs[`RISCV_INST_MSG_MEM_SEL];`。"
+    },
+    "`RISCV_INST_MSG_WB_SEL": {
+      "sum": "控制 bundle cs 中「寫回」欄位的位元範圍，展開成 7:7（1 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "WB",
+          "writeback",
+          "寫回"
+        ],
+        [
+          "SEL",
+          "select",
+          "選擇"
+        ]
+      ],
+      "desc": "展開成 `7:7`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_WB_SEL]`。1 bit，對應 `wm_alu`(0)=寫回 ALU/執行階段結果、`wm_mem`(1)=寫回記憶體讀出的資料。取出成 `wire wb_mux_sel_Dhl = cs[`RISCV_INST_MSG_WB_SEL];`，只有 load 類指令用 `wm_mem`。"
+    },
+    "`RISCV_INST_MSG_RF_WEN": {
+      "sum": "控制 bundle cs 中「暫存器檔」欄位的位元範圍，展開成 6:6（1 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "RF",
+          "register file",
+          "暫存器檔"
+        ],
+        [
+          "WEN",
+          "write enable",
+          "寫入致能"
+        ]
+      ],
+      "desc": "展開成 `6:6`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_RF_WEN]`。這條指令最後要不要寫回 register file。取出成 `wire rf_wen_Dhl = cs[`RISCV_INST_MSG_RF_WEN];`，一路傳到 W 階段。store、branch、csrw 都填 `n`。它同時也是 bypass / stall 判斷的依據之一：只有會寫回的指令才會造成 RAW hazard。"
+    },
+    "`RISCV_INST_MSG_RF_WADDR": {
+      "sum": "控制 bundle cs 中「暫存器檔」欄位的位元範圍，展開成 5:1（5 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "RF",
+          "register file",
+          "暫存器檔"
+        ],
+        [
+          "WADDR",
+          "write address",
+          "寫入位址（哪個暫存器）"
+        ]
+      ],
+      "desc": "展開成 `5:1`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_RF_WADDR]`。5 bit 的寫回暫存器編號。解碼表裡會寫回的指令這欄填 `rd`（就是 `wire [4:0] rd = inst_rd_Dhl;`，從指令 bit 11:7 切出來的），不寫回的填 `rx`（don't care）。取出成 `wire [4:0] rf_waddr_Dhl = cs[`RISCV_INST_MSG_RF_WADDR];`，並在各階段之間傳遞，供 hazard 比對與最後的 regfile 寫入使用。"
+    },
+    "`RISCV_INST_MSG_CSR_WEN": {
+      "sum": "控制 bundle cs 中「控制狀態暫存器」欄位的位元範圍，展開成 0:0（1 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "CSR",
+          "control and status register",
+          "控制狀態暫存器"
+        ],
+        [
+          "WEN",
+          "write enable",
+          "寫入致能"
+        ]
+      ],
+      "desc": "展開成 `0:0`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_CSR_WEN]`。最低位。只有 csrw 這一行填 `y`，取出成 `wire csr_wen_Dhl = cs[`RISCV_INST_MSG_CSR_WEN];`。在這份作業裡 CSR 寫入是用來把測試結果 / 統計數字送給 testbench 的通道。"
+    },
+    "riscvstall/riscvstall-InstMsg.v||riscv_InstMsgDisasm": {
+      "sum": "模擬專用的反組譯器：吃一條指令，產生可讀的組譯字串 dasm / minidasm",
+      "naming": [
+        [
+          "riscv",
+          "RISC-V",
+          "RISC-V 處理器"
+        ],
+        [
+          "Inst",
+          "instruction",
+          "指令"
+        ],
+        [
+          "Msg",
+          "message",
+          "訊息"
+        ],
+        [
+          "Disasm",
+          "disassembler",
+          "反組譯器"
+        ]
+      ],
+      "desc": "整個 module 包在 `ifndef SYNTHESIS` 裡，只在模擬時存在，不會變成硬體。唯一的 port 是輸入 `msg`；內部用 `inst_msg_from_bits` 拆欄位，再用兩個 `casez` 產生 208-bit 的 `dasm`（完整組譯行）與 48-bit 的 `minidasm`（只有助憶碼）。它不驅動任何輸出，純粹是「把波形上的 32-bit 亂碼變成人看得懂的字」。`riscv_CoreCtrl` 在 `ifndef SYNTHESIS` 區塊裡為 `ir_Dhl`、`ir_Xhl`、`ir_Mhl`、`ir_Whl`、`ir_debug` 各建一個實例（`inst_msg_disasm_D` / `_X` / `_M` / `_W` / `_debug`），所以除錯時可以一眼看出每個 pipeline 階段裡是哪條指令。"
+    },
+    "`RISCV_INST_MSG_INST_VAL": {
+      "sum": "控制 bundle cs 中「指令」欄位的位元範圍，展開成 38:38（1 bit）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "VAL",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "展開成 `38:38`，是 39-bit 控制訊號 bundle `cs` 裡的一個欄位（總寬度見 `RISCV_INST_MSG_CS_SZ`）。用法是 `cs[`RISCV_INST_MSG_INST_VAL]`。解碼表每一行實作的指令都填 `y`；比對不到時 `cs` 是全 x，這一位自然不是 1。`riscv_CoreCtrl` 檔尾 `ifndef SYNTHESIS` 的 always block 每個正緣檢查 `if ( !cs[`RISCV_INST_MSG_INST_VAL] && !reset )`，印出 RTL-ERROR: Illegal instruction!，連續兩次就 `$finish` 結束模擬。"
+    },
+    "`RISCV_INST_MSG_V": {
+      "sum": "riscvstall-InstMsg.v 的 include guard macro，防止重複 include",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "V",
+          "Verilog file",
+          "檔名的 .v，合起來是「這個檔案已經被讀過」的記號"
+        ]
+      ],
+      "desc": "include guard：檔案開頭用 `ifndef RISCV_INST_MSG_V` / `define RISCV_INST_MSG_V` 包住全部內容，檔尾 `endif`。`riscvstall-CoreCtrl.v`、`riscvstall-CoreDpath.v` 都會 include 這個檔，如果沒有 guard，第二次 include 時 module 會重複定義而編譯失敗。它本身沒有值（`define` 成空字串），只當旗標用。"
+    },
+    "`RISCV_INST_MSG_OPCODE": {
+      "sum": "指令 opcode 欄位的位元範圍 macro，展開成 6:0",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "OPCODE",
+          "opcode",
+          "操作碼"
+        ]
+      ],
+      "desc": "展開成 `6:0`（7 bit），用法是 `msg[`RISCV_INST_MSG_OPCODE]` 這樣直接當位元切片。所有指令共通的最低 7 bit，決定指令大類。`riscv_InstMsgFromBits` 用 `msg[`RISCV_INST_MSG_OPCODE]` 切出 `opcode`。對應的寬度常數是 `RISCV_INST_MSG_OPCODE_SZ`。"
+    },
+    "`RISCV_INST_MSG_RD": {
+      "sum": "指令 rd 欄位的位元範圍 macro，展開成 11:7",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "RD",
+          "destination register",
+          "目的暫存器編號"
+        ]
+      ],
+      "desc": "展開成 `11:7`（5 bit），用法是 `msg[`RISCV_INST_MSG_RD]` 這樣直接當位元切片。R/I/U/UJ 型指令的寫回暫存器編號。`riscv_InstMsgFromBits` 用它切出 `rd`；注意 S/SB 型指令的這幾個 bit 其實是 immediate（見 `RISCV_INST_MSG_IMM_4_0_S` 與 `RISCV_INST_MSG_IMM_4_1_SB`）。對應的寬度常數是 `RISCV_INST_MSG_RD_SZ`。"
+    },
+    "`RISCV_INST_MSG_FUNCT3": {
+      "sum": "指令 funct3 欄位的位元範圍 macro，展開成 14:12",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "FUNCT3",
+          "function code 3",
+          "3-bit 功能碼"
+        ]
+      ],
+      "desc": "展開成 `14:12`（3 bit），用法是 `msg[`RISCV_INST_MSG_FUNCT3]` 這樣直接當位元切片。每個 opcode 底下的次分類，例如 branch 用它分 beq/bne/blt，load 用它分 lb/lh/lw。`riscv_InstMsgFromBits` 用它切出 `funct3`。對應的寬度常數是 `RISCV_INST_MSG_FUNCT3_SZ`。"
+    },
+    "`RISCV_INST_MSG_RS1": {
+      "sum": "指令 rs1 欄位的位元範圍 macro，展開成 19:15",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "RS1",
+          "source register 1",
+          "第一來源暫存器編號"
+        ]
+      ],
+      "desc": "展開成 `19:15`（5 bit），用法是 `msg[`RISCV_INST_MSG_RS1]` 這樣直接當位元切片。除了 lui/auipc/jal 以外幾乎所有指令都有的第一個來源暫存器。`riscv_InstMsgFromBits` 用它切出 `rs1`，`riscv_CoreCtrl` 拿去做 load-use hazard 比對。對應的寬度常數是 `RISCV_INST_MSG_RS1_SZ`。"
+    },
+    "`RISCV_INST_MSG_RS2": {
+      "sum": "指令 rs2 欄位的位元範圍 macro，展開成 24:20",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "RS2",
+          "source register 2",
+          "第二來源暫存器編號"
+        ]
+      ],
+      "desc": "展開成 `24:20`（5 bit），用法是 `msg[`RISCV_INST_MSG_RS2]` 這樣直接當位元切片。R 型、store、branch 的第二個來源暫存器。`riscv_InstMsgFromBits` 用它切出 `rs2`。這個範圍和 `RISCV_INST_MSG_SHAMT`、`RISCV_INST_MSG_IMM_4_0_I` 完全重疊，差別只在格式怎麼解讀。對應的寬度常數是 `RISCV_INST_MSG_RS2_SZ`。"
+    },
+    "`RISCV_INST_MSG_FUNCT7": {
+      "sum": "指令 funct7 欄位的位元範圍 macro，展開成 31:25",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "FUNCT7",
+          "function code 7",
+          "7-bit 功能碼"
+        ]
+      ],
+      "desc": "展開成 `31:25`（7 bit），用法是 `msg[`RISCV_INST_MSG_FUNCT7]` 這樣直接當位元切片。R 型指令最高 7 bit，用來區分 add/sub（0000000 vs 0100000）、srl/sra，以及 RISCV32M 的乘除法（0000001）。`riscv_InstMsgFromBits` 用它切出 `funct7`。對應的寬度常數是 `RISCV_INST_MSG_FUNCT7_SZ`。"
+    },
+    "`RISCV_INST_MSG_SHAMT": {
+      "sum": "指令 shamt 欄位的位元範圍 macro，展開成 24:20",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SHAMT",
+          "shift amount",
+          "位移量"
+        ]
+      ],
+      "desc": "展開成 `24:20`（5 bit），用法是 `msg[`RISCV_INST_MSG_SHAMT]` 這樣直接當位元切片。slli / srli / srai 的立即位移量，位置與 `RISCV_INST_MSG_RS2` 相同。`riscv_InstMsgFromBits` 用它切出 `shamt`，`riscv_CoreDpath` 接到 `inst_shamt_Dhl` 當 op1 的來源之一。對應的寬度常數是 `RISCV_INST_MSG_SHAMT_SZ`。"
+    },
+    "`RISCV_INST_MSG_IMM_SIGN": {
+      "sum": "立即值欄位的位元範圍 macro，展開成 31:31",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "SIGN",
+          "sign bit",
+          "符號位元"
+        ]
+      ],
+      "desc": "展開成 `31:31`，當成 `msg[...]` 的位元切片使用。指令最高位 bit 31，在 I / S / SB / UJ 四種格式裡都是立即值的符號位。`riscv_InstMsgFromBits` 用 `{{21{msg[`RISCV_INST_MSG_IMM_SIGN]}}, ...}` 這種寫法把它複製多份來做符號延伸。RISC-V 的立即值在指令裡是拆散的，`riscv_InstMsgFromBits` 就是靠這一組 macro 把它們重新拼回 32-bit 的 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`。"
+    },
+    "`RISCV_INST_MSG_IMM_10_5": {
+      "sum": "立即值欄位的位元範圍 macro，展開成 30:25",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "10_5",
+          "bits 10 down to 5",
+          "立即值的第 10 到第 5 位"
+        ]
+      ],
+      "desc": "展開成 `30:25`，當成 `msg[...]` 的位元切片使用。指令 bit 30:25，在 I、S、SB、UJ 四種格式裡都剛好放立即值的 imm[10:5]，所以 `riscv_InstMsgFromBits` 的四個 imm 都用到同一個 macro。RISC-V 的立即值在指令裡是拆散的，`riscv_InstMsgFromBits` 就是靠這一組 macro 把它們重新拼回 32-bit 的 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`。"
+    },
+    "`RISCV_INST_MSG_IMM_4_0_I": {
+      "sum": "立即值欄位的位元範圍 macro，展開成 24:20",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "4_0",
+          "bits 4 down to 0",
+          "立即值最低 5 位"
+        ],
+        [
+          "I",
+          "I-type",
+          "I 型格式"
+        ]
+      ],
+      "desc": "展開成 `24:20`，當成 `msg[...]` 的位元切片使用。I-type 立即值的最低 5 bit，位於指令 bit 24:20（和 rs2 / shamt 同位置）。只用在 `imm_i` 的組合式裡。RISC-V 的立即值在指令裡是拆散的，`riscv_InstMsgFromBits` 就是靠這一組 macro 把它們重新拼回 32-bit 的 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`。"
+    },
+    "`RISCV_INST_MSG_IMM_4_0_S": {
+      "sum": "立即值欄位的位元範圍 macro，展開成 11:7",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "4_0",
+          "bits 4 down to 0",
+          "立即值最低 5 位"
+        ],
+        [
+          "S",
+          "S-type",
+          "S 型（store）格式"
+        ]
+      ],
+      "desc": "展開成 `11:7`，當成 `msg[...]` 的位元切片使用。S-type 立即值的最低 5 bit，被放在指令 bit 11:7（也就是 R 型的 rd 位置）。只用在 `imm_s` 的組合式裡。RISC-V 的立即值在指令裡是拆散的，`riscv_InstMsgFromBits` 就是靠這一組 macro 把它們重新拼回 32-bit 的 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`。"
+    },
+    "`RISCV_INST_MSG_IMM_11_SB": {
+      "sum": "立即值欄位的位元範圍 macro，展開成 7:7",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "11",
+          "bit 11",
+          "立即值第 11 位"
+        ],
+        [
+          "SB",
+          "SB-type",
+          "SB 型（分支）格式"
+        ]
+      ],
+      "desc": "展開成 `7:7`，當成 `msg[...]` 的位元切片使用。SB-type 立即值的 bit 11 被單獨塞在指令 bit 7。只用在 `imm_sb` 的組合式裡，是 RISC-V 為了讓 rs1/rs2 位置固定而刻意打散欄位的結果。RISC-V 的立即值在指令裡是拆散的，`riscv_InstMsgFromBits` 就是靠這一組 macro 把它們重新拼回 32-bit 的 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`。"
+    },
+    "`RISCV_INST_MSG_IMM_4_1_SB": {
+      "sum": "立即值欄位的位元範圍 macro，展開成 11:8",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "4_1",
+          "bits 4 down to 1",
+          "立即值第 4 到第 1 位"
+        ],
+        [
+          "SB",
+          "SB-type",
+          "SB 型（分支）格式"
+        ]
+      ],
+      "desc": "展開成 `11:8`，當成 `msg[...]` 的位元切片使用。SB-type 立即值的 bit 4:1，位於指令 bit 11:8。`imm_sb` 把它接完後再補一個 `1'b0` 當 bit 0，因為分支目標必定是偶數位址。RISC-V 的立即值在指令裡是拆散的，`riscv_InstMsgFromBits` 就是靠這一組 macro 把它們重新拼回 32-bit 的 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`。"
+    },
+    "`RISCV_INST_MSG_IMM_31_12_U": {
+      "sum": "立即值欄位的位元範圍 macro，展開成 31:12",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "31_12",
+          "bits 31 down to 12",
+          "立即值第 31 到第 12 位"
+        ],
+        [
+          "U",
+          "U-type",
+          "U 型格式"
+        ]
+      ],
+      "desc": "展開成 `31:12`，當成 `msg[...]` 的位元切片使用。U-type（lui / auipc）立即值的高 20 bit，直接就是指令 bit 31:12。`imm_u` 把它後面補 12 個 0，不需要符號延伸。RISC-V 的立即值在指令裡是拆散的，`riscv_InstMsgFromBits` 就是靠這一組 macro 把它們重新拼回 32-bit 的 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`。"
+    },
+    "`RISCV_INST_MSG_IMM_19_12_UJ": {
+      "sum": "立即值欄位的位元範圍 macro，展開成 19:12",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "19_12",
+          "bits 19 down to 12",
+          "立即值第 19 到第 12 位"
+        ],
+        [
+          "UJ",
+          "UJ-type",
+          "UJ 型（jal）格式"
+        ]
+      ],
+      "desc": "展開成 `19:12`，當成 `msg[...]` 的位元切片使用。UJ-type（jal）立即值的 bit 19:12，剛好原位放在指令 bit 19:12。只用在 `imm_uj` 的組合式裡。RISC-V 的立即值在指令裡是拆散的，`riscv_InstMsgFromBits` 就是靠這一組 macro 把它們重新拼回 32-bit 的 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`。"
+    },
+    "`RISCV_INST_MSG_IMM_11_UJ": {
+      "sum": "立即值欄位的位元範圍 macro，展開成 20:20",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "11",
+          "bit 11",
+          "立即值第 11 位"
+        ],
+        [
+          "UJ",
+          "UJ-type",
+          "UJ 型（jal）格式"
+        ]
+      ],
+      "desc": "展開成 `20:20`，當成 `msg[...]` 的位元切片使用。UJ-type 立即值的 bit 11 被單獨放在指令 bit 20。只用在 `imm_uj` 的組合式裡。RISC-V 的立即值在指令裡是拆散的，`riscv_InstMsgFromBits` 就是靠這一組 macro 把它們重新拼回 32-bit 的 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`。"
+    },
+    "`RISCV_INST_MSG_IMM_4_1_UJ": {
+      "sum": "立即值欄位的位元範圍 macro，展開成 24:21",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "IMM",
+          "immediate",
+          "立即值"
+        ],
+        [
+          "4_1",
+          "bits 4 down to 1",
+          "立即值第 4 到第 1 位"
+        ],
+        [
+          "UJ",
+          "UJ-type",
+          "UJ 型（jal）格式"
+        ]
+      ],
+      "desc": "展開成 `24:21`，當成 `msg[...]` 的位元切片使用。UJ-type 立即值的 bit 4:1，位於指令 bit 24:21，後面再補 `1'b0` 成為 bit 0。只用在 `imm_uj` 的組合式裡。RISC-V 的立即值在指令裡是拆散的，`riscv_InstMsgFromBits` 就是靠這一組 macro 把它們重新拼回 32-bit 的 `imm_i` / `imm_s` / `imm_sb` / `imm_u` / `imm_uj`。"
+    },
+    "`RISCV_INST_MSG_SZ": {
+      "sum": "欄位寬度常數 macro，展開成 32（整條指令的 bit 數）",
+      "naming": [
+        [
+          "RISCV",
+          "RISC-V core",
+          "處理器本身的 macro 前綴"
+        ],
+        [
+          "INST",
+          "instruction",
+          "指令"
+        ],
+        [
+          "MSG",
+          "message",
+          "訊息（把指令當成有欄位的訊息來看）"
+        ],
+        [
+          "SZ",
+          "size",
+          "bit 數"
+        ]
+      ],
+      "desc": "展開成 `32`。這一組結尾是 `_SZ` 的 macro 專門用在 port / wire 的寬度宣告（寫成 `[`RISCV_INST_MSG_SZ-1:0]`），和另一組不帶 `_SZ`、展開成 msb:lsb 位元範圍的同名 macro（用來切位元）是兩回事，不要搞混。`riscv_InstMsgFromBits` 與 `riscv_InstMsgDisasm` 的 `msg` port 寬度就是 `input [`RISCV_INST_MSG_SZ-1:0] msg`，`riscv_CoreCtrl` / `riscv_CoreDpath` 的 `ir_Dhl`、`inst_Dhl` 等指令暫存器也用它當寬度。"
+    }
+  }
+}

@@ -1,0 +1,924 @@
+[
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_pf|DATA_SZ",
+  "name": "DATA_SZ",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:16",
+   "vc/vc-RAMs.v:23",
+   "vc/vc-RAMs.v:26",
+   "vc/vc-RAMs.v:29"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_pf|ENTRIES",
+  "name": "ENTRIES",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:17",
+   "vc/vc-RAMs.v:29"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_pf|ADDR_SZ",
+  "name": "ADDR_SZ",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:18",
+   "vc/vc-RAMs.v:22",
+   "vc/vc-RAMs.v:25"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_pf|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:21",
+   "vc/vc-RAMs.v:37"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_pf|raddr",
+  "name": "raddr",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_pf",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:22",
+   "vc/vc-RAMs.v:33"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_pf|rdata",
+  "name": "rdata",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_pf",
+  "kind": "output",
+  "decl": "output [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:23",
+   "vc/vc-RAMs.v:33"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_pf|wen_p",
+  "name": "wen_p",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:24",
+   "vc/vc-RAMs.v:38"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_pf|waddr_p",
+  "name": "waddr_p",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_pf",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:25",
+   "vc/vc-RAMs.v:39"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_pf|wdata_p",
+  "name": "wdata_p",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_pf",
+  "kind": "input",
+  "decl": "input [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:26",
+   "vc/vc-RAMs.v:39"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_pf|mem",
+  "name": "mem",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_pf",
+  "kind": "reg",
+  "decl": "reg [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:29",
+   "vc/vc-RAMs.v:33",
+   "vc/vc-RAMs.v:39"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|DATA_SZ",
+  "name": "DATA_SZ",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:49",
+   "vc/vc-RAMs.v:57",
+   "vc/vc-RAMs.v:60",
+   "vc/vc-RAMs.v:63"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|ENTRIES",
+  "name": "ENTRIES",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:50",
+   "vc/vc-RAMs.v:63",
+   "vc/vc-RAMs.v:73"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|ADDR_SZ",
+  "name": "ADDR_SZ",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:51",
+   "vc/vc-RAMs.v:56",
+   "vc/vc-RAMs.v:59"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|RESET_VALUE",
+  "name": "RESET_VALUE",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:52",
+   "vc/vc-RAMs.v:77"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:54",
+   "vc/vc-RAMs.v:75"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|reset_p",
+  "name": "reset_p",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:55",
+   "vc/vc-RAMs.v:76"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|raddr",
+  "name": "raddr",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:56",
+   "vc/vc-RAMs.v:67"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|rdata",
+  "name": "rdata",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "output",
+  "decl": "output [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:57",
+   "vc/vc-RAMs.v:67"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|wen_p",
+  "name": "wen_p",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:58",
+   "vc/vc-RAMs.v:78"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|waddr_p",
+  "name": "waddr_p",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:59",
+   "vc/vc-RAMs.v:78"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|wdata_p",
+  "name": "wdata_p",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "input",
+  "decl": "input [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:60",
+   "vc/vc-RAMs.v:79"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|mem",
+  "name": "mem",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "reg",
+  "decl": "reg [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:63",
+   "vc/vc-RAMs.v:67",
+   "vc/vc-RAMs.v:77",
+   "vc/vc-RAMs.v:79"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|i",
+  "name": "i",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "genvar",
+  "decl": "genvar",
+  "lines": [
+   "vc/vc-RAMs.v:71",
+   "vc/vc-RAMs.v:73",
+   "vc/vc-RAMs.v:77",
+   "vc/vc-RAMs.v:78",
+   "vc/vc-RAMs.v:79"
+  ],
+  "n_occ": 8
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|wport",
+  "name": "wport",
+  "cat": "signal",
+  "module": "vc_RAM_rst_1w1r_pf",
+  "kind": "block",
+  "decl": "begin : wport",
+  "lines": [
+   "vc/vc-RAMs.v:74"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|DATA_SZ",
+  "name": "DATA_SZ",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:102",
+   "vc/vc-RAMs.v:105",
+   "vc/vc-RAMs.v:91",
+   "vc/vc-RAMs.v:97",
+   "vc/vc-RAMs.v:99"
+  ],
+  "n_occ": 5
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|ENTRIES",
+  "name": "ENTRIES",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:105",
+   "vc/vc-RAMs.v:92"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|ADDR_SZ",
+  "name": "ADDR_SZ",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:101",
+   "vc/vc-RAMs.v:93",
+   "vc/vc-RAMs.v:96",
+   "vc/vc-RAMs.v:98"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:114",
+   "vc/vc-RAMs.v:95"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|raddr0",
+  "name": "raddr0",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:109",
+   "vc/vc-RAMs.v:96"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|rdata0",
+  "name": "rdata0",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "output",
+  "decl": "output [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:109",
+   "vc/vc-RAMs.v:97"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|raddr1",
+  "name": "raddr1",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:110",
+   "vc/vc-RAMs.v:98"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|rdata1",
+  "name": "rdata1",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "output",
+  "decl": "output [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:110",
+   "vc/vc-RAMs.v:99"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|wen_p",
+  "name": "wen_p",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:100",
+   "vc/vc-RAMs.v:115"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|waddr_p",
+  "name": "waddr_p",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:101",
+   "vc/vc-RAMs.v:116"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|wdata_p",
+  "name": "wdata_p",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "input",
+  "decl": "input [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:102",
+   "vc/vc-RAMs.v:116"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w2r_pf|mem",
+  "name": "mem",
+  "cat": "signal",
+  "module": "vc_RAM_1w2r_pf",
+  "kind": "reg",
+  "decl": "reg [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:105",
+   "vc/vc-RAMs.v:109",
+   "vc/vc-RAMs.v:110",
+   "vc/vc-RAMs.v:116"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|DATA_SZ",
+  "name": "DATA_SZ",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:126",
+   "vc/vc-RAMs.v:132",
+   "vc/vc-RAMs.v:135",
+   "vc/vc-RAMs.v:138"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|ENTRIES",
+  "name": "ENTRIES",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:127",
+   "vc/vc-RAMs.v:138"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|ADDR_SZ",
+  "name": "ADDR_SZ",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:128",
+   "vc/vc-RAMs.v:131",
+   "vc/vc-RAMs.v:134"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:130",
+   "vc/vc-RAMs.v:147",
+   "vc/vc-RAMs.v:154",
+   "vc/vc-RAMs.v:166"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|raddr",
+  "name": "raddr",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:131",
+   "vc/vc-RAMs.v:161"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|rdata",
+  "name": "rdata",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "output",
+  "decl": "output [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:132",
+   "vc/vc-RAMs.v:161"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|wen_p",
+  "name": "wen_p",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:133",
+   "vc/vc-RAMs.v:148"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|waddr_p",
+  "name": "waddr_p",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:134",
+   "vc/vc-RAMs.v:155"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|wdata_p",
+  "name": "wdata_p",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "input",
+  "decl": "input [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:135",
+   "vc/vc-RAMs.v:167"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|mem",
+  "name": "mem",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "reg",
+  "decl": "reg [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:138",
+   "vc/vc-RAMs.v:161",
+   "vc/vc-RAMs.v:167"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|wen_latched_pn",
+  "name": "wen_latched_pn",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-RAMs.v:142",
+   "vc/vc-RAMs.v:149",
+   "vc/vc-RAMs.v:166"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|waddr_latched_pn",
+  "name": "waddr_latched_pn",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-RAMs.v:143",
+   "vc/vc-RAMs.v:156",
+   "vc/vc-RAMs.v:167"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|wen_ll",
+  "name": "wen_ll",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "instance",
+  "decl": "vc_Latch_ll wen_ll ( ... );",
+  "instance_of": "vc_Latch_ll",
+  "lines": [
+   "vc/vc-RAMs.v:145"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_hl|waddr_ll",
+  "name": "waddr_ll",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_hl",
+  "kind": "instance",
+  "decl": "vc_Latch_ll waddr_ll ( ... );",
+  "instance_of": "vc_Latch_ll",
+  "lines": [
+   "vc/vc-RAMs.v:152"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|DATA_SZ",
+  "name": "DATA_SZ",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:177",
+   "vc/vc-RAMs.v:184",
+   "vc/vc-RAMs.v:187",
+   "vc/vc-RAMs.v:190"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|ENTRIES",
+  "name": "ENTRIES",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:178",
+   "vc/vc-RAMs.v:190"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|ADDR_SZ",
+  "name": "ADDR_SZ",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "parameter",
+  "decl": "parameter",
+  "lines": [
+   "vc/vc-RAMs.v:179",
+   "vc/vc-RAMs.v:183",
+   "vc/vc-RAMs.v:186"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|clk",
+  "name": "clk",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:182",
+   "vc/vc-RAMs.v:199",
+   "vc/vc-RAMs.v:206",
+   "vc/vc-RAMs.v:218"
+  ],
+  "n_occ": 4
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|raddr",
+  "name": "raddr",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:183",
+   "vc/vc-RAMs.v:213"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|rdata",
+  "name": "rdata",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "output",
+  "decl": "output [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:184",
+   "vc/vc-RAMs.v:213"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|wen_n",
+  "name": "wen_n",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "input",
+  "decl": "input",
+  "lines": [
+   "vc/vc-RAMs.v:185",
+   "vc/vc-RAMs.v:200"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|waddr_n",
+  "name": "waddr_n",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "input",
+  "decl": "input [ADDR_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:186",
+   "vc/vc-RAMs.v:207"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|wdata_n",
+  "name": "wdata_n",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "input",
+  "decl": "input [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:187",
+   "vc/vc-RAMs.v:219"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|mem",
+  "name": "mem",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "reg",
+  "decl": "reg [DATA_SZ-1:0]",
+  "lines": [
+   "vc/vc-RAMs.v:190",
+   "vc/vc-RAMs.v:213",
+   "vc/vc-RAMs.v:219"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|wen_latched_np",
+  "name": "wen_latched_np",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-RAMs.v:194",
+   "vc/vc-RAMs.v:201",
+   "vc/vc-RAMs.v:218"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|waddr_latched_np",
+  "name": "waddr_latched_np",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "wire",
+  "decl": "wire",
+  "lines": [
+   "vc/vc-RAMs.v:195",
+   "vc/vc-RAMs.v:208",
+   "vc/vc-RAMs.v:219"
+  ],
+  "n_occ": 3
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|wen_hl",
+  "name": "wen_hl",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "instance",
+  "decl": "vc_Latch_hl wen_hl ( ... );",
+  "instance_of": "vc_Latch_hl",
+  "lines": [
+   "vc/vc-RAMs.v:197"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-RAMs.v|vc_RAM_1w1r_ll|waddr_hl",
+  "name": "waddr_hl",
+  "cat": "signal",
+  "module": "vc_RAM_1w1r_ll",
+  "kind": "instance",
+  "decl": "vc_Latch_hl waddr_hl ( ... );",
+  "instance_of": "vc_Latch_hl",
+  "lines": [
+   "vc/vc-RAMs.v:204"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "`VC_RAMS_V",
+  "name": "VC_RAMS_V",
+  "cat": "macro",
+  "lines": [
+   "vc/vc-RAMs.v:5",
+   "vc/vc-RAMs.v:6"
+  ],
+  "n_occ": 2
+ },
+ {
+  "key": "vc/vc-RAMs.v||vc_RAM_1w1r_pf",
+  "name": "vc_RAM_1w1r_pf",
+  "cat": "module",
+  "lines": [
+   "vc/vc-RAMs.v:14"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-RAMs.v||vc_RAM_rst_1w1r_pf",
+  "name": "vc_RAM_rst_1w1r_pf",
+  "cat": "module",
+  "lines": [
+   "vc/vc-RAMs.v:47"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-RAMs.v||vc_RAM_1w2r_pf",
+  "name": "vc_RAM_1w2r_pf",
+  "cat": "module",
+  "lines": [
+   "vc/vc-RAMs.v:89"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-RAMs.v||vc_RAM_1w1r_hl",
+  "name": "vc_RAM_1w1r_hl",
+  "cat": "module",
+  "lines": [
+   "vc/vc-RAMs.v:124"
+  ],
+  "n_occ": 1
+ },
+ {
+  "key": "vc/vc-RAMs.v||vc_RAM_1w1r_ll",
+  "name": "vc_RAM_1w1r_ll",
+  "cat": "module",
+  "lines": [
+   "vc/vc-RAMs.v:175"
+  ],
+  "n_occ": 1
+ }
+]

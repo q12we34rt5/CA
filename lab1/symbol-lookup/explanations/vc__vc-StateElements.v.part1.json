@@ -1,0 +1,221 @@
+{
+  "entities": {
+    "`VC_STATE_ELEMENTS_V": {
+      "sum": "vc-StateElements.v 的 include guard，防止這個檔被重複 `include",
+      "naming": [
+        ["VC_", "Verilog Components", "vc 函式庫的 macro 前綴"],
+        ["STATE_ELEMENTS", "state elements", "狀態元件（flip-flop 與 latch）"],
+        ["_V", "Verilog file guard", "檔名_V：include guard"]
+      ],
+      "desc": "檔案開頭 `ifndef VC_STATE_ELEMENTS_V / `define VC_STATE_ELEMENTS_V、結尾 `endif 把整份檔案包起來，所以這個檔可以被多個檔案 include 而不會重複定義裡面 10 個 module。檔案本身也 include 了 `vc-Assert.v`，好讓幾個 module 能用 `VC_ASSERT_NOT_X_POSEDGE_MSG 這類 assertion macro。"
+    },
+    "vc/vc-StateElements.v||vc_DFF_pf": {
+      "sum": "最基本的正緣觸發 D flip-flop，每個 clk 上升緣把 d_p 存起來",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["DFF", "D flip-flop", "D 型正反器"],
+        ["_pf", "positive-edge flip-flop", "正緣觸發的 flip-flop"]
+      ],
+      "desc": "參數只有 `W`（位元寬度，預設 1）。port 是 clk / d_p（輸入）與 q_np（輸出）。內部只有 always @( posedge clk ) q_np <= d_p; 一行——沒有 enable、沒有 reset，每個上升緣都無條件更新。在這個 lab 裡它是最基本的參考實作；riscvstall 的 pipeline 暫存器其實是直接寫 always @(posedge clk) 而不是 instantiate 它，從程式碼看來這份 repo 沒有檔案實際用到它。"
+    },
+    "vc/vc-StateElements.v|vc_DFF_pf|W": {
+      "sum": "vc_DFF_pf 的位元寬度參數，預設 1",
+      "naming": [
+        ["W", "width", "位元寬度"]
+      ],
+      "desc": "parameter W = 1。它同時決定 `d_p` 和 `q_np` 的寬度（[W-1:0]）。instantiate 時寫 vc_DFF_pf#(32) 就得到一個 32-bit 暫存器。預設 1 是為了讓只存一個 bit 的情況可以省略參數。"
+    },
+    "vc/vc-StateElements.v|vc_DFF_pf|clk": {
+      "sum": "vc_DFF_pf 的時脈輸入，上升緣時把資料鎖進去",
+      "naming": [
+        ["clk", "clock", "時脈"]
+      ],
+      "desc": "1-bit 輸入，唯一的用途是當 always @( posedge clk ) 的觸發條件。由 instantiate 它的上層把系統 clk 接進來。這個 module 沒有任何 enable，所以只要 clk 有上升緣，`q_np` 就一定會更新成 `d_p`。"
+    },
+    "vc/vc-StateElements.v|vc_DFF_pf|d_p": {
+      "sum": "vc_DFF_pf 的資料輸入，在 clk 上升緣被取樣",
+      "naming": [
+        ["d", "data", "資料輸入（D flip-flop 的 D）"],
+        ["_p", "positive edge", "在 clk 正緣被取樣"]
+      ],
+      "desc": "寬度 [W-1:0]。後綴 _p 是 vc 函式庫的時序標記，代表「這條線必須在 clk 正緣前後穩定，因為它是在正緣被取樣的」。always @( posedge clk ) q_np <= d_p; 就是在正緣把它複製到輸出。"
+    },
+    "vc/vc-StateElements.v|vc_DFF_pf|q_np": {
+      "sum": "vc_DFF_pf 的資料輸出，在 clk 正緣之後才變成新值",
+      "naming": [
+        ["q", "output", "資料輸出（D flip-flop 的 Q）"],
+        ["_np", "next positive edge", "正緣之後才變化的輸出"]
+      ],
+      "desc": "宣告成 output reg [W-1:0]，因為它被 always 區塊用非阻塞指派 <= 驅動。後綴 _np 代表「它的值在下一個正緣之前都保持不變」，也就是整個 cycle 都穩定，可以安全地被下游組合邏輯使用。reset 時沒有特別處理，所以模擬一開始它是 x，要有明確初值就得改用 `vc_RDFF_pf`。"
+    },
+    "vc/vc-StateElements.v||vc_RDFF_pf": {
+      "sum": "帶同步 reset 的正緣觸發 flip-flop；reset_p 為 1 時載入 RESET_VALUE",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["R", "reset", "帶 reset"],
+        ["DFF", "D flip-flop", "D 型正反器"],
+        ["_pf", "positive-edge flip-flop", "正緣觸發的 flip-flop"]
+      ],
+      "desc": "比 `vc_DFF_pf` 多了 `reset_p` 輸入與 `RESET_VALUE` 參數。內部是 always @( posedge clk ) q_np <= reset_p ? RESET_VALUE : d_p;——注意 reset 是同步的（只在 clk 正緣生效），而且沒有 enable，所以每個正緣一定會更新。適合用來做「開機要有明確初值」的暫存器，例如 PC。riscvstall 的 PC 暫存器是自己手寫 always 區塊，沒有 instantiate 這個 module。"
+    },
+    "vc/vc-StateElements.v|vc_RDFF_pf|W": {
+      "sum": "vc_RDFF_pf 的位元寬度參數，預設 1",
+      "naming": [
+        ["W", "width", "位元寬度"]
+      ],
+      "desc": "parameter W = 1，決定 `d_p` 與 `q_np` 的寬度 [W-1:0]。它是參數列的第一個，所以 vc_RDFF_pf#(32, 32'h80000000) 的第一個 32 是寬度、第二個才是 `RESET_VALUE`。"
+    },
+    "vc/vc-StateElements.v|vc_RDFF_pf|RESET_VALUE": {
+      "sum": "vc_RDFF_pf 的 reset 初值參數，預設 0",
+      "naming": [
+        ["RESET", "reset", "重置"],
+        ["VALUE", "value", "要載入的值"]
+      ],
+      "desc": "parameter RESET_VALUE = 0。只在 `reset_p` 為 1 的那個 clk 正緣被寫進 `q_np`。它不是 port 而是編譯期常數，所以每個 instance 的 reset 值在 elaboration 時就固定了；要讓某個暫存器 reset 成非零（例如程式起始位址）就在 instantiate 時覆寫它。"
+    },
+    "vc/vc-StateElements.v|vc_RDFF_pf|clk": {
+      "sum": "vc_RDFF_pf 的時脈輸入；reset 也是在它的正緣才生效",
+      "naming": [
+        ["clk", "clock", "時脈"]
+      ],
+      "desc": "1-bit 輸入，觸發唯一的 always @( posedge clk ) 區塊。因為 reset 判斷寫在這個區塊裡面，`reset_p` 拉高本身不會立刻改變輸出，要等到下一個 clk 上升緣——這就是「同步 reset」的意思。"
+    },
+    "vc/vc-StateElements.v|vc_RDFF_pf|reset_p": {
+      "sum": "vc_RDFF_pf 的同步 reset 輸入：為 1 時下個正緣載入 RESET_VALUE",
+      "naming": [
+        ["reset", "reset", "重置"],
+        ["_p", "positive edge", "在 clk 正緣被取樣"]
+      ],
+      "desc": "1-bit 輸入。always 區塊寫成 q_np <= reset_p ? RESET_VALUE : d_p，所以它的優先權高於 `d_p`：reset_p 為 1 的正緣，輸入資料會被忽略。後綴 _p 表示它必須在 clk 正緣附近保持穩定。要注意它是同步的，若模擬一開始 clk 還沒跳，`q_np` 仍然是 x。"
+    },
+    "vc/vc-StateElements.v|vc_RDFF_pf|d_p": {
+      "sum": "vc_RDFF_pf 的資料輸入，只有在 reset_p 為 0 的正緣才會被存進去",
+      "naming": [
+        ["d", "data", "資料輸入"],
+        ["_p", "positive edge", "在 clk 正緣被取樣"]
+      ],
+      "desc": "寬度 [W-1:0]。在 reset_p 為 1 的 cycle 它會被 `RESET_VALUE` 蓋過；其餘每個正緣都會被無條件寫入（這個 module 沒有 enable，要有 enable 得用 `vc_ERDFF_pf`）。"
+    },
+    "vc/vc-StateElements.v|vc_RDFF_pf|q_np": {
+      "sum": "vc_RDFF_pf 的資料輸出，reset 後為 RESET_VALUE",
+      "naming": [
+        ["q", "output", "資料輸出"],
+        ["_np", "next positive edge", "正緣之後才變化的輸出"]
+      ],
+      "desc": "output reg [W-1:0]，由 always @( posedge clk ) 以非阻塞指派驅動。整個 cycle 內都保持穩定，下游可以直接拿去做組合邏輯。和 `vc_DFF_pf` 的差別就是它有明確的 reset 後初值，模擬一開始拉一下 reset 就不會是 x。"
+    },
+    "vc/vc-StateElements.v||vc_EDFF_pf": {
+      "sum": "帶 enable 的正緣觸發 flip-flop：en_p 為 1 的正緣才更新，否則保持原值",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["E", "enable", "帶 enable"],
+        ["DFF", "D flip-flop", "D 型正反器"],
+        ["_pf", "positive-edge flip-flop", "正緣觸發的 flip-flop"]
+      ],
+      "desc": "參數只有 `W`。內部是 always @( posedge clk ) if ( en_p ) q_np <= d_p;——en_p 為 0 時整個指派不執行，所以輸出維持上一個值。這正是 pipeline stall 需要的行為：stall 的階段把 enable 拉低，暫存器內容就凍住。檔案裡還有一段被註解掉的 `VC_ASSERT_NOT_X_POSEDGE_MSG( clk, en_p, \"en_p\" )，本來是要檢查 enable 不可以是 x（因為 x 會讓模擬器行為不確定），目前是關閉的。從程式碼看來這份 repo 沒有實際 instantiate 它。"
+    },
+    "vc/vc-StateElements.v|vc_EDFF_pf|W": {
+      "sum": "vc_EDFF_pf 的位元寬度參數，預設 1",
+      "naming": [
+        ["W", "width", "位元寬度"]
+      ],
+      "desc": "parameter W = 1，決定 `d_p` 與 `q_np` 的寬度 [W-1:0]。`en_p` 永遠是 1 bit，不受它影響。"
+    },
+    "vc/vc-StateElements.v|vc_EDFF_pf|clk": {
+      "sum": "vc_EDFF_pf 的時脈輸入，上升緣時（且 en_p 為 1）才鎖資料",
+      "naming": [
+        ["clk", "clock", "時脈"]
+      ],
+      "desc": "1-bit 輸入，觸發 always @( posedge clk ) 區塊。有上升緣不代表一定會更新——還要看 `en_p`。"
+    },
+    "vc/vc-StateElements.v|vc_EDFF_pf|d_p": {
+      "sum": "vc_EDFF_pf 的資料輸入，enable 為 1 的正緣才會被存下來",
+      "naming": [
+        ["d", "data", "資料輸入"],
+        ["_p", "positive edge", "在 clk 正緣被取樣"]
+      ],
+      "desc": "寬度 [W-1:0]。只有在 `en_p` 為 1 的那個 clk 上升緣才會被複製到 `q_np`；enable 為 0 的 cycle 它的值完全不影響輸出，所以那時候即使是 x 也無所謂。"
+    },
+    "vc/vc-StateElements.v|vc_EDFF_pf|en_p": {
+      "sum": "vc_EDFF_pf 的 enable 輸入：1 = 這個正緣寫入新值，0 = 保持不變",
+      "naming": [
+        ["en", "enable", "致能"],
+        ["_p", "positive edge", "在 clk 正緣被取樣"]
+      ],
+      "desc": "1-bit 輸入，寫成 if ( en_p ) q_np <= d_p。在 pipeline 裡它通常接 ~stall：stall 時 enable 為 0，暫存器內容就凍結。它絕對不能是 x，否則模擬器無法判斷要不要寫入；檔案裡原本有一行 assertion 在做這個檢查，但被註解掉了。"
+    },
+    "vc/vc-StateElements.v|vc_EDFF_pf|q_np": {
+      "sum": "vc_EDFF_pf 的資料輸出，enable 為 0 時整個 cycle 維持舊值",
+      "naming": [
+        ["q", "output", "資料輸出"],
+        ["_np", "next positive edge", "正緣之後才變化的輸出"]
+      ],
+      "desc": "output reg [W-1:0]，只在 `en_p` 為 1 的正緣被更新。因為沒有 reset，模擬一開始在第一次 enable 之前它是 x。它在整個 cycle 內穩定，下游可以直接使用。"
+    },
+    "vc/vc-StateElements.v||vc_ERDFF_pf": {
+      "sum": "同時帶 enable 與同步 reset 的正緣 flip-flop，功能最齊全的一顆",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["E", "enable", "帶 enable"],
+        ["R", "reset", "帶 reset"],
+        ["DFF", "D flip-flop", "D 型正反器"],
+        ["_pf", "positive-edge flip-flop", "正緣觸發的 flip-flop"]
+      ],
+      "desc": "參數是 `W` 與 `RESET_VALUE`，port 是 clk / reset_p / d_p / en_p / q_np。內部是 always @( posedge clk ) if ( reset_p || en_p ) q_np <= reset_p ? RESET_VALUE : d_p;——關鍵在於 reset 的優先權高於 enable：即使 en_p 為 0（例如整條 pipeline 正在 stall），只要 reset_p 為 1 還是會被 reset 成 `RESET_VALUE`。同樣有一段被註解掉的 en_p not-x assertion。從程式碼看來這份 repo 沒有實際 instantiate 它。"
+    },
+    "vc/vc-StateElements.v|vc_ERDFF_pf|W": {
+      "sum": "vc_ERDFF_pf 的位元寬度參數，預設 1",
+      "naming": [
+        ["W", "width", "位元寬度"]
+      ],
+      "desc": "parameter W = 1，決定 `d_p` 與 `q_np` 的寬度 [W-1:0]，是參數列的第一項（`RESET_VALUE` 是第二項）。"
+    },
+    "vc/vc-StateElements.v|vc_ERDFF_pf|RESET_VALUE": {
+      "sum": "vc_ERDFF_pf 的 reset 初值參數，預設 0",
+      "naming": [
+        ["RESET", "reset", "重置"],
+        ["VALUE", "value", "要載入的值"]
+      ],
+      "desc": "parameter RESET_VALUE = 0，在 `reset_p` 為 1 的 clk 正緣被寫進 `q_np`，而且不受 `en_p` 影響。它是編譯期常數，instantiate 時用 #(W, RESET_VALUE) 覆寫。"
+    },
+    "vc/vc-StateElements.v|vc_ERDFF_pf|clk": {
+      "sum": "vc_ERDFF_pf 的時脈輸入；enable 與 reset 都在它的正緣才生效",
+      "naming": [
+        ["clk", "clock", "時脈"]
+      ],
+      "desc": "1-bit 輸入，觸發唯一的 always @( posedge clk ) 區塊。因為 reset 判斷也寫在區塊內，所以這顆是同步 reset：reset_p 拉高後要等下一個上升緣輸出才會變。"
+    },
+    "vc/vc-StateElements.v|vc_ERDFF_pf|reset_p": {
+      "sum": "vc_ERDFF_pf 的同步 reset 輸入，優先權高於 en_p",
+      "naming": [
+        ["reset", "reset", "重置"],
+        ["_p", "positive edge", "在 clk 正緣被取樣"]
+      ],
+      "desc": "1-bit 輸入。條件寫成 if ( reset_p || en_p )，指派寫成 reset_p ? RESET_VALUE : d_p，所以 reset_p 為 1 時不管 `en_p` 是 0 還是 1，正緣一定會載入 `RESET_VALUE`。這是它和「先 and enable 再 reset」的寫法最大的差別。"
+    },
+    "vc/vc-StateElements.v|vc_ERDFF_pf|d_p": {
+      "sum": "vc_ERDFF_pf 的資料輸入，只有在 reset_p=0 且 en_p=1 的正緣才寫入",
+      "naming": [
+        ["d", "data", "資料輸入"],
+        ["_p", "positive edge", "在 clk 正緣被取樣"]
+      ],
+      "desc": "寬度 [W-1:0]。三種情況：reset_p=1 → 被 `RESET_VALUE` 蓋掉；reset_p=0 且 en_p=1 → 被寫進 `q_np`；en_p=0 → 整個指派不執行，輸出保持舊值。"
+    },
+    "vc/vc-StateElements.v|vc_ERDFF_pf|en_p": {
+      "sum": "vc_ERDFF_pf 的 enable 輸入：1 = 正緣寫入 d_p，0 = 保持（但仍可被 reset）",
+      "naming": [
+        ["en", "enable", "致能"],
+        ["_p", "positive edge", "在 clk 正緣被取樣"]
+      ],
+      "desc": "1-bit 輸入，在 pipeline 裡典型接 ~stall。它出現在 if ( reset_p || en_p ) 的條件裡，所以 enable 為 0 只擋得住資料寫入，擋不住 reset。它不能是 x，檔案裡原本的 not-x assertion 目前被註解掉了。"
+    },
+    "vc/vc-StateElements.v|vc_ERDFF_pf|q_np": {
+      "sum": "vc_ERDFF_pf 的資料輸出：reset 後為 RESET_VALUE，stall（en_p=0）時保持不變",
+      "naming": [
+        ["q", "output", "資料輸出"],
+        ["_np", "next positive edge", "正緣之後才變化的輸出"]
+      ],
+      "desc": "output reg [W-1:0]，由唯一的 always @( posedge clk ) 以非阻塞指派驅動。整個 cycle 穩定。它結合了 `vc_RDFF_pf` 的明確初值和 `vc_EDFF_pf` 的凍結能力，是實作 pipeline 暫存器最常見的元件形式。"
+    }
+  }
+}

@@ -1,0 +1,463 @@
+{
+  "entities": {
+    "riscvstall/riscvstall-sim.v||riscv_sim": {
+      "sum": "riscvstall 舊版獨立模擬 top module：自己接 CPU 與測試記憶體並跑 vmh 程式",
+      "naming": [
+        [
+          "riscv",
+          "RISC-V",
+          "RISC-V 處理器"
+        ],
+        [
+          "sim",
+          "simulation",
+          "模擬用的頂層 testbench"
+        ]
+      ],
+      "desc": "這是一個沒有 port 的頂層 testbench module：裡面自己產生 `clk` 與 `reset`，instantiate 一顆 `riscv_Core`（名為 `proc`）和一顆 `vc_TestDualPortRandDelayMem`（名為 `mem`，這裡 `p_max_delay` 設 0，也就是記憶體零延遲），把 imem 介面接到 mem 的 port 0、dmem 介面接到 port 1，再用 `$value$plusargs` 從命令列讀 `+exe=`、`+max-cycles=`、`+stats=`、`+verbose=`、`+vcd=`、`+disasm=`，用 `$readmemh` 把 vmh 程式載進記憶體，最後看 `status` 判斷 PASSED / FAILED。要注意的是：目前 `build/Makefile` 並不編譯這個檔，它改用 `Testbench.v` + `Pattern.v` 當頂層（`-s Testbench`）；而且本檔用階層路徑存取 `proc.ctrl.stats_en` / `proc.ctrl.num_inst` / `proc.ctrl.num_cycles`，這三個名稱在現在的 `riscv_CoreCtrl` 裡已經找不到宣告，同時 `riscv_Core` 新增的 `imemresp_rdy` / `dmemresp_rdy` / `retire_valid` 這裡也沒接，所以這個檔案是舊版遺留、單獨拿去編譯會出錯。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|clk": {
+      "sum": "riscv_sim 自己產生的模擬時脈，週期 10 個時間單位",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "宣告為 `reg clk = 1'b0`，再用 `always #5 clk = ~clk;` 每 5 個時間單位翻轉一次，所以一個完整週期是 10。它接到 `proc`（`riscv_Core`）和 `mem`（`vc_TestDualPortRandDelayMem`）的 `clk`，也是本檔兩個 `always @(posedge clk)` 區塊（reset 遞延、disassembly 列印、`cycle_count` 累加）的觸發來源。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|reset": {
+      "sum": "riscv_sim 的原始 reset 脈衝，之後再遞延成 reset_mem / reset_proc",
+      "naming": [
+        [
+          "reset",
+          "reset",
+          "重置"
+        ]
+      ],
+      "desc": "宣告時初始化為 1'b1，在 `initial` 區塊最後 `#5 reset = 1'b1; #20 reset = 1'b0;`，也就是開場先維持高電位一段時間再放掉。它不直接接到任何 instance，而是先在 `always @(posedge clk)` 裡打一拍變成 `reset_mem`、再打一拍變成 `reset_proc`。另外「status 改變就結束模擬」那段用 `!reset && (status != 0)` 當條件，避免 reset 期間誤判成測試結束。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|status": {
+      "sum": "從 CPU 的 csr_status 接出來的測試結果碼，非 0 就結束模擬",
+      "naming": [
+        [
+          "status",
+          "status",
+          "狀態 / 測試結果碼"
+        ]
+      ],
+      "desc": "32-bit wire，接到 `proc` 的 `csr_status` 輸出；在 `riscv_CoreCtrl` 裡，程式對 CSR 編號 12'd21（tohost）寫值時就會更新它。0 代表測試還在跑，1 代表 `*** PASSED ***`，大於 1 代表 `*** FAILED ***` 並把數值當成失敗的測試編號印出來。`always @(*)` 區塊只要看到 `!reset && status != 0` 就印結果、（verbose 時）印 STATS，然後 `#20 $finish`。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|imemreq_msg": {
+      "sum": "CPU 送往測試記憶體 port 0 的取指請求訊息（打包後的 bits）",
+      "naming": [
+        [
+          "imem",
+          "instruction memory",
+          "指令記憶體"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "msg",
+          "message",
+          "打包成 bits 的訊息"
+        ]
+      ],
+      "desc": "寬度是 `VC_MEM_REQ_MSG_SZ`(32,32)，裡面含 type / addr / len / data 等欄位。由 `proc` 的 `imemreq_msg` 輸出驅動，接到 `mem` 的 `memreq0_msg`。取指令一律是讀（type = read、len = 0 表示整個 word），只有在 `imemreq_val` 與 `imemreq_rdy` 同時為 1 的那個 cycle 才真的被記憶體接收。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|imemreq_val": {
+      "sum": "取指請求的 valid：CPU 告訴記憶體這個 cycle 有指令請求",
+      "naming": [
+        [
+          "imem",
+          "instruction memory",
+          "指令記憶體"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "由 `proc` 輸出、接到 `mem` 的 `memreq0_val`。它和 `imemreq_rdy` 組成 val-rdy 握手，兩者同時為 1 的那個 cycle 才算送出一筆取指請求，`imemreq_msg` 也才有意義。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|imemreq_rdy": {
+      "sum": "取指請求的 ready：測試記憶體回報這個 cycle 能收請求",
+      "naming": [
+        [
+          "imem",
+          "instruction memory",
+          "指令記憶體"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可以接收"
+        ]
+      ],
+      "desc": "方向和 `imemreq_val` 相反：由 `mem` 的 `memreq0_rdy` 輸出、接回 `proc`。本檔把 `p_max_delay` 設為 0，所以記憶體幾乎隨時 ready；CPU 的 F 階段要看到它為 1 才能把 PC 往前推。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|imemresp_msg": {
+      "sum": "測試記憶體回傳給 CPU 的指令資料（32-bit 指令包在 resp 訊息裡）",
+      "naming": [
+        [
+          "imem",
+          "instruction memory",
+          "指令記憶體"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "msg",
+          "message",
+          "打包成 bits 的訊息"
+        ]
+      ],
+      "desc": "寬度 `VC_MEM_RESP_MSG_SZ`(32)，由 `mem` 的 `memresp0_msg` 驅動、送進 `proc` 的 `imemresp_msg`。CPU 會把裡面的 data 欄位當成 D 階段要解碼的指令。只有 `imemresp_val` 為 1 的那個 cycle 內容才有效。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|imemresp_val": {
+      "sum": "取指回應的 valid：記憶體告訴 CPU 這個 cycle 指令回來了",
+      "naming": [
+        [
+          "imem",
+          "instruction memory",
+          "指令記憶體"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "由 `mem` 的 `memresp0_val` 驅動、接到 `proc`。注意本檔把 `mem` 的 `memresp0_rdy` 直接綁成 1'b1，也就是假設 CPU 永遠收得下取指回應——這是舊版寫法；現在的 `riscv_Core` 其實已經有 `imemresp_rdy` 輸出（由 `!stall_Dhl` 驅動），本檔卻沒有接上。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|dmemreq_msg": {
+      "sum": "CPU 送往測試記憶體 port 1 的 load/store 請求訊息",
+      "naming": [
+        [
+          "dmem",
+          "data memory",
+          "資料記憶體"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "msg",
+          "message",
+          "打包成 bits 的訊息"
+        ]
+      ],
+      "desc": "寬度 `VC_MEM_REQ_MSG_SZ`(32,32)，由 `proc` 的 M 階段輸出、接到 `mem` 的 `memreq1_msg`。裡面的 type 欄位 0 = read（load）、1 = write（store），len 欄位決定存取 1 / 2 個 byte 或整個 word（0 代表 word），addr 是 ALU 算出來的位址，data 則是 store 要寫的值。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|dmemreq_val": {
+      "sum": "資料記憶體請求的 valid：CPU 這個 cycle 有 load/store 要送",
+      "naming": [
+        [
+          "dmem",
+          "data memory",
+          "資料記憶體"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "由 `proc` 輸出、接到 `mem` 的 `memreq1_val`。只有非 load/store 指令時它會是 0；和 `dmemreq_rdy` 同時為 1 的 cycle 才算送出請求。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|dmemreq_rdy": {
+      "sum": "資料記憶體請求的 ready：記憶體 port 1 這個 cycle 收得下請求",
+      "naming": [
+        [
+          "dmem",
+          "data memory",
+          "資料記憶體"
+        ],
+        [
+          "req",
+          "request",
+          "請求"
+        ],
+        [
+          "rdy",
+          "ready",
+          "可以接收"
+        ]
+      ],
+      "desc": "由 `mem` 的 `memreq1_rdy` 輸出、接回 `proc`。若記憶體沒 ready，CPU 的 M 階段就得 stall；本檔 `p_max_delay` = 0，所以實際上不太會卡住。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|dmemresp_msg": {
+      "sum": "測試記憶體回傳給 CPU 的 load 結果資料",
+      "naming": [
+        [
+          "dmem",
+          "data memory",
+          "資料記憶體"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "msg",
+          "message",
+          "打包成 bits 的訊息"
+        ]
+      ],
+      "desc": "寬度 `VC_MEM_RESP_MSG_SZ`(32)，由 `mem` 的 `memresp1_msg` 驅動、送進 `proc`。CPU 會取出 data 欄位，再依指令做 sign-extend / zero-extend（lb、lh、lbu、lhu）後寫回 regfile。store 也會回一個 response，只是資料沒有意義。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|dmemresp_val": {
+      "sum": "資料記憶體回應的 valid：這個 cycle load 的資料回來了",
+      "naming": [
+        [
+          "dmem",
+          "data memory",
+          "資料記憶體"
+        ],
+        [
+          "resp",
+          "response",
+          "回應"
+        ],
+        [
+          "val",
+          "valid",
+          "有效"
+        ]
+      ],
+      "desc": "由 `mem` 的 `memresp1_val` 驅動、接到 `proc`。同樣地，本檔把 `memresp1_rdy` 綁成 1'b1，沒有接現在 `riscv_Core` 已提供的 `dmemresp_rdy` 輸出。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|reset_mem": {
+      "sum": "把 reset 打一拍後給測試記憶體用的重置訊號",
+      "naming": [
+        [
+          "reset",
+          "reset",
+          "重置"
+        ],
+        [
+          "mem",
+          "memory",
+          "測試記憶體"
+        ]
+      ],
+      "desc": "在 `always @(posedge clk)` 裡 `reset_mem <= reset;`，也就是 `reset` 延後一個 cycle 的版本，接到 `mem` 的 `reset`。分成 `reset_mem`、`reset_proc` 兩級是為了讓記憶體先脫離 reset、處理器晚一個 cycle 才開始跑，避免 CPU 一出 reset 就對還沒就緒的記憶體發請求。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|reset_proc": {
+      "sum": "把 reset 打兩拍後給處理器用的重置訊號",
+      "naming": [
+        [
+          "reset",
+          "reset",
+          "重置"
+        ],
+        [
+          "proc",
+          "processor",
+          "處理器"
+        ]
+      ],
+      "desc": "在同一個 `always @(posedge clk)` 裡 `reset_proc <= reset_mem;`，比 `reset_mem` 再晚一個 cycle，接到 `proc` 的 `reset`。CPU 在 reset 拉高時 PC 會被設回起始位址、各階段的 valid bit 清 0。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|proc": {
+      "sum": "riscv_Core 的實例：被測試的 5-stage stall 版 RISC-V CPU",
+      "naming": [
+        [
+          "proc",
+          "processor",
+          "處理器"
+        ]
+      ],
+      "desc": "`riscv_Core` 的唯一實例，接 `clk`、`reset_proc`、imem / dmem 兩組 val-rdy 介面，以及 `csr_status` 輸出到 `status`。本檔還大量用階層路徑直接窺看它的內部，例如 `proc.ctrl.stall_Dhl`、`proc.ctrl.inst_msg_disasm_D.minidasm`、`proc.dpath.pc_Fhl`、`proc.dpath.rfile.registers[i]` 來印 pipeline 圖與暫存器。其中 `proc.ctrl.stats_en`、`proc.ctrl.num_inst`、`proc.ctrl.num_cycles` 在現在的 `riscv_CoreCtrl` 裡已經沒有宣告，這些存取會解析失敗。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|mem": {
+      "sum": "vc_TestDualPortRandDelayMem 的實例：同時服務取指與資料存取的測試記憶體",
+      "naming": [
+        [
+          "mem",
+          "memory",
+          "記憶體"
+        ]
+      ],
+      "desc": "參數設為 `p_mem_sz` = 1<<20（1 MB）、`p_addr_sz` = 32、`p_data_sz` = 32、`p_max_delay` = 0（不隨機延遲，這是本檔與 `riscvstall-randdelay-sim.v` 的唯一實質差別）。port 0 接 CPU 的 imem 介面、port 1 接 dmem 介面，兩個 response 的 rdy 都固定綁 1'b1。程式是在 `initial` 裡用 `$readmemh(exe_filename, mem.mem.m)` 直接寫進它內部的 `vc_TestDualPortMem`（也叫 `mem`）的記憶體陣列 `m`。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|fh": {
+      "sum": "用來確認 vmh 檔存不存在的檔案握把（file handle）",
+      "naming": [
+        [
+          "f",
+          "file",
+          "檔案"
+        ],
+        [
+          "h",
+          "handle",
+          "握把 / 開檔代號"
+        ]
+      ],
+      "desc": "integer，在 `initial` 裡以 `fh = $fopen(exe_filename, \"r\")` 取得。若為 0 表示開檔失敗，就印 \"Could not open vmh file\" 並 `$finish`；成功則立刻 `$fclose(fh)`，真正載入程式是靠後面的 `$readmemh`。它只是在 `$readmemh` 之前先做一次存在性檢查，因為 `$readmemh` 找不到檔案時的錯誤訊息不好懂。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|exe_filename": {
+      "sum": "從命令列 +exe= 讀進來的 vmh 程式檔名",
+      "naming": [
+        [
+          "exe",
+          "executable",
+          "可執行檔 / 測試程式"
+        ],
+        [
+          "filename",
+          "file name",
+          "檔名"
+        ]
+      ],
+      "desc": "`reg [1023:0]`，用 `$value$plusargs(\"exe=%s\", exe_filename)` 取得；沒指定就印錯誤並 `$finish`。之後用它 `$fopen` 檢查、`$readmemh` 載入記憶體，還會被切成 `exe_filename[1023:32]` 再接上 \".vcd\" 組出波形檔名（這個切法是把字串最後 4 個字元換掉的 hack）。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|vcd_filename": {
+      "sum": "由 exe 檔名改出來的 VCD 波形檔名",
+      "naming": [
+        [
+          "vcd",
+          "value change dump",
+          "波形檔格式"
+        ],
+        [
+          "filename",
+          "file name",
+          "檔名"
+        ]
+      ],
+      "desc": "`reg [1023:0]`。只有在命令列給了 `+vcd=` 時才會被組出來：`{ exe_filename[1023:32], \".vcd\" }`，也就是丟掉原檔名最後 4 個字元（.vmh）再補上 .vcd，然後交給 `$dumpfile` 並呼叫 `$dumpvars` 開始錄波形。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|max_cycles": {
+      "sum": "模擬最多能跑幾個 cycle，超過就判定 timeout 失敗",
+      "naming": [
+        [
+          "max",
+          "maximum",
+          "上限"
+        ],
+        [
+          "cycles",
+          "cycles",
+          "時脈週期數"
+        ]
+      ],
+      "desc": "`reg [31:0]`，用 `+max-cycles=` 指定，沒給就預設 100000。它被最後那個 `always @(*)` 拿來和 `cycle_count` 比較，一旦 `cycle_count > max_cycles` 就印 \"*** FAILED *** (timeout)\" 並結束。這是防止程式跑進無窮迴圈時模擬永遠不停的保險。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|verbose": {
+      "sum": "是否在結束時印出 STATS（cycles / 指令數 / IPC）的旗標",
+      "naming": [
+        [
+          "verbose",
+          "verbose",
+          "詳細輸出"
+        ]
+      ],
+      "desc": "1-bit reg。若命令列有 `+stats=` 就強制設為 1；否則看 `+verbose=`，都沒給就是 0。結束判斷那段只有在 `verbose == 1'b1` 時才會計算 `ipc` 並印出 status / num_cycles / num_inst / ipc 這幾行。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|stats": {
+      "sum": "接收 +stats= 命令列參數的暫存值，用來決定要不要開效能統計",
+      "naming": [
+        [
+          "stats",
+          "statistics",
+          "效能統計"
+        ]
+      ],
+      "desc": "1-bit reg，只作為 `$value$plusargs(\"stats=%d\", stats)` 的接收變數。程式其實不看它的值，只看這個 plusarg 有沒有出現：有的話就 `verbose = 1` 並設 `proc.ctrl.stats_en = 1'b1`，沒有的話設 0。Makefile 的 `ASM_SIM_FLAGS` 就是傳 `+stats=1`。注意 `proc.ctrl.stats_en` 在現在的 `riscv_CoreCtrl` 裡已經找不到宣告。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|vcd": {
+      "sum": "接收 +vcd= 命令列參數、決定要不要錄波形的旗標",
+      "naming": [
+        [
+          "vcd",
+          "value change dump",
+          "波形檔"
+        ]
+      ],
+      "desc": "1-bit reg。程式用 `if ($value$plusargs(\"vcd=%d\", vcd))` 判斷，只要命令列出現 `+vcd=` 就會開始 dump——即使給的是 `+vcd=0` 也一樣會錄，因為它只檢查參數存在與否而不看值。這點和 `Pattern.v` 不同，後者有多檢查一次 `&& vcd`。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|disasm": {
+      "sum": "反組譯輸出的層級（0 關閉、1 印指令、2 連暫存器、3 印 pipeline 圖）",
+      "naming": [
+        [
+          "disasm",
+          "disassembly",
+          "反組譯"
+        ]
+      ],
+      "desc": "`reg [1:0]`，由 `+disasm=` 指定，沒給就是 0。`always @(posedge clk)` 依它的值決定輸出：等於 3 時每個 cycle 印一行五階段的 pipeline 視圖（bubble 印 `(-_-)`、squash 用 `-…-` 包起來、stall 前面加 `#`）；大於 0 時改印目前 retire 的指令（`proc.dpath.pc_debug`、`proc.ctrl.ir_debug` 與反組譯字串）；再大於 1 就連 32 個暫存器的值一起印。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|i": {
+      "sum": "宣告了但整個檔案都沒用到的迴圈用 integer",
+      "naming": [
+        [
+          "i",
+          "index / iterator",
+          "迴圈索引（此處未使用）"
+        ]
+      ],
+      "desc": "只有 `integer i;` 這一行宣告，全檔沒有任何地方讀寫它。應該是早期版本用來寫 for 迴圈印暫存器內容，後來改成手動展開 `$display` 之後留下的殘留宣告，可以直接忽略。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|ipc": {
+      "sum": "結束時算出的 IPC（平均每個 cycle 完成幾條指令）",
+      "naming": [
+        [
+          "ipc",
+          "instructions per cycle",
+          "每週期指令數"
+        ]
+      ],
+      "desc": "`real` 型別，在測試結束（`status != 0`）且 `verbose` 為 1 時計算：`proc.ctrl.num_inst / $itor(proc.ctrl.num_cycles)`，用 `$itor` 把整數轉成浮點以免整數除法把結果截成 0，然後以 `%f` 印出。這是這個 lab 用來比較 stall / bypass / long 三種 pipeline 效能的主要指標。不過它引用的 `proc.ctrl.num_inst`、`proc.ctrl.num_cycles` 在現在的 `riscv_CoreCtrl` 裡並不存在。"
+    },
+    "riscvstall/riscvstall-sim.v|riscv_sim|cycle_count": {
+      "sum": "testbench 自己數的 cycle 計數器，用來偵測無窮迴圈",
+      "naming": [
+        [
+          "cycle",
+          "cycle",
+          "時脈週期"
+        ],
+        [
+          "count",
+          "count",
+          "計數"
+        ]
+      ],
+      "desc": "`reg [31:0]`，宣告時初始化為 0，每個 `posedge clk` 用阻塞指定 `cycle_count = cycle_count + 1'b1` 累加（不受 reset 影響，從模擬一開始就在數）。另一個 `always @(*)` 比較它和 `max_cycles`，超過就印 timeout 失敗並 `$finish`。它和 CPU 內部的效能計數器是兩回事，純粹是 testbench 的保險絲。"
+    }
+  }
+}

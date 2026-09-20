@@ -1,0 +1,136 @@
+<!-- ============================================================ ch0 -->
+<section class="ch" id="ch0" data-part="基礎" data-nav="先換腦袋：這不是程式">
+<p class="eyebrow">第 0 章 · 基礎</p>
+<h2>先換腦袋：Verilog 不是「程式」，是「電路的文字版」</h2>
+<p>寫 C 或 Python 時，你在描述<b>一連串要依序執行的步驟</b>。寫 Verilog 時，你在描述<b>一堆同時存在的元件，以及它們之間怎麼接線</b>。Verilog 屬於 HDL（Hardware Description Language，硬體描述語言），合成工具會把它翻譯成邏輯閘和正反器。</p>
+
+<div class="ex">
+<div class="src mine">示意範例</div>
+<pre><code class="language-verilog">assign x = a &amp; b;
+assign y = x | c;
+assign z = ~y;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 210" role="img" aria-label="左邊：軟體依序執行三行程式。右邊：同樣三行在硬體中是 AND、OR、NOT 三個同時存在的邏輯閘串接。">
+  <text class="hd" x="30" y="28">軟體：CPU 一次做一行</text>
+  <rect class="k" x="40" y="45" width="200" height="30"/><text x="52" y="65">x = a &amp; b;</text>
+  <rect class="k" x="40" y="95" width="200" height="30"/><text x="52" y="115">y = x | c;</text>
+  <rect class="k" x="40" y="145" width="200" height="30"/><text x="52" y="165">z = ~y;</text>
+  <path class="w" d="M140 75V94" marker-end="url(#ah)"/><path class="w" d="M140 125V144" marker-end="url(#ah)"/>
+  <path class="w" d="M275 50V170" marker-end="url(#ah)"/><text class="zh mut" x="284" y="114">時間</text>
+  <path class="wm" d="M340 15V195"/>
+  <text class="hd" x="370" y="28">硬體：三個元件同時存在、同時運作</text>
+  <path class="w" d="M392 68H440M392 82H440"/><text x="378" y="72">a</text><text x="378" y="86">b</text>
+  <use href="#g-and" x="440" y="60"/>
+  <path class="w" d="M470 75H535"/><text x="496" y="69">x</text>
+  <path class="w" d="M392 130H510V89H535"/><text x="378" y="134">c</text>
+  <use href="#g-or" x="530" y="67"/>
+  <path class="w" d="M570 82H610"/><text x="584" y="76">y</text>
+  <use href="#g-not" x="610" y="67"/>
+  <path class="w" d="M644 82H688"/><text x="694" y="86">z</text>
+  <text class="zh mut" x="370" y="180">三行 assign 的順序可以任意調換，電路完全一樣</text>
+</svg>
+</div>
+<figcaption><b>同樣三行字，兩種意義。</b>在硬體裡沒有「先執行第一行」這回事：<code>a</code> 一改變，訊號就沿著導線穿過三個閘，<code>z</code> 在幾奈秒後跟著變。</figcaption>
+</figure>
+</div>
+
+<p>整份課程只需要記住兩種硬體：</p>
+<ul>
+  <li><b>組合邏輯 (combinational logic)</b>：輸出只由「現在的輸入」決定，沒有記憶。邏輯閘、加法器、多工器 (mux) 都是。</li>
+  <li><b>循序邏輯 (sequential logic)</b>：有 <code>clk</code>，會在時脈邊緣把值「記住」。就是正反器 (flip-flop) 與由它組成的暫存器。</li>
+</ul>
+<p>lab1 裡所有可合成的程式碼，最後都只會變成這兩種東西加上導線。後面每一章就是在回答：「這個語法會變成哪一種？長什麼樣子？」</p>
+</section>
+
+<!-- ============================================================ ch1 -->
+<section class="ch" id="ch1" data-part="基礎" data-nav="module 與 port">
+<p class="eyebrow">第 1 章 · 基礎</p>
+<h2><code>module</code> 與 port：一顆有接腳的黑盒子</h2>
+<p><code>module</code> 是 Verilog 的基本單位，對應到硬體就是一顆 IC 或電路板上的一個方塊。括號裡列出的是它的接腳 (port)：<code>input</code> 是訊號進來的腳，<code>output</code> 是訊號出去的腳。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 120–135 行</div>
+<pre><code class="language-verilog">module riscv_CoreDpathAluLogical
+(
+  input  [1:0]  logical_fn, // 00 = and, 01 = or, 10 = xor, 11 = nor
+  input  [31:0] alu_a,
+  input  [31:0] alu_b,
+  output [31:0] result
+);
+
+  assign result = ... ;     // 內部電路，第 4 章會打開來看
+
+endmodule</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 600 190" role="img" aria-label="riscv_CoreDpathAluLogical 模組畫成一個方塊：左邊三個輸入 logical_fn 2 位元、alu_a 32 位元、alu_b 32 位元，右邊一個輸出 result 32 位元。">
+  <text class="s mut" x="60" y="28">input</text><text class="s mut" x="480" y="28">output</text>
+  <rect class="k" x="200" y="40" width="220" height="120"/>
+  <text x="310" y="104" text-anchor="middle">riscv_CoreDpathAluLogical</text>
+  <path class="c" d="M60 70H200"/><path class="c" d="M156 76l8 -12" style="stroke-dasharray:none"/><text class="s cb" x="166" y="62">2</text><text class="cb" x="60" y="62">logical_fn</text>
+  <path class="w" d="M60 100H200M156 106l8 -12"/><text class="s" x="166" y="92">32</text><text x="60" y="92">alu_a</text>
+  <path class="w" d="M60 130H200M156 136l8 -12"/><text class="s" x="166" y="122">32</text><text x="60" y="122">alu_b</text>
+  <path class="w" d="M420 100H540M476 106l8 -12"/><text class="s" x="486" y="92">32</text><text x="508" y="92">result</text>
+</svg>
+</div>
+<figcaption><b>module = 方塊，port = 接腳。</b><code>[31:0]</code> 代表這不是一條線，而是 32 條線綁成一束（匯流排）；圖上用一條線加斜線和數字表示。</figcaption>
+</figure>
+</div>
+<p><code>module … endmodule</code> 只是「設計圖」。真的要用到這顆電路時，要在別的 module 裡把它<b>例化 (instantiate)</b>，這在<a href="#ch10">第 10 章</a>說明。</p>
+</section>
+
+<!-- ============================================================ ch2 -->
+<section class="ch" id="ch2" data-part="基礎" data-nav="wire、reg、位寬、常數">
+<p class="eyebrow">第 2 章 · 基礎</p>
+<h2><code>wire</code>、<code>reg</code>、位元寬度與數字常數</h2>
+
+<h3>匯流排：<code>[高:低]</code></h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 15、24、106 行</div>
+<pre><code class="language-verilog">input  [31:0] alu_a;                       // 32 條線，編號 31 到 0
+wire diffSigns = alu_a[31] ^ alu_b[31];    // [31]   取出一條線
+... signed_alu_b &gt;&gt;&gt; alu_a[4:0];           // [4:0]  取出最低的五條線</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 600 112" role="img" aria-label="32 位元匯流排 alu_a，最左邊第 31 位元是正負號位元，最右邊第 4 到第 0 位元被取出當位移量。">
+  <rect class="k" x="44" y="40" width="512" height="24"/>
+  <rect class="af" x="44" y="40" width="16" height="24"/>
+  <rect class="af" x="476" y="40" width="80" height="24"/>
+  <path class="w" style="stroke-width:1" d="M60 40v24M76 40v24M92 40v24M108 40v24M124 40v24M140 40v24M156 40v24M172 40v24M188 40v24M204 40v24M220 40v24M236 40v24M252 40v24M268 40v24M284 40v24M300 40v24M316 40v24M332 40v24M348 40v24M364 40v24M380 40v24M396 40v24M412 40v24M428 40v24M444 40v24M460 40v24M476 40v24M492 40v24M508 40v24M524 40v24M540 40v24"/>
+  <text class="s" x="52" y="33" text-anchor="middle">31</text><text class="s" x="484" y="33" text-anchor="middle">4</text><text class="s" x="548" y="33" text-anchor="middle">0</text>
+  <text class="s mut" x="70" y="33">MSB</text><text class="s mut" x="518" y="33" text-anchor="middle">LSB</text>
+  <path class="a" d="M52 64V80M516 64V80"/>
+  <text class="ac" x="44" y="96">alu_a[31]</text><text class="zh mut" x="116" y="96">正負號位元</text>
+  <text class="ac" x="556" y="96" text-anchor="end">alu_a[4:0]</text><text class="zh mut" x="478" y="96" text-anchor="end">位移量 0–31</text>
+</svg>
+</div>
+<figcaption><b>位元選取不花任何硬體。</b>它只是從一束線裡挑出其中幾條接出去。</figcaption>
+</figure>
+</div>
+
+<h3><code>wire</code> vs <code>reg</code>：最容易誤會的名字</h3>
+<p><code>wire</code> 就是導線，用 <code>assign</code> 驅動。<code>reg</code> <b>不等於暫存器</b>，它只是語法規定：「在 <code>always</code> 區塊裡被賦值的訊號，必須宣告成 <code>reg</code>」。它最後變成什麼硬體，要看 <code>always</code> 的寫法：</p>
+<div class="tbl"><table>
+<thead><tr><th>宣告</th><th>在哪裡被賦值</th><th>合成結果</th><th>lab1 的例子</th></tr></thead>
+<tbody>
+<tr><td><code>wire</code></td><td><code>assign</code></td><td>組合邏輯的輸出線</td><td><code>wire [31:0] sum = alu_a + xB;</code></td></tr>
+<tr><td><code>reg</code></td><td><code>always @(*)</code></td><td>還是組合邏輯（沒有正反器！）</td><td>AddSub 的 <code>output reg [31:0] result</code></td></tr>
+<tr><td><code>reg</code></td><td><code>always @(posedge clk)</code></td><td>真正的 D 正反器</td><td><code>reg [31:0] pc_Fhl;</code></td></tr>
+</tbody></table></div>
+<p>另外，<code>wire [31:0] sum = alu_a + xB;</code> 這種「宣告時順便給值」的寫法，等同於先 <code>wire [31:0] sum;</code> 再 <code>assign sum = alu_a + xB;</code>，lab1 大量使用。</p>
+
+<h3>數字常數：<code>寬度'進位 數值</code></h3>
+<div class="tbl"><table>
+<thead><tr><th>寫法</th><th>意思</th><th>出處</th></tr></thead>
+<tbody>
+<tr><td><code>2'b01</code></td><td>2 位元，二進位 01</td><td>ALU 的 function code</td></tr>
+<tr><td><code>4'd10</code></td><td>4 位元，十進位 10（= 1010）</td><td><code>case (fn)</code> 的 SRA</td></tr>
+<tr><td><code>32'h00080000</code></td><td>32 位元，十六進位</td><td>CoreDpath 的 <code>reset_vector</code></td></tr>
+<tr><td><code>32'b0</code></td><td>32 位元全 0（不足的高位自動補 0）</td><td>Regfile 的 x0</td></tr>
+<tr><td><code>32'bx</code></td><td>32 位元「不在乎」(don't care)。模擬時顯示 x；合成時工具可以挑最省電路的值</td><td>每個 mux 的最後一個分支</td></tr>
+<tr><td><code>32'b???????_?????_…_0110111</code></td><td><code>?</code> 是 <code>casez</code> 用的萬用字元；<code>_</code> 只是方便閱讀的分隔</td><td>InstMsg 的指令編碼</td></tr>
+<tr><td><code>31</code>（沒寫寬度）</td><td>預設 32 位元十進位。能用，但寬度不明確時容易有警告</td><td>乘法器 counter 的初值</td></tr>
+</tbody></table></div>
+<div class="note"><b>為什麼每個 mux 最後都接 32'bx？</b><p>像 <code>( sel == 2'd0 ) ? a : ( sel == 2'd1 ) ? b : 32'bx</code>。這是 lab1 作者的習慣：如果 <code>sel</code> 出現了不該出現的值，模擬波形上會立刻冒出紅色的 x，幫你抓 bug；對合成工具來說 x 表示「隨便」，讓它有更多化簡空間。</p></div>
+</section>

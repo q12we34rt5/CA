@@ -1,0 +1,283 @@
+{
+  "entities": {
+    "vc/vc-StateElements.v||vc_DFF_nf": {
+      "sum": "註解寫「負緣觸發 flip-flop」，但實作其實還是 posedge clk，內容和 vc_DFF_pf 完全一樣",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["DFF", "D flip-flop", "D 型正反器"],
+        ["_nf", "negative-edge flip-flop", "（名義上）負緣觸發的 flip-flop"]
+      ],
+      "desc": "參數 `W`，port 是 clk / d_p / q_np。上面的區塊註解寫的是 Negative-edge triggered flip-flop，但內部實際寫的是 always @( posedge clk ) q_np <= d_p;，而且 port 名稱也沿用 _p / _np 後綴——這和名稱裡的 _nf 對不起來，看起來是從 `vc_DFF_pf` 複製貼上後沒改乾淨的 bug。實際行為就是一顆普通的正緣 D flip-flop。從程式碼看來這份 repo 沒有檔案 instantiate 它，所以這個問題目前不影響模擬結果。"
+    },
+    "vc/vc-StateElements.v|vc_DFF_nf|W": {
+      "sum": "vc_DFF_nf 的位元寬度參數，預設 1",
+      "naming": [
+        ["W", "width", "位元寬度"]
+      ],
+      "desc": "parameter W = 1，決定 `d_p` 與 `q_np` 的寬度 [W-1:0]，用法和其他狀態元件相同。"
+    },
+    "vc/vc-StateElements.v|vc_DFF_nf|clk": {
+      "sum": "vc_DFF_nf 的時脈輸入；雖然 module 名叫 _nf，實際用的是 posedge",
+      "naming": [
+        ["clk", "clock", "時脈"]
+      ],
+      "desc": "1-bit 輸入，觸發 always @( posedge clk )。要特別注意：名稱和註解都說是負緣，但程式碼寫的是正緣，使用前最好直接看實作而不是信名字。"
+    },
+    "vc/vc-StateElements.v|vc_DFF_nf|d_p": {
+      "sum": "vc_DFF_nf 的資料輸入，實際上在 clk 正緣被取樣",
+      "naming": [
+        ["d", "data", "資料輸入"],
+        ["_p", "positive edge", "在 clk 正緣被取樣"]
+      ],
+      "desc": "寬度 [W-1:0]。port 名稱用的是 _p 後綴（正緣），和 module 名的 _nf 不一致；實作 always @( posedge clk ) q_np <= d_p; 顯示 _p 才是對的。"
+    },
+    "vc/vc-StateElements.v|vc_DFF_nf|q_np": {
+      "sum": "vc_DFF_nf 的資料輸出，正緣之後才變化",
+      "naming": [
+        ["q", "output", "資料輸出"],
+        ["_np", "next positive edge", "正緣之後才變化的輸出"]
+      ],
+      "desc": "output reg [W-1:0]，由 always @( posedge clk ) 非阻塞指派驅動。沒有 enable 也沒有 reset，行為和 `vc_DFF_pf` 的 q_np 完全相同。"
+    },
+    "vc/vc-StateElements.v||vc_EDFF_nf": {
+      "sum": "名義上是負緣觸發、帶 enable 的 flip-flop，但實作同樣寫成 posedge clk",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["E", "enable", "帶 enable"],
+        ["DFF", "D flip-flop", "D 型正反器"],
+        ["_nf", "negative-edge flip-flop", "（名義上）負緣觸發的 flip-flop"]
+      ],
+      "desc": "參數 `W`，port 是 clk / d_n / en_n / q_pn——port 名稱用的是負緣後綴，語意上是「在 clk 下降緣取樣」。但內部寫的是 always @( posedge clk ) if ( en_n ) q_pn <= d_n;，用的是正緣，和名稱矛盾，看起來是沒改完的 bug。它和前面幾顆不同的是 assertion 有真的啟用：`ifndef SYNTHESIS 裡有 `VC_ASSERT_NOT_X_NEGEDGE_MSG( clk, en_n, \"en_n\" )，每個 clk 下降緣檢查 `en_n` 不是 x。從程式碼看來這份 repo 沒有檔案 instantiate 它。"
+    },
+    "vc/vc-StateElements.v|vc_EDFF_nf|W": {
+      "sum": "vc_EDFF_nf 的位元寬度參數，預設 1",
+      "naming": [
+        ["W", "width", "位元寬度"]
+      ],
+      "desc": "parameter W = 1，決定 `d_n` 與 `q_pn` 的寬度 [W-1:0]。`en_n` 固定 1 bit。"
+    },
+    "vc/vc-StateElements.v|vc_EDFF_nf|clk": {
+      "sum": "vc_EDFF_nf 的時脈輸入；實作觸發於 posedge，但 assertion 檢查在 negedge",
+      "naming": [
+        ["clk", "clock", "時脈"]
+      ],
+      "desc": "1-bit 輸入。它同時被兩處使用：always @( posedge clk ) 的資料更新，以及 `VC_ASSERT_NOT_X_NEGEDGE_MSG 展開出來的 always @(negedge clk) 檢查。兩邊用不同的邊緣，正好反映出這個 module 名稱與實作不一致的問題。"
+    },
+    "vc/vc-StateElements.v|vc_EDFF_nf|d_n": {
+      "sum": "vc_EDFF_nf 的資料輸入，名稱標示在負緣取樣（實作卻是正緣）",
+      "naming": [
+        ["d", "data", "資料輸入"],
+        ["_n", "negative edge", "在 clk 負緣被取樣"]
+      ],
+      "desc": "寬度 [W-1:0]，port 註解寫「sampled on falling clk edge」。但 always 區塊用的是 posedge clk，所以實際上是正緣取樣。使用時要以實作為準。"
+    },
+    "vc/vc-StateElements.v|vc_EDFF_nf|en_n": {
+      "sum": "vc_EDFF_nf 的 enable 輸入：1 才寫入新值；有 not-x assertion 在負緣檢查它",
+      "naming": [
+        ["en", "enable", "致能"],
+        ["_n", "negative edge", "在 clk 負緣被取樣"]
+      ],
+      "desc": "1-bit 輸入，寫成 if ( en_n ) q_pn <= d_n。它是這個檔案裡少數真的啟用 assertion 的訊號：`VC_ASSERT_NOT_X_NEGEDGE_MSG( clk, en_n, \"en_n\" ) 會在每個 clk 下降緣檢查它不是 x，若是 x 就用 $display 印出 RTL-ERROR（時間需大於 `VC_ERROR_CHECK_START_TIME 才會印）。"
+    },
+    "vc/vc-StateElements.v|vc_EDFF_nf|q_pn": {
+      "sum": "vc_EDFF_nf 的資料輸出，enable 為 0 時保持原值",
+      "naming": [
+        ["q", "output", "資料輸出"],
+        ["_pn", "positive-to-next-negative", "從正緣到下一個負緣之間有效的輸出"]
+      ],
+      "desc": "output reg [W-1:0]，由 always @( posedge clk ) if ( en_n ) 驅動。後綴 _pn 依 vc 的慣例是指「在 clk 正緣之後變化、到下一個負緣都穩定」的訊號。沒有 reset，第一次 enable 之前是 x。"
+    },
+    "vc/vc-StateElements.v||vc_Latch_hl": {
+      "sum": "高電位透通的 latch：clk 為 1 時輸出跟著輸入走，clk 為 0 時鎖住",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["Latch", "latch", "閂鎖器"],
+        ["_hl", "high-level latch", "clk 高電位時透通"]
+      ],
+      "desc": "參數 `W`，port 是 clk / d_n / q_np。內部是 always @(*) if ( clk ) q_np <= d_n;——注意這是 level-sensitive（看電位）而不是 edge-sensitive（看邊緣）：clk 為高時輸出直接跟隨輸入，clk 一變低就把當下的值保持住。它和 `vc_Latch_ll` 一起被 `vc-RAMs.v` 使用：`vc_RAM_1w1r_ll` 裡 instantiate 了 wen_hl 與 waddr_hl 兩顆，用來把寫入致能和寫入位址鎖穩，確保寫入動作發生時這些訊號不會中途變化。"
+    },
+    "vc/vc-StateElements.v|vc_Latch_hl|W": {
+      "sum": "vc_Latch_hl 的位元寬度參數，預設 1",
+      "naming": [
+        ["W", "width", "位元寬度"]
+      ],
+      "desc": "parameter W = 1，決定 `d_n` 與 `q_np` 的寬度 [W-1:0]。`vc-RAMs.v` 裡兩個 instance 都寫 vc_Latch_hl#(1)，即使 waddr 其實有 ADDR_SZ 個 bit——這在 `vc_RAM_1w1r_ll` 裡會讓位址只鎖住 1 bit，看起來是原始碼的疏漏。"
+    },
+    "vc/vc-StateElements.v|vc_Latch_hl|clk": {
+      "sum": "vc_Latch_hl 的時脈輸入；它是電位（高／低）而不是邊緣在決定行為",
+      "naming": [
+        ["clk", "clock", "時脈"]
+      ],
+      "desc": "1-bit 輸入，寫在 always @(*) 裡的 if ( clk ) 條件。clk 為 1 的整段期間 latch 是「透通」的，輸入變輸出就跟著變；clk 變成 0 之後輸出就凍結在最後的值。這和 flip-flop 只在某一瞬間取樣是不一樣的。"
+    },
+    "vc/vc-StateElements.v|vc_Latch_hl|d_n": {
+      "sum": "vc_Latch_hl 的資料輸入，需在 clk 負緣前穩定",
+      "naming": [
+        ["d", "data", "資料輸入"],
+        ["_n", "negative edge", "在 clk 負緣被取樣（鎖住）"]
+      ],
+      "desc": "寬度 [W-1:0]。後綴 _n 表示「真正被記住的是 clk 下降緣時的值」——因為 clk 高電位期間是透通的，鎖住的瞬間就是 clk 從 1 變 0 的那一刻。在 `vc_RAM_1w1r_ll` 裡它接的是 wen_n / waddr_n。"
+    },
+    "vc/vc-StateElements.v|vc_Latch_hl|q_np": {
+      "sum": "vc_Latch_hl 的資料輸出：clk 高時跟隨輸入，clk 低時保持",
+      "naming": [
+        ["q", "output", "資料輸出"],
+        ["_np", "next positive edge", "在下一個正緣之前都穩定的輸出"]
+      ],
+      "desc": "output reg [W-1:0]，由 always @(*) 驅動（雖然用了非阻塞指派 <=，在這種 latch 寫法裡是 vc 函式庫的習慣）。在 `vc_RAM_1w1r_ll` 裡它接到 wen_latched_np / waddr_latched_np，再用 if ( clk && wen_latched_np ) 去寫記憶體陣列。"
+    },
+    "vc/vc-StateElements.v||vc_ELatch_hl": {
+      "sum": "帶 enable 的高電位透通 latch；enable 本身先用低電位 latch 鎖過一次",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["E", "enable", "帶 enable"],
+        ["Latch", "latch", "閂鎖器"],
+        ["_hl", "high-level latch", "clk 高電位時透通"]
+      ],
+      "desc": "參數 `W`，port 是 clk / en_p / d_n / q_np。它有兩段 always @(*)：第一段 if ( ~clk ) en_latched_pn <= en_p，用低電位透通的方式把 enable 鎖起來；第二段 if ( clk && en_latched_pn ) q_np <= d_n 才是真正的資料 latch。這樣做的目的（原始碼註解也寫了）是確保 enable 在 clk 為高的整段期間都不會中途變動，否則 latch 可能半途打開或關上而抓到錯的值。裡面還啟用了 `VC_ASSERT_NOT_X_POSEDGE_MSG( clk, en_p, \"en_p\" )。從程式碼看來這份 repo 沒有檔案 instantiate 它。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_hl|W": {
+      "sum": "vc_ELatch_hl 的位元寬度參數，預設 1",
+      "naming": [
+        ["W", "width", "位元寬度"]
+      ],
+      "desc": "parameter W = 1，決定 `d_n` 與 `q_np` 的寬度 [W-1:0]。`en_p` 與內部的 `en_latched_pn` 都固定是 1 bit。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_hl|clk": {
+      "sum": "vc_ELatch_hl 的時脈輸入，同時控制 enable latch（低電位）與資料 latch（高電位）",
+      "naming": [
+        ["clk", "clock", "時脈"]
+      ],
+      "desc": "1-bit 輸入，在兩段 always @(*) 裡分別以 ~clk 和 clk 當條件：clk 為低時吸收新的 enable，clk 為高時才讓資料透通。另外 `VC_ASSERT_NOT_X_POSEDGE_MSG 也用它當 always @(posedge clk) 的觸發。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_hl|en_p": {
+      "sum": "vc_ELatch_hl 的 enable 輸入，在 clk 為低的期間被鎖進 en_latched_pn",
+      "naming": [
+        ["en", "enable", "致能"],
+        ["_p", "positive edge", "在 clk 正緣被取樣"]
+      ],
+      "desc": "1-bit 輸入。後綴 _p 表示外部必須讓它在 clk 正緣時是穩定的；module 內用一顆低電位透通的 latch（if ( ~clk ) en_latched_pn <= en_p）把它抓下來，這樣 clk 變高後 enable 就不會再變。`VC_ASSERT_NOT_X_POSEDGE_MSG( clk, en_p, \"en_p\" ) 會在每個上升緣檢查它不是 x。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_hl|d_n": {
+      "sum": "vc_ELatch_hl 的資料輸入，clk 為高且 enable 有效時透通到輸出",
+      "naming": [
+        ["d", "data", "資料輸入"],
+        ["_n", "negative edge", "在 clk 負緣被鎖住"]
+      ],
+      "desc": "寬度 [W-1:0]。只有在 clk 為 1 且 `en_latched_pn` 為 1 的期間 `q_np` 會跟著它變；clk 一變低就鎖住最後的值，所以後綴寫 _n。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_hl|q_np": {
+      "sum": "vc_ELatch_hl 的資料輸出：enable 有效且 clk 為高時透通，其餘時間保持",
+      "naming": [
+        ["q", "output", "資料輸出"],
+        ["_np", "next positive edge", "在下一個正緣之前都穩定的輸出"]
+      ],
+      "desc": "output reg [W-1:0]，由 always @(*) if ( clk && en_latched_pn ) q_np <= d_n; 驅動。enable 為 0 的 cycle 它整個 cycle 都保持舊值，效果等同「這個 cycle 不更新」。沒有 reset，第一次被 enable 之前是 x。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_hl|en_latched_pn": {
+      "sum": "vc_ELatch_hl 內部的 reg：被低電位 latch 鎖過的 enable，確保 clk 高電位期間穩定",
+      "naming": [
+        ["en", "enable", "致能"],
+        ["latched", "latched", "已被鎖住的"],
+        ["_pn", "positive-to-next-negative", "從正緣到下一個負緣之間穩定"]
+      ],
+      "desc": "1-bit reg，由 always @(*) if ( ~clk ) en_latched_pn <= en_p; 驅動——也就是 clk 為低時跟隨 `en_p`，clk 一變高就鎖住。它不是 port，純粹是內部訊號，接著被第二段 always 當成 if ( clk && en_latched_pn ) 的條件。原始碼註解直接說明了理由：要讓 enable 在整個 clk 高電位期間都固定，避免資料 latch 中途開關。"
+    },
+    "vc/vc-StateElements.v||vc_Latch_ll": {
+      "sum": "低電位透通的 latch：clk 為 0 時輸出跟著輸入走，clk 為 1 時鎖住",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["Latch", "latch", "閂鎖器"],
+        ["_ll", "low-level latch", "clk 低電位時透通"]
+      ],
+      "desc": "參數 `W`，port 是 clk / d_p / q_pn。內部是 always @(*) if ( ~clk ) q_pn <= d_p;，剛好和 `vc_Latch_hl` 相反。它在 `vc-RAMs.v` 的 `vc_RAM_1w1r_hl` 裡被 instantiate 兩次（`wen_ll`、`waddr_ll`），把 wen_p / waddr_p 在 clk 低電位期間吸收進來，等 clk 變高時就穩定了，那時 RAM 的 always @(*) if ( clk && wen_latched_pn ) 才會真的寫入記憶體陣列——這是用 latch 湊出「正緣寫入」效果的經典手法。"
+    },
+    "vc/vc-StateElements.v|vc_Latch_ll|W": {
+      "sum": "vc_Latch_ll 的位元寬度參數，預設 1",
+      "naming": [
+        ["W", "width", "位元寬度"]
+      ],
+      "desc": "parameter W = 1，決定 `d_p` 與 `q_pn` 的寬度 [W-1:0]。`vc-RAMs.v` 的 `wen_ll` 和 `waddr_ll` 都寫成 vc_Latch_ll#(1)；對 wen 來說 1 bit 是對的，但 waddr 其實有 ADDR_SZ 位，這裡只鎖了 1 bit，看起來是原始碼的疏漏。"
+    },
+    "vc/vc-StateElements.v|vc_Latch_ll|clk": {
+      "sum": "vc_Latch_ll 的時脈輸入；clk 為低時透通、為高時鎖住",
+      "naming": [
+        ["clk", "clock", "時脈"]
+      ],
+      "desc": "1-bit 輸入，寫在 always @(*) 裡的 if ( ~clk ) 條件。它是電位敏感的：clk 低的整段期間輸出跟著輸入跑，clk 一變高就把值保持住，直到下一次 clk 變低。"
+    },
+    "vc/vc-StateElements.v|vc_Latch_ll|d_p": {
+      "sum": "vc_Latch_ll 的資料輸入，需在 clk 正緣前穩定（正緣時被鎖住）",
+      "naming": [
+        ["d", "data", "資料輸入"],
+        ["_p", "positive edge", "在 clk 正緣被鎖住"]
+      ],
+      "desc": "寬度 [W-1:0]。因為 clk 低電位期間是透通的，真正被記住的是 clk 上升緣那一刻的值，所以後綴是 _p。在 `vc_RAM_1w1r_hl` 裡它接的是 wen_p / waddr_p。"
+    },
+    "vc/vc-StateElements.v|vc_Latch_ll|q_pn": {
+      "sum": "vc_Latch_ll 的資料輸出：clk 低時跟隨輸入，clk 高時保持",
+      "naming": [
+        ["q", "output", "資料輸出"],
+        ["_pn", "positive-to-next-negative", "從正緣到下一個負緣之間穩定"]
+      ],
+      "desc": "output reg [W-1:0]，由 always @(*) if ( ~clk ) 驅動。因為在 clk 為高的整段期間它是穩定的，`vc_RAM_1w1r_hl` 才能安心在 if ( clk && wen_latched_pn ) 的條件下寫記憶體。"
+    },
+    "vc/vc-StateElements.v||vc_ELatch_ll": {
+      "sum": "帶 enable 的低電位透通 latch；enable 本身先用高電位 latch 鎖過一次",
+      "naming": [
+        ["vc_", "Verilog Components", "vc 共用元件庫"],
+        ["E", "enable", "帶 enable"],
+        ["Latch", "latch", "閂鎖器"],
+        ["_ll", "low-level latch", "clk 低電位時透通"]
+      ],
+      "desc": "參數 `W`，port 是 clk / en_n / d_p / q_pn，結構和 `vc_ELatch_hl` 對稱：第一段 always @(*) if ( clk ) en_latched_np <= en_n 用高電位 latch 鎖 enable，第二段 if ( ~clk && en_latched_np ) q_pn <= d_p 才做資料 latch，目的是讓 enable 在 clk 為低的整段期間都穩定。裡面啟用了 `VC_ASSERT_NOT_X_NEGEDGE_MSG( clk, en_n, \"en_n\" )。順帶一提，它上方的區塊註解誤寫成 Level-High Latch with Enable，實際是 level-low。從程式碼看來這份 repo 沒有檔案 instantiate 它。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_ll|W": {
+      "sum": "vc_ELatch_ll 的位元寬度參數，預設 1",
+      "naming": [
+        ["W", "width", "位元寬度"]
+      ],
+      "desc": "parameter W = 1，決定 `d_p` 與 `q_pn` 的寬度 [W-1:0]。`en_n` 和內部的 `en_latched_np` 固定是 1 bit。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_ll|clk": {
+      "sum": "vc_ELatch_ll 的時脈輸入，同時控制 enable latch（高電位）與資料 latch（低電位）",
+      "naming": [
+        ["clk", "clock", "時脈"]
+      ],
+      "desc": "1-bit 輸入，在兩段 always @(*) 裡分別以 clk 和 ~clk 當條件：clk 為高時吸收新的 enable，clk 為低時才讓資料透通。另外它也是 `VC_ASSERT_NOT_X_NEGEDGE_MSG 展開的 always @(negedge clk) 的觸發來源。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_ll|en_n": {
+      "sum": "vc_ELatch_ll 的 enable 輸入，在 clk 為高的期間被鎖進 en_latched_np",
+      "naming": [
+        ["en", "enable", "致能"],
+        ["_n", "negative edge", "在 clk 負緣被取樣"]
+      ],
+      "desc": "1-bit 輸入。後綴 _n 表示外部要確保它在 clk 負緣時穩定；module 內用高電位透通的 latch（if ( clk ) en_latched_np <= en_n）先抓下來，clk 變低後 enable 就固定了。`VC_ASSERT_NOT_X_NEGEDGE_MSG( clk, en_n, \"en_n\" ) 會在每個下降緣檢查它不是 x。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_ll|d_p": {
+      "sum": "vc_ELatch_ll 的資料輸入，clk 為低且 enable 有效時透通到輸出",
+      "naming": [
+        ["d", "data", "資料輸入"],
+        ["_p", "positive edge", "在 clk 正緣被鎖住"]
+      ],
+      "desc": "寬度 [W-1:0]。只有在 ~clk 且 `en_latched_np` 為 1 的期間 `q_pn` 會跟著它變化；clk 一變高就鎖住最後的值，所以後綴是 _p。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_ll|q_pn": {
+      "sum": "vc_ELatch_ll 的資料輸出：enable 有效且 clk 為低時透通，其餘時間保持",
+      "naming": [
+        ["q", "output", "資料輸出"],
+        ["_pn", "positive-to-next-negative", "從正緣到下一個負緣之間穩定"]
+      ],
+      "desc": "output reg [W-1:0]，由 always @(*) if ( ~clk && en_latched_np ) q_pn <= d_p; 驅動。enable 為 0 時整個 cycle 保持舊值。沒有 reset，第一次被 enable 之前是 x。"
+    },
+    "vc/vc-StateElements.v|vc_ELatch_ll|en_latched_np": {
+      "sum": "vc_ELatch_ll 內部的 reg：被高電位 latch 鎖過的 enable，確保 clk 低電位期間穩定",
+      "naming": [
+        ["en", "enable", "致能"],
+        ["latched", "latched", "已被鎖住的"],
+        ["_np", "next positive edge", "在下一個正緣之前都穩定"]
+      ],
+      "desc": "1-bit reg，由 always @(*) if ( clk ) en_latched_np <= en_n; 驅動——clk 為高時跟隨 `en_n`，clk 一變低就鎖住。它不是 port，只是內部訊號，供第二段 always 的 if ( ~clk && en_latched_np ) 使用。原始碼註解說明了理由：要讓 enable 在整個 clk 低電位期間固定，避免資料 latch 中途被打開或關上。"
+    }
+  }
+}

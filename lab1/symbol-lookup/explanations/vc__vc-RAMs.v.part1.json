@@ -1,0 +1,829 @@
+{
+  "entities": {
+    "vc/vc-RAMs.v|vc_RAM_1w1r_pf|DATA_SZ": {
+      "sum": "vc_RAM_1w1r_pf 的參數：每一筆資料有幾個 bit",
+      "naming": [
+        [
+          "DATA",
+          "data",
+          "資料"
+        ],
+        [
+          "SZ",
+          "size",
+          "位元數"
+        ]
+      ],
+      "desc": "module 的 parameter，預設 1。它決定記憶體陣列 `mem` 每一格的寬度（`reg [DATA_SZ-1:0] mem[ENTRIES-1:0]`），也決定 `rdata` 輸出與 `wdata_p` 輸入的位元寬度。instantiate 這個 RAM 時用 `#(...)` 從外面指定，例如要一個 32-bit 的 regfile 就給 32。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_pf|ENTRIES": {
+      "sum": "vc_RAM_1w1r_pf 的參數：記憶體一共有幾格",
+      "naming": [
+        [
+          "ENTRIES",
+          "entries",
+          "項目數 / 格數"
+        ]
+      ],
+      "desc": "module 的 parameter，預設 2，用來宣告 `mem` 陣列的深度（`mem[ENTRIES-1:0]`）。它和 `ADDR_SZ` 是分開的兩個參數，使用者要自己保證 2^ADDR_SZ 至少等於 ENTRIES，否則位址會有無法定址到的格子。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_pf|ADDR_SZ": {
+      "sum": "vc_RAM_1w1r_pf 的參數：位址線有幾個 bit",
+      "naming": [
+        [
+          "ADDR",
+          "address",
+          "位址"
+        ],
+        [
+          "SZ",
+          "size",
+          "位元數"
+        ]
+      ],
+      "desc": "module 的 parameter，預設 1，決定 `raddr` 與 `waddr_p` 這兩個位址 port 的寬度。典型用法是給 $clog2(ENTRIES)，例如 32 格的 regfile 就給 5。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_pf|clk": {
+      "sum": "vc_RAM_1w1r_pf 的時脈輸入，寫入發生在它的正緣",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "唯一的時序來源。module 裡只有一個 `always @( posedge clk )`，在正緣檢查 `wen_p`，成立就把 `wdata_p` 寫進 `mem[waddr_p]`。讀取（`rdata`）是純組合邏輯，完全不看 clk。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_pf|raddr": {
+      "sum": "vc_RAM_1w1r_pf 的讀取位址，組合邏輯輸入",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ]
+      ],
+      "desc": "ADDR_SZ 位元的讀取位址。`assign rdata = mem[raddr]`，所以位址一變、`rdata` 立刻跟著變，不需要等 clk。同一個 cycle 如果對同一格做寫入，因為寫入是非阻塞、要到正緣之後才生效，讀到的會是舊值。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_pf|rdata": {
+      "sum": "vc_RAM_1w1r_pf 的讀取資料輸出（組合讀）",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ]
+      ],
+      "desc": "DATA_SZ 位元輸出，由 `assign rdata = mem[raddr]` 直接驅動，是非同步（組合）讀取。剛開機時 `mem` 沒有初始化，還沒被寫過的格子讀出來會是 x。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_pf|wen_p": {
+      "sum": "vc_RAM_1w1r_pf 的寫入致能，在 clk 正緣被取樣",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "en",
+          "enable",
+          "致能"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "1 位元輸入。正緣時若為 1，就執行 `mem[waddr_p] <= wdata_p`；為 0 則整個 RAM 內容不變。後綴 `_p` 是 vc 函式庫的慣例，表示這個輸入必須在 clk 正緣前穩定。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_pf|waddr_p": {
+      "sum": "vc_RAM_1w1r_pf 的寫入位址，在 clk 正緣被取樣",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "ADDR_SZ 位元輸入，指定要寫進 `mem` 的哪一格。只有在 `wen_p` 為 1 的那個正緣才有意義，其他時候的值會被忽略。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_pf|wdata_p": {
+      "sum": "vc_RAM_1w1r_pf 的寫入資料，在 clk 正緣被取樣",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "DATA_SZ 位元輸入，是要存進 `mem[waddr_p]` 的值。同樣只在 `wen_p` 為 1 的正緣生效。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_pf|mem": {
+      "sum": "vc_RAM_1w1r_pf 內部真正儲存資料的 reg 陣列",
+      "naming": [
+        [
+          "mem",
+          "memory",
+          "記憶體陣列"
+        ]
+      ],
+      "desc": "宣告成 `reg [DATA_SZ-1:0] mem[ENTRIES-1:0]`，也就是 ENTRIES 格、每格 DATA_SZ 位元。讀取端 `assign rdata = mem[raddr]` 是組合的；寫入端在 clk 正緣、`wen_p` 為 1 時更新一格。沒有 reset，開機內容是 x（要有 reset 的版本請看 `vc_RAM_rst_1w1r_pf`）。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|DATA_SZ": {
+      "sum": "vc_RAM_rst_1w1r_pf 的參數：每一格資料的位元數",
+      "naming": [
+        [
+          "DATA",
+          "data",
+          "資料"
+        ],
+        [
+          "SZ",
+          "size",
+          "位元數"
+        ]
+      ],
+      "desc": "與 `vc_RAM_1w1r_pf` 的同名參數作用一樣：決定 `mem` 每格的寬度、`rdata` 與 `wdata_p` 的寬度，預設 1。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|ENTRIES": {
+      "sum": "vc_RAM_rst_1w1r_pf 的參數：記憶體格數",
+      "naming": [
+        [
+          "ENTRIES",
+          "entries",
+          "項目數 / 格數"
+        ]
+      ],
+      "desc": "`mem` 陣列的深度，預設 2。這個版本還額外用它當 generate 迴圈的次數：為每一格產生一個 `always` 區塊（`wport`），好讓 reset 可以同時清掉所有格子。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|ADDR_SZ": {
+      "sum": "vc_RAM_rst_1w1r_pf 的參數：位址位元數",
+      "naming": [
+        [
+          "ADDR",
+          "address",
+          "位址"
+        ],
+        [
+          "SZ",
+          "size",
+          "位元數"
+        ]
+      ],
+      "desc": "`raddr` 與 `waddr_p` 的寬度，預設 1。generate 迴圈裡用 `i == waddr_p` 比對位址，所以 ADDR_SZ 要能表示到 ENTRIES-1。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|RESET_VALUE": {
+      "sum": "vc_RAM_rst_1w1r_pf 的參數：reset 時每一格要被清成什麼值",
+      "naming": [
+        [
+          "RESET",
+          "reset",
+          "重置"
+        ],
+        [
+          "VALUE",
+          "value",
+          "值"
+        ]
+      ],
+      "desc": "預設 0。當 `reset_p` 在 clk 正緣為 1，generate 出來的每個 `wport` 區塊都會做 `mem[i] <= RESET_VALUE`，也就是一個 cycle 內把整個陣列清成這個值。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|clk": {
+      "sum": "vc_RAM_rst_1w1r_pf 的時脈輸入，reset 與寫入都在正緣",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "每一格都有一個 `always @( posedge clk )`：正緣時先看 `reset_p`（清成 `RESET_VALUE`），否則看 `wen_p && (i == waddr_p)` 決定是否寫入。讀取一樣是組合的，不看 clk。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|reset_p": {
+      "sum": "vc_RAM_rst_1w1r_pf 的同步 reset，一個 cycle 清空整個陣列",
+      "naming": [
+        [
+          "reset",
+          "reset",
+          "重置"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "1 位元同步 reset。正緣時若為 1，generate 產生的每個 `wport` 都把自己那一格設成 `RESET_VALUE`，而且優先權高於寫入（reset 期間 `wen_p` 會被忽略）。這是這個 module 和 `vc_RAM_1w1r_pf` 唯一的差別。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|raddr": {
+      "sum": "vc_RAM_rst_1w1r_pf 的讀取位址（組合輸入）",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ]
+      ],
+      "desc": "ADDR_SZ 位元，透過 `assign rdata = mem[raddr]` 立刻反映到輸出，不受 clk 影響。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|rdata": {
+      "sum": "vc_RAM_rst_1w1r_pf 的讀取資料輸出",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ]
+      ],
+      "desc": "DATA_SZ 位元，由 `assign rdata = mem[raddr]` 組合驅動。因為這個版本有 reset，只要 reset 過，讀出來就不會是 x，而是 `RESET_VALUE`。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|wen_p": {
+      "sum": "vc_RAM_rst_1w1r_pf 的寫入致能（正緣取樣，reset 優先）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "en",
+          "enable",
+          "致能"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "1 位元輸入。正緣時在 `reset_p` 不成立的情況下，讓位址等於 `waddr_p` 的那一格寫入 `wdata_p`（條件寫成 `wen_p && (i == waddr_p)`）。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|waddr_p": {
+      "sum": "vc_RAM_rst_1w1r_pf 的寫入位址（正緣取樣）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "ADDR_SZ 位元。和一般寫法不同，這裡不是直接索引陣列，而是讓 generate 出來的每一格自己比對 `i == waddr_p`，效果相同但比較接近實際硬體（每格一個 enable）。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|wdata_p": {
+      "sum": "vc_RAM_rst_1w1r_pf 的寫入資料（正緣取樣）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "DATA_SZ 位元，被寫進位址符合的那一格。只有在 `wen_p` 為 1 且 `reset_p` 為 0 的正緣才有意義。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|mem": {
+      "sum": "vc_RAM_rst_1w1r_pf 內部的 reg 陣列（可被 reset 清空）",
+      "naming": [
+        [
+          "mem",
+          "memory",
+          "記憶體陣列"
+        ]
+      ],
+      "desc": "`reg [DATA_SZ-1:0] mem[ENTRIES-1:0]`。和不含 reset 的版本差別在於它的寫入邏輯被 generate 展開成每格一個 `always`，因此 `reset_p` 可以在同一個正緣把所有格子一起設成 `RESET_VALUE`。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|i": {
+      "sum": "vc_RAM_rst_1w1r_pf 的 genvar：展開每一格寫入邏輯的迴圈索引",
+      "naming": [
+        [
+          "i",
+          "index",
+          "generate 迴圈的格子編號"
+        ]
+      ],
+      "desc": "`genvar i`，在 `generate for ( i = 0; i < ENTRIES; i = i+1 )` 裡從 0 數到 ENTRIES-1，為每一格複製一份 `always @( posedge clk )`。它是編譯期常數，不是硬體訊號；在展開後的程式碼中用來比對 `i == waddr_p` 與索引 `mem[i]`。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_rst_1w1r_pf|wport": {
+      "sum": "vc_RAM_rst_1w1r_pf 的 generate 區塊名稱（每格一份寫入埠邏輯）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "port",
+          "port",
+          "埠"
+        ]
+      ],
+      "desc": "`begin : wport` 是 generate for 迴圈的具名區塊。展開後每一格會得到一個實例，階層路徑長得像 `wport[0]`、`wport[1]`…，波形檢視器或階層式引用時會看到這個名字。區塊裡就是那一格的 reset / 寫入 `always`。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|DATA_SZ": {
+      "sum": "vc_RAM_1w2r_pf 的參數：每格資料位元數",
+      "naming": [
+        [
+          "DATA",
+          "data",
+          "資料"
+        ],
+        [
+          "SZ",
+          "size",
+          "位元數"
+        ]
+      ],
+      "desc": "決定 `mem` 每格寬度以及 `rdata0`、`rdata1`、`wdata_p` 的寬度，預設 1。這個 module 是「一寫二讀」的 RAM，兩個讀埠共用同樣的資料寬度。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|ENTRIES": {
+      "sum": "vc_RAM_1w2r_pf 的參數：記憶體格數",
+      "naming": [
+        [
+          "ENTRIES",
+          "entries",
+          "項目數 / 格數"
+        ]
+      ],
+      "desc": "`mem[ENTRIES-1:0]` 的深度，預設 2。若拿這個 module 當 RISC-V regfile，這裡會是 32（兩個讀埠剛好對應 rs1 / rs2）。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|ADDR_SZ": {
+      "sum": "vc_RAM_1w2r_pf 的參數：位址位元數",
+      "naming": [
+        [
+          "ADDR",
+          "address",
+          "位址"
+        ],
+        [
+          "SZ",
+          "size",
+          "位元數"
+        ]
+      ],
+      "desc": "`raddr0`、`raddr1`、`waddr_p` 三個位址 port 的寬度，預設 1。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|clk": {
+      "sum": "vc_RAM_1w2r_pf 的時脈輸入，寫入發生在正緣",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "唯一的 `always @( posedge clk )` 用它做寫入；兩個讀埠都是組合的，不看 clk。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|raddr0": {
+      "sum": "vc_RAM_1w2r_pf 第 0 個讀埠的位址",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ],
+        [
+          "0",
+          "port 0",
+          "第 0 個讀埠"
+        ]
+      ],
+      "desc": "ADDR_SZ 位元組合輸入，`assign rdata0 = mem[raddr0]`。兩個讀埠互相獨立，可以同時讀不同（或相同）的格子。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|rdata0": {
+      "sum": "vc_RAM_1w2r_pf 第 0 個讀埠的資料輸出",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ],
+        [
+          "0",
+          "port 0",
+          "第 0 個讀埠"
+        ]
+      ],
+      "desc": "DATA_SZ 位元，由 `assign rdata0 = mem[raddr0]` 組合驅動，位址一變就立刻更新。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|raddr1": {
+      "sum": "vc_RAM_1w2r_pf 第 1 個讀埠的位址",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ],
+        [
+          "1",
+          "port 1",
+          "第 1 個讀埠"
+        ]
+      ],
+      "desc": "ADDR_SZ 位元組合輸入，對應 `assign rdata1 = mem[raddr1]`。和 `raddr0` 完全對稱。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|rdata1": {
+      "sum": "vc_RAM_1w2r_pf 第 1 個讀埠的資料輸出",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ],
+        [
+          "1",
+          "port 1",
+          "第 1 個讀埠"
+        ]
+      ],
+      "desc": "DATA_SZ 位元，由 `assign rdata1 = mem[raddr1]` 組合驅動。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|wen_p": {
+      "sum": "vc_RAM_1w2r_pf 唯一寫入埠的致能（正緣取樣）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "en",
+          "enable",
+          "致能"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "1 位元輸入，正緣為 1 時執行 `mem[waddr_p] <= wdata_p`。名稱裡的 1w2r 就是指只有這一個寫埠、卻有兩個讀埠。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|waddr_p": {
+      "sum": "vc_RAM_1w2r_pf 的寫入位址（正緣取樣）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "ADDR_SZ 位元，只在 `wen_p` 為 1 的正緣決定要寫哪一格。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|wdata_p": {
+      "sum": "vc_RAM_1w2r_pf 的寫入資料（正緣取樣）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "DATA_SZ 位元，在 `wen_p` 為 1 的正緣寫入 `mem[waddr_p]`。因為寫入用非阻塞賦值，同一 cycle 的 `rdata0`/`rdata1` 讀到的仍是舊值。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w2r_pf|mem": {
+      "sum": "vc_RAM_1w2r_pf 內部的 reg 陣列（一寫二讀）",
+      "naming": [
+        [
+          "mem",
+          "memory",
+          "記憶體陣列"
+        ]
+      ],
+      "desc": "`reg [DATA_SZ-1:0] mem[ENTRIES-1:0]`。被兩個 `assign`（`rdata0`、`rdata1`）同時組合讀取，並由單一 `always @( posedge clk )` 寫入。沒有 reset，開機是 x。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|DATA_SZ": {
+      "sum": "vc_RAM_1w1r_hl（latch 版 RAM）的資料位元數參數",
+      "naming": [
+        [
+          "DATA",
+          "data",
+          "資料"
+        ],
+        [
+          "SZ",
+          "size",
+          "位元數"
+        ]
+      ],
+      "desc": "決定 `mem` 每格寬度與 `rdata`、`wdata_p` 的寬度，預設 1。這個版本用 latch（clk 高電位時透通）而不是 flip-flop 來做寫入時序。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|ENTRIES": {
+      "sum": "vc_RAM_1w1r_hl 的參數：記憶體格數",
+      "naming": [
+        [
+          "ENTRIES",
+          "entries",
+          "項目數 / 格數"
+        ]
+      ],
+      "desc": "`mem[ENTRIES-1:0]` 的深度，預設 2。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|ADDR_SZ": {
+      "sum": "vc_RAM_1w1r_hl 的參數：位址位元數",
+      "naming": [
+        [
+          "ADDR",
+          "address",
+          "位址"
+        ],
+        [
+          "SZ",
+          "size",
+          "位元數"
+        ]
+      ],
+      "desc": "`raddr` 與 `waddr_p` 的寬度，預設 1。要注意內部鎖存寫入位址的 `waddr_ll` 被寫死成 `vc_Latch_ll#(1)`、`waddr_latched_pn` 也只宣告成 1 位元，所以 ADDR_SZ 大於 1 時位址高位會被截掉——從程式碼看來這是個沒被修好的 bug（這個 module 目前在本專案沒有任何地方 instantiate）。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|clk": {
+      "sum": "vc_RAM_1w1r_hl 的時脈：高電位期間才真正寫入",
+      "naming": [
+        [
+          "clk",
+          "clock",
+          "時脈"
+        ]
+      ],
+      "desc": "clk 同時接到兩個 `vc_Latch_ll`（低電位透通，把正緣前的 `wen_p`/`waddr_p` 鎖住），也直接出現在寫入條件 `if ( clk && wen_latched_pn )` 裡，所以資料是在 clk 為高電位的半週期寫進 `mem`。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|raddr": {
+      "sum": "vc_RAM_1w1r_hl 的讀取位址（組合輸入）",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ]
+      ],
+      "desc": "ADDR_SZ 位元，`assign rdata = mem[raddr]`，與寫入的 latch 時序無關，隨時反映目前 `mem` 的內容。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|rdata": {
+      "sum": "vc_RAM_1w1r_hl 的讀取資料輸出",
+      "naming": [
+        [
+          "r",
+          "read",
+          "讀取"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ]
+      ],
+      "desc": "DATA_SZ 位元，由 `assign rdata = mem[raddr]` 組合驅動。因為寫入是 level-sensitive，clk 高電位期間寫入的新值會在同一個半週期就被讀到。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|wen_p": {
+      "sum": "vc_RAM_1w1r_hl 的寫入致能輸入（先經 latch 再用）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "en",
+          "enable",
+          "致能"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "1 位元輸入，先送進 `wen_ll`（`vc_Latch_ll`）的 `d_p`，在 clk 低電位時透通、正緣後被鎖住，輸出就是 `wen_latched_pn`。真正決定是否寫入的是鎖住後的值，不是這個 port 的即時值。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|waddr_p": {
+      "sum": "vc_RAM_1w1r_hl 的寫入位址輸入（先經 latch 再用）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "addr",
+          "address",
+          "位址"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "ADDR_SZ 位元輸入，接到 `waddr_ll` 的 `d_p`，鎖住後成為 `waddr_latched_pn` 並用來索引 `mem`。注意 `waddr_ll` 的寬度參數被寫成 1，超過 1 位元的位址會被截斷。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|wdata_p": {
+      "sum": "vc_RAM_1w1r_hl 的寫入資料（未經 latch，直接寫入）",
+      "naming": [
+        [
+          "w",
+          "write",
+          "寫入"
+        ],
+        [
+          "data",
+          "data",
+          "資料"
+        ],
+        [
+          "_p",
+          "positive edge",
+          "在 clk 正緣被取樣"
+        ]
+      ],
+      "desc": "DATA_SZ 位元輸入。和 `wen_p`、`waddr_p` 不同，資料沒有經過 latch，而是在 clk 高電位且 `wen_latched_pn` 為 1 時直接寫進 `mem[waddr_latched_pn]`，也就是這半個週期內 `wdata_p` 必須保持穩定。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|mem": {
+      "sum": "vc_RAM_1w1r_hl 內部的 reg 陣列（由 latch 時序寫入）",
+      "naming": [
+        [
+          "mem",
+          "memory",
+          "記憶體陣列"
+        ]
+      ],
+      "desc": "`reg [DATA_SZ-1:0] mem[ENTRIES-1:0]`。寫入寫在 `always @(*)` 裡（`if ( clk && wen_latched_pn )`），是 level-sensitive 的 latch 行為而非正緣觸發；讀取仍是 `assign rdata = mem[raddr]`。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|wen_latched_pn": {
+      "sum": "vc_RAM_1w1r_hl 中被 latch 鎖住的寫入致能",
+      "naming": [
+        [
+          "wen",
+          "write enable",
+          "寫入致能"
+        ],
+        [
+          "latched",
+          "latched",
+          "被 latch 鎖住的"
+        ],
+        [
+          "_pn",
+          "positive-to-negative",
+          "正緣之後、下一個負緣之前保持穩定"
+        ]
+      ],
+      "desc": "1 位元 wire，由 `wen_ll`（`vc_Latch_ll#(1)`）的 `q_pn` 驅動，也就是 `wen_p` 在 clk 低電位時透通、正緣後被凍結的版本。它是 `always @(*) if ( clk && wen_latched_pn )` 的寫入條件，確保 clk 高電位期間寫入致能不會中途改變。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|waddr_latched_pn": {
+      "sum": "vc_RAM_1w1r_hl 中被 latch 鎖住的寫入位址（只有 1 bit）",
+      "naming": [
+        [
+          "waddr",
+          "write address",
+          "寫入位址"
+        ],
+        [
+          "latched",
+          "latched",
+          "被 latch 鎖住的"
+        ],
+        [
+          "_pn",
+          "positive-to-negative",
+          "正緣之後、下一個負緣之前保持穩定"
+        ]
+      ],
+      "desc": "由 `waddr_ll` 的 `q_pn` 驅動，用來索引 `mem[waddr_latched_pn]`。它被宣告成沒有位寬的 `wire`（即 1 位元），而 `waddr_ll` 也是 `vc_Latch_ll#(1)`，所以只要 ADDR_SZ > 1 就會丟失高位位址——看起來是原始碼的疏漏，應該要是 `wire [ADDR_SZ-1:0]` 與 `vc_Latch_ll#(ADDR_SZ)`。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|wen_ll": {
+      "sum": "vc_RAM_1w1r_hl 裡鎖住寫入致能的 vc_Latch_ll 實例",
+      "naming": [
+        [
+          "wen",
+          "write enable",
+          "寫入致能"
+        ],
+        [
+          "_ll",
+          "low-level latch",
+          "clk 低電位時透通的 latch"
+        ]
+      ],
+      "desc": "`vc_Latch_ll#(1)` 的實例：`.clk(clk)`、`.d_p(wen_p)`、`.q_pn(wen_latched_pn)`。`vc_Latch_ll` 的行為是 `always @(*) if ( ~clk ) q_pn <= d_p`，所以低電位透通、高電位保持，讓 `wen_latched_pn` 在寫入視窗（clk 高）期間穩定。"
+    },
+    "vc/vc-RAMs.v|vc_RAM_1w1r_hl|waddr_ll": {
+      "sum": "vc_RAM_1w1r_hl 裡鎖住寫入位址的 vc_Latch_ll 實例",
+      "naming": [
+        [
+          "waddr",
+          "write address",
+          "寫入位址"
+        ],
+        [
+          "_ll",
+          "low-level latch",
+          "clk 低電位時透通的 latch"
+        ]
+      ],
+      "desc": "`vc_Latch_ll#(1)` 的實例：`.clk(clk)`、`.d_p(waddr_p)`、`.q_pn(waddr_latched_pn)`，作用和 `wen_ll` 相同，只是鎖的是位址。寬度參數固定為 1 是個問題（見 `waddr_latched_pn` 的說明）。"
+    }
+  }
+}
