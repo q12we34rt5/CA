@@ -1,0 +1,1204 @@
+<!-- ============================================================ ch0 -->
+<section class="ch" id="ch0" data-part="RISC-V 指令集" data-nav="ISA：軟體與硬體的合約">
+<p class="eyebrow">第 0 章 · RISC-V 指令集</p>
+<h2>ISA：軟體與硬體的合約</h2>
+<p>基礎篇的最後，你已經會把一份規格寫成 control + datapath。但處理器的「規格」是誰定的？答案是<b>指令集架構 (ISA, Instruction Set Architecture)</b>：一份寫死的合約，規定軟體可以叫硬體做哪些事、每件事的結果是什麼。合約以外的東西——用幾級管線、要不要 bypass、乘法器幾個週期——通通屬於<b>微架構 (microarchitecture)</b>，硬體設計者可以自由發揮。</p>
+<p>這個區分是整份 lab 的骨架：<code>lab1</code> 裡有三個目錄 <code>riscvstall</code>、<code>riscvbyp</code>、<code>riscvlong</code>，它們是<b>同一個 ISA 的三種微架構</b>。同一個 <code>riscv-addi.vmh</code> 丟進去，三者必須算出一模一樣的答案，只有花的週期數不同。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 235" role="img" aria-label="一個 ISA 對應多種微架構：上方是 RISC-V rv32im ISA 合約方塊，軟體從左邊進入；下方分出三個實作方塊 riscvstall、riscvbyp、riscvlong，三者行為相同但效能不同。">
+  <text class="zh" x="12" y="45">軟體（編譯器、.S 測試）</text>
+  <path class="w" d="M180 40H250" marker-end="url(#ah)"/>
+  <rect class="af" x="250" y="20" width="200" height="46"/>
+  <text class="hd" x="350" y="42" text-anchor="middle">RISC-V rv32im ISA</text>
+  <text class="zh s ac" x="350" y="58" text-anchor="middle">合約：指令做什麼</text>
+  <path class="w" d="M350 66V98M125 98H575M125 98V130M350 98V130M575 98V130"/>
+  <path class="w" d="M125 120V130" marker-end="url(#ah)"/><path class="w" d="M350 120V130" marker-end="url(#ah)"/><path class="w" d="M575 120V130" marker-end="url(#ah)"/>
+  <rect class="k" x="40" y="130" width="170" height="56"/>
+  <text x="125" y="152" text-anchor="middle">riscvstall</text><text class="zh s mut" x="125" y="170" text-anchor="middle">用 stall 解決衝突</text>
+  <rect class="k" x="265" y="130" width="170" height="56"/>
+  <text x="350" y="152" text-anchor="middle">riscvbyp</text><text class="zh s mut" x="350" y="170" text-anchor="middle">加上 bypass 少停一點</text>
+  <rect class="k" x="490" y="130" width="170" height="56"/>
+  <text x="575" y="152" text-anchor="middle">riscvlong</text><text class="zh s mut" x="575" y="170" text-anchor="middle">管線化乘除法器</text>
+  <text class="zh s mut" x="350" y="212" text-anchor="middle">三者跑同一份測試、得到同一組暫存器值；不同的只有 num_cycles 與 ipc。</text>
+</svg>
+</div>
+<figcaption><b>ISA 是介面，微架構是實作。</b>作業的 Objective 3、4 只改微架構，不改 ISA——所以既有的組合語言測試一條都不用改寫，這正是驗證你有沒有做對的依據。</figcaption>
+</figure>
+
+<h3>程式設計師看得到的狀態</h3>
+<p>合約的第一條，是列出「程式可以觀察與修改的東西」。rv32 只有三樣：</p>
+<ul>
+  <li><b>PC (program counter)</b>：32 位元，指向目前這條指令的位址。<code>lab1</code> 的 reset 值是 <code>0x00080000</code>（<code>riscv-isa.txt</code> 第 5 節）。</li>
+  <li><b>32 個通用暫存器 x0–x31</b>，每個 32 位元。其中 <code>x0</code> 永遠讀出 0，寫進去也沒用。</li>
+  <li><b>記憶體</b>：以 byte 定址 (byte-addressed)，一個位址放一個 byte；一個 word 佔 4 個 byte，採 <b>little-endian</b>——最低位址放最低的那個 byte。</li>
+</ul>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 302" role="img" aria-label="rv32 程式設計師模型：左上是 PC 暫存器，左下是 x0 到 x31 的暫存器檔，右邊是以 byte 定址的 little-endian 記憶體；PC 送出位址到記憶體，記憶體回傳 32 位元指令，指令解碼後讀寫暫存器。">
+  <text class="hd" x="30" y="32">① PC（program counter）</text>
+  <rect class="r" x="30" y="44" width="150" height="40"/><text x="105" y="69" text-anchor="middle">0x00080000</text>
+  <text class="zh s mut" x="30" y="104">每執行一條指令 PC += 4</text>
+
+  <text class="hd" x="30" y="132">② 暫存器 x0 – x31</text>
+  <rect class="r" x="30" y="142" width="170" height="24"/><text class="s" x="38" y="158">x0   00000000</text>
+  <text class="zh s ac" x="206" y="158">恆為 0</text>
+  <rect class="r" x="30" y="170" width="170" height="24"/><text class="s" x="38" y="186">x1   00000000</text>
+  <text class="mut" x="115" y="200" text-anchor="middle">⋮</text>
+  <rect class="r" x="30" y="206" width="170" height="24"/><text class="s" x="38" y="222">x31  00000000</text>
+
+  <path class="w" d="M180 64H320" marker-end="url(#ah)"/><text class="zh s" x="248" y="56" text-anchor="middle">位址</text>
+
+  <text class="hd" x="330" y="32">③ 記憶體（byte 定址、little-endian）</text>
+  <rect class="grp" x="330" y="44" width="340" height="130"/>
+  <text class="s mut" x="451" y="56" text-anchor="middle">+3</text><text class="s mut" x="493" y="56" text-anchor="middle">+2</text><text class="s mut" x="535" y="56" text-anchor="middle">+1</text><text class="s mut" x="577" y="56" text-anchor="middle">+0</text>
+  <text class="s mut" x="422" y="78" text-anchor="end">0x00080000</text>
+  <rect class="k" x="430" y="60" width="42" height="26"/><text class="s" x="451" y="77" text-anchor="middle">00</text>
+  <rect class="k" x="472" y="60" width="42" height="26"/><text class="s" x="493" y="77" text-anchor="middle">00</text>
+  <rect class="k" x="514" y="60" width="42" height="26"/><text class="s" x="535" y="77" text-anchor="middle">01</text>
+  <rect class="k" x="556" y="60" width="42" height="26"/><text class="s" x="577" y="77" text-anchor="middle">13</text>
+  <text class="s mut" x="422" y="118" text-anchor="end">0x00080004</text>
+  <rect class="k" x="430" y="100" width="42" height="26"/><text class="s" x="451" y="117" text-anchor="middle">00</text>
+  <rect class="k" x="472" y="100" width="42" height="26"/><text class="s" x="493" y="117" text-anchor="middle">01</text>
+  <rect class="k" x="514" y="100" width="42" height="26"/><text class="s" x="535" y="117" text-anchor="middle">02</text>
+  <rect class="k" x="556" y="100" width="42" height="26"/><text class="s" x="577" y="117" text-anchor="middle">13</text>
+  <text class="mut" x="503" y="152" text-anchor="middle">⋮</text>
+
+  <path class="w" d="M598 73H690V230H535V248" marker-end="url(#ah)"/>
+  <text class="zh s mut" x="682" y="224" text-anchor="end">回傳 32 位元指令</text>
+  <rect class="af" x="360" y="252" width="350" height="42"/>
+  <text x="535" y="270" text-anchor="middle">0x00000113</text>
+  <text class="zh s ac" x="535" y="286" text-anchor="middle">= addi x2, x0, 0</text>
+  <path class="w" d="M360 273H250V214H202" marker-end="url(#ah)"/>
+  <text class="zh s mut" x="258" y="240">解碼、讀 rs1、寫 rd</text>
+</svg>
+</div>
+<figcaption><b>這張圖就是 rv32 的全部「可見狀態」。</b>記憶體那一列的 byte 由右往左是 <code>13 01 00 00</code>，組成 word 就是 <code>0x00000113</code>——little-endian 的意思是「最低位址擺最低的 byte」。<code>riscv-addi.vmh</code> 的第一個 word 正是它。</figcaption>
+</figure>
+
+<h3>x0 恆為零：硬體長什麼樣</h3>
+<p>「<code>x0</code> 永遠是 0」聽起來像個約定，其實是兩顆實體電路撐起來的：讀的時候一顆 mux 把 0 塞回去，寫的時候一個條件把寫入擋掉。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathRegfile.v · 第 20–32 行</div>
+<pre><code class="language-verilog">  // We use an array of 32 bit register for the regfile itself
+  reg [31:0] registers[31:0];
+
+  // Combinational read ports
+  assign rdata0 = ( raddr0 == 0 ) ? 32'b0 : registers[raddr0];
+  assign rdata1 = ( raddr1 == 0 ) ? 32'b0 : registers[raddr1];
+
+  // Write port is active only when wen is asserted
+  always @( posedge clk )
+  begin
+    if ( wen_p &amp;&amp; (waddr_p != 5'b0) )
+      registers[waddr_p] &lt;= wdata_p;
+  end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 620 250" role="img" aria-label="x0 讀取路徑的硬體：暫存器陣列的輸出接到一顆二選一多工器的一個輸入，常數 32 位元 0 接到另一個輸入，比較器 raddr0 等於 0 的結果當作選擇線，輸出 rdata0。">
+  <text class="cb" x="20" y="88">raddr0</text>
+  <path class="c" d="M20 95H70" marker-end="url(#ahc)"/>
+  <circle class="dc" cx="45" cy="95" r="3"/>
+  <rect class="r" x="70" y="60" width="140" height="110"/>
+  <text x="140" y="110" text-anchor="middle">registers[]</text>
+  <text class="s mut" x="140" y="128" text-anchor="middle">32 × 32 bit</text>
+  <text x="288" y="68" text-anchor="end">32'b0</text>
+  <path class="w" d="M290 72H330"/>
+  <path class="w" d="M210 118H330"/>
+  <text class="s" x="268" y="112" text-anchor="middle">registers[raddr0]</text>
+  <path class="k" d="M330 50L356 62V128L330 140Z"/>
+  <text class="s" x="335" y="76">1</text><text class="s" x="335" y="124">0</text>
+  <path class="w" d="M356 95H500" marker-end="url(#ah)"/><text x="420" y="88">rdata0</text>
+  <rect class="k" x="180" y="195" width="120" height="32"/>
+  <text class="s" x="240" y="215" text-anchor="middle">raddr0 == 0</text>
+  <path class="c" d="M45 95V211H180" marker-end="url(#ahc)"/>
+  <path class="c" d="M300 211H343V140" marker-end="url(#ahc)"/>
+  <text class="zh s mut" x="360" y="215">選擇線：位址是 0 就選常數 0</text>
+</svg>
+</div>
+<figcaption><b><code>? :</code> 就是一顆 mux（<a href="../verilog-course/index.html#ch4">基礎篇第 4 章</a>）。</b>所以「x0 恆為零」在硬體上只是讀取路徑上多一顆二選一多工器。寫入端則靠 <code>waddr_p != 5'b0</code> 讓 enable 永遠不成立——即使控制單元真的把 <code>rd = x0</code> 的寫入送過來也不會出事，<code>nop</code>（<code>addi x0, x0, 0</code>）就是靠這個。完整的 regfile 結構圖見<a href="../verilog-course/index.html#ch9">基礎篇第 9 章</a>。</figcaption>
+</figure>
+</div>
+
+<h3>rv32im 與這次要做的子集</h3>
+<p><b>rv32</b> 指 32 位元的整數暫存器；<b>I</b> 是基本整數指令集 (base integer)；<b>M</b> 是乘除法擴充 (multiply/divide extension)。<code>rv32im</code> = I + M，剛好夠跑不用系統呼叫的 C 程式。<code>riscv-isa.txt</code> 第 2 節列出這次的子集，<code>lab1.pdf</code> 第 3.1 節把它拆成「參考設計已經做好的」和「你要補的」：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>類別</th><th>已經實作（最小可測子集）</th><th>Objective 1 要補</th></tr></thead>
+<tbody>
+<tr><td>暫存器–立即數</td><td><code>addi ori lui auipc</code></td><td><code>andi xori slli srli srai slti sltiu</code></td></tr>
+<tr><td>暫存器–暫存器</td><td><code>add</code></td><td><code>sub slt sltu sll srl sra and or xor</code></td></tr>
+<tr><td>記憶體</td><td><code>lw sw</code></td><td><code>lb lbu lh lhu sb sh</code></td></tr>
+<tr><td>跳躍</td><td><code>jal</code></td><td><code>jalr</code></td></tr>
+<tr><td>分支</td><td><code>bne blt</code></td><td><code>beq bge bltu bgeu</code></td></tr>
+<tr><td>乘除法 (M)</td><td>—</td><td><code>mul div divu rem remu</code></td></tr>
+<tr><td>診斷</td><td><code>csrw</code></td><td>—</td></tr>
+</tbody></table></div>
+<p>Objective 2 另外要補三條 <code>mulh</code>／<code>mulhu</code>／<code>mulhsu</code>——它們的 <code>`define</code> 目前在 <code>riscvstall-InstMsg.v</code> 第 147–149 行被註解掉，連編碼都要你自己打開。</p>
+
+<div class="note"><b>load／store 架構</b>
+<p>翻一遍上面的清單你會發現：只有 <code>lb/lh/lw/lbu/lhu</code> 和 <code>sb/sh/sw</code> 會碰到記憶體，<b>沒有任何一條算術指令能直接對記憶體做加法</b>。這叫 load/store 架構 (load–store architecture)。對硬體設計者來說這是天大的好消息：記憶體存取只會出現在管線的固定一站，不必在每個運算單元旁邊都接一條記憶體匯流排。</p></div>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 200" role="img" aria-label="load/store 架構示意：暫存器檔的兩個值進入 ALU，ALU 結果可以直接寫回暫存器；只有 load 與 store 指令會讓資料繼續走到右邊的資料記憶體再回到寫回多工器。">
+  <rect class="r" x="40" y="50" width="120" height="110"/>
+  <text class="zh" x="100" y="95" text-anchor="middle">暫存器檔</text>
+  <text class="s mut" x="100" y="113" text-anchor="middle">x0 – x31</text>
+  <path class="w" d="M160 78H240"/><text class="s mut" x="200" y="72" text-anchor="middle">rs1</text>
+  <path class="w" d="M160 112H240"/><text class="s mut" x="200" y="132" text-anchor="middle">rs2/imm</text>
+  <rect class="k" x="240" y="60" width="80" height="70"/><text x="280" y="100" text-anchor="middle">ALU</text>
+  <path class="a" d="M320 95H400V110H420" marker-end="url(#ah)"/>
+  <text class="zh s ac" x="366" y="88" text-anchor="middle">位址</text>
+  <rect class="k" x="420" y="75" width="120" height="70"/>
+  <text class="zh" x="480" y="105" text-anchor="middle">資料記憶體</text>
+  <text class="zh s ac" x="480" y="123" text-anchor="middle">只有 lw/sw 會用</text>
+  <path class="a" d="M540 112H590"/>
+  <path class="w" d="M360 95V26H570V78H590"/><circle class="d" cx="360" cy="95" r="3"/>
+  <path class="k" d="M590 60L614 72V118L590 130Z"/>
+  <text class="s" x="594" y="82">0</text><text class="s" x="594" y="118">1</text>
+  <path class="w" d="M614 95H660V180H100V163" marker-end="url(#ah)"/>
+  <text class="zh s mut" x="380" y="176" text-anchor="middle">寫回 rd</text>
+</svg>
+</div>
+<figcaption><b>綠色那條就是「碰記憶體」的路。</b>其他指令從暫存器出發、經過 ALU、直接走上面那條線寫回暫存器。這張圖之後會長成 <a href="#ch6">第 6 章</a>的完整 datapath。</figcaption>
+</figure>
+
+<h3>這門課怎麼對應作業</h3>
+<div class="tbl"><table>
+<thead><tr><th>課程單元</th><th>章節</th><th>對應作業</th></tr></thead>
+<tbody>
+<tr><td>RISC-V 指令集</td><td>第 0–3 章</td><td>共同基礎：讀懂 <code>riscv-isa.txt</code> 與 <code>InstMsg.v</code></td></tr>
+<tr class="hi"><td>一條指令的旅程</td><td>第 4–8 章</td><td>Objective 1：補控制表</td></tr>
+<tr><td>管線與 hazard</td><td>第 9–13 章</td><td>理解 stall／squash 的成本</td></tr>
+<tr class="hi"><td>Bypassing</td><td>第 14–16 章</td><td>Objective 3：riscvbyp</td></tr>
+<tr class="hi"><td>乘除法與長管線</td><td>第 17–19 章</td><td>Objective 2 &amp; 4：mulh 系列、riscvlong</td></tr>
+<tr><td>測試與除錯</td><td>第 20–21 章</td><td>寫測試、看波形、交報告</td></tr>
+</tbody></table></div>
+</section>
+
+<!-- ============================================================ ch1 -->
+<section class="ch" id="ch1" data-part="RISC-V 指令集" data-nav="指令格式：32 個 bit 怎麼切">
+<p class="eyebrow">第 1 章 · RISC-V 指令集</p>
+<h2>指令格式：32 個 bit 怎麼切</h2>
+<p>rv32 的每一條指令都<b>剛好 32 個 bit</b>。這 32 個 bit 要塞下「做什麼」「用哪些暫存器」「常數是多少」，切法共有六種格式：R、I、S、SB、U、UJ。<code>riscvstall-InstMsg.v</code> 開頭第 12–53 行就是這六張圖的 ASCII 版。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 750 316" role="img" aria-label="六種指令格式對齊在同一把 32 位元尺上：R、I、S、SB、U、UJ 型。opcode 永遠在第 6 到 0 位元，rd 在 11 到 7，funct3 在 14 到 12，rs1 在 19 到 15，rs2 在 24 到 20，其餘位元給立即數。">
+  <text class="s mut" x="66.7" y="44" text-anchor="middle">31</text>
+  <text class="s mut" x="194.9" y="44" text-anchor="middle">25</text>
+  <text class="s mut" x="216.3" y="44" text-anchor="middle">24</text>
+  <text class="s mut" x="301.8" y="44" text-anchor="middle">20</text>
+  <text class="s mut" x="323.2" y="44" text-anchor="middle">19</text>
+  <text class="s mut" x="408.7" y="44" text-anchor="middle">15</text>
+  <text class="s mut" x="430.1" y="44" text-anchor="middle">14</text>
+  <text class="s mut" x="472.8" y="44" text-anchor="middle">12</text>
+  <text class="s mut" x="494.2" y="44" text-anchor="middle">11</text>
+  <text class="s mut" x="579.7" y="44" text-anchor="middle">7</text>
+  <text class="s mut" x="601.1" y="44" text-anchor="middle">6</text>
+  <text class="s mut" x="729.3" y="44" text-anchor="middle">0</text>
+  <path class="re" d="M205.6 50V294M312.5 50V294M419.4 50V294M483.5 50V294M590.4 50V294"/>
+  <text class="s hd" x="50" y="72" text-anchor="end">R</text>
+  <rect class="f-fn" x="56.0" y="54" width="149.6" height="26"/><text class="s" x="130.8" y="71" text-anchor="middle">funct7</text>
+  <rect class="f-rs2" x="205.6" y="54" width="106.9" height="26"/><text class="s" x="259.1" y="71" text-anchor="middle">rs2</text>
+  <rect class="f-rs1" x="312.5" y="54" width="106.9" height="26"/><text class="s" x="365.9" y="71" text-anchor="middle">rs1</text>
+  <rect class="f-fn" x="419.4" y="54" width="64.1" height="26"/><text class="s" x="451.4" y="71" text-anchor="middle">funct3</text>
+  <rect class="f-rd" x="483.5" y="54" width="106.9" height="26"/><text class="s" x="536.9" y="71" text-anchor="middle">rd</text>
+  <rect class="f-op" x="590.4" y="54" width="149.6" height="26"/><text class="s" x="665.2" y="71" text-anchor="middle">opcode</text>
+  <text class="s hd" x="50" y="114" text-anchor="end">I</text>
+  <rect class="f-imm" x="56.0" y="96" width="256.5" height="26"/><text class="s" x="184.2" y="113" text-anchor="middle">imm[11:0]</text>
+  <rect class="f-rs1" x="312.5" y="96" width="106.9" height="26"/><text class="s" x="365.9" y="113" text-anchor="middle">rs1</text>
+  <rect class="f-fn" x="419.4" y="96" width="64.1" height="26"/><text class="s" x="451.4" y="113" text-anchor="middle">funct3</text>
+  <rect class="f-rd" x="483.5" y="96" width="106.9" height="26"/><text class="s" x="536.9" y="113" text-anchor="middle">rd</text>
+  <rect class="f-op" x="590.4" y="96" width="149.6" height="26"/><text class="s" x="665.2" y="113" text-anchor="middle">opcode</text>
+  <text class="s hd" x="50" y="156" text-anchor="end">S</text>
+  <rect class="f-imm" x="56.0" y="138" width="149.6" height="26"/><text class="s" x="130.8" y="155" text-anchor="middle">imm[11:5]</text>
+  <rect class="f-rs2" x="205.6" y="138" width="106.9" height="26"/><text class="s" x="259.1" y="155" text-anchor="middle">rs2</text>
+  <rect class="f-rs1" x="312.5" y="138" width="106.9" height="26"/><text class="s" x="365.9" y="155" text-anchor="middle">rs1</text>
+  <rect class="f-fn" x="419.4" y="138" width="64.1" height="26"/><text class="s" x="451.4" y="155" text-anchor="middle">funct3</text>
+  <rect class="f-imm" x="483.5" y="138" width="106.9" height="26"/><text class="s" x="536.9" y="155" text-anchor="middle">imm[4:0]</text>
+  <rect class="f-op" x="590.4" y="138" width="149.6" height="26"/><text class="s" x="665.2" y="155" text-anchor="middle">opcode</text>
+  <text class="s hd" x="50" y="198" text-anchor="end">SB</text>
+  <rect class="f-imm" x="56.0" y="180" width="21.4" height="26"/><text class="s" x="66.7" y="197" text-anchor="middle">12</text>
+  <rect class="f-imm" x="77.4" y="180" width="128.2" height="26"/><text class="s" x="141.5" y="197" text-anchor="middle">imm[10:5]</text>
+  <rect class="f-rs2" x="205.6" y="180" width="106.9" height="26"/><text class="s" x="259.1" y="197" text-anchor="middle">rs2</text>
+  <rect class="f-rs1" x="312.5" y="180" width="106.9" height="26"/><text class="s" x="365.9" y="197" text-anchor="middle">rs1</text>
+  <rect class="f-fn" x="419.4" y="180" width="64.1" height="26"/><text class="s" x="451.4" y="197" text-anchor="middle">funct3</text>
+  <rect class="f-imm" x="483.5" y="180" width="85.5" height="26"/><text class="s" x="526.2" y="197" text-anchor="middle">imm[4:1]</text>
+  <rect class="f-imm" x="569.0" y="180" width="21.4" height="26"/><text class="s" x="579.7" y="197" text-anchor="middle">11</text>
+  <rect class="f-op" x="590.4" y="180" width="149.6" height="26"/><text class="s" x="665.2" y="197" text-anchor="middle">opcode</text>
+  <text class="s hd" x="50" y="240" text-anchor="end">U</text>
+  <rect class="f-imm" x="56.0" y="222" width="427.5" height="26"/><text class="s" x="269.8" y="239" text-anchor="middle">imm[31:12]</text>
+  <rect class="f-rd" x="483.5" y="222" width="106.9" height="26"/><text class="s" x="536.9" y="239" text-anchor="middle">rd</text>
+  <rect class="f-op" x="590.4" y="222" width="149.6" height="26"/><text class="s" x="665.2" y="239" text-anchor="middle">opcode</text>
+  <text class="s hd" x="50" y="282" text-anchor="end">UJ</text>
+  <rect class="f-imm" x="56.0" y="264" width="21.4" height="26"/><text class="s" x="66.7" y="281" text-anchor="middle">20</text>
+  <rect class="f-imm" x="77.4" y="264" width="213.8" height="26"/><text class="s" x="184.2" y="281" text-anchor="middle">imm[10:1]</text>
+  <rect class="f-imm" x="291.1" y="264" width="21.4" height="26"/><text class="s" x="301.8" y="281" text-anchor="middle">11</text>
+  <rect class="f-imm" x="312.5" y="264" width="171.0" height="26"/><text class="s" x="398.0" y="281" text-anchor="middle">imm[19:12]</text>
+  <rect class="f-rd" x="483.5" y="264" width="106.9" height="26"/><text class="s" x="536.9" y="281" text-anchor="middle">rd</text>
+  <rect class="f-op" x="590.4" y="264" width="149.6" height="26"/><text class="s" x="665.2" y="281" text-anchor="middle">opcode</text>
+  <text class="zh s mut" x="398" y="310" text-anchor="middle">虛線是欄位邊界：opcode、rd、funct3、rs1、rs2 六種格式通通對齊，從來不移動。</text>
+</svg>
+</div>
+<figcaption><b>對齊本身就是這張圖的重點。</b>硬體不必先知道是哪一種格式，就能直接把 <code>ir[19:15]</code> 當 rs1 送進暫存器檔、把 <code>ir[11:7]</code> 當 rd——因為它們永遠在同一個位置。要付出的代價是立即數被切得七零八落（<a href="#ch2">第 2 章</a>）。</figcaption>
+</figure>
+
+<p>Verilog 裡這些位置就是一組 <code>`define</code>（<a href="../verilog-course/index.html#ch11">基礎篇第 11 章</a>介紹過 <code>`define</code> 與 <code>casez</code>）。要取出 rs1，控制單元只要寫 <code>ir_Dhl[`RISCV_INST_MSG_RS1]</code>：</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-InstMsg.v · 第 64–70 行</div>
+<pre><code class="language-verilog">`define RISCV_INST_MSG_OPCODE   6:0
+`define RISCV_INST_MSG_RD       11:7
+`define RISCV_INST_MSG_FUNCT3   14:12
+`define RISCV_INST_MSG_RS1      19:15
+`define RISCV_INST_MSG_RS2      24:20
+`define RISCV_INST_MSG_FUNCT7   31:25
+`define RISCV_INST_MSG_SHAMT    24:20</code></pre>
+</div>
+
+<h3>動手解碼：真的機器碼</h3>
+<p>光看格式圖沒有感覺，我們直接拆 <code>build/riscv-addi.vmh</code>。這個檔的第一行是 <code>@20000</code>——word 位址 0x20000，換成 byte 位址就是 <code>0x00080000</code>，正好是 reset vector。接下來五個 word 是：</p>
+<div class="ex">
+<div class="src">build/riscv-addi.vmh · 前 6 行</div>
+<pre><code>@20000
+00000113
+00010213
+00d00e93
+00000093
+1c121e63</code></pre>
+</div>
+<p>先拆第三個：<code>0x00d00e93</code>。步驟永遠一樣——hex 轉二進位、照尺切欄位、查 opcode 表。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 750 250" role="img" aria-label="把機器碼 0x00d00e93 逐步解碼：先寫成 32 位元二進位，再切成 imm、rs1、funct3、rd、opcode 五個欄位，最後查出是 addi x29, x0, 13。">
+<text class="hd" x="98.8" y="44" text-anchor="middle">0</text>
+<text class="hd" x="184.2" y="44" text-anchor="middle">0</text>
+<text class="hd" x="269.8" y="44" text-anchor="middle">d</text>
+<text class="hd" x="355.2" y="44" text-anchor="middle">0</text>
+<text class="hd" x="440.8" y="44" text-anchor="middle">0</text>
+<text class="hd" x="526.2" y="44" text-anchor="middle">e</text>
+<text class="hd" x="611.8" y="44" text-anchor="middle">9</text>
+<text class="hd" x="697.2" y="44" text-anchor="middle">3</text>
+<rect class="f-imm" x="56.0" y="56" width="256.5" height="24"/>
+<text class="s" x="66.7" y="72" text-anchor="middle">0</text>
+<text class="s" x="88.1" y="72" text-anchor="middle">0</text>
+<text class="s" x="109.4" y="72" text-anchor="middle">0</text>
+<text class="s" x="130.8" y="72" text-anchor="middle">0</text>
+<text class="s" x="152.2" y="72" text-anchor="middle">0</text>
+<text class="s" x="173.6" y="72" text-anchor="middle">0</text>
+<text class="s" x="194.9" y="72" text-anchor="middle">0</text>
+<text class="s" x="216.3" y="72" text-anchor="middle">0</text>
+<text class="s" x="237.7" y="72" text-anchor="middle">1</text>
+<text class="s" x="259.1" y="72" text-anchor="middle">1</text>
+<text class="s" x="280.4" y="72" text-anchor="middle">0</text>
+<text class="s" x="301.8" y="72" text-anchor="middle">1</text>
+<rect class="f-rs1" x="312.5" y="56" width="106.9" height="24"/>
+<text class="s" x="323.2" y="72" text-anchor="middle">0</text>
+<text class="s" x="344.6" y="72" text-anchor="middle">0</text>
+<text class="s" x="365.9" y="72" text-anchor="middle">0</text>
+<text class="s" x="387.3" y="72" text-anchor="middle">0</text>
+<text class="s" x="408.7" y="72" text-anchor="middle">0</text>
+<rect class="f-fn" x="419.4" y="56" width="64.1" height="24"/>
+<text class="s" x="430.1" y="72" text-anchor="middle">0</text>
+<text class="s" x="451.4" y="72" text-anchor="middle">0</text>
+<text class="s" x="472.8" y="72" text-anchor="middle">0</text>
+<rect class="f-rd" x="483.5" y="56" width="106.9" height="24"/>
+<text class="s" x="494.2" y="72" text-anchor="middle">1</text>
+<text class="s" x="515.6" y="72" text-anchor="middle">1</text>
+<text class="s" x="536.9" y="72" text-anchor="middle">1</text>
+<text class="s" x="558.3" y="72" text-anchor="middle">0</text>
+<text class="s" x="579.7" y="72" text-anchor="middle">1</text>
+<rect class="f-op" x="590.4" y="56" width="149.6" height="24"/>
+<text class="s" x="601.1" y="72" text-anchor="middle">0</text>
+<text class="s" x="622.4" y="72" text-anchor="middle">0</text>
+<text class="s" x="643.8" y="72" text-anchor="middle">1</text>
+<text class="s" x="665.2" y="72" text-anchor="middle">0</text>
+<text class="s" x="686.6" y="72" text-anchor="middle">0</text>
+<text class="s" x="707.9" y="72" text-anchor="middle">1</text>
+<text class="s" x="729.3" y="72" text-anchor="middle">1</text>
+  <text class="s mut" x="66.7" y="96" text-anchor="middle">31</text>
+  <text class="s mut" x="729.3" y="96" text-anchor="middle">0</text>
+<text class="s mut" x="184.2" y="98" text-anchor="middle">imm[11:0]</text>
+<text class="s" x="184.2" y="113" text-anchor="middle">0x00d = 13</text>
+<text class="s mut" x="365.9" y="98" text-anchor="middle">rs1</text>
+<text class="s" x="365.9" y="113" text-anchor="middle">00000 = x0</text>
+<text class="s mut" x="451.4" y="98" text-anchor="middle">funct3</text>
+<text class="s" x="451.4" y="113" text-anchor="middle">000</text>
+<text class="s mut" x="536.9" y="98" text-anchor="middle">rd</text>
+<text class="s" x="536.9" y="113" text-anchor="middle">11101 = x29</text>
+<text class="s mut" x="665.2" y="98" text-anchor="middle">opcode</text>
+<text class="s" x="665.2" y="113" text-anchor="middle">0010011</text>
+  <text class="zh" x="30" y="152">opcode 0010011 + funct3 000 → 查表得到 addi</text>
+  <rect class="af" x="200" y="166" width="340" height="46"/>
+  <text x="370" y="186" text-anchor="middle">addi x29, x0, 13</text>
+  <text class="zh s ac" x="370" y="204" text-anchor="middle">x29 ← x0 + 13 = 13</text>
+  <text class="zh s mut" x="30" y="238">測試巨集把「目前的行號 13」放進 x29，失敗時就靠它回報是哪一行掛掉。</text>
+</svg>
+</div>
+<figcaption><b>解碼就是查欄位。</b><code>imm[11:0] = 0x00d = 13</code>、<code>rs1 = x0</code>、<code>rd = x29</code>。行號 13 不是巧合：<code>riscv-addi.S</code> 第 13 行就是第一個 <code>TEST_IMM_OP</code>，巨集 <code>TEST_CHECK_EQ</code> 會先做 <code>li x29, __LINE__</code>。</figcaption>
+</figure>
+
+<p>第五個 word <code>0x1c121e63</code> 的 opcode 是 <code>1100011</code>，那是分支。分支的立即數被切成四塊，要自己拼回去：</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 750 290" role="img" aria-label="解碼 0x1c121e63：欄位切出 rs1 等於 x4、rs2 等於 x1、funct3 等於 001，四塊立即數拼成 13 位元的 476，結果是 bne x4, x1, 加 476。">
+<text class="hd" x="98.8" y="44" text-anchor="middle">1</text>
+<text class="hd" x="184.2" y="44" text-anchor="middle">c</text>
+<text class="hd" x="269.8" y="44" text-anchor="middle">1</text>
+<text class="hd" x="355.2" y="44" text-anchor="middle">2</text>
+<text class="hd" x="440.8" y="44" text-anchor="middle">1</text>
+<text class="hd" x="526.2" y="44" text-anchor="middle">e</text>
+<text class="hd" x="611.8" y="44" text-anchor="middle">6</text>
+<text class="hd" x="697.2" y="44" text-anchor="middle">3</text>
+<rect class="f-imm" x="56.0" y="56" width="21.4" height="24"/>
+<text class="s" x="66.7" y="72" text-anchor="middle">0</text>
+<rect class="f-imm" x="77.4" y="56" width="128.2" height="24"/>
+<text class="s" x="88.1" y="72" text-anchor="middle">0</text>
+<text class="s" x="109.4" y="72" text-anchor="middle">0</text>
+<text class="s" x="130.8" y="72" text-anchor="middle">1</text>
+<text class="s" x="152.2" y="72" text-anchor="middle">1</text>
+<text class="s" x="173.6" y="72" text-anchor="middle">1</text>
+<text class="s" x="194.9" y="72" text-anchor="middle">0</text>
+<rect class="f-rs2" x="205.6" y="56" width="106.9" height="24"/>
+<text class="s" x="216.3" y="72" text-anchor="middle">0</text>
+<text class="s" x="237.7" y="72" text-anchor="middle">0</text>
+<text class="s" x="259.1" y="72" text-anchor="middle">0</text>
+<text class="s" x="280.4" y="72" text-anchor="middle">0</text>
+<text class="s" x="301.8" y="72" text-anchor="middle">1</text>
+<rect class="f-rs1" x="312.5" y="56" width="106.9" height="24"/>
+<text class="s" x="323.2" y="72" text-anchor="middle">0</text>
+<text class="s" x="344.6" y="72" text-anchor="middle">0</text>
+<text class="s" x="365.9" y="72" text-anchor="middle">1</text>
+<text class="s" x="387.3" y="72" text-anchor="middle">0</text>
+<text class="s" x="408.7" y="72" text-anchor="middle">0</text>
+<rect class="f-fn" x="419.4" y="56" width="64.1" height="24"/>
+<text class="s" x="430.1" y="72" text-anchor="middle">0</text>
+<text class="s" x="451.4" y="72" text-anchor="middle">0</text>
+<text class="s" x="472.8" y="72" text-anchor="middle">1</text>
+<rect class="f-imm" x="483.5" y="56" width="85.5" height="24"/>
+<text class="s" x="494.2" y="72" text-anchor="middle">1</text>
+<text class="s" x="515.6" y="72" text-anchor="middle">1</text>
+<text class="s" x="536.9" y="72" text-anchor="middle">1</text>
+<text class="s" x="558.3" y="72" text-anchor="middle">0</text>
+<rect class="f-imm" x="569.0" y="56" width="21.4" height="24"/>
+<text class="s" x="579.7" y="72" text-anchor="middle">0</text>
+<rect class="f-op" x="590.4" y="56" width="149.6" height="24"/>
+<text class="s" x="601.1" y="72" text-anchor="middle">1</text>
+<text class="s" x="622.4" y="72" text-anchor="middle">1</text>
+<text class="s" x="643.8" y="72" text-anchor="middle">0</text>
+<text class="s" x="665.2" y="72" text-anchor="middle">0</text>
+<text class="s" x="686.6" y="72" text-anchor="middle">0</text>
+<text class="s" x="707.9" y="72" text-anchor="middle">1</text>
+<text class="s" x="729.3" y="72" text-anchor="middle">1</text>
+<text class="s mut" x="66.7" y="98" text-anchor="middle">[12]</text>
+<text class="s" x="66.7" y="113" text-anchor="middle">0</text>
+<text class="s mut" x="141.5" y="98" text-anchor="middle">[10:5]</text>
+<text class="s" x="141.5" y="113" text-anchor="middle">001110</text>
+<text class="s mut" x="259.1" y="98" text-anchor="middle">rs2</text>
+<text class="s" x="259.1" y="113" text-anchor="middle">00001 = x1</text>
+<text class="s mut" x="365.9" y="98" text-anchor="middle">rs1</text>
+<text class="s" x="365.9" y="113" text-anchor="middle">00100 = x4</text>
+<text class="s mut" x="451.4" y="98" text-anchor="middle">funct3</text>
+<text class="s" x="451.4" y="113" text-anchor="middle">001</text>
+<text class="s mut" x="526.2" y="98" text-anchor="middle">[4:1]</text>
+<text class="s" x="526.2" y="113" text-anchor="middle">1110</text>
+<text class="s mut" x="579.7" y="98" text-anchor="middle">[11]</text>
+<text class="s" x="579.7" y="113" text-anchor="middle">0</text>
+<text class="s mut" x="665.2" y="98" text-anchor="middle">opcode</text>
+<text class="s" x="665.2" y="113" text-anchor="middle">1100011</text>
+  <text class="zh s mut" x="10" y="160">拼回 13 位元 offset</text>
+  <rect class="f-imm" x="200" y="146" width="26" height="24"/><text class="s" x="213" y="163" text-anchor="middle">0</text>
+  <rect class="f-imm" x="226" y="146" width="26" height="24"/><text class="s" x="239" y="163" text-anchor="middle">0</text>
+  <rect class="f-imm" x="252" y="146" width="26" height="24"/><text class="s" x="265" y="163" text-anchor="middle">0</text>
+  <rect class="f-imm" x="278" y="146" width="26" height="24"/><text class="s" x="291" y="163" text-anchor="middle">0</text>
+  <rect class="f-imm" x="304" y="146" width="26" height="24"/><text class="s" x="317" y="163" text-anchor="middle">1</text>
+  <rect class="f-imm" x="330" y="146" width="26" height="24"/><text class="s" x="343" y="163" text-anchor="middle">1</text>
+  <rect class="f-imm" x="356" y="146" width="26" height="24"/><text class="s" x="369" y="163" text-anchor="middle">1</text>
+  <rect class="f-imm" x="382" y="146" width="26" height="24"/><text class="s" x="395" y="163" text-anchor="middle">0</text>
+  <rect class="f-imm" x="408" y="146" width="26" height="24"/><text class="s" x="421" y="163" text-anchor="middle">1</text>
+  <rect class="f-imm" x="434" y="146" width="26" height="24"/><text class="s" x="447" y="163" text-anchor="middle">1</text>
+  <rect class="f-imm" x="460" y="146" width="26" height="24"/><text class="s" x="473" y="163" text-anchor="middle">1</text>
+  <rect class="f-imm" x="486" y="146" width="26" height="24"/><text class="s" x="499" y="163" text-anchor="middle">0</text>
+  <rect class="gh" x="512" y="146" width="26" height="24"/><text class="s ac" x="525" y="163" text-anchor="middle">0</text>
+  <text class="s mut" x="213" y="142" text-anchor="middle">12</text>
+  <text class="s mut" x="239" y="142" text-anchor="middle">11</text>
+  <text class="s mut" x="317" y="142" text-anchor="middle">8</text>
+  <text class="s mut" x="421" y="142" text-anchor="middle">4</text>
+  <text class="s mut" x="525" y="142" text-anchor="middle">0</text>
+  <text class="s" x="552" y="163">= 448 + 28 = +476 = 0x1dc</text>
+  <text class="zh s ac" x="525" y="186" text-anchor="middle">硬接 0</text>
+  <rect class="af" x="150" y="204" width="450" height="46"/>
+  <text x="375" y="224" text-anchor="middle">bne x4, x1, +476</text>
+  <text class="zh s ac" x="375" y="242" text-anchor="middle">x4 ≠ x1 → PC = 0x00080010 + 476 = 0x000801ec</text>
+  <text class="zh s mut" x="10" y="276">這條指令在位址 0x00080010（vmh 的第 5 個 word），跳的目標是測試失敗處理程式 _fail。</text>
+</svg>
+</div>
+<figcaption><b>驗算：</b><code>imm[10:5] = 001110</code> 代表 14，放在第 5 位 → 14 × 32 = 448；<code>imm[4:1] = 1110</code> 代表 14，放在第 1 位 → 14 × 2 = 28；<code>imm[12] = imm[11] = 0</code>，<code>imm[0]</code> 硬接 0。合計 +476。這正是 <code>TEST_CHECK_EQ(x4, ...)</code> 展開出來的 <code>bne reg_, x1, _fail</code>。</figcaption>
+</figure>
+
+<p>你可以把任何 8 位數的 hex word 貼進下面的解碼器，或直接挑一個 <code>riscv-addi.vmh</code> 裡的值，看它被切成哪些欄位。</p>
+<div class="widget" id="w-decoder"></div>
+
+<h3>控制單元怎麼查表：<code>casez</code> 與 <code>?</code></h3>
+<p>解碼在硬體裡不是查記憶體，而是一大串平行的位元比較。<code>InstMsg.v</code> 把每條指令寫成一個 32 位元樣式，<code>?</code> 表示「這一位不管是什麼都算符合」：</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-InstMsg.v · 第 122、130、133–134、143、146 行</div>
+<pre><code class="language-verilog">`define RISCV_INST_MSG_ADDI     32'b???????_?????_?????_000_?????_0010011
+`define RISCV_INST_MSG_SLLI     32'b0000000_?????_?????_001_?????_0010011
+`define RISCV_INST_MSG_ADD      32'b0000000_?????_?????_000_?????_0110011
+`define RISCV_INST_MSG_SUB      32'b0100000_?????_?????_000_?????_0110011
+`define RISCV_INST_MSG_CSRW     32'b???????_?????_?????_001_00000_1110011   // pseudo inst based on CSRRW.
+`define RISCV_INST_MSG_MUL      32'b0000001_?????_?????_000_?????_0110011</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 750 175" role="img" aria-label="casez 比對示意：ADDI 樣式中只有 funct3 的三個位元與 opcode 的七個位元是固定值，其餘位元是問號不比對；實際指令 0x00d00e93 在這十個位元上完全相符，所以命中 ADDI。">
+  <text class="s mut" x="56" y="48">casez 樣式（? = don't care）</text>
+<rect class="gh" x="56.0" y="56" width="149.6" height="24"/>
+<text class="s mut" x="66.7" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="88.1" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="109.4" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="130.8" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="152.2" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="173.6" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="194.9" y="72" text-anchor="middle">?</text>
+<rect class="gh" x="205.6" y="56" width="106.9" height="24"/>
+<text class="s mut" x="216.3" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="237.7" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="259.1" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="280.4" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="301.8" y="72" text-anchor="middle">?</text>
+<rect class="gh" x="312.5" y="56" width="106.9" height="24"/>
+<text class="s mut" x="323.2" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="344.6" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="365.9" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="387.3" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="408.7" y="72" text-anchor="middle">?</text>
+<rect class="f-fn" x="419.4" y="56" width="64.1" height="24"/>
+<text class="s" x="430.1" y="72" text-anchor="middle">0</text>
+<text class="s" x="451.4" y="72" text-anchor="middle">0</text>
+<text class="s" x="472.8" y="72" text-anchor="middle">0</text>
+<rect class="gh" x="483.5" y="56" width="106.9" height="24"/>
+<text class="s mut" x="494.2" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="515.6" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="536.9" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="558.3" y="72" text-anchor="middle">?</text>
+<text class="s mut" x="579.7" y="72" text-anchor="middle">?</text>
+<rect class="f-op" x="590.4" y="56" width="149.6" height="24"/>
+<text class="s" x="601.1" y="72" text-anchor="middle">0</text>
+<text class="s" x="622.4" y="72" text-anchor="middle">0</text>
+<text class="s" x="643.8" y="72" text-anchor="middle">1</text>
+<text class="s" x="665.2" y="72" text-anchor="middle">0</text>
+<text class="s" x="686.6" y="72" text-anchor="middle">0</text>
+<text class="s" x="707.9" y="72" text-anchor="middle">1</text>
+<text class="s" x="729.3" y="72" text-anchor="middle">1</text>
+  <text class="s mut" x="56" y="96">實際指令 0x00d00e93</text>
+<rect class="f-imm" x="56.0" y="104" width="256.5" height="24"/>
+<text class="s" x="66.7" y="120" text-anchor="middle">0</text>
+<text class="s" x="88.1" y="120" text-anchor="middle">0</text>
+<text class="s" x="109.4" y="120" text-anchor="middle">0</text>
+<text class="s" x="130.8" y="120" text-anchor="middle">0</text>
+<text class="s" x="152.2" y="120" text-anchor="middle">0</text>
+<text class="s" x="173.6" y="120" text-anchor="middle">0</text>
+<text class="s" x="194.9" y="120" text-anchor="middle">0</text>
+<text class="s" x="216.3" y="120" text-anchor="middle">0</text>
+<text class="s" x="237.7" y="120" text-anchor="middle">1</text>
+<text class="s" x="259.1" y="120" text-anchor="middle">1</text>
+<text class="s" x="280.4" y="120" text-anchor="middle">0</text>
+<text class="s" x="301.8" y="120" text-anchor="middle">1</text>
+<rect class="f-rs1" x="312.5" y="104" width="106.9" height="24"/>
+<text class="s" x="323.2" y="120" text-anchor="middle">0</text>
+<text class="s" x="344.6" y="120" text-anchor="middle">0</text>
+<text class="s" x="365.9" y="120" text-anchor="middle">0</text>
+<text class="s" x="387.3" y="120" text-anchor="middle">0</text>
+<text class="s" x="408.7" y="120" text-anchor="middle">0</text>
+<rect class="f-fn" x="419.4" y="104" width="64.1" height="24"/>
+<text class="s" x="430.1" y="120" text-anchor="middle">0</text>
+<text class="s" x="451.4" y="120" text-anchor="middle">0</text>
+<text class="s" x="472.8" y="120" text-anchor="middle">0</text>
+<rect class="f-rd" x="483.5" y="104" width="106.9" height="24"/>
+<text class="s" x="494.2" y="120" text-anchor="middle">1</text>
+<text class="s" x="515.6" y="120" text-anchor="middle">1</text>
+<text class="s" x="536.9" y="120" text-anchor="middle">1</text>
+<text class="s" x="558.3" y="120" text-anchor="middle">0</text>
+<text class="s" x="579.7" y="120" text-anchor="middle">1</text>
+<rect class="f-op" x="590.4" y="104" width="149.6" height="24"/>
+<text class="s" x="601.1" y="120" text-anchor="middle">0</text>
+<text class="s" x="622.4" y="120" text-anchor="middle">0</text>
+<text class="s" x="643.8" y="120" text-anchor="middle">1</text>
+<text class="s" x="665.2" y="120" text-anchor="middle">0</text>
+<text class="s" x="686.6" y="120" text-anchor="middle">0</text>
+<text class="s" x="707.9" y="120" text-anchor="middle">1</text>
+<text class="s" x="729.3" y="120" text-anchor="middle">1</text>
+<path class="a" d="M419.4 140H483.5"/><text class="zh s ac" x="451.4" y="156" text-anchor="middle">比對</text>
+<path class="a" d="M590.4 140H740.0"/><text class="zh s ac" x="665.2" y="156" text-anchor="middle">比對</text>
+  <text class="zh s mut" x="250" y="156" text-anchor="middle">其餘 22 個 bit 完全不比對</text>
+</svg>
+</div>
+<figcaption><b>一條 <code>casez</code> 分支 = 一堆 AND 閘。</b><code>ADDI</code> 只固定 10 個 bit，所以 rs1、rd、立即數放什麼都命中。<code>ADD</code> 與 <code>SUB</code> 的 opcode、funct3 完全一樣，靠 funct7 的第 30 位分辨；<code>MUL</code> 也同一個 opcode，靠 <code>funct7 = 0000001</code> 分辨。注意 <code>CSRW</code> 還額外要求 <code>rd = 00000</code>。</figcaption>
+</figure>
+</div>
+
+<p>於是「同一個 opcode 底下還有好幾條指令」就靠 funct3 與 funct7 這兩個小欄位決定：</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 268" role="img" aria-label="R 型 opcode 0110011 之下，先用 funct3 分岔，再用 funct7 分岔：funct3 等於 000 時 funct7 分別對應 add、sub、mul；funct3 等於 101 時分別對應 srl、sra、divu。">
+  <rect class="f-op" x="250" y="16" width="200" height="32"/>
+  <text class="s" x="350" y="36" text-anchor="middle">opcode = 0110011</text>
+  <path class="w" d="M350 48V70M170 70H530M170 70V126M530 70V126"/>
+  <rect class="f-fn" x="95" y="90" width="150" height="30"/><text class="s" x="170" y="110" text-anchor="middle">funct3 = 000</text>
+  <rect class="f-fn" x="455" y="90" width="150" height="30"/><text class="s" x="530" y="110" text-anchor="middle">funct3 = 101</text>
+  <path class="w" d="M170 120V126H75V218M75 154H95M75 186H95M75 218H95"/>
+  <path class="w" d="M88 154H95" marker-end="url(#ah)"/><path class="w" d="M88 186H95" marker-end="url(#ah)"/><path class="w" d="M88 218H95" marker-end="url(#ah)"/>
+  <rect class="gh" x="95" y="140" width="220" height="28"/><text class="s" x="205" y="158" text-anchor="middle">0000000 → add</text>
+  <rect class="gh" x="95" y="172" width="220" height="28"/><text class="s" x="205" y="190" text-anchor="middle">0100000 → sub</text>
+  <rect class="af" x="95" y="204" width="220" height="28"/><text class="s" x="205" y="222" text-anchor="middle">0000001 → mul</text>
+  <path class="w" d="M530 120V126H435V218M435 154H455M435 186H455M435 218H455"/>
+  <path class="w" d="M448 154H455" marker-end="url(#ah)"/><path class="w" d="M448 186H455" marker-end="url(#ah)"/><path class="w" d="M448 218H455" marker-end="url(#ah)"/>
+  <rect class="gh" x="455" y="140" width="220" height="28"/><text class="s" x="565" y="158" text-anchor="middle">0000000 → srl</text>
+  <rect class="gh" x="455" y="172" width="220" height="28"/><text class="s" x="565" y="190" text-anchor="middle">0100000 → sra</text>
+  <rect class="af" x="455" y="204" width="220" height="28"/><text class="s" x="565" y="222" text-anchor="middle">0000001 → divu</text>
+  <text class="zh s ac" x="350" y="256" text-anchor="middle">funct7 = 0000001 就是 M extension：opcode 與一般 R 型算術完全相同。</text>
+</svg>
+</div>
+<figcaption><b>funct7 的第 30 位是「變體位元」。</b><code>add→sub</code>、<code>srl→sra</code>、<code>slli→srai</code> 都只差這一位（<code>0000000</code> 對 <code>0100000</code>）。ALU 之後會用到這個規律（<a href="#ch6">第 6 章</a>）。</figcaption>
+</figure>
+
+<div class="quiz"><b>想一想</b>
+<p><code>riscv-addi.vmh</code> 的第二個 word 是 <code>00010213</code>。它是哪一條指令？</p>
+<details><summary>看答案</summary>
+<p>二進位 <code>0000000_00001_00010_000_00100_0010011</code>。opcode <code>0010011</code> + funct3 <code>000</code> → <code>addi</code>；<code>rd = 00100 = x4</code>、<code>rs1 = 00010 = x2</code>、<code>imm[11:0] = 0x000 = 0</code>。所以是 <code>addi x4, x2, 0</code>，也就是 <code>TEST_IMM_OP(addi, 0x00000000, 0x000, ...)</code> 展開出來的那條 <code>addi x4, x2, 0x000</code>。</p></details>
+</div>
+</section>
+
+<!-- ============================================================ ch2 -->
+<section class="ch" id="ch2" data-part="RISC-V 指令集" data-nav="立即數：被打散的常數">
+<p class="eyebrow">第 2 章 · RISC-V 指令集</p>
+<h2>立即數：被打散的常數</h2>
+<p>第一次讀 SB 型的圖，幾乎每個人都會問同一句話：<b>為什麼立即數要被切成四塊，而且順序還是亂的？</b></p>
+<p>答案是：這些欄位不是為了好看給人讀的，是為了讓<b>連線最短</b>。RISC-V 的設計者先把 rs1／rs2／rd／funct3 的位置釘死（<a href="#ch1">第 1 章</a>那張對齊圖），剩下的洞才拿來塞立即數。於是立即數被迫讓路。作為補償，他們讓每一種立即數都遵守兩條規則：</p>
+<ul>
+  <li><b>符號位元永遠是 <code>inst[31]</code></b>。所以符號延伸 (sign extension) 的那條線可以最早開始拉，不必等解碼完才知道要複製哪一位。</li>
+  <li><b>同一個立即數位元盡量待在同一個指令位元</b>。例如 <code>imm[10:5]</code> 在 I、S、SB、UJ 四種格式裡都來自 <code>inst[30:25]</code>——所以那 6 條線可以直接接死，不需要 mux。</li>
+</ul>
+<p>這五種立即數在 <code>lab1</code> 裡是同時算出來的，全部寫在一個模組裡，之後由 <code>op1_mux</code> 選要用哪一個（<a href="#ch6">第 6 章</a>）：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-InstMsg.v · 第 284–302 行</div>
+<pre><code class="language-verilog">  assign imm_i    = {{21{msg[`RISCV_INST_MSG_IMM_SIGN]}},
+    msg[`RISCV_INST_MSG_IMM_10_5],
+    msg[`RISCV_INST_MSG_IMM_4_0_I]};
+  assign imm_s    = {{21{msg[`RISCV_INST_MSG_IMM_SIGN]}},
+    msg[`RISCV_INST_MSG_IMM_10_5],
+    msg[`RISCV_INST_MSG_IMM_4_0_S]};
+  assign imm_sb   = {{20{msg[`RISCV_INST_MSG_IMM_SIGN]}},
+    msg[`RISCV_INST_MSG_IMM_11_SB],
+    msg[`RISCV_INST_MSG_IMM_10_5],
+    msg[`RISCV_INST_MSG_IMM_4_1_SB],
+    1'b0};
+  assign imm_u    = {msg[`RISCV_INST_MSG_IMM_31_12_U],
+    12'b0};
+  assign imm_uj   = {{12{msg[`RISCV_INST_MSG_IMM_SIGN]}},
+    msg[`RISCV_INST_MSG_IMM_19_12_UJ],
+    msg[`RISCV_INST_MSG_IMM_11_UJ],
+    msg[`RISCV_INST_MSG_IMM_10_5],
+    msg[`RISCV_INST_MSG_IMM_4_1_UJ],
+    1'b0};</code></pre>
+</div>
+<p>這五行全部是 <code>assign</code> + 串接 <code>{}</code>，沒有任何運算子——也就是說，<b>這裡完全沒有邏輯閘，只有接線</b>（<a href="../verilog-course/index.html#ch5">基礎篇第 5 章</a>）。<code>{21{x}}</code> 是複製語法，代表把同一條線接到 21 個地方。下面三張圖把這些接線畫出來。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 750 225" role="img" aria-label="imm_i 的接線：指令的第 31 位複製 21 次填滿立即數的第 31 到 11 位，指令的第 30 到 25 位接到立即數第 10 到 5 位，指令的第 24 到 20 位接到立即數第 4 到 0 位。">
+  <text class="s mut" x="66.7" y="44" text-anchor="middle">31</text><text class="s mut" x="88.1" y="44" text-anchor="middle">30</text>
+  <text class="s mut" x="194.9" y="44" text-anchor="middle">25</text><text class="s mut" x="216.3" y="44" text-anchor="middle">24</text>
+  <text class="s mut" x="301.8" y="44" text-anchor="middle">20</text>
+  <text class="zh s" x="10" y="66">指令</text>
+  <rect class="f-imm" x="56.0" y="50" width="21.4" height="24"/><text class="s" x="66.7" y="66" text-anchor="middle">S</text>
+  <rect class="f-imm" x="77.4" y="50" width="128.2" height="24"/><text class="s" x="141.5" y="66" text-anchor="middle">30:25</text>
+  <rect class="f-imm" x="205.6" y="50" width="106.9" height="24"/><text class="s" x="259.1" y="66" text-anchor="middle">24:20</text>
+  <rect class="gh" x="312.5" y="50" width="427.5" height="24"/><text class="s mut" x="526.2" y="66" text-anchor="middle">rs1 / funct3 / rd / opcode（與立即數無關）</text>
+  <path class="w" d="M66.7 74V110H280.4V170" marker-end="url(#ah)"/>
+  <path class="w" d="M141.5 74V128H569V170" marker-end="url(#ah)"/>
+  <path class="w" d="M259.1 74V146H686.6V170" marker-end="url(#ah)"/>
+  <text class="zh s ac" x="160" y="106">符號位元 ×21</text>
+  <text class="zh s" x="10" y="186">imm_i</text>
+  <rect class="f-imm" x="56.0" y="170" width="448.9" height="24"/><text class="s" x="280.4" y="186" text-anchor="middle">inst[31] ×21</text>
+  <rect class="f-imm" x="504.9" y="170" width="128.2" height="24"/><text class="s" x="569.0" y="186" text-anchor="middle">30:25</text>
+  <rect class="f-imm" x="633.1" y="170" width="106.9" height="24"/><text class="s" x="686.6" y="186" text-anchor="middle">24:20</text>
+  <text class="s mut" x="66.7" y="210" text-anchor="middle">31</text><text class="s mut" x="494.2" y="210" text-anchor="middle">11</text>
+  <text class="s mut" x="515.6" y="210" text-anchor="middle">10</text><text class="s mut" x="622.5" y="210" text-anchor="middle">5</text>
+  <text class="s mut" x="643.9" y="210" text-anchor="middle">4</text><text class="s mut" x="729.3" y="210" text-anchor="middle">0</text>
+</svg>
+</div>
+<figcaption><b>I 型立即數：12 個 bit 原封不動，上面補 20 份符號位元。</b>指令上那個 <code>S</code> 就是 <code>inst[31]</code>（sign）。<code>addi</code>、所有 load、<code>jalr</code> 用的都是它。注意 <code>{21{...}}</code> 是 21 份而不是 20 份——因為 <code>imm[11]</code> 本身就是符號位元，重複一次剛好補滿 32 位。</figcaption>
+</figure>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 750 245" role="img" aria-label="imm_sb 的接線：指令第 31 位複製 20 次填滿立即數高位，指令第 7 位變成立即數第 11 位，指令第 30 到 25 位變成第 10 到 5 位，指令第 11 到 8 位變成第 4 到 1 位，最低位硬接 0。">
+  <text class="s mut" x="66.7" y="44" text-anchor="middle">31</text><text class="s mut" x="88.1" y="44" text-anchor="middle">30</text>
+  <text class="s mut" x="194.9" y="44" text-anchor="middle">25</text>
+  <text class="s mut" x="494.2" y="44" text-anchor="middle">11</text><text class="s mut" x="558.3" y="44" text-anchor="middle">8</text>
+  <text class="s mut" x="579.7" y="44" text-anchor="middle">7</text>
+  <text class="zh s" x="10" y="66">指令</text>
+  <rect class="f-imm" x="56.0" y="50" width="21.4" height="24"/><text class="s" x="66.7" y="66" text-anchor="middle">S</text>
+  <rect class="f-imm" x="77.4" y="50" width="128.2" height="24"/><text class="s" x="141.5" y="66" text-anchor="middle">30:25</text>
+  <rect class="gh" x="205.6" y="50" width="277.9" height="24"/><text class="s mut" x="344.6" y="66" text-anchor="middle">rs2 / rs1 / funct3</text>
+  <rect class="f-imm" x="483.5" y="50" width="85.5" height="24"/><text class="s" x="526.2" y="66" text-anchor="middle">11:8</text>
+  <rect class="f-imm" x="569.0" y="50" width="21.4" height="24"/><text class="s" x="579.7" y="66" text-anchor="middle">7</text>
+  <rect class="gh" x="590.4" y="50" width="149.6" height="24"/><text class="s mut" x="665.2" y="66" text-anchor="middle">opcode</text>
+  <path class="w" d="M66.7 74V98H269.8V170" marker-end="url(#ah)"/>
+  <path class="w" d="M579.7 74V112H494.2V170" marker-end="url(#ah)"/>
+  <path class="w" d="M141.5 74V130H569V170" marker-end="url(#ah)"/>
+  <path class="w" d="M526.2 74V146H675.9V170" marker-end="url(#ah)"/>
+  <text class="zh s ac" x="150" y="94">符號位元 ×20</text>
+  <text class="zh s" x="10" y="186">imm_sb</text>
+  <rect class="f-imm" x="56.0" y="170" width="427.5" height="24"/><text class="s" x="269.8" y="186" text-anchor="middle">inst[31] ×20</text>
+  <rect class="f-imm" x="483.5" y="170" width="21.4" height="24"/><text class="s" x="494.2" y="186" text-anchor="middle">7</text>
+  <rect class="f-imm" x="504.9" y="170" width="128.2" height="24"/><text class="s" x="569.0" y="186" text-anchor="middle">30:25</text>
+  <rect class="f-imm" x="633.1" y="170" width="85.5" height="24"/><text class="s" x="675.9" y="186" text-anchor="middle">11:8</text>
+  <rect class="gh" x="718.6" y="170" width="21.4" height="24"/><text class="s ac" x="729.3" y="186" text-anchor="middle">0</text>
+  <text class="s mut" x="66.7" y="210" text-anchor="middle">31</text><text class="s mut" x="472.8" y="210" text-anchor="middle">12</text>
+  <text class="s mut" x="494.2" y="210" text-anchor="middle">11</text><text class="s mut" x="622.5" y="210" text-anchor="middle">5</text>
+  <text class="s mut" x="643.9" y="210" text-anchor="middle">4</text><text class="s mut" x="729.3" y="210" text-anchor="middle">0</text>
+  <text class="zh s ac" x="740" y="234" text-anchor="end">最低位硬接 0：分支目標一定是偶數位址，所以第 0 位不必用指令的 bit 去編碼。</text>
+</svg>
+</div>
+<figcaption><b>看那條從 <code>inst[7]</code> 往左折回去的線。</b>SB 型把 <code>imm[11]</code> 藏在 S 型原本放 <code>imm[0]</code> 的位置——因為分支的 <code>imm[0]</code> 反正永遠是 0，那個洞就省下來給 <code>imm[11]</code>。代價是一條交叉的線，換來 <code>imm[10:5]</code> 與 <code>imm[4:1]</code> 跟 S 型完全共用位置。</figcaption>
+</figure>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 750 245" role="img" aria-label="imm_uj 的接線：指令第 31 位複製 12 次，指令第 19 到 12 位直接落到立即數同樣位置，指令第 20 位變成立即數第 11 位，指令第 30 到 25 位變成第 10 到 5 位，指令第 24 到 21 位變成第 4 到 1 位，最低位硬接 0。">
+  <text class="s mut" x="66.7" y="44" text-anchor="middle">31</text><text class="s mut" x="88.1" y="44" text-anchor="middle">30</text>
+  <text class="s mut" x="194.9" y="44" text-anchor="middle">25</text><text class="s mut" x="216.3" y="44" text-anchor="middle">24</text>
+  <text class="s mut" x="280.4" y="44" text-anchor="middle">21</text><text class="s mut" x="301.8" y="44" text-anchor="middle">20</text>
+  <text class="s mut" x="323.2" y="44" text-anchor="middle">19</text><text class="s mut" x="472.8" y="44" text-anchor="middle">12</text>
+  <text class="zh s" x="10" y="66">指令</text>
+  <rect class="f-imm" x="56.0" y="50" width="21.4" height="24"/><text class="s" x="66.7" y="66" text-anchor="middle">S</text>
+  <rect class="f-imm" x="77.4" y="50" width="128.2" height="24"/><text class="s" x="141.5" y="66" text-anchor="middle">30:25</text>
+  <rect class="f-imm" x="205.6" y="50" width="85.5" height="24"/><text class="s" x="248.4" y="66" text-anchor="middle">24:21</text>
+  <rect class="f-imm" x="291.1" y="50" width="21.4" height="24"/><text class="s" x="301.8" y="66" text-anchor="middle">20</text>
+  <rect class="f-imm" x="312.5" y="50" width="171.0" height="24"/><text class="s" x="398.0" y="66" text-anchor="middle">19:12</text>
+  <rect class="gh" x="483.5" y="50" width="256.5" height="24"/><text class="s mut" x="611.8" y="66" text-anchor="middle">rd / opcode</text>
+  <path class="w" d="M66.7 74V98H184.2V170" marker-end="url(#ah)"/>
+  <path class="w" d="M398 74V170" marker-end="url(#ah)"/>
+  <path class="w" d="M301.8 74V114H494.2V170" marker-end="url(#ah)"/>
+  <path class="w" d="M141.5 74V132H569V170" marker-end="url(#ah)"/>
+  <path class="w" d="M248.4 74V150H675.9V170" marker-end="url(#ah)"/>
+  <text class="zh s ac" x="6" y="120">符號位元 ×12</text>
+  <text class="zh s" x="10" y="186">imm_uj</text>
+  <rect class="f-imm" x="56.0" y="170" width="256.5" height="24"/><text class="s" x="184.2" y="186" text-anchor="middle">inst[31] ×12</text>
+  <rect class="f-imm" x="312.5" y="170" width="171.0" height="24"/><text class="s" x="398.0" y="186" text-anchor="middle">19:12</text>
+  <rect class="f-imm" x="483.5" y="170" width="21.4" height="24"/><text class="s" x="494.2" y="186" text-anchor="middle">20</text>
+  <rect class="f-imm" x="504.9" y="170" width="128.2" height="24"/><text class="s" x="569.0" y="186" text-anchor="middle">30:25</text>
+  <rect class="f-imm" x="633.1" y="170" width="85.5" height="24"/><text class="s" x="675.9" y="186" text-anchor="middle">24:21</text>
+  <rect class="gh" x="718.6" y="170" width="21.4" height="24"/><text class="s ac" x="729.3" y="186" text-anchor="middle">0</text>
+  <text class="s mut" x="66.7" y="210" text-anchor="middle">31</text><text class="s mut" x="301.8" y="210" text-anchor="middle">20</text>
+  <text class="s mut" x="323.2" y="210" text-anchor="middle">19</text><text class="s mut" x="472.8" y="210" text-anchor="middle">12</text>
+  <text class="s mut" x="494.2" y="210" text-anchor="middle">11</text><text class="s mut" x="729.3" y="210" text-anchor="middle">0</text>
+  <text class="zh s ac" x="740" y="234" text-anchor="end">jal 的目標同樣是偶數位址，最低位一樣硬接 0；跳躍範圍 ±1 MB。</text>
+</svg>
+</div>
+<figcaption><b>UJ 型最亂，但那條 <code>inst[19:12]</code> 是直直落下的。</b>設計者刻意讓 J 型立即數的高位段維持原位，只把 <code>imm[11]</code> 和低位段挪走，好讓 <code>imm[10:5]</code> 繼續跟 I／S／SB 共用 <code>inst[30:25]</code>。分支與跳躍的位移都是<b>相對於 PC</b> 的：目標 = PC + imm。</figcaption>
+</figure>
+
+<div class="note"><b>shamt = <code>inst[24:20]</code></b>
+<p>移位指令 <code>slli/srli/srai</code> 的移位量不需要 12 個 bit——32 位元的值最多移 31 位，5 個 bit 就夠。所以它直接借用 I 型立即數的最低 5 位，也就是 <code>`define RISCV_INST_MSG_SHAMT 24:20</code>（第 70 行），跟 <code>rs2</code> 的位置完全重疊。datapath 的 op1 mux 有一個專門的 <code>bm_shamt</code> 輸入就是為了它。</p></div>
+
+<h3>U 型立即數與「造一個 32 位元常數」</h3>
+<p>I 型立即數只有 12 位，能表示 −2048 到 +2047。要把任意 32 位元常數放進暫存器，就得靠 <code>lui</code>（load upper immediate）：它把 20 位立即數放到高 20 位，低 12 位補 0。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 750 185" role="img" aria-label="imm_u 的接線：指令第 31 到 12 位直接成為立即數的第 31 到 12 位，立即數的低 12 位硬接為零。">
+  <text class="s mut" x="66.7" y="44" text-anchor="middle">31</text><text class="s mut" x="472.8" y="44" text-anchor="middle">12</text>
+  <text class="s mut" x="494.2" y="44" text-anchor="middle">11</text><text class="s mut" x="579.7" y="44" text-anchor="middle">7</text>
+  <text class="s mut" x="601.1" y="44" text-anchor="middle">6</text><text class="s mut" x="729.3" y="44" text-anchor="middle">0</text>
+  <text class="zh s" x="10" y="66">指令</text>
+  <rect class="f-imm" x="56.0" y="50" width="427.5" height="24"/><text class="s" x="269.8" y="66" text-anchor="middle">31:12</text>
+  <rect class="gh" x="483.5" y="50" width="106.9" height="24"/><text class="s mut" x="536.9" y="66" text-anchor="middle">rd</text>
+  <rect class="gh" x="590.4" y="50" width="149.6" height="24"/><text class="s mut" x="665.2" y="66" text-anchor="middle">opcode</text>
+  <path class="w" d="M269.8 74V130" marker-end="url(#ah)"/>
+  <text class="zh s ac" x="611.8" y="112" text-anchor="middle">硬接 12 個 0</text>
+  <text class="zh s" x="10" y="146">imm_u</text>
+  <rect class="f-imm" x="56.0" y="130" width="427.5" height="24"/><text class="s" x="269.8" y="146" text-anchor="middle">inst[31:12]</text>
+  <rect class="gh" x="483.5" y="130" width="256.5" height="24"/><text class="s" x="611.8" y="146" text-anchor="middle">0 0 0 0 0 0 0 0 0 0 0 0</text>
+  <text class="s mut" x="66.7" y="170" text-anchor="middle">31</text><text class="s mut" x="472.8" y="170" text-anchor="middle">12</text>
+  <text class="s mut" x="494.2" y="170" text-anchor="middle">11</text><text class="s mut" x="729.3" y="170" text-anchor="middle">0</text>
+</svg>
+</div>
+<figcaption><b>U 型是唯一不做符號延伸的立即數</b>——因為它本來就佔滿高 20 位，沒有「上面」可以補。<code>auipc</code> 用同一個 <code>imm_u</code>，只是加到 PC 上而不是 0 上。</figcaption>
+</figure>
+
+<p>於是組譯器用 <code>lui</code> + <code>addi</code> 兩條指令造出任意常數，這個組合有個代號叫 <code>li</code>（load immediate）。但這裡有一個很容易踩到的陷阱：<code>addi</code> 的立即數是<b>有號</b>的。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 270" role="img" aria-label="li x1, 0x7ffff800 展開成 lui x1, 0x80000 與 addi x1, x1, 減 2048 兩條指令；下半部說明因為低 12 位的最高位是 1，會被當成負數，所以 lui 的高 20 位要先加 1。">
+  <text class="hd" x="20" y="24">li x1, 0x7ffff800 展開成兩條指令</text>
+  <rect class="k" x="30" y="40" width="250" height="32"/><text class="s" x="155" y="60" text-anchor="middle">lui  x1, 0x80000</text>
+  <path class="w" d="M280 56H360" marker-end="url(#ah)"/>
+  <rect class="r" x="360" y="40" width="230" height="32"/><text class="s" x="475" y="60" text-anchor="middle">x1 = 0x80000000</text>
+  <path class="w" d="M475 72V88H16V126H30" marker-end="url(#ah)"/>
+  <text class="zh s mut" x="250" y="82" text-anchor="middle">上一條的結果當 rs1</text>
+  <rect class="k" x="30" y="110" width="250" height="32"/><text class="s" x="155" y="130" text-anchor="middle">addi x1, x1, -2048</text>
+  <path class="w" d="M280 126H360" marker-end="url(#ah)"/>
+  <rect class="r" x="360" y="110" width="230" height="32"/><text class="s" x="475" y="130" text-anchor="middle">x1 = 0x7ffff800</text>
+  <text class="zh" x="20" y="176">為什麼 lui 寫 0x80000，而不是 0x7ffff？</text>
+  <rect class="f-imm" x="30" y="188" width="380" height="30"/><text class="s" x="220" y="208" text-anchor="middle">0111 1111 1111 1111 1111</text>
+  <rect class="gh" x="415" y="188" width="235" height="30"/><text class="s" x="532" y="208" text-anchor="middle">1000 0000 0000</text>
+  <text class="s mut" x="220" y="234" text-anchor="middle">imm[31:12] = 0x7ffff</text>
+  <text class="s mut" x="532" y="234" text-anchor="middle">imm[11:0] = 0x800</text>
+  <text class="zh s wr" x="30" y="258">低 12 位的最高位是 1 → addi 會當成 −2048，所以 lui 要先補 +1：0x7ffff + 1 = 0x80000。</text>
+</svg>
+</div>
+<figcaption><b>這兩條指令真的出現在 <code>riscv-addi.vmh</code> 裡</b>：<code>800000b7</code> 就是 <code>lui x1, 0x80000</code>，緊接著的 <code>80008093</code> 就是 <code>addi x1, x1, -2048</code>。你可以自己驗算：<code>0x80000000 + (−2048) = 0x7ffff800</code>。如果 <code>lui</code> 老實寫 <code>0x7ffff</code>，結果會變成 <code>0x7ffff000 − 2048 = 0x7fffe800</code>，少了 0x1000。</figcaption>
+</figure>
+
+<div class="quiz"><b>想一想</b>
+<p>如果要載入的常數是 <code>0x000007ff</code>，組譯器會產生幾條指令？</p>
+<details><summary>看答案</summary>
+<p>一條。<code>0x7ff = 2047</code> 落在 <code>addi</code> 的有號 12 位範圍內（−2048～+2047），所以只需要 <code>addi rd, x0, 0x7ff</code>。<code>riscv-addi.vmh</code> 裡的 <code>7ff10213</code> 之類就是這種單指令形式。反過來，只要 <code>imm[11] = 1</code> 而高位不全是符號延伸，就一定要湊 <code>lui</code> + <code>addi</code>。</p></details>
+</div>
+</section>
+
+<!-- ============================================================ ch3 -->
+<section class="ch" id="ch3" data-part="RISC-V 指令集" data-nav="指令巡禮與 pseudo-instruction">
+<p class="eyebrow">第 3 章 · RISC-V 指令集</p>
+<h2>指令巡禮與 pseudo-instruction</h2>
+<p>這一章把 <code>lab1</code> 會用到的每一族指令走一遍。目標不是背下來，而是建立一種「看到指令就知道它要動用哪些硬體」的直覺——因為 Objective 1 要你填的控制表，每一列正是在回答這個問題。</p>
+
+<h3>暫存器–立即數 與 暫存器–暫存器</h3>
+<p>這兩族是同一件事的兩個版本：第二個運算元從哪裡來。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 180" role="img" aria-label="左邊 add x5, x6, x7 的兩個運算元都來自暫存器；右邊 addi x5, x6, 13 的第二個運算元是指令裡的常數 13。">
+  <text class="s" x="175" y="24" text-anchor="middle">add x5, x6, x7</text>
+  <rect class="r" x="40" y="40" width="70" height="30"/><text class="s" x="75" y="60" text-anchor="middle">x6</text>
+  <rect class="r" x="40" y="90" width="70" height="30"/><text class="s" x="75" y="110" text-anchor="middle">x7</text>
+  <path class="w" d="M110 55H140V70H154"/><path class="w" d="M110 105H140V90H154"/>
+  <circle class="k" cx="180" cy="80" r="26"/><text x="180" y="86" text-anchor="middle">+</text>
+  <path class="w" d="M206 80H260" marker-end="url(#ah)"/>
+  <rect class="r" x="260" y="65" width="70" height="30"/><text class="s" x="295" y="85" text-anchor="middle">x5</text>
+  <text class="zh s mut" x="175" y="152" text-anchor="middle">兩個運算元都來自暫存器（R 型）</text>
+  <path class="wm" d="M350 10V170"/>
+  <text class="s" x="525" y="24" text-anchor="middle">addi x5, x6, 13</text>
+  <rect class="r" x="390" y="40" width="70" height="30"/><text class="s" x="425" y="60" text-anchor="middle">x6</text>
+  <rect class="f-imm" x="390" y="90" width="70" height="30"/><text class="s" x="425" y="110" text-anchor="middle">13</text>
+  <path class="w" d="M460 55H490V70H504"/><path class="w" d="M460 105H490V90H504"/>
+  <circle class="k" cx="530" cy="80" r="26"/><text x="530" y="86" text-anchor="middle">+</text>
+  <path class="w" d="M556 80H610" marker-end="url(#ah)"/>
+  <rect class="r" x="610" y="65" width="70" height="30"/><text class="s" x="645" y="85" text-anchor="middle">x5</text>
+  <text class="zh s mut" x="525" y="152" text-anchor="middle">第二個運算元是指令裡的常數（I 型）</text>
+</svg>
+</div>
+<figcaption><b>接下來所有圖都用這套符號：</b>銅色方塊 = 暫存器，黃色方塊 = 指令裡的立即數，圓圈 = 運算單元。控制表上的 <code>OP1_SEL</code> 就是在決定圓圈的下面那條線接哪裡（<code>bm_rf</code> 還是 <code>bm_imm_i</code>）。</figcaption>
+</figure>
+
+<div class="tbl"><table>
+<thead><tr><th>暫存器–立即數</th><th>語意</th><th>暫存器–暫存器</th><th>語意</th></tr></thead>
+<tbody>
+<tr><td><code>addi rd, rs1, imm</code></td><td>R[rd] = R[rs1] + sext(imm)</td><td><code>add / sub</code></td><td>加／減</td></tr>
+<tr><td><code>andi / ori / xori</code></td><td>逐位元 AND／OR／XOR</td><td><code>and / or / xor</code></td><td>逐位元邏輯</td></tr>
+<tr><td><code>slti rd, rs1, imm</code></td><td>R[rd] = (R[rs1] &lt;<sub>s</sub> sext(imm)) ? 1 : 0</td><td><code>slt</code></td><td>有號小於則為 1</td></tr>
+<tr><td><code>sltiu rd, rs1, imm</code></td><td>同上但用<b>無號</b>比較</td><td><code>sltu</code></td><td>無號小於則為 1</td></tr>
+<tr><td><code>slli / srli / srai</code></td><td>移位 shamt = <code>inst[24:20]</code> 位</td><td><code>sll / srl / sra</code></td><td>移位量取 R[rs2] 的低 5 位</td></tr>
+</tbody></table></div>
+<div class="trap"><b>常見錯誤</b>
+<p><code>sltiu</code> 的立即數還是<b>先做有號延伸</b>，只有「比較」那一步是無號的。所以 <code>sltiu rd, rs1, -1</code> 等於「rs1 是不是小於 0xffffffff」，答案幾乎永遠是 1。<code>riscv-isa.txt</code> 第 4.3 節寫得很清楚：<code>R[rd] = ( R[rs1] &lt;u sext(imm) )</code>。</p></div>
+
+<p>移位有兩種右移，差別只在「左邊補什麼」：</p>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 750 215" role="img" aria-label="0xf0000000 右移 4 位：srl 在左邊補 4 個 0 得到 0x0f000000；sra 在左邊補 4 個符號位元 1 得到 0xff000000。">
+  <text class="s mut" x="740" y="50" text-anchor="end">原值 0xf0000000</text>
+<rect class="f-imm" x="56.0" y="56" width="21.4" height="26"/>
+<text class="s" x="66.7" y="73" text-anchor="middle">1</text>
+<rect class="f-imm" x="77.4" y="56" width="21.4" height="26"/>
+<text class="s" x="88.1" y="73" text-anchor="middle">1</text>
+<rect class="f-imm" x="98.8" y="56" width="21.4" height="26"/>
+<text class="s" x="109.4" y="73" text-anchor="middle">1</text>
+<rect class="f-imm" x="120.1" y="56" width="21.4" height="26"/>
+<text class="s" x="130.8" y="73" text-anchor="middle">1</text>
+<rect class="gh" x="141.5" y="56" width="21.4" height="26"/>
+<text class="s" x="152.2" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="162.9" y="56" width="21.4" height="26"/>
+<text class="s" x="173.6" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="184.2" y="56" width="21.4" height="26"/>
+<text class="s" x="194.9" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="205.6" y="56" width="21.4" height="26"/>
+<text class="s" x="216.3" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="227.0" y="56" width="21.4" height="26"/>
+<text class="s" x="237.7" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="248.4" y="56" width="21.4" height="26"/>
+<text class="s" x="259.1" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="269.8" y="56" width="21.4" height="26"/>
+<text class="s" x="280.4" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="291.1" y="56" width="21.4" height="26"/>
+<text class="s" x="301.8" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="312.5" y="56" width="21.4" height="26"/>
+<text class="s" x="323.2" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="333.9" y="56" width="21.4" height="26"/>
+<text class="s" x="344.6" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="355.2" y="56" width="21.4" height="26"/>
+<text class="s" x="365.9" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="376.6" y="56" width="21.4" height="26"/>
+<text class="s" x="387.3" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="398.0" y="56" width="21.4" height="26"/>
+<text class="s" x="408.7" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="419.4" y="56" width="21.4" height="26"/>
+<text class="s" x="430.1" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="440.8" y="56" width="21.4" height="26"/>
+<text class="s" x="451.4" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="462.1" y="56" width="21.4" height="26"/>
+<text class="s" x="472.8" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="483.5" y="56" width="21.4" height="26"/>
+<text class="s" x="494.2" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="504.9" y="56" width="21.4" height="26"/>
+<text class="s" x="515.6" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="526.2" y="56" width="21.4" height="26"/>
+<text class="s" x="536.9" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="547.6" y="56" width="21.4" height="26"/>
+<text class="s" x="558.3" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="569.0" y="56" width="21.4" height="26"/>
+<text class="s" x="579.7" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="590.4" y="56" width="21.4" height="26"/>
+<text class="s" x="601.1" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="611.8" y="56" width="21.4" height="26"/>
+<text class="s" x="622.4" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="633.1" y="56" width="21.4" height="26"/>
+<text class="s" x="643.8" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="654.5" y="56" width="21.4" height="26"/>
+<text class="s" x="665.2" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="675.9" y="56" width="21.4" height="26"/>
+<text class="s" x="686.6" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="697.2" y="56" width="21.4" height="26"/>
+<text class="s" x="707.9" y="73" text-anchor="middle">0</text>
+<rect class="gh" x="718.6" y="56" width="21.4" height="26"/>
+<text class="s" x="729.3" y="73" text-anchor="middle">0</text>
+  <text class="s mut" x="740" y="110" text-anchor="end">srl 4 → 0x0f000000</text>
+<rect class="gh" x="56.0" y="116" width="21.4" height="26"/>
+<text class="s" x="66.7" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="77.4" y="116" width="21.4" height="26"/>
+<text class="s" x="88.1" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="98.8" y="116" width="21.4" height="26"/>
+<text class="s" x="109.4" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="120.1" y="116" width="21.4" height="26"/>
+<text class="s" x="130.8" y="133" text-anchor="middle">0</text>
+<rect class="f-imm" x="141.5" y="116" width="21.4" height="26"/>
+<text class="s" x="152.2" y="133" text-anchor="middle">1</text>
+<rect class="f-imm" x="162.9" y="116" width="21.4" height="26"/>
+<text class="s" x="173.6" y="133" text-anchor="middle">1</text>
+<rect class="f-imm" x="184.2" y="116" width="21.4" height="26"/>
+<text class="s" x="194.9" y="133" text-anchor="middle">1</text>
+<rect class="f-imm" x="205.6" y="116" width="21.4" height="26"/>
+<text class="s" x="216.3" y="133" text-anchor="middle">1</text>
+<rect class="gh" x="227.0" y="116" width="21.4" height="26"/>
+<text class="s" x="237.7" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="248.4" y="116" width="21.4" height="26"/>
+<text class="s" x="259.1" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="269.8" y="116" width="21.4" height="26"/>
+<text class="s" x="280.4" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="291.1" y="116" width="21.4" height="26"/>
+<text class="s" x="301.8" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="312.5" y="116" width="21.4" height="26"/>
+<text class="s" x="323.2" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="333.9" y="116" width="21.4" height="26"/>
+<text class="s" x="344.6" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="355.2" y="116" width="21.4" height="26"/>
+<text class="s" x="365.9" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="376.6" y="116" width="21.4" height="26"/>
+<text class="s" x="387.3" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="398.0" y="116" width="21.4" height="26"/>
+<text class="s" x="408.7" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="419.4" y="116" width="21.4" height="26"/>
+<text class="s" x="430.1" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="440.8" y="116" width="21.4" height="26"/>
+<text class="s" x="451.4" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="462.1" y="116" width="21.4" height="26"/>
+<text class="s" x="472.8" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="483.5" y="116" width="21.4" height="26"/>
+<text class="s" x="494.2" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="504.9" y="116" width="21.4" height="26"/>
+<text class="s" x="515.6" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="526.2" y="116" width="21.4" height="26"/>
+<text class="s" x="536.9" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="547.6" y="116" width="21.4" height="26"/>
+<text class="s" x="558.3" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="569.0" y="116" width="21.4" height="26"/>
+<text class="s" x="579.7" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="590.4" y="116" width="21.4" height="26"/>
+<text class="s" x="601.1" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="611.8" y="116" width="21.4" height="26"/>
+<text class="s" x="622.4" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="633.1" y="116" width="21.4" height="26"/>
+<text class="s" x="643.8" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="654.5" y="116" width="21.4" height="26"/>
+<text class="s" x="665.2" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="675.9" y="116" width="21.4" height="26"/>
+<text class="s" x="686.6" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="697.2" y="116" width="21.4" height="26"/>
+<text class="s" x="707.9" y="133" text-anchor="middle">0</text>
+<rect class="gh" x="718.6" y="116" width="21.4" height="26"/>
+<text class="s" x="729.3" y="133" text-anchor="middle">0</text>
+  <text class="s mut" x="740" y="170" text-anchor="end">sra 4 → 0xff000000</text>
+<rect class="af" x="56.0" y="176" width="21.4" height="26"/>
+<text class="s" x="66.7" y="193" text-anchor="middle">1</text>
+<rect class="af" x="77.4" y="176" width="21.4" height="26"/>
+<text class="s" x="88.1" y="193" text-anchor="middle">1</text>
+<rect class="af" x="98.8" y="176" width="21.4" height="26"/>
+<text class="s" x="109.4" y="193" text-anchor="middle">1</text>
+<rect class="af" x="120.1" y="176" width="21.4" height="26"/>
+<text class="s" x="130.8" y="193" text-anchor="middle">1</text>
+<rect class="f-imm" x="141.5" y="176" width="21.4" height="26"/>
+<text class="s" x="152.2" y="193" text-anchor="middle">1</text>
+<rect class="f-imm" x="162.9" y="176" width="21.4" height="26"/>
+<text class="s" x="173.6" y="193" text-anchor="middle">1</text>
+<rect class="f-imm" x="184.2" y="176" width="21.4" height="26"/>
+<text class="s" x="194.9" y="193" text-anchor="middle">1</text>
+<rect class="f-imm" x="205.6" y="176" width="21.4" height="26"/>
+<text class="s" x="216.3" y="193" text-anchor="middle">1</text>
+<rect class="gh" x="227.0" y="176" width="21.4" height="26"/>
+<text class="s" x="237.7" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="248.4" y="176" width="21.4" height="26"/>
+<text class="s" x="259.1" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="269.8" y="176" width="21.4" height="26"/>
+<text class="s" x="280.4" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="291.1" y="176" width="21.4" height="26"/>
+<text class="s" x="301.8" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="312.5" y="176" width="21.4" height="26"/>
+<text class="s" x="323.2" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="333.9" y="176" width="21.4" height="26"/>
+<text class="s" x="344.6" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="355.2" y="176" width="21.4" height="26"/>
+<text class="s" x="365.9" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="376.6" y="176" width="21.4" height="26"/>
+<text class="s" x="387.3" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="398.0" y="176" width="21.4" height="26"/>
+<text class="s" x="408.7" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="419.4" y="176" width="21.4" height="26"/>
+<text class="s" x="430.1" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="440.8" y="176" width="21.4" height="26"/>
+<text class="s" x="451.4" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="462.1" y="176" width="21.4" height="26"/>
+<text class="s" x="472.8" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="483.5" y="176" width="21.4" height="26"/>
+<text class="s" x="494.2" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="504.9" y="176" width="21.4" height="26"/>
+<text class="s" x="515.6" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="526.2" y="176" width="21.4" height="26"/>
+<text class="s" x="536.9" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="547.6" y="176" width="21.4" height="26"/>
+<text class="s" x="558.3" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="569.0" y="176" width="21.4" height="26"/>
+<text class="s" x="579.7" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="590.4" y="176" width="21.4" height="26"/>
+<text class="s" x="601.1" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="611.8" y="176" width="21.4" height="26"/>
+<text class="s" x="622.4" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="633.1" y="176" width="21.4" height="26"/>
+<text class="s" x="643.8" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="654.5" y="176" width="21.4" height="26"/>
+<text class="s" x="665.2" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="675.9" y="176" width="21.4" height="26"/>
+<text class="s" x="686.6" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="697.2" y="176" width="21.4" height="26"/>
+<text class="s" x="707.9" y="193" text-anchor="middle">0</text>
+<rect class="gh" x="718.6" y="176" width="21.4" height="26"/>
+<text class="s" x="729.3" y="193" text-anchor="middle">0</text>
+  <text class="s mut" x="6" y="73">原值</text>
+  <text class="s mut" x="6" y="133">srl</text>
+  <text class="s mut" x="6" y="193">sra</text>
+  <text class="zh s ac" x="110" y="212">sra 補進來的是符號位元</text>
+</svg>
+</div>
+<figcaption><b><code>srl</code> 補 0，<code>sra</code> 補符號位元。</b>對有號數來說 <code>sra</code> 才是「除以 2 的冪次」。在編碼上兩者只差 <code>funct7</code> 的第 30 位（<code>0000000</code> vs <code>0100000</code>），所以 ALU 只要多一條控制線。</figcaption>
+</figure>
+
+<h3><code>lui</code> 與 <code>auipc</code></h3>
+<p><code>lui rd, imm</code> 把 <code>imm_u</code> 直接寫進 rd（等於「0 + imm_u」）；<code>auipc rd, imm</code> 則是 <code>PC + imm_u</code>，用來組出「相對於目前位置」的位址（<code>la</code> pseudo-instruction 就靠它）。兩者都是 U 型，兩者都不讀暫存器。</p>
+
+<h3>載入與儲存</h3>
+<p>位址一律是 <code>R[rs1] + sext(imm)</code>——所以 load/store 也要用 ALU 做一次加法。差別在於取幾個 byte、以及不足 32 位時怎麼補。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 200" role="img" aria-label="lb 與 lbu 的差別：位址由 x6 加立即數 4 算出，記憶體取回一個 byte 0x9c；lb 做符號延伸得到 0xffffff9c，lbu 做零延伸得到 0x0000009c。">
+  <text class="hd" x="20" y="22">lb x5, 4(x6)　與　lbu x5, 4(x6)</text>
+  <rect class="r" x="20" y="40" width="140" height="30"/><text class="s" x="90" y="60" text-anchor="middle">x6 = 0x2000</text>
+  <rect class="f-imm" x="20" y="84" width="140" height="30"/><text class="s" x="90" y="104" text-anchor="middle">imm = 4</text>
+  <path class="w" d="M160 55H190V58H206"/><path class="w" d="M160 99H190V82H206"/>
+  <circle class="k" cx="230" cy="70" r="24"/><text x="230" y="76" text-anchor="middle">+</text>
+  <path class="w" d="M254 70H310" marker-end="url(#ah)"/><text class="s" x="282" y="62" text-anchor="middle">0x2004</text>
+  <rect class="k" x="310" y="40" width="120" height="60"/>
+  <text class="zh" x="370" y="66" text-anchor="middle">資料記憶體</text>
+  <text class="s" x="370" y="86" text-anchor="middle">M[0x2004] = 9c</text>
+  <text class="zh s mut" x="370" y="118" text-anchor="middle">0x9c = 1001 1100，最高位是 1</text>
+  <path class="w" d="M430 70H480"/><circle class="d" cx="480" cy="70" r="3"/>
+  <path class="w" d="M480 70V49H520" marker-end="url(#ah)"/>
+  <path class="w" d="M480 70V149H520" marker-end="url(#ah)"/>
+  <rect class="r" x="520" y="32" width="180" height="34"/>
+  <text class="s ac" x="560" y="54">ff ff ff</text><text class="s" x="650" y="54">9c</text>
+  <rect class="r" x="520" y="132" width="180" height="34"/>
+  <text class="s mut" x="560" y="154">00 00 00</text><text class="s" x="650" y="154">9c</text>
+  <text class="zh s ac" x="610" y="26" text-anchor="middle">lb：符號延伸</text>
+  <text class="zh s mut" x="610" y="182" text-anchor="middle">lbu：零延伸</text>
+</svg>
+</div>
+<figcaption><b>同一個 byte，兩種解讀。</b>控制表上這一格叫 <code>MEM_SEL</code>（<code>dmm_b</code> 對 <code>dmm_bu</code>），長度那一格叫 <code>MEM_LEN</code>。handout 示範的 <code>lh</code> 就是把長度設成 2（<code>ml_h</code>）、mux 設成有號半字（<code>dmm_h</code>）。儲存指令 <code>sb/sh/sw</code> 沒有延伸問題——只是把 rs2 的低幾個 byte 寫進去。</figcaption>
+</figure>
+
+<div class="tbl"><table>
+<thead><tr><th>指令</th><th>取幾 byte</th><th>不足 32 位時</th><th>指令</th><th>寫幾 byte</th></tr></thead>
+<tbody>
+<tr><td><code>lb</code></td><td>1</td><td>符號延伸</td><td><code>sb</code></td><td>1（rs2 的最低 byte）</td></tr>
+<tr><td><code>lbu</code></td><td>1</td><td>零延伸</td><td><code>sh</code></td><td>2</td></tr>
+<tr><td><code>lh</code></td><td>2</td><td>符號延伸</td><td><code>sw</code></td><td>4</td></tr>
+<tr><td><code>lhu</code></td><td>2</td><td>零延伸</td><td colspan="2" class="num">位址需對齊：lh/sh 偶數、lw/sw 4 的倍數</td></tr>
+<tr><td><code>lw</code></td><td>4</td><td>不必延伸</td><td></td><td></td></tr>
+</tbody></table></div>
+
+<h3>分支：六種條件，兩種比較</h3>
+<p>六條分支指令 <code>beq bne blt bge bltu bgeu</code> 都是 SB 型，目標都是 <code>PC + imm_sb</code>。<code>b*u</code> 結尾的用無號比較，其餘用有號比較。同樣 32 個 bit，兩種比較給出完全相反的答案：</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 210" role="img" aria-label="同一個位元樣式 0xffffffff：在無號數軸上它是最大值 2 的 32 次方減 1，1 在最左邊；在有號數軸上它是負 1，落在 0 的左邊而 1 在右邊。">
+  <text class="hd" x="20" y="24">同樣是 0xffffffff，兩種看法</text>
+  <text class="zh s mut" x="10" y="52">無號數</text>
+  <path class="w" d="M60 70H670" marker-end="url(#ah)"/>
+  <text class="s mut" x="60" y="88">0</text><text class="s mut" x="668" y="88" text-anchor="end">2³²−1</text>
+  <circle class="d" cx="75" cy="70" r="4"/><text class="s ac" x="75" y="60" text-anchor="middle">1</text>
+  <circle class="d" cx="640" cy="70" r="4"/><text class="s ac" x="640" y="60" text-anchor="middle">0xffffffff</text>
+  <text class="s ac" x="20" y="108">bltu → 1 &lt;u 0xffffffff　成立，會跳</text>
+  <text class="zh s mut" x="10" y="142">有號數</text>
+  <path class="w" d="M60 160H670" marker-end="url(#ah)"/>
+  <text class="s mut" x="60" y="178">−2³¹</text><text class="s mut" x="350" y="178" text-anchor="middle">0</text><text class="s mut" x="668" y="178" text-anchor="end">2³¹−1</text>
+  <circle class="d" cx="338" cy="160" r="4"/>
+  <path class="wm" d="M338 152V138H332"/>
+  <text class="s ac" x="328" y="134" text-anchor="end">0xffffffff = −1</text>
+  <circle class="d" cx="362" cy="160" r="4"/>
+  <path class="wm" d="M362 152V138H368"/>
+  <text class="s ac" x="372" y="134">1</text>
+  <text class="s wr" x="20" y="200">blt  → 1 &lt;s −1　不成立，不跳</text>
+</svg>
+</div>
+<figcaption><b>位元完全相同，只是「怎麼解讀最高位」不同。</b>硬體上兩者共用同一個減法器，差別在於看哪幾個位元：<code>riscvstall-CoreDpath.v</code> 第 262–268 行就是用兩個運算元的符號位元加上 <code>alu_out[31]</code> 湊出有號／無號的小於判斷。<code>bne</code> 用的則是 <code>alu_xor</code> 的結果是否為 0。</figcaption>
+</figure>
+
+<h3>跳躍：<code>jal</code> 與 <code>jalr</code></h3>
+<p>兩條都會做兩件事：<b>把 PC+4 存進 rd</b>（叫「link」），然後改 PC。<code>jal</code> 的目標是 <code>PC + imm_uj</code>（UJ 型，PC 相對）；<code>jalr</code> 的目標是 <code>(R[rs1] + imm_i) &amp; 0xfffffffe</code>（I 型，暫存器相對，最低位強制清 0）。有了這兩條就能做函式呼叫與返回。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 225" role="img" aria-label="函式呼叫流程：呼叫端執行 jal x1, func 跳到函式，同時把返回位址 0x1008 存進 x1；函式最後執行 jalr x0, x1, 0 跳回 0x1008。">
+  <text class="hd" x="20" y="28">函式呼叫：jal 去、jalr 回</text>
+  <rect class="grp" x="100" y="48" width="240" height="112"/>
+  <text class="s" x="112" y="72">0x1000  addi x5, x0, 3</text>
+  <rect class="af" x="104" y="84" width="232" height="24"/>
+  <text class="s" x="112" y="100">0x1004  jal  x1, func</text>
+  <text class="s sq" x="112" y="124">x1 ← 0x1008</text>
+  <text class="s" x="112" y="148">0x1008  add  x6, x5, x10</text>
+  <text class="zh s mut" x="220" y="178" text-anchor="middle">呼叫端</text>
+  <rect class="grp" x="430" y="48" width="240" height="112"/>
+  <text class="s" x="442" y="72">func:</text>
+  <text class="s" x="442" y="100">0x2000  addi x10, x5, 1</text>
+  <rect class="af" x="434" y="128" width="232" height="24"/>
+  <text class="s" x="442" y="144">0x2004  jalr x0, x1, 0</text>
+  <text class="zh s mut" x="550" y="178" text-anchor="middle">被呼叫的函式</text>
+  <path class="a" d="M340 96H430" marker-end="url(#ah)"/>
+  <text class="zh s ac" x="385" y="88" text-anchor="middle">jal</text>
+  <path class="a" d="M430 144H400V190H352V140H342" marker-end="url(#ah)"/>
+  <text class="zh s ac" x="400" y="210" text-anchor="middle">ret = jalr x0, x1, 0</text>
+</svg>
+</div>
+<figcaption><b>link register 就是 <code>x1</code>（別名 <code>ra</code>）。</b>回來時寫 <code>jalr x0, x1, 0</code>：目標是 x1，rd 用 <code>x0</code> 代表「這次不需要記返回位址」。在管線裡，<code>jal</code>／<code>jalr</code> 在 D 級就能決定要跳，分支則要等到 X 級——這個差別會直接影響浪費幾個週期（<a href="#ch12">第 12 章</a>）。</figcaption>
+</figure>
+
+<h3>M extension：64 位元乘積的上下半</h3>
+<p><code>mul rd, rs1, rs2</code> 把兩個 32 位元相乘，但結果其實有 64 位元——<code>mul</code> 只取低 32 位，高 32 位要靠 <code>mulh</code> 系列取得。這就是 Objective 2 的內容。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 190" role="img" aria-label="兩個 32 位元相乘得到 64 位元乘積，高 32 位由 mulh、mulhu、mulhsu 取用，低 32 位由 mul 取用。">
+  <rect class="r" x="170" y="30" width="140" height="32"/><text class="s" x="240" y="50" text-anchor="middle">rs1（32 bit）</text>
+  <rect class="r" x="390" y="30" width="140" height="32"/><text class="s" x="460" y="50" text-anchor="middle">rs2（32 bit）</text>
+  <path class="w" d="M240 62V86H334"/><path class="w" d="M460 62V86H366"/>
+  <circle class="k" cx="350" cy="86" r="16"/><text x="350" y="92" text-anchor="middle">×</text>
+  <path class="w" d="M350 102V118" marker-end="url(#ah)"/>
+  <rect class="f-imm" x="100" y="118" width="250" height="34"/><text class="s" x="225" y="139" text-anchor="middle">result[63:32]</text>
+  <rect class="f-imm" x="350" y="118" width="250" height="34"/><text class="s" x="475" y="139" text-anchor="middle">result[31:0]</text>
+  <path class="a" d="M100 162H350"/>
+  <text class="zh s ac" x="225" y="180" text-anchor="middle">mulh / mulhu / mulhsu（Objective 2 要補）</text>
+  <path class="w" d="M350 162H600"/>
+  <text class="zh s mut" x="475" y="180" text-anchor="middle">mul 取這一半</text>
+</svg>
+</div>
+<figcaption><b>三條 mulh 的差別只在運算元怎麼解讀：</b><code>mulh</code> 有號×有號、<code>mulhu</code> 無號×無號、<code>mulhsu</code> 有號×無號。<code>div/divu/rem/remu</code> 同樣分有號無號；除法單元一次算出商與餘數，控制訊號 <code>MULDIV_SEL</code> 決定取哪一半。硬體細節在<a href="#ch18">第 18 章</a>。</figcaption>
+</figure>
+
+<h3><code>csrw</code>：測試用的出口</h3>
+<p><code>csrw</code> 是這個實作裡唯一的 CSR（control/status register）指令，編碼是 I 型的變形：<code>funct3 = 001</code>、<code>opcode = 1110011</code>、而且 <code>rd</code> 必須是 <code>00000</code>（<code>InstMsg.v</code> 第 143 行）。立即數欄位放的不是常數而是 <b>CSR 編號</b>。這次只用到編號 21（0x015）的 <code>status</code>：寫進去就等於告訴模擬器「測試結束了」，值 1 代表通過，其他值代表失敗的行號。測試巨集最後一段就是這樣寫的：</p>
+<div class="ex">
+<div class="src">tests/riscv/riscv-macros.h · 第 32–38 行</div>
+<pre><code>#define TEST_RISCV_END                                                  \
+_pass:                                                                  \
+    addi   x29, x0, 1;                                                  \
+                                                                        \
+_fail:                                                                  \
+    li     x2,  1;                                                      \
+    csrw   21, x29;                                                     \
+1:  bne    x0, x2, 1b;                                                  \</code></pre>
+</div>
+<p>順著讀一遍就懂了：測試走完沒出事就落到 <code>_pass</code>，把 1 放進 x29；中途失敗則直接跳到 <code>_fail</code>，此時 x29 裡是 <code>TEST_CHECK_EQ</code> 先前寫入的 <code>__LINE__</code>。兩條路都會執行 <code>csrw 21, x29</code>，然後停在一個無窮迴圈 <code>bne x0, x2, 1b</code>。怎麼看這個回報值，見<a href="#ch20">第 20 章</a>。</p>
+
+<h3>Pseudo-instruction：組譯器的語法糖</h3>
+<p>測試檔裡出現的 <code>nop</code>、<code>li</code>、<code>mv</code>、<code>j</code>、<code>jr</code>、<code>ret</code> <b>都不是真的指令</b>，硬體裡沒有它們的 opcode。它們由組譯器展開成上面那些真指令——這也是為什麼 <code>InstMsg.v</code> 第 124 行特別警告：不要在控制模組裡實作 <code>NOP</code>。</p>
+
+<div class="tbl"><table>
+<thead><tr><th>Pseudo-instruction</th><th>展開成</th><th>做了什麼</th></tr></thead>
+<tbody>
+<tr><td><code>nop</code></td><td><code>addi x0, x0, 0</code></td><td>寫進 x0 = 什麼都沒發生</td></tr>
+<tr><td><code>mv rd, rs1</code></td><td><code>addi rd, rs1, 0</code></td><td>加 0 就是搬值</td></tr>
+<tr><td><code>li rd, imm</code>（小）</td><td><code>addi rd, x0, imm</code></td><td>imm 在 −2048～2047 時一條就夠</td></tr>
+<tr><td><code>li rd, imm</code>（大）</td><td><code>lui rd, hi</code>; <code>addi rd, rd, lo</code></td><td>hi 在 lo 為負時要 +1（<a href="#ch2">第 2 章</a>）</td></tr>
+<tr><td><code>j label</code></td><td><code>jal x0, label</code></td><td>跳但不記返回位址</td></tr>
+<tr><td><code>jr rs1</code></td><td><code>jalr x0, rs1, 0</code></td><td>跳到暫存器指的位址</td></tr>
+<tr><td><code>ret</code></td><td><code>jalr x0, x1, 0</code></td><td><code>jr ra</code>，函式返回</td></tr>
+</tbody></table></div>
+<div class="note"><b>為什麼要在意這件事</b>
+<p>你在 <code>make check-asm-riscvstall</code> 看到 <code>riscv-j.vmh</code> 或 <code>riscv-jr.vmh</code> 失敗時，要去控制表裡找的是 <code>JAL</code> 和 <code>JALR</code> 這兩列，不是「J」和「JR」。同理，<code>nop</code> 之所以能動，是因為你已經實作了 <code>addi</code>。</p></div>
+
+<h3>總表：指令族 → 格式 → 會用到哪些硬體</h3>
+<p>這張表是 Objective 1 的地圖。右欄先有印象就好，<a href="#ch6">第 6 章</a>會把每一項對應到 datapath 上的實體方塊，你填控制表時可以回來對照。</p>
+<div class="tbl"><table>
+<thead><tr><th>指令族</th><th>格式／立即數</th><th>會動用的 datapath 資源</th></tr></thead>
+<tbody>
+<tr><td><code>add sub and or xor slt sltu sll srl sra</code></td><td>R</td><td>讀 rs1+rs2、ALU、寫回 rd</td></tr>
+<tr><td><code>addi andi ori xori slti sltiu</code></td><td>I / imm_i</td><td>讀 rs1、op1 選 <code>imm_i</code>、ALU、寫回 rd</td></tr>
+<tr><td><code>slli srli srai</code></td><td>I / shamt</td><td>讀 rs1、op1 選 <code>bm_shamt</code>、ALU 移位器</td></tr>
+<tr><td><code>lui auipc</code></td><td>U / imm_u</td><td>不讀暫存器；op0 選 0 或 PC、ALU 加法、寫回 rd</td></tr>
+<tr><td><code>lb lbu lh lhu lw</code></td><td>I / imm_i</td><td>ALU 算位址、發記憶體讀請求、回應 mux、寫回 rd</td></tr>
+<tr><td><code>sb sh sw</code></td><td>S / imm_s</td><td>ALU 算位址、rs2 當寫入資料、不寫回暫存器</td></tr>
+<tr><td><code>beq bne blt bge bltu bgeu</code></td><td>SB / imm_sb</td><td>讀 rs1+rs2、ALU 比較、PC mux 選分支目標、不寫回</td></tr>
+<tr><td><code>jal</code></td><td>UJ / imm_uj</td><td>PC + imm_uj、寫回 PC+4 到 rd</td></tr>
+<tr><td><code>jalr</code></td><td>I / imm_i</td><td>讀 rs1、rs1 + imm_i、寫回 PC+4 到 rd</td></tr>
+<tr><td><code>mul div divu rem remu</code></td><td>R</td><td>讀 rs1+rs2、muldiv 單元、結果高／低半選擇、寫回 rd</td></tr>
+<tr><td><code>csrw</code></td><td>I（csr 在立即數欄）</td><td>讀 rs1、<code>CSR_WEN</code>、不寫回暫存器</td></tr>
+</tbody></table></div>
+
+<div class="quiz"><b>想一想</b>
+<p><code>sw</code> 為什麼要用 S 型而不是 I 型？</p>
+<details><summary>看答案</summary>
+<p>因為 <code>sw rs2, imm(rs1)</code> 需要<b>兩個</b>來源暫存器（位址基底 rs1、要寫的資料 rs2），卻不需要目的暫存器 rd。I 型只有一個來源欄位，而 <code>rd</code> 的那 5 個 bit 對 store 完全沒用——所以 S 型就把立即數拆成兩半，低 5 位借用 rd 的位置，同時保住 rs1、rs2 在原位。這正是<a href="#ch1">第 1 章</a>那張對齊圖的用意。</p></details>
+</div>
+</section>

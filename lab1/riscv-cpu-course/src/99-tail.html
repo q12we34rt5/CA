@@ -1,0 +1,66 @@
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/verilog.min.js"></script>
+<script>
+(function () {
+  // ---- table of contents, built from the chapter sections ----
+  var toc = document.getElementById('toc');
+  var box = document.getElementById('tocbox');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('section.ch'));
+  var links = {};
+  var lastPart = null;
+  sections.forEach(function (sec) {
+    var part = sec.getAttribute('data-part');
+    if (part !== lastPart) {
+      var p = document.createElement('li');
+      p.className = 'part';
+      p.textContent = part;
+      toc.appendChild(p);
+      lastPart = part;
+    }
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    a.href = '#' + sec.id;
+    var n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = sec.id.replace('ch', '');
+    a.appendChild(n);
+    a.appendChild(document.createTextNode(sec.getAttribute('data-nav')));
+    li.appendChild(a);
+    toc.appendChild(li);
+    links[sec.id] = a;
+  });
+
+  var narrow = window.matchMedia('(max-width: 900px)');
+  function syncToc() { box.open = !narrow.matches; }
+  syncToc();
+  if (narrow.addEventListener) narrow.addEventListener('change', syncToc);
+  toc.addEventListener('click', function (e) {
+    if (narrow.matches && e.target.closest('a')) box.open = false;
+  });
+
+  // ---- highlight the chapter currently in view ----
+  if ('IntersectionObserver' in window) {
+    var current = null;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        if (current) current.classList.remove('on');
+        current = links[en.target.id];
+        current.classList.add('on');
+      });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+    sections.forEach(function (s) { io.observe(s); });
+  }
+
+  // ---- syntax highlighting (page still reads fine if the CDN is unreachable) ----
+  if (window.hljs) {
+    document.querySelectorAll('pre code.language-verilog').forEach(function (el) {
+      window.hljs.highlightElement(el);
+    });
+  }
+
+})();
+</script>

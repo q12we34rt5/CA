@@ -1,0 +1,812 @@
+<!-- ============================================================ ch20 -->
+<section class="ch" id="ch20" data-part="測試與除錯" data-nav="從 .S 到 *** PASSED ***">
+<p class="eyebrow">第 20 章 · 測試與除錯</p>
+<h2>從一個 <code>.S</code> 檔到 <code>*** PASSED ***</code></h2>
+<p>前面十九章都在講電路。可是你在終端機看到的只有一行 <code>*** PASSED ***</code> 或 <code>*** FAILED *** (status = 137)</code>。這一章把中間那條長長的管線拆開：一個組合語言檔怎麼變成 <code>.vmh</code>、<code>.vmh</code> 怎麼進到記憶體、CPU 怎麼「回報」成績，以及 <code>status = 137</code> 的 137 到底是什麼。看懂這條路，除錯就從「亂猜」變成「查表」。</p>
+<p>測試框架本身的 Verilog 語法（<code>$display</code>、<code>initial</code>、plusargs）在<a href="../verilog-course/index.html#ch16">基礎篇第 16 章</a>講過，這裡不重複，只講 lab1 特有的部分。</p>
+
+<h3>整條工具鏈</h3>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 320" role="img" aria-label="lab1 測試工具鏈的完整流程圖：riscv-addi.S 加上 riscv-macros.h 經過 riscv32 gcc 編譯成 ELF 檔，再由 objdump 產生 dump 檔，由 objdump2vmh.py 轉成 vmh 檔；模擬器用 +exe 讀進測試記憶體，處理器從 0x00080000 開始執行，最後用 csrw 寫進 csr_status，由 Pattern.v 印出 PASSED。">
+  <!-- row 1 -->
+  <rect class="k" x="14" y="30" width="150" height="46"/><text class="zh" x="89" y="49" text-anchor="middle">riscv-addi.S</text><text class="s mut" x="89" y="66" text-anchor="middle">+ riscv-macros.h</text>
+  <path class="w" d="M164 53H194" marker-end="url(#ah)"/>
+  <rect class="k" x="196" y="30" width="200" height="46"/><text x="296" y="49" text-anchor="middle">riscv32-…-gcc</text><text class="s mut" x="296" y="66" text-anchor="middle">-march=rv32imzicsr -T test.ld</text>
+  <path class="w" d="M396 53H426" marker-end="url(#ah)"/>
+  <rect class="k" x="428" y="30" width="150" height="46"/><text x="503" y="49" text-anchor="middle">riscv-addi.elf</text><text class="s mut" x="503" y="66" text-anchor="middle">.text 放在 0x80000</text>
+  <path class="w" d="M578 53H608" marker-end="url(#ah)"/>
+  <rect class="k" x="610" y="30" width="136" height="46"/><text class="s" x="678" y="49" text-anchor="middle">objdump -EL -sz</text><text class="s mut" x="678" y="66" text-anchor="middle">印出每個 word</text>
+  <path class="w" d="M678 76V134" marker-end="url(#ah)"/>
+  <!-- row 2 -->
+  <rect class="k" x="610" y="136" width="136" height="46"/><text class="s" x="678" y="164" text-anchor="middle">riscv-addi.dump</text>
+  <path class="w" d="M608 159H582" marker-end="url(#ah)"/>
+  <rect class="k" x="400" y="136" width="180" height="46"/><text class="s" x="490" y="155" text-anchor="middle">objdump2vmh.py</text><text class="s mut" x="490" y="172" text-anchor="middle">位址÷4、位元組反序</text>
+  <path class="w" d="M398 159H372" marker-end="url(#ah)"/>
+  <rect class="af" x="180" y="136" width="190" height="46"/><text class="ac" x="275" y="155" text-anchor="middle">riscv-addi.vmh</text><text class="s mut" x="275" y="172" text-anchor="middle">@20000 + 一行一個 word</text>
+  <path class="w" d="M275 182V210H119V236" marker-end="url(#ah)"/>
+  <!-- row 3 -->
+  <rect class="k" x="14" y="238" width="210" height="46"/><text class="s" x="119" y="257" text-anchor="middle">$readmemh → mem.mem.m</text><text class="s mut" x="119" y="274" text-anchor="middle">Pattern.v 114–122（+exe=）</text>
+  <path class="w" d="M224 261H254" marker-end="url(#ah)"/>
+  <rect class="k" x="256" y="238" width="206" height="46"/><text class="s" x="359" y="257" text-anchor="middle">riscv_Core 開始執行</text><text class="s mut" x="359" y="274" text-anchor="middle">reset 向量 0x00080000</text>
+  <path class="w" d="M462 261H492" marker-end="url(#ah)"/>
+  <rect class="r" x="494" y="238" width="124" height="46"/><text class="s" x="556" y="257" text-anchor="middle">csr_status</text><text class="s mut" x="556" y="274" text-anchor="middle">csrw 21, x29 寫入</text>
+  <path class="w" d="M618 261H648" marker-end="url(#ah)"/>
+  <rect class="k" x="650" y="238" width="96" height="46"/><text class="s" x="698" y="257" text-anchor="middle">Pattern.v</text><text class="s ac" x="698" y="274" text-anchor="middle">PASSED</text>
+</svg>
+</div>
+<figcaption><b>六個步驟，四個中間檔。</b>左下角那一步是關鍵：<code>$readmemh</code> 把 <code>.vmh</code> 整個倒進測試記憶體的陣列，CPU 完全不知道有「檔案」這回事，它只是從 <code>0x00080000</code> 開始抓指令。</figcaption>
+</figure>
+
+<p>右半邊（<code>.vmh</code> 之後）由 <code>build/</code> 的模擬器負責，左半邊由編譯器負責。在目前的 lab1 裡，<code>build/Makefile</code> 自己就有 <code>%.elf → %.dump → %.vmh</code> 三條規則，所以在 <code>build/</code> 下 <code>make</code> 一次就會把 <code>tests</code> 清單裡的測試從 <code>.S</code> 一路做到 <code>.vmh</code>；講義 4.1 節那套 <code>tests/build/ + ../configure + ../convert</code> 的流程做的是同一件事，只是產物落在 <code>tests/build/vmh/</code>。兩邊都可以，<code>build/Makefile</code> 的 <code>VPATH</code> 兩個目錄都會找。</p>
+
+<div class="ex">
+<div class="src">tests/convert · 第 21–24 行</div>
+<pre><code>for x in bin/*;do
+    riscv32-unknown-elf-objdump -EL -sz --section=.xcpthandler --section=.text --section=.data $x &gt; $x.dump
+    python3 ../scripts/objdump2vmh.py $x.dump &gt; $x.vmh;
+done</code></pre>
+</div>
+
+<h3>一個測試檔長什麼樣子</h3>
+<p>每個 <code>tests/riscv/riscv-*.S</code> 的骨架都一樣：<code>TEST_RISCV_BEGIN</code> 開頭、一長串檢查、<code>TEST_RISCV_END</code> 結尾。檢查與檢查之間沒有 if/else，只有一條「直線」：每個檢查都用一個 <code>bne</code> 判斷「算錯了就跳去 <code>_fail</code>」，算對就自然往下走到下一個檢查。全部走完才會掉進 <code>_pass</code>。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 400" role="img" aria-label="測試檔的控制流程圖：從 _test 進入，依序執行一連串檢查，每個檢查算對就往下走，算錯就把行號放進 x29 並跳到 _fail；全部通過才會掉到 _pass 把 x29 設成 1，_pass 與 _fail 都接到同一段 csrw 21, x29 再進入無窮迴圈。">
+  <text class="s mut" x="14" y="18">PC = 0x80000</text>
+  <path class="w" d="M30 46H68" marker-end="url(#ah)"/>
+  <rect class="k" x="70" y="28" width="200" height="36"/><text x="170" y="51" text-anchor="middle">_test:</text>
+  <path class="w" d="M170 64V84" marker-end="url(#ah)"/>
+  <rect class="k" x="70" y="86" width="200" height="44"/><text class="s" x="170" y="105" text-anchor="middle">檢查 1（第 13 行）</text><text class="s mut" x="170" y="121" text-anchor="middle">bne x4, x1, _fail</text>
+  <path class="w" d="M270 108H470V190" marker-end="url(#ah)"/><text class="s wr" x="286" y="101">錯 → x29=13</text>
+  <path class="w" d="M170 130V150" marker-end="url(#ah)"/><text class="s ac" x="178" y="146">對</text>
+  <rect class="k" x="70" y="152" width="200" height="44"/><text class="s" x="170" y="171" text-anchor="middle">檢查 2（第 14 行）</text><text class="s mut" x="170" y="187" text-anchor="middle">bne x4, x1, _fail</text>
+  <path class="w" d="M270 174H470" marker-end="url(#ah)"/><text class="s wr" x="286" y="167">錯 → x29=14</text>
+  <path class="w" d="M170 196V216" marker-end="url(#ah)"/><text class="s ac" x="178" y="212">對</text>
+  <text class="mut" x="170" y="234" text-anchor="middle">…</text>
+  <rect class="k" x="70" y="240" width="200" height="44"/><text class="s" x="170" y="259" text-anchor="middle">檢查 N（第 35 行）</text><text class="s mut" x="170" y="275" text-anchor="middle">bne x4, x1, _fail</text>
+  <path class="w" d="M270 262H470" marker-end="url(#ah)"/><text class="s wr" x="286" y="255">錯 → x29=35</text>
+  <path class="a" d="M170 284V308" marker-end="url(#ah)"/><text class="s ac" x="178" y="302">全對</text>
+  <rect class="af" x="70" y="310" width="200" height="40"/><text class="ac s" x="170" y="328" text-anchor="middle">_pass:</text><text class="s" x="170" y="344" text-anchor="middle">addi x29, x0, 1</text>
+  <!-- fail bus -->
+  <rect class="k" x="380" y="190" width="180" height="40"/><text class="s wr" x="470" y="208" text-anchor="middle">_fail:</text><text class="s mut" x="470" y="224" text-anchor="middle">li x2, 1</text>
+  <path class="w" d="M470 230V326" marker-end="url(#ah)"/>
+  <path class="a" d="M270 330H440V350H466" marker-end="url(#ah)"/>
+  <rect class="r" x="468" y="328" width="200" height="44"/><text class="s" x="568" y="347" text-anchor="middle">csrw 21, x29</text><text class="s mut" x="568" y="363" text-anchor="middle">1:  bne x0, x2, 1b</text>
+  <path class="w" d="M668 350H688V388H568V374" marker-end="url(#ah)"/><text class="zh s mut" x="556" y="392" text-anchor="end">永遠停在這裡</text>
+</svg>
+</div>
+<figcaption><b>「失敗」不是例外，是另一條 <code>bne</code>。</b>唯一的差別在 <code>x29</code>：正常走到 <code>_pass</code> 時 <code>x29=1</code>，任何一個檢查跳走時 <code>x29</code> 是那一行的 <code>__LINE__</code>。兩條路最後都執行同一句 <code>csrw 21, x29</code>。</figcaption>
+</figure>
+
+<div class="ex">
+<div class="src">tests/riscv/riscv-macros.h · 第 33–44、69–72、111–114 行</div>
+<pre><code>#define TEST_RISCV_END          \
+_pass:                          \
+    addi   x29, x0, 1;          \
+                                \
+_fail:                          \
+    li     x2,  1;              \
+    csrw   21, x29;             \
+1:  bne    x0, x2, 1b;          \
+    nop; nop; ... （40 個 nop）
+
+#define TEST_CHECK_EQ( reg_, value_ )   \
+    li    x29, __LINE__;                \
+    li    x1, value_;                   \
+    bne   reg_, x1, _fail;              \
+
+#define TEST_IMM_OP( inst_, src0_, imm_, result_ )  \
+    li    x2, src0_;                                \
+    inst_ x4, x2, imm_;                             \
+    TEST_CHECK_EQ( x4, result_ );                   \</code></pre>
+</div>
+
+<p>注意 <code>_pass</code> 後面<b>沒有跳轉</b>——它直接「掉進」<code>_fail</code>。這是故意的：兩條路只差在 <code>x29</code> 的值，共用同一段回報程式碼。最後那四十個 <code>nop</code> 是保險，讓 <code>csrw</code> 有足夠時間走完管線；就算你的 <code>bne</code> 還沒實作、自我迴圈跳不動，<code>csrw</code> 也已經寫進去了，測試還是會有結果。</p>
+
+<h3>一個 <code>TEST_IMM_OP</code> 展開成什麼</h3>
+<p>巨集是 C 前處理器展開的，所以 <code>.S</code> 裡的一行在記憶體裡是好幾道指令。拿 <code>riscv-addi.S</code> 第 13 行來看，objdump 的結果一個位元組都沒藏：</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 300" role="img" aria-label="riscv-addi.S 第 13 行的 TEST_IMM_OP 巨集展開成記憶體中五道指令的對照圖：位址 0x80000 到 0x80010 依序是 li x2 0、addi x4 x2 0、li x29 13、li x1 0、bne x4 x1 _fail，其中 li x29 13 的 13 就是原始檔的行號。">
+  <text class="zh hd" x="14" y="22">riscv-addi.S 第 13 行</text>
+  <rect class="af" x="14" y="32" width="300" height="34"/><text class="s" x="24" y="54">TEST_IMM_OP( addi, 0x0, 0x000, 0x0 )</text>
+  <path class="w" d="M164 66V92" marker-end="url(#ah)"/><text class="s mut" x="172" y="86">cpp 展開 + 組譯</text>
+
+  <text class="zh hd" x="14" y="116">記憶體（dump/riscv-addi.dump）</text>
+  <text class="s mut" x="24" y="136">位址</text><text class="s mut" x="112" y="136">機器碼</text><text class="s mut" x="216" y="136">指令</text><text class="s mut" x="420" y="136">作用</text>
+
+  <rect class="k" x="14" y="142" width="640" height="26"/>
+  <text class="s" x="24" y="160">0x80000</text><text class="s sq" x="112" y="160">00000113</text><text class="s" x="216" y="160">addi x2, x0, 0</text><text class="zh s mut" x="420" y="160">li x2, src0 —— 準備輸入</text>
+  <rect class="af" x="14" y="170" width="640" height="26"/>
+  <text class="s" x="24" y="188">0x80004</text><text class="s sq" x="112" y="188">00010213</text><text class="s ac" x="216" y="188">addi x4, x2, 0</text><text class="zh s ac" x="420" y="188">受測指令本人</text>
+  <rect class="k" x="14" y="198" width="640" height="26"/>
+  <text class="s" x="24" y="216">0x80008</text><text class="s sq" x="112" y="216">00d00e93</text><text class="s wr" x="216" y="216">addi x29, x0, 13</text><text class="zh s wr" x="420" y="216">li x29, __LINE__ —— 13 就是行號</text>
+  <rect class="k" x="14" y="226" width="640" height="26"/>
+  <text class="s" x="24" y="244">0x8000c</text><text class="s sq" x="112" y="244">00000093</text><text class="s" x="216" y="244">addi x1, x0, 0</text><text class="zh s mut" x="420" y="244">li x1, 期望值</text>
+  <rect class="k" x="14" y="254" width="640" height="26"/>
+  <text class="s" x="24" y="272">0x80010</text><text class="s sq" x="112" y="272">1c121e63</text><text class="s" x="216" y="272">bne x4, x1, +0x1dc</text><text class="zh s mut" x="420" y="272">不相等就跳到 0x801ec（_fail）</text>
+
+  <path class="w" d="M656 272H690V216H660" marker-end="url(#ah)"/><text class="zh s wr" x="690" y="188" text-anchor="middle">跳走時</text><text class="zh s wr" x="690" y="203" text-anchor="middle">帶著 x29</text>
+</svg>
+</div>
+<figcaption><b>一行巨集 = 五道指令 = 20 個位元組。</b><code>li</code> 其實是 <code>addi rd, x0, imm</code>（虛擬指令），所以測 <code>addi</code> 的測試本身就得先會 <code>addi</code>——這也是為什麼 Objective 1 要從最簡單的指令開始補控制表。</figcaption>
+</figure>
+
+<div class="note"><b>驗算一下</b>
+<p><code>bne</code> 的立即數欄位算出來是 <code>+0x1dc</code>，<code>0x80010 + 0x1dc = 0x801ec</code>。翻到 dump 檔尾端會看到 <code>0x801e8</code> 是 <code>00100e93</code>（<code>addi x29, x0, 1</code>，也就是 <code>_pass</code>），<code>0x801ec</code> 是 <code>00100113</code>（<code>li x2, 1</code>，也就是 <code>_fail</code>）。完全對得上。</p></div>
+
+<h3><code>.vmh</code> 的位址是 word 位址</h3>
+<p><code>.vmh</code> 是 <code>$readmemh</code> 的格式：<code>@</code> 開頭那行是<b>陣列索引</b>，其餘每行是一個 32 位元的 word。測試記憶體 <code>mem.mem.m</code> 是一個 word 陣列，所以索引乘以 4 才是位元組位址。<code>objdump2vmh.py</code> 就是在做這件事：</p>
+
+<div class="ex">
+<div class="src">tests/scripts/objdump2vmh.py · 第 41、44–46 行</div>
+<pre><code>print('@{0:x}'.format(int(m.group('addr'), 16) // 4))    # 位元組位址 ÷ 4
+...
+for v in m.group('v0', 'v1', 'v2', 'v3'):
+    if v:
+        print(v[6:8] + v[4:6] + v[2:4] + v[0:2])          # 位元組反序</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 270" role="img" aria-label="vmh 檔案與測試記憶體的對應圖：vmh 的 @20000 是 word 索引，乘以四後等於位元組位址 0x80000，也就是 reset 向量；接下來每一行依序填進 m[0x20000]、m[0x20001]，對應位元組位址 0x80000、0x80004。">
+  <text class="zh hd" x="14" y="22">build/riscv-addi.vmh</text>
+  <rect class="k" x="14" y="32" width="180" height="180"/>
+  <text class="s ac" x="28" y="56">@20000</text>
+  <text class="s sq" x="28" y="82">00000113</text>
+  <text class="s sq" x="28" y="104">00010213</text>
+  <text class="s sq" x="28" y="126">00d00e93</text>
+  <text class="s sq" x="28" y="148">00000093</text>
+  <text class="s sq" x="28" y="170">1c121e63</text>
+  <text class="s mut" x="28" y="196">…</text>
+
+  <path class="a" d="M194 50H280" marker-end="url(#ah)"/><text class="s ac" x="200" y="42">× 4</text>
+  <rect class="af" x="282" y="34" width="180" height="32"/><text class="s ac" x="372" y="55" text-anchor="middle">位元組位址 0x80000</text>
+  <text class="zh s mut" x="470" y="55">= reset 向量</text>
+
+  <path class="w" d="M194 95H280" marker-end="url(#ah)"/>
+  <text class="zh hd" x="290" y="90">mem.mem.m（word 陣列）</text>
+  <rect class="k" x="290" y="100" width="130" height="26"/><text class="s" x="300" y="118">m[0x20000]</text>
+  <rect class="k" x="420" y="100" width="120" height="26"/><text class="s sq" x="430" y="118">00000113</text>
+  <text class="s mut" x="552" y="118">0x80000</text>
+  <rect class="k" x="290" y="128" width="130" height="26"/><text class="s" x="300" y="146">m[0x20001]</text>
+  <rect class="k" x="420" y="128" width="120" height="26"/><text class="s sq" x="430" y="146">00010213</text>
+  <text class="s mut" x="552" y="146">0x80004</text>
+  <rect class="k" x="290" y="156" width="130" height="26"/><text class="s" x="300" y="174">m[0x20002]</text>
+  <rect class="k" x="420" y="156" width="120" height="26"/><text class="s sq" x="430" y="174">00d00e93</text>
+  <text class="s mut" x="552" y="174">0x80008</text>
+  <text class="mut" x="350" y="200">…</text>
+
+  <path class="wm" d="M14 230H706"/>
+  <text class="zh s mut" x="14" y="252">有 .data 的測試會出現第二個 @：riscv-lw.vmh 的 @200e0 = 位元組位址 0x80380，正是它的資料區。</text>
+</svg>
+</div>
+<figcaption><b><code>@</code> 後面不是位元組位址。</b>看到 <code>@20000</code> 要在心裡乘 4 才對得上 gtkwave 裡的 <code>pc_Fhl = 0x00080000</code>。反過來，你在 dump 裡看到某個位址想找對應的 vmh 行，就除以 4。</figcaption>
+</figure>
+</div>
+
+<h3>硬體怎麼「回報成績」</h3>
+<p><code>csrw 21, x29</code> 在 <code>InstMsg.v</code> 裡是一條正式的指令（編碼上是 <code>csrrw</code> 的特例），它在控制表裡的那一列跟別人只差最後一欄：<code>rf_wen = n</code>、<code>csr_wen = y</code>。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 467 行</div>
+<pre><code class="language-verilog">//                                j     br       pc      op0      rs1 op1       rs2 alu       md       md md     ex      mem  mem   memresp wb      rf      csr
+//                            val taken type     muxsel  muxsel   en  muxsel    en  fn        fn       en muxsel muxsel  rq   len   muxsel  muxsel  wen wa  wen
+`RISCV_INST_MSG_CSRW    :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_0,     y,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, n,  rx, y   };</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 320" role="img" aria-label="csrw 指令在硬體中的路徑：D 階段的 casez 產生 csr_wen 與 csr_addr，兩者一路管線化到 W 階段；資料則走 datapath 的 op0 與 ALU 到 wb_mux_out_Whl，成為 proc2csr_data_Whl；在 W 階段 csr_wen_Whl 與 inst_val_Whl 同時成立且位址等於 21 時，csr_status 暫存器才會更新。">
+  <!-- stage dividers -->
+  <path class="wm" d="M190 30V300"/><path class="wm" d="M312 30V300"/><path class="wm" d="M434 30V300"/>
+  <text class="zh hd mut" x="60" y="22" text-anchor="middle">D</text>
+  <text class="zh hd mut" x="250" y="22" text-anchor="middle">X</text>
+  <text class="zh hd mut" x="372" y="22" text-anchor="middle">M</text>
+  <text class="zh hd mut" x="470" y="22" text-anchor="middle">W</text>
+
+  <!-- control path -->
+  <rect class="k" x="14" y="44" width="90" height="36"/><text class="s" x="59" y="67" text-anchor="middle">ir_Dhl</text>
+  <path class="w" d="M104 62H122" marker-end="url(#ah)"/>
+  <rect class="k" x="124" y="38" width="52" height="48"/><text class="s" x="150" y="58" text-anchor="middle">casez</text><text class="s mut" x="150" y="74" text-anchor="middle">cs</text>
+  <path class="c" d="M176 52H206" marker-end="url(#ahc)"/><text class="s cb" x="176" y="36">csr_wen</text>
+  <path class="c" d="M176 76H206" marker-end="url(#ahc)"/>
+  <text class="s cb" x="14" y="112">csr_addr = ir_Dhl[31:20]</text>
+  <rect class="r" x="208" y="38" width="40" height="52"/><text class="s" x="228" y="60" text-anchor="middle">X</text><path class="rl" d="M208 72l8 6l-8 6"/>
+  <path class="c" d="M248 64H326" marker-end="url(#ahc)"/>
+  <rect class="r" x="330" y="38" width="40" height="52"/><text class="s" x="350" y="60" text-anchor="middle">M</text><path class="rl" d="M330 72l8 6l-8 6"/>
+  <path class="c" d="M370 64H448" marker-end="url(#ahc)"/>
+  <rect class="r" x="452" y="38" width="40" height="52"/><text class="s" x="472" y="60" text-anchor="middle">W</text><path class="rl" d="M452 72l8 6l-8 6"/>
+  <path class="c" d="M492 50H570V116" marker-end="url(#ahc)"/><text class="s cb" x="500" y="42">csr_wen_Whl</text>
+  <path class="c" d="M492 78H620V116" marker-end="url(#ahc)"/><text class="s cb" x="500" y="96">csr_addr_Whl</text>
+  <path class="c" d="M700 100V116" marker-end="url(#ahc)"/><text class="s cb" x="656" y="94">inst_val_Whl</text>
+
+  <!-- csr write condition -->
+  <rect class="af" x="520" y="118" width="226" height="46"/>
+  <text class="s ac" x="633" y="136" text-anchor="middle">if ( csr_wen_Whl &amp;&amp; inst_val_Whl )</text>
+  <text class="s ac" x="633" y="154" text-anchor="middle">case ( csr_addr_Whl ) 12'd21 :</text>
+
+  <!-- data path -->
+  <rect class="k" x="14" y="192" width="90" height="36"/><text class="s" x="59" y="215" text-anchor="middle">rs1 讀出</text>
+  <path class="w" d="M104 210H204" marker-end="url(#ah)"/><text class="s mut" x="110" y="204">op0（op1=0）</text>
+  <rect class="k" x="206" y="192" width="70" height="36"/><text class="s" x="241" y="215" text-anchor="middle">ALU +</text>
+  <path class="w" d="M276 210H448" marker-end="url(#ah)"/><text class="s mut" x="322" y="204">alu_out → wb_mux</text>
+  <rect class="r" x="452" y="188" width="140" height="44"/><text class="s" x="522" y="206" text-anchor="middle">wb_mux_out_Whl</text><text class="s mut" x="522" y="222" text-anchor="middle">= proc2csr_data_Whl</text>
+  <path class="a" d="M592 210H650V168" marker-end="url(#ah)"/>
+
+  <!-- csr status register -->
+  <path class="w" d="M746 141H754V270H716" marker-end="url(#ah)"/>
+  <rect class="r" x="564" y="250" width="150" height="40"/><text class="s" x="639" y="275" text-anchor="middle">csr_status</text>
+  <path class="w" d="M564 270H172" marker-end="url(#ah)"/><text class="zh s mut" x="14" y="266">→ Pattern.v 印出結果</text>
+</svg>
+</div>
+<figcaption><b>回報發生在 W，而且要 <code>inst_val_Whl</code>。</b>這代表：如果 <code>csrw</code> 被錯誤地 squash 或變成 bubble，測試就永遠不會回報成績——你看到的會是 timeout，而不是 FAILED。</figcaption>
+</figure>
+</div>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 820–829 行</div>
+<pre><code class="language-verilog">always @ ( posedge clk ) begin
+  if ( reset ) begin
+    csr_status &lt;= 32'b0;
+  end
+  else if ( csr_wen_Whl &amp;&amp; inst_val_Whl ) begin
+    case ( csr_addr_Whl )
+      12'd21 : csr_status &lt;= proc2csr_data_Whl;
+    endcase
+  end
+end</code></pre>
+</div>
+
+<p>另一端在 <code>Pattern.v</code>：它在 <b>negedge</b> 取樣 <code>status</code>（讓 posedge 才更新的值先穩定下來），非 0 就結束模擬。</p>
+
+<div class="ex">
+<div class="src">Pattern.v · 第 183–215 行（節錄）</div>
+<pre><code class="language-verilog">always @ ( negedge clk ) begin
+  if ( !reset_proc ) begin
+    if ( status != 0 ) begin
+      if ( status == 1 ) $display( "*** PASSED ***" );
+      else               $display( "*** FAILED *** (status = %d)", status );
+      ...
+      #20 $finish;
+    end
+    else if ( num_cycles &gt; max_cycles ) begin
+      $display( "*** FAILED *** (timeout)" );
+      #20 $finish;
+    end
+  end
+end</code></pre>
+</div>
+
+<div class="note"><b>看到 <code>*** FAILED *** (status = 137)</code> 怎麼辦</b>
+<p>137 就是 <code>__LINE__</code>。打開對應的 <code>.S</code> 檔跳到第 137 行，那一行的巨集就是失敗的檢查——它會告訴你是哪一條指令、哪一組輸入、期望什麼結果。<code>status = 2</code> 是例外：benchmark 的 <code>test_fail</code> 固定寫 2，沒有行號。</p></div>
+
+<div class="quiz"><b>想一想</b>
+<p>某位同學的 <code>bne</code> 控制列寫錯了，<code>br_sel</code> 填成 <code>br_none</code>，導致所有 <code>bne</code> 都不跳。跑 <code>riscv-addi</code> 會看到什麼？</p>
+<details><summary>看答案</summary><p><code>*** PASSED ***</code>——而且是假的。因為所有檢查的 <code>bne ..., _fail</code> 都不跳，程式一路直直走到 <code>_pass</code>，<code>x29</code> 被設成 1。這正是為什麼一定要跑 <code>riscv-bne</code>：它裡面的 <code>TEST_BR2_OP_TAKEN</code> 會在「該跳卻沒跳」時落到 <code>TEST_CHECK_FAIL</code>，強制失敗。單一測試通過不代表指令對了。</p></details>
+</div>
+
+<h3>Makefile：測試清單與執行方式</h3>
+<p><code>build/Makefile</code> 裡有兩份清單。<code>tests</code> 是組語測試，<code>bmarks</code> 是 C benchmark，兩份都是 <code>.vmh</code> 檔名：</p>
+
+<div class="ex">
+<div class="src">build/Makefile · 第 41–60 行</div>
+<pre><code>tests = \
+  riscv-add.vmh \
+  riscv-addi.vmh \
+  riscv-bne.vmh \
+  ...
+  riscv-lh.vmh \
+
+bmarks = \
+  ubmark-vvadd.vmh \
+  ubmark-cmplx-mult.vmh \
+  ubmark-masked-filter.vmh \
+  ubmark-bin-search.vmh \</code></pre>
+</div>
+
+<p>每個處理器（<code>riscvstall</code> / <code>riscvbyp</code> / <code>riscvlong</code>）都會用這兩份清單各長出一組目標：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>指令</th><th>做什麼</th><th>用哪個模擬器</th><th>輸出</th></tr></thead>
+<tbody>
+<tr><td><code>make</code></td><td>編譯模擬器 + 把 <code>tests</code> 裡的 <code>.S</code> 做成 <code>.vmh</code></td><td>—</td><td><code>riscvstall-sim</code>、<code>riscvstall-randdelay-sim</code></td></tr>
+<tr class="hi"><td><code>make check-asm-riscvstall</code></td><td>跑全部組語測試</td><td><code>riscvstall-sim</code>（記憶體固定 1 週期）</td><td><code>riscv-*-stall.out</code></td></tr>
+<tr><td><code>make check-asm-rand-riscvstall</code></td><td>同上，但記憶體隨機延遲</td><td><code>riscvstall-randdelay-sim</code></td><td><code>riscv-*-stall-rand.out</code></td></tr>
+<tr><td><code>make run-bmark-riscvstall</code></td><td>跑四個 C benchmark</td><td><code>riscvstall-sim</code></td><td><code>ubmark-*-stall.out</code></td></tr>
+<tr><td><code>make check-asm-riscvbyp</code></td><td>同左，換成 bypass 版</td><td><code>riscvbyp-sim</code></td><td><code>riscv-*-byp.out</code></td></tr>
+</tbody>
+</table></div>
+
+<p>兩種模擬器的差別只在編譯時的 <code>define</code>：<code>PATTERN_MAX_DELAY</code> 是 0 還是 4、<code>PATTERN_DEFAULT_MAX_CYCLES</code> 是 10 萬還是 50 萬。<code>-rand-</code> 版把記憶體的回應時間變成隨機，專門抓「假設記憶體一定 1 週期就回話」的 bug（見<a href="#ch13">第 13 章</a>）。</p>
+
+<p><code>.out</code> 檔跟 <code>.vcd</code> 檔都落在 <code>build/</code>（<code>.vcd</code> 會跟著 <code>+exe=</code> 給的那個 <code>.vmh</code> 放在一起）。要單獨跑一個測試、順便留下波形：</p>
+
+<div class="ex">
+<div class="src mine">示意範例 · 在 build/ 底下</div>
+<pre><code>$ make riscvstall-sim                       # 只編模擬器
+$ make riscv-addi.vmh                       # 只做這個測試的 vmh
+$ ./riscvstall-sim +exe=riscv-addi.vmh +stats=1
+*** PASSED ***
+--------------------------------------------
+ STATS
+--------------------------------------------
+ status     =          1
+ num_cycles =        285
+ num_inst   =        125
+ ipc        = 0.438596
+
+$ ./riscvstall-sim +exe=riscv-addi.vmh +stats=1 +vcd=1    # 產生 riscv-addi.vcd
+$ ./riscvstall-sim +exe=riscv-addi.vmh +max-cycles=2000   # 早點放棄，方便看波形</code></pre>
+</div>
+
+<div class="trap"><b>常見錯誤</b>
+<p><code>+vcd=1</code> 產生的檔名是「<code>+exe=</code> 的路徑去掉最後 3 個字元再接 <code>.vcd</code>」，所以每次跑同一個測試都會蓋掉上一次的波形。要留下來就先改名。另外 <code>make check-asm-*</code> 預設 <code>VCD=0</code>；要整批產生波形得下 <code>make check-asm-riscvstall VCD=1</code>。</p></div>
+
+<h3>加一個自己的測試</h3>
+<p>講義第 4 節要求你至少為 <code>mulh</code> / <code>mulhu</code> / <code>mulhsu</code> 寫測試，外加一個針對你遇過的 bug 的測試。整個流程只有四步，但四步都漏不得——漏了第 1 步檔案不會被編譯，漏了第 3 步 <code>make</code> 會說找不到 <code>.vmh</code>。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 320" role="img" aria-label="新增一個組語測試的四步驟檢查清單：第一步在 tests/riscv 建立 .S 檔，第二步把檔名加進 riscv.mk 的 riscv_srcs，第三步把 vmh 檔名加進 build/Makefile 的 tests 變數，第四步在 build 目錄下 make 並執行 check-asm。">
+  <rect class="grp" x="10" y="10" width="720" height="300" rx="6"/>
+  <text class="zh hd" x="26" y="34">新增測試檢查清單</text>
+
+  <circle class="af" cx="40" cy="70" r="13"/><text class="s ac" x="40" y="75" text-anchor="middle">1</text>
+  <rect class="k" x="64" y="50" width="250" height="42"/><text class="s" x="76" y="69">tests/riscv/riscv-mulh.S</text><text class="zh s mut" x="76" y="85">#include "riscv-macros.h"，BEGIN/END 包起來</text>
+  <path class="w" d="M40 83V125" marker-end="url(#ah)"/>
+
+  <circle class="af" cx="40" cy="140" r="13"/><text class="s ac" x="40" y="145" text-anchor="middle">2</text>
+  <rect class="k" x="64" y="120" width="250" height="42"/><text class="s" x="76" y="139">tests/riscv/riscv.mk</text><text class="zh s mut" x="76" y="155">把 riscv-mulh.S 加進 riscv_srcs（取消註解）</text>
+  <path class="w" d="M40 153V195" marker-end="url(#ah)"/>
+
+  <circle class="af" cx="40" cy="210" r="13"/><text class="s ac" x="40" y="215" text-anchor="middle">3</text>
+  <rect class="k" x="64" y="190" width="250" height="42"/><text class="s" x="76" y="209">build/Makefile</text><text class="zh s mut" x="76" y="225">把 riscv-mulh.vmh 加進 tests 變數</text>
+  <path class="w" d="M40 223V265" marker-end="url(#ah)"/>
+
+  <circle class="af" cx="40" cy="280" r="13"/><text class="s ac" x="40" y="285" text-anchor="middle">4</text>
+  <rect class="af" x="64" y="260" width="250" height="42"/><text class="s ac" x="76" y="279">cd build &amp;&amp; make check-asm-riscvstall</text><text class="zh s mut" x="76" y="295">新測試會自動出現在結果清單裡</text>
+
+  <!-- right column: what each step feeds -->
+  <path class="wm" d="M330 50V302"/>
+  <text class="zh s mut" x="346" y="69">→ 測試的內容：用哪個巨集、幾組輸入</text>
+  <text class="zh s mut" x="346" y="139">→ 決定 tests/build 那條路會不會編到它</text>
+  <text class="zh s mut" x="346" y="209">→ 決定 build/Makefile 會不會幫你做 .vmh，</text>
+  <text class="zh s mut" x="346" y="225">　 也決定 check-asm 會不會跑它</text>
+  <text class="zh s mut" x="346" y="279">→ 輸出 riscv-mulh-stall.out</text>
+  <text class="zh s mut" x="346" y="295">　 別忘了也跑 check-asm-rand-</text>
+</svg>
+</div>
+<figcaption><b>第 2 步和第 3 步是兩份不同的清單。</b><code>riscv.mk</code> 管「<code>tests/build/</code> 那條編譯路徑」，<code>build/Makefile</code> 的 <code>tests</code> 管「模擬器要跑哪些 <code>.vmh</code>」。只改一邊，症狀是「檔案明明在卻沒被跑到」或「找不到 <code>.vmh</code>」。</figcaption>
+</figure>
+
+<p>寫測試時請直接模仿 <code>riscv-mul.S</code>：<code>TEST_RR_OP( mulh, 被乘數, 乘數, 期望的高 32 位元 )</code>，然後補上 <code>SRC0_EQ_DEST</code>、<code>SRCS_EQ_DEST</code> 這幾個邊界情況，最後加上 <code>*_BYP</code> 系列（<a href="#ch16">第 16 章</a>詳細解釋過 <code>nops_</code> 參數怎麼對應到三條 bypass 路徑）。有號數的高位元最容易錯，記得測 <code>0x80000000 × 0x80000000</code> 這種兩個都是負數、以及 <code>mulhsu</code> 一有號一無號的組合。</p>
+
+<h3>Benchmark：把 C 程式塞進一顆沒有作業系統的 CPU</h3>
+<p><code>ubmark/</code> 裡的四個程式是真正的 C。它們能在這顆 CPU 上跑，靠的是三個「作弊」：</p>
+<ul>
+<li><b>沒有 <code>main</code> 的啟動流程</b>：用 <code>-nostartfiles -nostdlib</code> 編譯，linker script <code>test.ld</code> 把程式放在 <code>0x80000</code>，CPU reset 後直接從那裡開始。</li>
+<li><b>沒有 <code>printf</code></b>：驗算結果是程式自己比對陣列，然後用跟組語測試一模一樣的手段回報。</li>
+<li><b>輸入資料寫死在原始碼裡</b>：<code>#include "ubmark-vvadd.dat"</code> 是一個產生好的陣列，變成 <code>.data</code> 段，跟著 <code>.vmh</code> 一起被 <code>$readmemh</code> 載進記憶體。</li>
+</ul>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 250" role="img" aria-label="benchmark 的流程圖：ubmark-vvadd.c 與資料檔和 ubmark.h 一起編譯成 vmh，載入後 main 呼叫 test_stats_on、執行 vvadd_scalar、test_stats_off，再由 verify_results 比對結果並呼叫 test_pass 或 test_fail，兩者都展開成 csrw 21 指令。">
+  <rect class="k" x="14" y="30" width="170" height="60"/><text class="s" x="99" y="52" text-anchor="middle">ubmark-vvadd.c</text><text class="s mut" x="99" y="68" text-anchor="middle">+ ubmark-vvadd.dat</text><text class="s mut" x="99" y="84" text-anchor="middle">+ ubmark.h</text>
+  <path class="w" d="M184 60H222" marker-end="url(#ah)"/><text class="s mut" x="188" y="52">gcc</text>
+  <rect class="af" x="224" y="38" width="150" height="44"/><text class="s ac" x="299" y="65" text-anchor="middle">ubmark-vvadd.vmh</text>
+  <path class="w" d="M374 60H412" marker-end="url(#ah)"/>
+  <rect class="k" x="414" y="30" width="180" height="60"/><text class="s" x="504" y="52" text-anchor="middle">make run-bmark-riscvstall</text><text class="s mut" x="504" y="68" text-anchor="middle">./riscvstall-sim +verbose=1</text><text class="s mut" x="504" y="84" text-anchor="middle">→ ubmark-vvadd-stall.out</text>
+
+  <text class="zh hd" x="14" y="128">程式裡發生什麼（ubmark-vvadd.c 第 39–56 行）</text>
+  <rect class="k" x="14" y="138" width="130" height="36"/><text class="s" x="79" y="160" text-anchor="middle">test_stats_on</text>
+  <path class="w" d="M144 156H176" marker-end="url(#ah)"/>
+  <rect class="k" x="178" y="138" width="140" height="36"/><text class="s" x="248" y="160" text-anchor="middle">vvadd_scalar(...)</text>
+  <path class="w" d="M318 156H350" marker-end="url(#ah)"/>
+  <rect class="k" x="352" y="138" width="130" height="36"/><text class="s" x="417" y="160" text-anchor="middle">test_stats_off</text>
+  <path class="w" d="M482 156H514" marker-end="url(#ah)"/>
+  <rect class="k" x="516" y="138" width="150" height="36"/><text class="s" x="591" y="160" text-anchor="middle">verify_results</text>
+  <path class="w" d="M591 174V198" marker-end="url(#ah)"/>
+  <rect class="r" x="466" y="200" width="250" height="40"/><text class="s" x="591" y="219" text-anchor="middle">test_pass → li x?,1; csrw 21, x?</text><text class="s mut" x="591" y="235" text-anchor="middle">test_fail → li x?,2; csrw 21, x?</text>
+  <path class="w" d="M79 174V220H456" marker-end="url(#ah)"/><text class="zh s mut" x="100" y="216">csrw 10 —— 這顆 CPU 只解 21，寫 10 等於無效</text>
+</svg>
+</div>
+<figcaption><b>Benchmark 跟組語測試共用同一套回報機制。</b>差別只有 <code>status</code>：benchmark 通過寫 1、失敗寫 2（沒有行號），所以 benchmark 掛掉時你只能靠波形除錯。</figcaption>
+</figure>
+
+<div class="trap"><b>常見錯誤</b>
+<p><code>test_stats_on</code> 寫的是 CSR 10，而 <code>CoreCtrl</code> 的 <code>case</code> 只認 <code>12'd21</code>，所以這一對 <code>csrw</code> 在 lab1 裡<b>沒有作用</b>。<code>Pattern.v</code> 的 <code>num_cycles</code> 是從 reset 數到結束的<b>整段</b>週期數，不是只數核心迴圈。比較三個版本的效能時這沒問題（大家都用同一把尺），但別把它當成「vvadd 迴圈本身的週期數」。</p></div>
+
+<p>評估時要比較的就是 <code>.out</code> 裡的 <code>num_cycles</code> 與 <code>ipc</code>。<code>num_inst</code> 三個版本應該幾乎一樣（同一個程式、同樣多的指令退休），會變的是 <code>num_cycles</code>：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>版本</th><th>期望的變化</th><th>為什麼</th></tr></thead>
+<tbody>
+<tr><td><code>riscvstall</code></td><td>基準</td><td>每個資料冒險都要 stall 到寫入者離開 W</td></tr>
+<tr><td><code>riscvbyp</code></td><td><code>num_cycles</code> 明顯下降、<code>ipc</code> 上升</td><td>大部分冒險改用旁路，只剩 load-use 要 stall 一拍（<a href="#ch14">第 14 章</a>）</td></tr>
+<tr><td><code>riscvlong</code></td><td>有乘除法的 benchmark 再降一截</td><td>管線化的乘法器不再讓 X 卡住整條管線（<a href="#ch18">第 18 章</a>）</td></tr>
+</tbody>
+</table></div>
+
+<div class="note"><b>做實驗的紀律</b>
+<p><code>make check-asm-*</code> 與 <code>run-bmark-*</code> 會覆蓋同名的 <code>.out</code> 與 <code>.vcd</code>。要做三個版本的比較，跑完一個就把 <code>.out</code> 收到別的目錄去（或用 <code>cp *-stall.out results/</code>），不然最後一輪會把前面的結果洗掉。</p></div>
+</section>
+
+<!-- ============================================================ ch21 -->
+<section class="ch" id="ch21" data-part="測試與除錯" data-nav="除錯方法與速查表">
+<p class="eyebrow">第 21 章 · 測試與除錯</p>
+<h2>除錯方法與速查表</h2>
+<p>最後一章不教新電路，教怎麼把「它壞了」變成「它在第 N 個週期、因為 X 訊號、所以壞了」。管線 CPU 的好處是：錯誤的種類其實很少，而且每一種都有固定的症狀。</p>
+
+<h3>症狀 → 嫌疑犯</h3>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 420" role="img" aria-label="除錯決策樹：從模擬輸出的四種症狀出發，分別是 RTL-ERROR 非法指令、FAILED 帶行號、timeout、以及只有 rand 版本失敗，每一種各自連到最可能的原因與下一步動作。">
+  <rect class="k" x="14" y="16" width="150" height="34"/><text class="zh s" x="89" y="38" text-anchor="middle">模擬輸出是什麼？</text>
+  <path class="w" d="M89 50V72H200" marker-end="url(#ah)"/>
+  <path class="w" d="M89 50V162H200" marker-end="url(#ah)"/>
+  <path class="w" d="M89 50V252H200" marker-end="url(#ah)"/>
+  <path class="w" d="M89 50V342H200" marker-end="url(#ah)"/>
+
+  <!-- case 1 -->
+  <rect class="k" x="202" y="54" width="210" height="38"/><text class="s wr" x="212" y="72">RTL-ERROR : Illegal</text><text class="s wr" x="212" y="87">instruction!</text>
+  <path class="w" d="M412 72H448" marker-end="url(#ah)"/>
+  <rect class="k" x="450" y="50" width="296" height="46"/><text class="zh s" x="462" y="68">控制表裡沒有這一列，或 casez 的位元樣式打錯</text><text class="zh s mut" x="462" y="85">→ 也可能是 InstMsg.v 的 `define 還被註解掉</text>
+
+  <!-- case 2 -->
+  <rect class="k" x="202" y="144" width="210" height="38"/><text class="s wr" x="212" y="162">FAILED (status = N)</text><text class="s mut" x="212" y="177">N &gt; 1</text>
+  <path class="w" d="M412 162H448" marker-end="url(#ah)"/>
+  <rect class="k" x="450" y="136" width="296" height="58"/><text class="zh s" x="462" y="154">指令有執行，但某個控制欄位填錯值</text><text class="zh s mut" x="462" y="171">→ 打開 .S 第 N 行看是哪個巨集、哪組輸入</text><text class="zh s mut" x="462" y="188">→ 哪個欄位？看下面的「往回走」流程</text>
+
+  <!-- case 3 -->
+  <rect class="k" x="202" y="234" width="210" height="38"/><text class="s wr" x="212" y="252">FAILED (timeout)</text><text class="s mut" x="212" y="267">num_cycles 爆表</text>
+  <path class="w" d="M412 252H448" marker-end="url(#ah)"/>
+  <rect class="k" x="450" y="220" width="296" height="76"/><text class="zh s" x="462" y="238">① PC 亂跑（跳錯地方，執行到 nop 海或資料區）</text><text class="zh s" x="462" y="255">② 死結：某個 stall 永遠不解除</text><text class="zh s" x="462" y="272">③ csrw 被 squash / bubble 掉，永遠不回報</text><text class="zh s mut" x="462" y="289">→ 先看 pc_Fhl 是停住還是亂跳</text>
+
+  <!-- case 4 -->
+  <rect class="k" x="202" y="324" width="210" height="38"/><text class="s" x="212" y="342">check-asm 全過，</text><text class="s wr" x="212" y="357">check-asm-rand 掛</text>
+  <path class="w" d="M412 342H448" marker-end="url(#ah)"/>
+  <rect class="k" x="450" y="310" width="296" height="64"/><text class="zh s" x="462" y="328">某處假設了記憶體一定 1 週期回話</text><text class="zh s mut" x="462" y="345">→ 檢查 val/rdy：請求送出後有沒有被重送、</text><text class="zh s mut" x="462" y="362">　 X 的 stall_dmem、M 的 stall_dmem 有沒有漏掉</text>
+
+  <path class="wm" d="M14 386H746"/>
+  <text class="zh s mut" x="14" y="408">還有一種：波形裡突然一片 x。代表某個被標成 don't-care（例如 alu_x、ml_x）的欄位其實有人在用——見下文。</text>
+</svg>
+</div>
+<figcaption><b>四種症狀，四個方向。</b>先分類再動手，可以少開一半的波形。最耗時的永遠是 timeout，因為它不告訴你任何位置資訊。</figcaption>
+</figure>
+
+<p>逐一展開：</p>
+
+<h4>① <code>RTL-ERROR : Illegal instruction!</code></h4>
+<p>這是 <code>CoreCtrl</code> 結尾的 assertion 印的。它的條件很直白：<code>cs</code> 的最高位（<code>INST_VAL</code>）不是 1。而 <code>cs</code> 在 <code>casez</code> 開頭被預設成全 <code>x</code>，所以「沒有任何一列命中」就會踩到它。連續兩次就 <code>$finish</code>。</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 875–889 行</div>
+<pre><code class="language-verilog">reg overload = 1'b0;
+
+always @ ( posedge clk ) begin
+  if ( !cs[`RISCV_INST_MSG_INST_VAL] &amp;&amp; !reset ) begin
+    $display(" RTL-ERROR : %m : Illegal instruction!");
+
+    if ( overload == 1'b1 ) begin
+      $finish;
+    end
+
+    overload = 1'b1;
+  end
+  else begin
+    overload = 1'b0;
+  end
+end</code></pre>
+</div>
+<p>三個最常見的原因，照順序檢查：控制表那一列還被註解著；<code>InstMsg.v</code> 裡對應的 <code>`define</code> 還被註解著（Objective 2 的 <code>mulh</code> 系列就是這樣）；或者 <code>casez</code> 的樣式打錯，讓某個 <code>?</code> 變成 <code>0</code>。想確認是哪一條指令，在波形裡看那個週期的 <code>ir_Dhl</code>，對照 <code>riscv-isa.txt</code> 解碼。</p>
+
+<h4>② <code>FAILED (status = N)</code>：縮小到某個控制欄位</h4>
+<p>指令有被解碼（不然會是 ①），但做出來的事情不對。控制表有 19 個欄位，但對一條指令來說可疑的通常只有三、四個。用「這條指令要用到誰」來篩：</p>
+<div class="tbl"><table>
+<thead><tr><th>如果結果…</th><th>先看這些欄位</th></tr></thead>
+<tbody>
+<tr><td>數值算錯，但來源暫存器沒問題</td><td><code>alu_fn</code>、<code>op1_sel</code>（立即數型別對不對）</td></tr>
+<tr><td>結果跟某個輸入一模一樣</td><td><code>op0_sel</code> / <code>op1_sel</code> 選錯來源</td></tr>
+<tr><td>目標暫存器根本沒被寫</td><td><code>rf_wen</code>、<code>rf_waddr</code></td></tr>
+<tr><td>讀到舊值（該 stall 卻沒 stall）</td><td><code>rs1_en</code> / <code>rs2_en</code>（<a href="#ch11">第 11 章</a>）</td></tr>
+<tr><td>load/store 的位元組數不對</td><td><code>mem_len</code>、<code>memresp_sel</code></td></tr>
+<tr><td>分支該跳不跳 / 不該跳卻跳</td><td><code>br_sel</code>、<code>alu_fn</code>、以及 <code>any_br_taken_Xhl</code> 有沒有加上新的 <code>*_taken_Xhl</code></td></tr>
+</tbody>
+</table></div>
+
+<div class="trap"><b>常見錯誤：新分支忘了接進 <code>any_br_taken_Xhl</code></b>
+<p>控制表填了 <code>br_beq</code>、也宣告了 <code>beq_taken_Xhl</code>，但沒把它 or 進 <code>any_br_taken_Xhl</code>。症狀是分支永遠不跳——而且 <code>riscv-addi</code> 之類的測試反而「通過」（見上一章的想一想）。</p>
+</div>
+
+<h4>③ timeout</h4>
+<p>三種可能，分辨方法是看 <code>pc_Fhl</code>：</p>
+<ul>
+<li><b><code>pc_Fhl</code> 每個週期都在變、但跑到奇怪的位址</b>：跳轉目標算錯。看 <code>pc_mux_sel_Phl</code> 與 <code>branch_targ</code> / <code>jump_targ</code> / <code>jumpreg_targ</code>，通常是 <code>pc_sel</code> 欄位或立即數型別填錯。</li>
+<li><b><code>pc_Fhl</code> 完全不動</b>：死結。某條 <code>stall_*</code> 永遠是 1。最典型的是 stall 條件忘了用 <code>inst_val_*</code> 把 bubble 濾掉——bubble 的 <code>rf_waddr_Xhl</code> 是殘留值，會跟 D 的 <code>rs1</code> 無限撞上。另一種是 val/rdy 沒處理好：請求已經被對方收走了卻還一直送，或者 <code>rdy</code> 的條件寫成需要對方先給 <code>val</code>（互等）。</li>
+<li><b>PC 停在 <code>_fail</code> 那個自我迴圈</b>：程式其實跑完了，但 <code>csrw</code> 沒生效。看 W 階段的 <code>csr_wen_Whl</code> 與 <code>inst_val_Whl</code> 是不是曾經同時為 1。</li>
+</ul>
+
+<h4>④ 只有 <code>-rand-</code> 失敗</h4>
+<p>固定 1 週期的記憶體會掩蓋掉所有「多等幾拍」的 bug。<a href="#ch13">第 13 章</a>講過 <code>stall_dmem_Xhl</code>（請求送不出去）與 <code>stall_dmem_Mhl</code>（回應還沒來）這一對；只要少了一個，快的記憶體看不出來，慢的記憶體馬上炸。順便：<code>dmemreq_val</code> 的條件是 <code>inst_val_Xhl &amp;&amp; !stall_Xhl &amp;&amp; dmemreq_val_Xhl</code>，三個缺一不可。</p>
+
+<h4>⑤ 波形裡一片 <code>x</code></h4>
+<p>控制表裡的 <code>alu_x</code>、<code>ml_x</code>、<code>dmm_x</code> 是真的 <code>1'bx</code>。填 <code>x</code> 的前提是「這條指令真的不會用到那個欄位」。如果某條線被填了 <code>x</code> 卻還是被下游消費（例如 <code>rf_waddr</code> 填 <code>rx</code>，但 <code>rf_wen</code> 卻是 <code>y</code>），<code>x</code> 會沿著管線擴散，最後整個暫存器檔變成 <code>x</code>。除錯法：從最早變成 <code>x</code> 的那條線往上游找。</p>
+
+<h3>讀逐週期的管線追蹤</h3>
+<p><code>riscvstall/riscvstall-sim.v</code> 第 199–270 行有一段很好用的列印：每個 posedge 印一行，五個欄位對應五個階段。目前 <code>build/Makefile</code> 編的是 <code>Testbench.v</code> + <code>Pattern.v</code> 這條路徑，並沒有把 <code>-sim.v</code> 編進去（它還引用了已經不存在的 <code>proc.ctrl.stats_en</code>），不過那段 <code>$write</code> 可以整段搬到 <code>Pattern.v</code> 裡用，路徑改成 <code>Testbench.proc.ctrl.…</code> 即可。它的編碼規則值得背起來：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-sim.v · 第 199–228 行（節錄）</div>
+<pre><code class="language-verilog">if ( proc.ctrl.bubble_Dhl )
+  $write( "  (-_-) " );
+else if ( proc.ctrl.squash_Dhl )
+  $write( "-%s-", proc.ctrl.inst_msg_disasm_D.minidasm );
+else if ( proc.ctrl.stall_Dhl )
+  $write( "#%s ", proc.ctrl.inst_msg_disasm_D.minidasm );
+else
+  $write( " %s ", proc.ctrl.inst_msg_disasm_D.minidasm );</code></pre>
+</div>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 340" role="img" aria-label="逐週期追蹤輸出的解讀圖：上半部是五行追蹤文字，每行由 F 的 PC 與 D、X、M、W 四個反組譯欄位組成，井字號代表停頓、括號笑臉代表 bubble；下半部把同樣四個週期畫成時空圖，顯示第二道 addi 在 D 停了三拍。">
+  <text class="zh hd" x="14" y="20">追蹤輸出（示意，格式取自 sim.v）</text>
+  <rect class="k" x="14" y="28" width="470" height="118"/>
+  <text class="s" x="26" y="48">{#00080008 |#addi   | addi   |  (-_-) |  (-_-) }</text>
+  <text class="s" x="26" y="70">{#00080008 |#addi   |  (-_-) | addi   |  (-_-) }</text>
+  <text class="s" x="26" y="92">{#00080008 |#addi   |  (-_-) |  (-_-) | addi   }</text>
+  <text class="s" x="26" y="114">{ 0008000c | addi   | addi   |  (-_-) |  (-_-) }</text>
+  <text class="s mut" x="56" y="137" text-anchor="middle">F 的 PC</text>
+  <text class="s mut" x="110" y="137" text-anchor="middle">D</text>
+  <text class="s mut" x="159" y="137" text-anchor="middle">X</text>
+  <text class="s mut" x="208" y="137" text-anchor="middle">M</text>
+  <text class="s mut" x="257" y="137" text-anchor="middle">W</text>
+
+  <!-- legend -->
+  <rect class="grp" x="498" y="28" width="248" height="118" rx="4"/>
+  <text class="zh s hd" x="510" y="46">符號</text>
+  <text class="s" x="510" y="66">&#32; addi &#32;</text><text class="zh s mut" x="580" y="66">正常前進</text>
+  <text class="s sq" x="510" y="86">#addi &#32;</text><text class="zh s mut" x="580" y="86">這一拍被 stall（原地不動）</text>
+  <text class="s wr" x="510" y="106">-addi -</text><text class="zh s mut" x="580" y="106">被 squash（作廢）</text>
+  <text class="s mut" x="510" y="126">(-_-)</text><text class="zh s mut" x="580" y="126">bubble，這一格是空的</text>
+
+  <!-- time-space -->
+  <text class="zh hd" x="14" y="180">同樣四個週期畫成時空圖</text>
+  <text class="s mut" x="150" y="200">c4</text><text class="s mut" x="186" y="200">c5</text><text class="s mut" x="222" y="200">c6</text><text class="s mut" x="258" y="200">c7</text><text class="s mut" x="294" y="200">c8</text>
+  <text class="s" x="14" y="224">addi x2, x0, 0</text>
+  <rect class="pc" x="140" y="208" width="34" height="26"/><text class="s" x="157" y="226" text-anchor="middle">X</text>
+  <rect class="pc" x="176" y="208" width="34" height="26"/><text class="s" x="193" y="226" text-anchor="middle">M</text>
+  <rect class="pc" x="212" y="208" width="34" height="26"/><text class="s" x="229" y="226" text-anchor="middle">W</text>
+
+  <text class="s" x="14" y="256">addi x4, x2, 0</text>
+  <rect class="pc-hold" x="140" y="240" width="34" height="26"/><text class="s sq" x="157" y="258" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="176" y="240" width="34" height="26"/><text class="s sq" x="193" y="258" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="212" y="240" width="34" height="26"/><text class="s sq" x="229" y="258" text-anchor="middle">D</text>
+  <rect class="pc" x="248" y="240" width="34" height="26"/><text class="s" x="265" y="258" text-anchor="middle">X</text>
+  <rect class="pc" x="284" y="240" width="34" height="26"/><text class="s" x="301" y="258" text-anchor="middle">M</text>
+
+  <text class="s" x="14" y="288">addi x29, x0, 13</text>
+  <rect class="pc-hold" x="140" y="272" width="34" height="26"/><text class="s sq" x="157" y="290" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="176" y="272" width="34" height="26"/><text class="s sq" x="193" y="290" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="212" y="272" width="34" height="26"/><text class="s sq" x="229" y="290" text-anchor="middle">F</text>
+  <rect class="pc" x="248" y="272" width="34" height="26"/><text class="s" x="265" y="290" text-anchor="middle">D</text>
+  <rect class="pc" x="284" y="272" width="34" height="26"/><text class="s" x="301" y="290" text-anchor="middle">X</text>
+
+  <path class="a" d="M140 316H246" marker-end="url(#ah)"/><text class="zh s ac" x="252" y="320">三拍 stall = 追蹤裡三行 #addi</text>
+  <path class="wm" d="M140 236V316"/><path class="wm" d="M246 236V316"/>
+</svg>
+</div>
+<figcaption><b>追蹤的每一行就是時空圖的一個「直行」。</b><code>#</code> 連續出現幾次，時空圖上就有幾格 <code>pc-hold</code>；同一時刻 <code>(-_-)</code> 會從左往右擴散，那就是 stall 的階段往下游塞進去的 bubble。</figcaption>
+</figure>
+
+<div class="note"><b><code>+disasm</code> 的三個層級</b>
+<p><code>+disasm=1</code> 每退休一條指令印一行 <code>PC: 機器碼: 反組譯</code>；<code>+disasm=2</code> 再加印整個暫存器檔；<code>+disasm=3</code> 才是上面那種逐週期五階段追蹤。搬進 <code>Pattern.v</code> 時記得也把這個 plusarg 一起搬。</p></div>
+
+<h3>gtkwave：先加哪些訊號</h3>
+<p><code>build/template.sav</code> 是一個現成的 gtkwave save 檔，訊號順序就是按「指令在管線裡走的順序」排的：PC 計算 → imem → D 解碼與讀暫存器 → 運算元 mux → ALU 與分支條件 → dmem → 寫回 mux → <code>rf_wen</code> / <code>rf_waddr</code> → <code>inst_val</code> / <code>squash</code> / <code>stall</code> / <code>bubble</code> 四組控制旗標。</p>
+
+<div class="trap"><b>用 template.sav 前要改一行</b>
+<p>裡面的路徑全部以 <code>riscv_sim.</code> 開頭（舊的獨立模擬器的頂層名）。現在的波形頂層是 <code>Testbench</code>，所以要先轉換：<code>sed 's/riscv_sim\./Testbench./g' template.sav &gt; my.sav</code>，再 <code>gtkwave riscv-addi.vcd my.sav</code>。另外它列了 <code>op0_byp_mux_sel_*</code> 與 <code>stall_load_use_*</code>，這兩個在 <code>riscvstall</code> 還不存在（是你在 Objective 3 才會加的），gtkwave 會顯示為找不到，屬正常。</p></div>
+
+<p>如果從零開始加，這個順序最省時間：</p>
+<div class="tbl"><table>
+<thead><tr><th>順位</th><th>訊號</th><th>回答什麼問題</th></tr></thead>
+<tbody>
+<tr class="hi"><td class="num">1</td><td><code>clk</code>、<code>reset</code>、<code>pc_Fhl</code></td><td>現在跑到哪？是停住還是亂跳？</td></tr>
+<tr><td class="num">2</td><td><code>ir_Dhl</code> / <code>ir_Xhl</code> / <code>ir_Mhl</code> / <code>ir_Whl</code></td><td>五個階段各站著哪條指令（gtkwave 可把它們並排成「指令列車」）</td></tr>
+<tr><td class="num">3</td><td><code>bubble_*</code>、<code>squash_*</code>、<code>inst_val_*</code></td><td>那條指令是真的還是假的</td></tr>
+<tr><td class="num">4</td><td><code>stall_Dhl</code>、<code>stall_Xhl</code>、<code>stall_Mhl</code>、<code>stall_hazard_Dhl</code></td><td>誰在卡、為什麼卡</td></tr>
+<tr><td class="num">5</td><td><code>rf_wen_out_Whl</code>、<code>rf_waddr_Whl</code>、<code>wb_mux_out_Whl</code></td><td>到底寫了什麼進哪個暫存器</td></tr>
+<tr><td class="num">6</td><td><code>csr_status</code></td><td>測試什麼時候、寫了什麼值回報</td></tr>
+</tbody>
+</table></div>
+<p>第 2 列有個小技巧：<code>inst_msg_disasm_D</code> 這幾個實例裡的 <code>minidasm</code> 是字串暫存器，gtkwave 把它顯示成一串 ASCII 十六進位。把顯示格式改成 ASCII 就能直接看到 <code>addi</code>、<code>bne</code> 這些字，比讀 32 位元的 <code>ir_*</code> 快得多。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 344" role="img" aria-label="gtkwave 中一個資料冒險 stall 的波形示意圖：pc_Fhl 停在同一個值三個週期，ir_Dhl 也停住，stall_hazard_Dhl 與 stall_Dhl 拉高三個週期，bubble_Xhl 在同一段期間被拉高，最後 rf_wen_out_Whl 在寫入者進入 W 時產生一次寫入，stall 隨即解除。">
+  <text class="zh hd" x="14" y="20">gtkwave 裡一次資料冒險 stall 長這樣（示意）</text>
+  <!-- cycle ticks -->
+  <text class="s mut" x="176" y="42">c4</text><text class="s mut" x="256" y="42">c5</text><text class="s mut" x="336" y="42">c6</text><text class="s mut" x="416" y="42">c7</text><text class="s mut" x="496" y="42">c8</text><text class="s mut" x="576" y="42">c9</text>
+  <path class="wm" d="M160 48V56M240 48V56M320 48V56M400 48V56M480 48V56M560 48V56M640 48V56"/>
+
+  <!-- clk -->
+  <text class="s" x="14" y="72">clk</text>
+  <path class="w" d="M160 76V62H200V76H240V62H280V76H320V62H360V76H400V62H440V76H480V62H520V76H560V62H600V76H640"/>
+
+  <!-- pc_Fhl -->
+  <text class="s" x="14" y="114">pc_Fhl</text>
+  <path class="w" d="M160 106H168M176 98H392M176 114H392M408 98H472M408 114H472M488 98H632M488 114H632"/>
+  <path class="w" d="M168 106L176 98M168 106L176 114M392 98L408 114M392 114L408 98M472 98L488 114M472 114L488 98"/>
+  <text class="s sq" x="200" y="110">00080008</text><text class="s mut" x="254" y="110">（停三拍）</text>
+  <text class="s" x="414" y="110">0008000c</text><text class="s" x="494" y="110">00080010</text>
+
+  <!-- ir_Dhl -->
+  <text class="s" x="14" y="150">ir_Dhl</text>
+  <path class="w" d="M160 142H168M176 134H392M176 150H392M408 134H632M408 150H632"/>
+  <path class="w" d="M168 142L176 134M168 142L176 150M392 134L408 150M392 150L408 134"/>
+  <text class="s sq" x="200" y="146">00010213 = addi x4, x2, 0</text><text class="s mut" x="414" y="146">00d00e93</text>
+
+  <!-- stall_hazard -->
+  <text class="s" x="14" y="190">stall_hazard_Dhl</text>
+  <path class="a" d="M160 192H176V174H392V192H632"/>
+  <text class="zh s ac" x="200" y="168">x2 還在 X／M／W 裡，D 不准往前</text>
+
+  <!-- stall_Dhl -->
+  <text class="s" x="14" y="228">stall_Dhl</text>
+  <path class="w" d="M160 230H176V212H392V230H632"/>
+
+  <!-- bubble_Xhl -->
+  <text class="s" x="14" y="266">bubble_Xhl</text>
+  <path class="w" d="M160 268H256V250H392V268H632"/>
+  <text class="zh s mut" x="266" y="246">停頓的 D 往 X 塞 bubble</text>
+
+  <!-- rf_wen_out_Whl -->
+  <text class="s" x="14" y="304">rf_wen_out_Whl</text>
+  <path class="w" d="M160 306H320V288H392V306H632"/>
+  <path class="a" d="M356 328V310" marker-end="url(#ah)"/><text class="zh s ac" x="366" y="326">x2 在這一拍寫進暫存器檔，下一拍 stall 就解除</text>
+</svg>
+</div>
+<figcaption><b>認得這個形狀就夠了。</b><code>pc_Fhl</code> 與 <code>ir_Dhl</code> 同時「壓平」、<code>stall_*</code> 是一塊方波、<code>bubble</code> 在下游晚一拍出現，而且結束時間跟寫入者離開 W 對齊。形狀不對（例如 stall 拉高後永遠不降），就是 <code>stall_hazard_Dhl</code> 的條件漏了 <code>inst_val_*</code>。</figcaption>
+</figure>
+
+<h3>從錯的寫入往回走</h3>
+<p>最有效率的除錯法不是從頭順著看，而是從<b>結果錯的那一刻</b>往回推。暫存器檔只有一個寫入埠，所以「某個暫存器的值不對」一定對應到 W 階段的某一拍。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 280" role="img" aria-label="從錯誤的暫存器寫入往回追查的五個步驟：從 W 階段錯誤的寫入出發，先確認寫入位址與資料，再往回看 M 階段的來源、X 階段的 ALU 與運算元、D 階段的控制表輸出，最後回到控制表那一列。">
+  <rect class="af" x="560" y="30" width="166" height="54"/><text class="s ac" x="643" y="50" text-anchor="middle">W：x4 被寫成 0x7</text><text class="s mut" x="643" y="66" text-anchor="middle">rf_wen_out_Whl = 1</text><text class="s mut" x="643" y="80" text-anchor="middle">rf_waddr_Whl = 4</text>
+  <text class="zh s wr" x="643" y="102" text-anchor="middle">但期望是 0xa</text>
+
+  <path class="a" d="M558 57H520" marker-end="url(#ah)"/><text class="zh s ac" x="470" y="26" text-anchor="middle">往回一階段</text>
+  <rect class="k" x="356" y="30" width="162" height="54"/><text class="s" x="437" y="50" text-anchor="middle">M：wb_mux_out_Mhl</text><text class="zh s mut" x="437" y="68" text-anchor="middle">是 ALU 還是記憶體回應？</text>
+  <text class="zh s mut" x="437" y="102" text-anchor="middle">→ 查 wb_mux_sel（wm_alu / wm_mem）</text>
+
+  <path class="a" d="M354 57H316" marker-end="url(#ah)"/>
+  <rect class="k" x="152" y="30" width="162" height="54"/><text class="s" x="233" y="50" text-anchor="middle">X：alu_out_Xhl</text><text class="zh s mut" x="233" y="68" text-anchor="middle">兩個運算元對不對？</text>
+  <text class="zh s mut" x="233" y="102" text-anchor="middle">→ 查 op0_mux_out / op1_mux_out / alu_fn</text>
+
+  <path class="a" d="M150 57H60V150H660V186" marker-end="url(#ah)"/>
+  <rect class="k" x="470" y="188" width="256" height="54"/><text class="s" x="598" y="208" text-anchor="middle">D：cs 的那幾個欄位</text><text class="zh s mut" x="598" y="226" text-anchor="middle">op0_sel / op1_sel / alu_fn / wb_sel / rf_wen</text>
+
+  <path class="a" d="M468 215H432" marker-end="url(#ah)"/>
+  <rect class="af" x="220" y="188" width="210" height="54"/><text class="s ac" x="325" y="208" text-anchor="middle">CoreCtrl 的 casez 那一列</text><text class="zh s mut" x="325" y="226" text-anchor="middle">錯誤就在這裡（或在 InstMsg 的樣式）</text>
+
+  <text class="zh s mut" x="14" y="215">終點</text>
+  <path class="w" d="M60 208H214" marker-end="url(#ah)"/>
+  <text class="zh s mut" x="70" y="172">每一步都問：「這個值是從哪個 mux 來的？那個 mux 的 sel 是誰給的？」</text>
+</svg>
+</div>
+<figcaption><b>每往回一階段，嫌疑範圍就縮小一次。</b>四步之內一定會走到 <code>casez</code> 的某一列或某個 <code>localparam</code>，因為 datapath 是給定的、不會錯。</figcaption>
+</figure>
+
+<div class="quiz"><b>想一想</b>
+<p>波形上看到 W 階段 <code>rf_waddr_Whl = 0</code>、<code>rf_wen_out_Whl = 1</code>，但你期望寫的是 <code>x4</code>。這算 bug 嗎？</p>
+<details><summary>看答案</summary><p>寫進 <code>x0</code> 本身無害（<code>x0</code> 硬體固定為 0，寫不進去），但它說明 <code>rf_waddr</code> 欄位填成了 <code>r0</code> 或 <code>rx</code>——真正的 bug 是「<code>x4</code> 從來沒被寫過」。而且這個錯誤在 <code>riscvstall</code> 還會連帶讓 <code>stall_hazard_Dhl</code> 判斷錯：它比對的就是 <code>rf_waddr_*</code>，位址錯了，該 stall 的地方也不會 stall。</p></details>
+</div>
+
+<h3>全課速查表</h3>
+
+<h4>控制表欄位與合法值</h4>
+<div class="tbl"><table>
+<thead><tr><th>欄位</th><th>合法值</th><th>用在哪一階段</th></tr></thead>
+<tbody>
+<tr><td><code>inst_val</code></td><td><code>y</code> / <code>n</code></td><td>D（<code>n</code> 會觸發 illegal assertion）</td></tr>
+<tr><td><code>j_en</code></td><td><code>y</code> / <code>n</code></td><td>D（jal/jalr 在 D 就重導 PC）</td></tr>
+<tr><td><code>br_sel</code></td><td><code>br_none</code> <code>br_beq</code> <code>br_bne</code> <code>br_blt</code> <code>br_bltu</code> <code>br_bge</code> <code>br_bgeu</code> <code>br_x</code></td><td>X</td></tr>
+<tr><td><code>pc_sel</code></td><td><code>pm_p</code>(pc+4) <code>pm_b</code>(branch) <code>pm_j</code>(jump) <code>pm_r</code>(jr) <code>pm_x</code></td><td>P</td></tr>
+<tr><td><code>op0_sel</code></td><td><code>am_rdat</code> <code>am_pc</code> <code>am_pc4</code> <code>am_0</code> <code>am_x</code></td><td>D→X</td></tr>
+<tr><td><code>rs1_en</code></td><td><code>y</code> / <code>n</code></td><td>D（冒險偵測用）</td></tr>
+<tr><td><code>op1_sel</code></td><td><code>bm_rdat</code> <code>bm_shamt</code> <code>bm_imm_u</code> <code>bm_imm_sb</code> <code>bm_imm_i</code> <code>bm_imm_s</code> <code>bm_0</code> <code>bm_x</code></td><td>D→X</td></tr>
+<tr><td><code>rs2_en</code></td><td><code>y</code> / <code>n</code></td><td>D（冒險偵測用）</td></tr>
+<tr><td><code>alu_fn</code></td><td><code>alu_add</code> <code>alu_sub</code> <code>alu_sll</code> <code>alu_or</code> <code>alu_lt</code> <code>alu_ltu</code> <code>alu_and</code> <code>alu_xor</code> <code>alu_nor</code> <code>alu_srl</code> <code>alu_sra</code> <code>alu_x</code></td><td>X</td></tr>
+<tr><td><code>muldiv_fn</code></td><td><code>md_mul</code> <code>md_div</code> <code>md_divu</code> <code>md_rem</code> <code>md_remu</code> <code>md_x</code></td><td>X</td></tr>
+<tr><td><code>muldiv_en</code></td><td><code>y</code> / <code>n</code></td><td>D→X</td></tr>
+<tr><td><code>muldiv_sel</code></td><td><code>mdm_l</code>(低 32) <code>mdm_u</code>(高 32) <code>mdm_x</code></td><td>X</td></tr>
+<tr><td><code>ex_sel</code></td><td><code>em_alu</code> <code>em_md</code> <code>em_x</code></td><td>X</td></tr>
+<tr><td><code>mem_req</code></td><td><code>nr</code> <code>ld</code> <code>st</code></td><td>X</td></tr>
+<tr><td><code>mem_len</code></td><td><code>ml_w</code> <code>ml_b</code> <code>ml_h</code> <code>ml_x</code></td><td>X</td></tr>
+<tr><td><code>memresp_sel</code></td><td><code>dmm_w</code> <code>dmm_b</code> <code>dmm_bu</code> <code>dmm_h</code> <code>dmm_hu</code> <code>dmm_x</code></td><td>M</td></tr>
+<tr><td><code>wb_sel</code></td><td><code>wm_alu</code> <code>wm_mem</code> <code>wm_x</code></td><td>M→W</td></tr>
+<tr><td><code>rf_wen</code></td><td><code>y</code> / <code>n</code></td><td>W</td></tr>
+<tr><td><code>rf_waddr</code></td><td><code>rd</code> <code>r0</code> <code>rx</code></td><td>W（冒險偵測也會讀）</td></tr>
+<tr><td><code>csr_wen</code></td><td><code>y</code> / <code>n</code></td><td>W</td></tr>
+</tbody>
+</table></div>
+<p>位元切法在 <code>riscvstall-InstMsg.v</code> 第 160–180 行，總寬度 39 位元（<code>INST_VAL</code> 在最高位 38，<code>CSR_WEN</code> 在最低位 0）。</p>
+
+<h4>後綴與階段對照</h4>
+<div class="tbl"><table>
+<thead><tr><th>後綴</th><th>階段</th><th>這個階段做什麼</th><th>代表訊號</th></tr></thead>
+<tbody>
+<tr><td><code>_Phl</code></td><td>P</td><td>選下一個 PC、送出 imem 請求</td><td><code>pc_mux_sel_Phl</code>、<code>pc_mux_out_Phl</code></td></tr>
+<tr><td><code>_Fhl</code></td><td>F</td><td>等 imem 回應</td><td><code>pc_Fhl</code>、<code>stall_imem_Fhl</code></td></tr>
+<tr><td><code>_Dhl</code></td><td>D</td><td>解碼（<code>casez</code>）、讀暫存器檔、偵測資料冒險、jal/jalr 重導</td><td><code>ir_Dhl</code>、<code>cs</code>、<code>stall_hazard_Dhl</code>、<code>brj_taken_Dhl</code></td></tr>
+<tr><td><code>_Xhl</code></td><td>X</td><td>ALU、乘除法、解析分支、送出 dmem 請求</td><td><code>alu_out_Xhl</code>、<code>brj_taken_Xhl</code>、<code>dmemreq_val</code></td></tr>
+<tr><td><code>_Mhl</code></td><td>M</td><td>收 dmem 回應、subword 對齊</td><td><code>dmemresp_mux_out_Mhl</code>、<code>stall_dmem_Mhl</code></td></tr>
+<tr><td><code>_Whl</code></td><td>W</td><td>寫暫存器檔、寫 CSR</td><td><code>rf_wen_out_Whl</code>、<code>wb_mux_out_Whl</code>、<code>csr_status</code></td></tr>
+</tbody>
+</table></div>
+<p>規則很簡單：一個控制欄位在 D 產生，然後一路用管線暫存器往下傳，傳到「真正用到它」的那一階段為止。<code>alu_fn_Dhl → alu_fn_Xhl</code> 就停在 X，<code>rf_wen_Dhl → _Xhl → _Mhl → _Whl</code> 要走到底。</p>
+
+<h4>冒險總表</h4>
+<div class="tbl"><table>
+<thead><tr><th>冒險</th><th>在哪裡偵測</th><th>處理方式</th><th>riscvstall 損失</th><th>riscvbyp 損失</th></tr></thead>
+<tbody>
+<tr class="hi"><td>RAW 資料冒險</td><td>D：<code>rs1</code>/<code>rs2</code> 比對 X/M/W 的 <code>rf_waddr</code></td><td>stall D（byp 版改成旁路）</td><td class="num">1～3 拍</td><td class="num">0 拍</td></tr>
+<tr><td>load-use</td><td>D：來源是 X 裡的 load</td><td>stall 一拍後再旁路</td><td class="num">3 拍</td><td class="num">1 拍</td></tr>
+<tr><td>分支（X 解析）</td><td>X：<code>brj_taken_Xhl</code></td><td>squash F 與 D</td><td class="num">2 拍</td><td class="num">2 拍</td></tr>
+<tr><td><code>jal</code> / <code>jalr</code>（D 重導）</td><td>D：<code>J_EN</code></td><td>squash F</td><td class="num">1 拍</td><td class="num">1 拍</td></tr>
+<tr><td>結構冒險：imem 沒回應</td><td>F：<code>!imemresp_val</code></td><td>stall F 以下全部</td><td class="num">看記憶體</td><td class="num">看記憶體</td></tr>
+<tr><td>結構冒險：dmem 忙</td><td>X / M：<code>stall_dmem_*</code></td><td>stall</td><td class="num">看記憶體</td><td class="num">看記憶體</td></tr>
+<tr><td>乘除法未完成</td><td>D：<code>!muldivreq_rdy</code>；X：<code>!muldivresp_val</code></td><td>stall</td><td class="num">約 32 拍</td><td class="num">約 32 拍</td></tr>
+</tbody>
+</table></div>
+<p>「損失」是指跟理想的每拍一條指令相比多花的週期。riscvlong 把乘除法管線化之後，最後一列的 32 拍才會變成吞吐量意義上的 1 拍。</p>
+
+<h4>時空圖圖例</h4>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 190" role="img" aria-label="本課程時空圖所用的五種格子圖例：一般格、停頓格、bubble 格、被作廢的格、以及送出或接收旁路值的格。">
+  <rect class="pc" x="20" y="24" width="34" height="26"/><text class="s" x="37" y="42" text-anchor="middle">X</text>
+  <text class="zh s" x="68" y="34">一般：這一拍正常執行這個階段</text>
+  <text class="s mut" x="68" y="50">追蹤輸出寫成「 addi  」</text>
+
+  <rect class="pc-hold" x="20" y="60" width="34" height="26"/><text class="s sq" x="37" y="78" text-anchor="middle">D</text>
+  <text class="zh s" x="68" y="70">停頓：階段被 stall，字母重複出現</text>
+  <text class="s mut" x="68" y="86">追蹤輸出寫成「#addi  」</text>
+
+  <rect class="pc-bub" x="20" y="96" width="34" height="26"/>
+  <text class="zh s" x="68" y="106">bubble：這一格沒有指令（inst_val = 0）</text>
+  <text class="s mut" x="68" y="122">追蹤輸出寫成「 (-_-) 」</text>
+
+  <rect class="pc-kill" x="20" y="132" width="34" height="26"/><text class="s wr" x="37" y="150" text-anchor="middle">D</text>
+  <text class="zh s" x="68" y="142">作廢：被分支 / 跳躍 squash 掉</text>
+  <text class="s mut" x="68" y="158">追蹤輸出寫成「-addi -」</text>
+
+  <rect class="pc-fwd" x="380" y="24" width="34" height="26"/><text class="s ac" x="397" y="42" text-anchor="middle">X</text>
+  <text class="zh s" x="428" y="34">旁路：這一格送出或收到前饋的值</text>
+  <text class="s mut" x="428" y="50">只出現在 riscvbyp 的圖裡</text>
+
+  <text class="zh s mut" x="380" y="86">橫軸是週期（c1、c2…），</text>
+  <text class="zh s mut" x="380" y="104">縱軸由上到下是程式順序，</text>
+  <text class="zh s mut" x="380" y="122">同一直行 = 同一個時刻五個階段的樣子。</text>
+</svg>
+</div>
+<figcaption><b>五種格子，整本課通用。</b>畫時空圖時把「每一直行只能有一條指令佔用同一個階段」當檢查規則，違反了就是你的 stall / bubble 邏輯有問題。</figcaption>
+</figure>
+
+<h3>下一步</h3>
+<p>把四個 Objective 按順序走一遍，每一步都用上一章的測試方法確認完才往下：</p>
+<ol>
+<li><b>Objective 1：補完控制表</b>（<a href="#ch8">第 8 章</a>的食譜）。從 <code>addi</code> 這類最像現有列的指令開始，每加一條就跑它自己的測試。分支與 load/store 留到最後，因為它們還要動 <code>any_br_taken_Xhl</code> 和 subword 欄位。</li>
+<li><b>Objective 2：<code>mulh</code> / <code>mulhu</code> / <code>mulhsu</code></b>（<a href="#ch17">第 17 章</a>）。先把 <code>InstMsg.v</code> 的 <code>`define</code> 取消註解，再補控制列，然後才動 <code>imuldiv</code>。測試要自己寫——這是講義明文要求的。</li>
+<li><b>Objective 3：bypass</b>（<a href="#ch14">第 14</a>–<a href="#ch16">16 章</a>）。改 <code>riscvbyp</code>，先只做 X→D 一條路徑跑通，再加 M→D、W→D，最後處理 load-use 的那一拍 stall。每加一條路徑就跑一次 <code>*_BYP</code> 測試。</li>
+<li><b>Objective 4：管線化乘除法</b>（<a href="#ch18">第 18</a>–<a href="#ch19">19 章</a>）。改 <code>riscvlong</code>，完成後用 benchmark 的 <code>num_cycles</code> 證明它真的變快了。</li>
+</ol>
+<p>每完成一個 Objective，記得回到 <code>build/Makefile</code> 把對應的 <code>subpkgs</code>、<code>sim_incs</code>、<code>proc_template</code>、<code>asm_template</code>、<code>bmark_template</code> 五處註解取消，新版本才會被編譯與測試。</p>
+
+<div class="note"><b>三個姊妹頁</b>
+<p>語法卡住了就回<a href="../verilog-course/index.html">《Verilog 電路圖解課》</a>；想知道某條線實際接到哪個 mux，看<a href="../riscvstall-datapath/riscvstall-datapath.html">管線接線圖</a>；忘了某個 <code>localparam</code> 或訊號定義在哪個檔案的第幾行，查<a href="../symbol-lookup/index.html">符號查詢</a>。</p></div>
+</section>

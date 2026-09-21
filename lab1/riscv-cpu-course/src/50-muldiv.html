@@ -1,0 +1,1105 @@
+<!-- ============================================================ ch17 -->
+<section class="ch" id="ch17" data-part="乘除法與長管線" data-nav="乘除法器怎麼掛在管線上">
+<p class="eyebrow">第 17 章 · 乘除法與長管線</p>
+<h2>乘除法器怎麼掛在管線上</h2>
+
+<p>到目前為止，X 級裡只有一個 ALU，所有指令都在一個週期內算完。但 <code>mul</code>、<code>div</code>、<code>rem</code> 沒辦法：<a href="../verilog-course/index.html#ch14">基礎篇第 14 章</a>已經一步步拆過那個迭代乘法器——它要移位、累加、跑滿 32 輪。一個「要跑很多週期才有答案」的單元，要怎麼塞進一個「每級剛好一週期」的管線？</p>
+
+<p>lab1 的答案是：<b>把它當成一顆掛在 X 級旁邊的共處理器 (coprocessor)</b>，用 val/rdy 交握溝通，算不完就把 X 級卡住。這一章先把這條路徑看清楚，因為 Objective 2（<a href="#ch18">第 18 章</a>）要改的是這顆單元的內部，Objective 4（<a href="#ch19">第 19 章</a>）要換掉的是這整個掛法。</p>
+
+<h3>X 級的兩個運算單元</h3>
+
+<p>打開 datapath，X 級其實有兩個東西並排接在同一對運算元上：ALU 和 <code>imuldiv</code>。差別只在最後誰的結果被選走。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 416–438 行（節錄）</div>
+<pre><code class="language-verilog">riscv_CoreDpathAlu alu
+(
+  .in0  (op0_mux_out_Xhl),
+  .in1  (op1_mux_out_Xhl),
+  .fn   (alu_fn_Xhl),
+  .out  (alu_out_Xhl)
+);
+
+// Multiplier/Divider
+
+imuldiv_IntMulDivIterative imuldiv
+(
+  .clk                   (clk),
+  .reset                 (reset),
+  .muldivreq_msg_fn      (muldivreq_msg_fn_Xhl),
+  .muldivreq_msg_a       (op0_mux_out_Xhl),
+  .muldivreq_msg_b       (op1_mux_out_Xhl),
+  .muldivreq_val         (muldivreq_val),
+  .muldivreq_rdy         (muldivreq_rdy),
+  .muldivresp_msg_result (muldivresp_msg_result_Xhl),
+  .muldivresp_val        (muldivresp_val),
+  .muldivresp_rdy        (muldivresp_rdy)
+);</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 780 320" role="img" aria-label="X 級的資料路徑：op0 與 op1 同時送進 ALU 與 imuldiv 迭代乘除法器；imuldiv 送出 64 位元結果，先經過 muldiv_mux_sel_Xhl 選高半或低半，再經過 execute_mux_sel_Xhl 在 ALU 結果與乘除法結果之間二選一，成為 execute_mux_out_Xhl 送往 M 級。">
+  <text class="hd" x="16" y="22">X 級：ALU 與 imuldiv 並排</text>
+
+  <text x="20" y="54">op0_mux_out_Xhl</text>
+  <path class="w" d="M20 62H240" marker-end="url(#ah)"/>
+  <text x="20" y="82">op1_mux_out_Xhl</text>
+  <path class="w" d="M20 90H240" marker-end="url(#ah)"/>
+
+  <rect class="k" x="240" y="40" width="96" height="70"/>
+  <text x="288" y="80" text-anchor="middle">ALU</text>
+  <path class="c" d="M288 18V40" marker-end="url(#ahc)"/>
+  <text class="cb" x="300" y="16">alu_fn_Xhl</text>
+
+  <circle class="d" cx="200" cy="62" r="3"/>
+  <path class="w" d="M200 62V180H240" marker-end="url(#ah)"/>
+  <text class="s mut" x="248" y="176">msg_a</text>
+  <circle class="d" cx="172" cy="90" r="3"/>
+  <path class="w" d="M172 90V215H240" marker-end="url(#ah)"/>
+  <text class="s mut" x="248" y="211">msg_b</text>
+
+  <rect class="k" x="240" y="150" width="190" height="110"/>
+  <text x="335" y="188" text-anchor="middle">imuldiv_</text>
+  <text x="335" y="206" text-anchor="middle">IntMulDivIterative</text>
+  <text class="zh s mut" x="335" y="240" text-anchor="middle">迭代 32 輪才有答案</text>
+  <path class="c" d="M176 280H260V262" marker-end="url(#ahc)"/>
+  <text class="cb s" x="16" y="284">muldivreq_msg_fn_Xhl</text>
+
+  <path class="a" d="M430 205H470"/>
+  <circle class="d" cx="470" cy="205" r="3"/>
+  <path class="a" d="M470 205V182H520"/>
+  <path class="a" d="M470 205V238H520"/>
+  <text class="s" x="476" y="176">[31:0]</text>
+  <text class="s" x="476" y="258">[63:32]</text>
+
+  <path class="k" d="M520 170L546 182V240L520 252Z"/>
+  <path class="c" d="M533 300V252" marker-end="url(#ahc)"/>
+  <text class="cb" x="533" y="314" text-anchor="middle">muldiv_mux_sel_Xhl</text>
+
+  <path class="a" d="M546 211H556V195H570"/>
+  <path class="w" d="M336 75H570"/>
+  <text x="400" y="68">alu_out_Xhl</text>
+
+  <path class="k" d="M570 58L596 70V208L570 220Z"/>
+  <text class="s mut" x="576" y="80">0</text>
+  <text class="s mut" x="576" y="202">1</text>
+  <path class="c" d="M583 258V220" marker-end="url(#ahc)"/>
+  <text class="cb" x="592" y="270">execute_mux_sel_Xhl</text>
+
+  <path class="w" d="M596 139H740" marker-end="url(#ah)"/>
+  <text x="604" y="131">execute_mux_out_Xhl</text>
+  <text class="zh s mut" x="640" y="158">→ M 級</text>
+</svg>
+</div>
+<figcaption><b>ALU 與 imuldiv 吃的是同一對運算元。</b><code>op0_mux_out_Xhl</code>／<code>op1_mux_out_Xhl</code> 同時餵給兩邊，兩邊都在算；差別是最後 <code>execute_mux_sel_Xhl</code> 選誰。<code>mul</code> 指令的 ALU 結果只是被丟掉而已。</figcaption>
+</figure>
+</div>
+
+<div class="note"><b>為什麼要「兩邊都算」</b><p>這是組合邏輯的常態：電路不會「不執行」，只會「結果沒被選走」。省電的設計會用 clock gating 關掉沒用到的單元，但在這門課的層級，先接受「都算、只選一個」這個模型。</p></div>
+
+<h3>64 位元結果怎麼包</h3>
+
+<p>一次乘法產生 64 位元乘積，一次除法同時產生商和餘數——剛好也是 64 位元。所以回應埠固定是 64 位元寬，兩種運算各自約定好誰放上半、誰放下半。</p>
+
+<div class="ex">
+<div class="src">imuldiv/imuldiv-IntDivIterative.v · 第 244 行 ／ imuldiv-IntMulIterative.v · 第 231 行</div>
+<pre><code class="language-verilog">// 除法器：餘數放上半，商放下半
+assign divresp_msg_result = { signed_res_rem_mux_out, signed_res_div_mux_out };
+
+// 乘法器：整個 64 位元就是乘積本身
+assign mulresp_msg_result = signed_result_mux_out;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 250" role="img" aria-label="64 位元回應匯流排的兩種包法：乘法時 63 到 32 位是乘積高半、31 到 0 位是乘積低半；除法時 63 到 32 位是餘數、31 到 0 位是商。下方標出 muldiv_mux_sel_Xhl 為 0 取低半、為 1 取高半，以及各指令該選哪一半。">
+  <text class="s mut" x="120" y="30">63</text><text class="s mut" x="330" y="30">32</text>
+  <text class="s mut" x="360" y="30">31</text><text class="s mut" x="570" y="30">0</text>
+
+  <text class="zh hd" x="16" y="58">乘法</text>
+  <rect class="f-imm" x="120" y="40" width="240" height="34"/>
+  <rect class="f-rs1" x="360" y="40" width="240" height="34"/>
+  <text x="240" y="62" text-anchor="middle">product[63:32]</text>
+  <text x="480" y="62" text-anchor="middle">product[31:0]</text>
+
+  <text class="zh hd" x="16" y="118">除法</text>
+  <rect class="f-imm" x="120" y="100" width="240" height="34"/>
+  <rect class="f-rs1" x="360" y="100" width="240" height="34"/>
+  <text x="240" y="122" text-anchor="middle">remainder</text>
+  <text x="480" y="122" text-anchor="middle">quotient</text>
+
+  <path class="c" d="M240 138V168" marker-end="url(#ahc)"/>
+  <path class="c" d="M480 138V168" marker-end="url(#ahc)"/>
+  <text class="cb" x="240" y="184" text-anchor="middle">muldiv_mux_sel_Xhl = 1</text>
+  <text class="cb" x="480" y="184" text-anchor="middle">muldiv_mux_sel_Xhl = 0</text>
+  <text class="zh s mut" x="240" y="202" text-anchor="middle">localparam mdm_u（取高半）</text>
+  <text class="zh s mut" x="480" y="202" text-anchor="middle">localparam mdm_l（取低半）</text>
+
+  <rect class="af" x="120" y="216" width="240" height="26"/>
+  <text class="zh s" x="240" y="234" text-anchor="middle">rem / remu ／（將來的）mulh 家族</text>
+  <rect class="af" x="360" y="216" width="240" height="26"/>
+  <text class="zh s" x="480" y="234" text-anchor="middle">mul / div / divu</text>
+</svg>
+</div>
+<figcaption><b>同一條 64 位元匯流排，兩種解讀。</b>硬體只提供「高半 / 低半」這一個選擇，剩下的意義由控制表決定。注意最後一列：<code>mulh</code> 家族要的高半，用的正是 <code>rem</code> 已經在用的那條路。</figcaption>
+</figure>
+</div>
+
+<h3>一次 mul 的完整交握</h3>
+
+<p>控制端只有四條線在管這件事，全部集中在 CoreCtrl 的這幾行：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 648–649、552、674 行</div>
+<pre><code class="language-verilog">// X 級：只有「這一格是有效指令」時才真的送出請求
+assign muldivreq_val  = muldivreq_val_Xhl &amp;&amp; inst_val_Xhl;
+assign muldivresp_rdy = !stall_Xhl;
+
+// D 級：單元還沒 ready（正在忙）就卡住 D
+wire stall_muldiv_Dhl = ( muldivreq_val_Dhl &amp;&amp; inst_val_Dhl &amp;&amp; !muldivreq_rdy );
+
+// X 級：回應還沒來就卡住 X
+wire stall_muldiv_Xhl = ( muldivreq_val_Xhl &amp;&amp; inst_val_Xhl &amp;&amp; !muldivresp_val );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 270" role="img" aria-label="一次 mul 的交握波形：週期 0 時 muldivreq_val 與 muldivreq_rdy 同時為高，請求被接受；週期 1 到 32 單元處於 CALC 狀態，muldivreq_rdy 降為低；週期 33 進入 SIGN 狀態，muldivresp_val 拉高，同時 muldivresp_rdy 為高，回應被收走；stall_muldiv_Xhl 在週期 0 到 32 之間為高。">
+  <text class="s mut" x="150" y="22" text-anchor="middle">0</text>
+  <text class="s mut" x="200" y="22" text-anchor="middle">1</text>
+  <text class="s mut" x="250" y="22" text-anchor="middle">2</text>
+  <text class="s mut" x="330" y="22" text-anchor="middle">…</text>
+  <text class="s mut" x="410" y="22" text-anchor="middle">32</text>
+  <text class="s mut" x="460" y="22" text-anchor="middle">33</text>
+  <text class="s mut" x="510" y="22" text-anchor="middle">34</text>
+  <path class="wm" d="M290 30V250"/><path class="wm" d="M370 30V250"/>
+
+  <text x="10" y="52">muldivreq_val</text>
+  <path class="w" d="M125 58V42H175V58H290"/>
+  <path class="w" d="M370 58H535"/>
+
+  <text x="10" y="90">muldivreq_rdy</text>
+  <path class="w" d="M125 96V80H175V96H290"/>
+  <path class="w" d="M370 96H435V80H535"/>
+
+  <text x="10" y="128">FSM state</text>
+  <rect class="k" x="125" y="112" width="50" height="22"/>
+  <text class="s" x="150" y="127" text-anchor="middle">IDLE</text>
+  <rect class="k" x="175" y="112" width="115" height="22"/>
+  <text class="s" x="232" y="127" text-anchor="middle">CALC</text>
+  <rect class="k" x="370" y="112" width="65" height="22"/>
+  <text class="s" x="402" y="127" text-anchor="middle">CALC</text>
+  <rect class="af" x="435" y="112" width="50" height="22"/>
+  <text class="s" x="460" y="127" text-anchor="middle">SIGN</text>
+  <rect class="k" x="485" y="112" width="50" height="22"/>
+  <text class="s" x="510" y="127" text-anchor="middle">IDLE</text>
+
+  <text x="10" y="166">muldivresp_val</text>
+  <path class="w" d="M125 172H290"/>
+  <path class="w" d="M370 172H435V156H485V172H535"/>
+
+  <text x="10" y="204">muldivresp_rdy</text>
+  <path class="w" d="M125 194H290"/>
+  <path class="w" d="M370 194H535"/>
+  <text class="s mut" x="200" y="190">= !stall_Xhl，這段期間為 0</text>
+
+  <text class="wr" x="4" y="242">stall_muldiv_Xhl</text>
+  <path class="x" d="M125 248V232H290"/>
+  <path class="x" d="M370 232H435V248H535"/>
+
+  <text class="s ac" x="150" y="264" text-anchor="middle">req 成立</text>
+  <text class="s ac" x="460" y="264" text-anchor="middle">resp 成立</text>
+</svg>
+</div>
+<figcaption><b>請求在週期 0 成立，回應要等到週期 33。</b>counter 在 IDLE 載入 31，CALC 每週期減一直到 0——這就是 32 個週期；再加上接受請求的那一拍與 SIGN 那一拍，<b>一次 mul 大約佔住 X 級 34 個週期</b>。注意 <code>muldivresp_rdy = !stall_Xhl</code> 在等待期間是 0，因為 <code>stall_muldiv_Xhl</code> 自己把 X 卡住了；直到 <code>muldivresp_val</code> 拉高的那一拍，兩者才同時為 1、交握完成。</figcaption>
+</figure>
+</div>
+
+<div class="trap"><b>常見錯誤</b><p><code>muldivresp_rdy = !stall_Xhl</code> 看起來像「自己等自己」的迴圈，但不是：<code>stall_Xhl</code> 包含 <code>stall_muldiv_Xhl</code>，而後者只看 <code>muldivresp_val</code>，不看 <code>muldivresp_rdy</code>。訊號依賴是單向的：<code>muldivresp_val → stall_muldiv_Xhl → stall_Xhl → muldivresp_rdy</code>，沒有組合迴路。</p></div>
+
+<h3>兩個 stall，卡在不同地方</h3>
+
+<p><code>stall_muldiv_Dhl</code> 和 <code>stall_muldiv_Xhl</code> 名字很像，管的卻是兩件事。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 250" role="img" aria-label="D 級與 X 級各自的乘除法 stall：D 級的 stall_muldiv_Dhl 由 muldivreq_rdy 為低觸發，代表單元正在忙；X 級的 stall_muldiv_Xhl 由 muldivresp_val 為低觸發，代表結果還沒算完。兩者都匯入 stall 鏈。">
+  <rect class="k" x="40" y="60" width="120" height="70"/>
+  <text x="100" y="92" text-anchor="middle">D</text>
+  <text class="zh s mut" x="100" y="112" text-anchor="middle">解碼／讀暫存器</text>
+  <rect class="k" x="260" y="60" width="120" height="70"/>
+  <text x="320" y="92" text-anchor="middle">X</text>
+  <text class="zh s mut" x="320" y="112" text-anchor="middle">送出請求／等回應</text>
+  <rect class="k" x="480" y="60" width="160" height="70"/>
+  <text x="560" y="92" text-anchor="middle">imuldiv</text>
+  <text class="zh s mut" x="560" y="112" text-anchor="middle">一次只服務一個請求</text>
+
+  <path class="w" d="M160 95H260" marker-end="url(#ah)"/>
+  <path class="w" d="M380 82H480" marker-end="url(#ah)"/>
+  <text class="s" x="430" y="76" text-anchor="middle">req</text>
+  <path class="w" d="M480 112H380" marker-end="url(#ah)"/>
+  <text class="s" x="430" y="132" text-anchor="middle">resp</text>
+
+  <path class="c" d="M540 140V180H100V130" marker-end="url(#ahc)"/>
+  <text class="cb s" x="300" y="200" text-anchor="middle">!muldivreq_rdy（單元正忙）→ stall_muldiv_Dhl</text>
+  <path class="c" d="M600 140V218H320V130" marker-end="url(#ahc)"/>
+  <text class="cb s" x="430" y="238" text-anchor="middle">!muldivresp_val（還沒算完）→ stall_muldiv_Xhl</text>
+
+  <text class="zh s mut" x="40" y="40">「前面那顆還在算，我不能進來」</text>
+  <text class="zh s mut" x="270" y="40">「我的答案還沒好」</text>
+</svg>
+</div>
+<figcaption><b>D 級擋的是「排隊」，X 級擋的是「等待」。</b>一次只會有一個乘除法指令在 X 級等結果；後面若又來一個 <code>mul</code>，它會被 <code>stall_muldiv_Dhl</code> 擋在 D 級，不會踩壞單元裡的狀態。</figcaption>
+</figure>
+
+<p>而 <code>stall_Xhl</code> 一旦拉高，就沿著<a href="#ch10">第 10 章</a>的 stall 鏈往前傳：<code>stall_Xhl → stall_Dhl → stall_Fhl</code>，連 P 級的 pc 都被 hold 住。整條管線在 X 級前面全部凍結。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 520 170" role="img" aria-label="時空圖：mul 指令在週期 2 進入 X 級後一直停留到週期 35，後面兩條 addi 分別被卡在 D 級與 F 級動彈不得，直到週期 36 才各自前進一格。">
+  <text class="s mut" x="147" y="22" text-anchor="middle">1</text>
+  <text class="s mut" x="183" y="22" text-anchor="middle">2</text>
+  <text class="s mut" x="219" y="22" text-anchor="middle">3</text>
+  <text class="s mut" x="255" y="22" text-anchor="middle">4</text>
+  <text class="s mut" x="291" y="22" text-anchor="middle">…</text>
+  <text class="s mut" x="347" y="22" text-anchor="middle">34</text>
+  <text class="s mut" x="383" y="22" text-anchor="middle">35</text>
+  <text class="s mut" x="419" y="22" text-anchor="middle">36</text>
+
+  <text x="8" y="48">mul x3,x1,x2</text>
+  <rect class="pc" x="130" y="30" width="34" height="26"/><text x="147" y="48" text-anchor="middle">D</text>
+  <rect class="pc" x="166" y="30" width="34" height="26"/><text x="183" y="48" text-anchor="middle">X</text>
+  <rect class="pc-hold" x="202" y="30" width="34" height="26"/><text class="sq" x="219" y="48" text-anchor="middle">X</text>
+  <rect class="pc-hold" x="238" y="30" width="34" height="26"/><text class="sq" x="255" y="48" text-anchor="middle">X</text>
+  <rect class="pc-hold" x="330" y="30" width="34" height="26"/><text class="sq" x="347" y="48" text-anchor="middle">X</text>
+  <rect class="pc-hold" x="366" y="30" width="34" height="26"/><text class="sq" x="383" y="48" text-anchor="middle">X</text>
+  <rect class="pc" x="402" y="30" width="34" height="26"/><text x="419" y="48" text-anchor="middle">M</text>
+
+  <text x="8" y="76">addi x5,x4,1</text>
+  <rect class="pc" x="130" y="58" width="34" height="26"/><text x="147" y="76" text-anchor="middle">F</text>
+  <rect class="pc" x="166" y="58" width="34" height="26"/><text x="183" y="76" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="202" y="58" width="34" height="26"/><text class="sq" x="219" y="76" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="238" y="58" width="34" height="26"/><text class="sq" x="255" y="76" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="330" y="58" width="34" height="26"/><text class="sq" x="347" y="76" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="366" y="58" width="34" height="26"/><text class="sq" x="383" y="76" text-anchor="middle">D</text>
+  <rect class="pc" x="402" y="58" width="34" height="26"/><text x="419" y="76" text-anchor="middle">X</text>
+
+  <text x="8" y="104">addi x6,x4,2</text>
+  <rect class="pc" x="166" y="86" width="34" height="26"/><text x="183" y="104" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="202" y="86" width="34" height="26"/><text class="sq" x="219" y="104" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="238" y="86" width="34" height="26"/><text class="sq" x="255" y="104" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="330" y="86" width="34" height="26"/><text class="sq" x="347" y="104" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="366" y="86" width="34" height="26"/><text class="sq" x="383" y="104" text-anchor="middle">F</text>
+  <rect class="pc" x="402" y="86" width="34" height="26"/><text x="419" y="104" text-anchor="middle">D</text>
+
+  <path class="grp" d="M200 26H400V116H200Z"/>
+  <text class="zh s wr" x="300" y="136" text-anchor="middle">約 33 個週期，整條管線動不了；pc 也被 hold 住</text>
+  <text class="zh s mut" x="300" y="154" text-anchor="middle">兩條 addi 明明跟 mul 完全無關，也一起陪等</text>
+</svg>
+</div>
+<figcaption><b>一次 mul 讓整條管線停 30 幾拍。</b>這是 <code>riscvstall</code>（甚至 <code>riscvbyp</code>）的現況：bypass 解決的是「等結果寫回」，完全幫不上「結果根本還沒算出來」。這就是 Objective 4 要處理的問題。</figcaption>
+</figure>
+
+<div class="quiz"><b>想一想</b><p><code>ubmark-cmplx-mult</code>（複數乘法）迴圈裡每一輪有 4 次乘法。若迴圈本體大約 20 條指令、其餘指令平均 1 CPI，加上乘法後平均 CPI 大約會變成多少？</p><details><summary>看答案</summary><p>4 次乘法各約 34 拍 ≈ 136 拍，其餘 16 條指令約 16 拍，合計約 152 拍 / 20 條 ≈ <b>7.6 CPI</b>。也就是說整支程式幾乎只是在等乘法器。把乘法器管線化之後，這 136 拍理論上可以壓到接近 4 拍——這就是 Objective 4 的價值。</p></details></div>
+
+<h3>控制表上的四個欄位</h3>
+
+<p><a href="#ch7">第 7 章</a>那張 <code>casez</code> 大表裡，跟乘除法有關的是相鄰的四欄。它們在 InstMsg.v 裡的位置是：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-InstMsg.v · 第 169–172 行</div>
+<pre><code class="language-verilog">`define RISCV_INST_MSG_MULDIV_FN  20:18
+`define RISCV_INST_MSG_MULDIV_EN  17:17
+`define RISCV_INST_MSG_MULDIV_SEL 16:16
+`define RISCV_INST_MSG_EX_SEL     15:15</code></pre>
+</div>
+
+<p>四欄各自的合法值，都在 CoreCtrl 的 localparam 區定義好了：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 312–331 行</div>
+<pre><code class="language-verilog">localparam md_x    = 3'bx;
+localparam md_mul  = 3'd0;
+localparam md_div  = 3'd1;
+localparam md_divu = 3'd2;
+localparam md_rem  = 3'd3;
+localparam md_remu = 3'd4;
+
+localparam mdm_x = 1'bx; // Don't Care
+localparam mdm_l = 1'd0; // Take lower half of 64-bit result, mul/div/divu
+localparam mdm_u = 1'd1; // Take upper half of 64-bit result, rem/remu
+
+localparam em_x   = 1'bx; // Don't Care
+localparam em_alu = 1'd0; // Use ALU output
+localparam em_md  = 1'd1; // Use muldiv output</code></pre>
+</div>
+
+<p><code>md_*</code> 的數值不是隨便挑的——它們<b>一對一對應</b>到乘除法單元自己的 fn 編碼：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>CoreCtrl localparam</th><th class="num">值</th><th>imuldiv-MulDivReqMsg.v</th><th>單元內部誰接手</th></tr></thead>
+<tbody>
+<tr><td><code>md_mul</code></td><td class="num">3'd0</td><td><code>`IMULDIV_MULDIVREQ_MSG_FUNC_MUL</code></td><td><code>imul</code>（有號乘法）</td></tr>
+<tr><td><code>md_div</code></td><td class="num">3'd1</td><td><code>..._FUNC_DIV</code></td><td><code>idiv</code>，<code>divreq_msg_fn</code> = signed</td></tr>
+<tr><td><code>md_divu</code></td><td class="num">3'd2</td><td><code>..._FUNC_DIVU</code></td><td><code>idiv</code>，unsigned</td></tr>
+<tr><td><code>md_rem</code></td><td class="num">3'd3</td><td><code>..._FUNC_REM</code></td><td><code>idiv</code>，signed</td></tr>
+<tr><td><code>md_remu</code></td><td class="num">3'd4</td><td><code>..._FUNC_REMU</code></td><td><code>idiv</code>，unsigned</td></tr>
+</tbody>
+</table></div>
+
+<p>這個對應是「靠慣例維持」的：控制表寫下 <code>md_rem</code>，這 3 位元原封不動經過 <code>muldivreq_msg_fn_Dhl → muldivreq_msg_fn_Xhl</code> 送進單元，單元再拿它跟 <code>`IMULDIV_MULDIVREQ_MSG_FUNC_REM</code> 比對。<b>兩邊的數值一旦對不起來，症狀是「做了另一種運算」，而且編譯完全不會報錯。</b></p>
+
+<h3>推導一列：mul</h3>
+
+<p>CoreCtrl 第 458–465 行，八條 M 指令的控制列全部被註解掉了，這是 Objective 1 的一部分。我們用 <code>mul</code> 當代表，把四個欄位逐一問出來（其餘七列請自己照同樣的問法推）：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>欄位</th><th>要問的問題</th><th><code>mul</code> 的答案</th></tr></thead>
+<tbody>
+<tr class="hi"><td><code>md fn</code></td><td>要單元做哪種運算？</td><td><code>md_mul</code></td></tr>
+<tr class="hi"><td><code>md en</code></td><td>這條指令要不要發請求？（<code>MULDIV_EN</code>，直接變成 <code>muldivreq_val_Dhl</code>）</td><td><code>y</code></td></tr>
+<tr class="hi"><td><code>md muxsel</code></td><td>要 64 位元結果的哪一半？<code>mul</code> 要低 32 位</td><td><code>mdm_l</code></td></tr>
+<tr class="hi"><td><code>ex muxsel</code></td><td>寫回的值來自 ALU 還是乘除法器？</td><td><code>em_md</code></td></tr>
+<tr><td><code>alu fn</code></td><td>ALU 結果沒人要，但別留 x 讓波形難看</td><td>可填 <code>alu_add</code></td></tr>
+<tr><td>其餘</td><td>R-type 的共通部分：兩個暫存器運算元、寫回 rd、不碰記憶體</td><td>照 <code>add</code> 那列抄</td></tr>
+</tbody>
+</table></div>
+
+<div class="quiz"><b>想一想</b><p><code>div</code> 和 <code>rem</code> 送給單元的 <code>md fn</code> 不同（<code>md_div</code> / <code>md_rem</code>），但除法器內部其實兩者的計算完全一樣。那真正把它們區分開來的是哪一欄？</p><details><summary>看答案</summary><p><code>md muxsel</code>。除法器一次就算出 <code>{remainder, quotient}</code>，<code>div</code> 取 <code>mdm_l</code>（商）、<code>rem</code> 取 <code>mdm_u</code>（餘數）。<code>md fn</code> 在除法器裡只被用來判斷「有號或無號」（<code>is_op_signed</code>，IntDivIterative 第 392 行），<code>div</code> 與 <code>rem</code> 在這點上一致。</p></details></div>
+
+<div class="trap"><b>常見錯誤</b><p>把 <code>MULDIV_EN</code> 填成 <code>y</code>、卻忘了把 <code>ex muxsel</code> 填成 <code>em_md</code>：乘法器會正確地算 34 拍、正確地回應、X 級也會正確地等——然後把 ALU 的結果寫回暫存器。測試會失敗，但波形上一切看起來都「有在動」。</p></div>
+</section>
+
+<!-- ============================================================ ch18 -->
+<section class="ch" id="ch18" data-part="乘除法與長管線" data-nav="mulh 家族：64 位元乘積的上半">
+<p class="eyebrow">第 18 章 · 乘除法與長管線</p>
+<h2>mulh 家族：64 位元乘積的上半（Objective 2）</h2>
+
+<p>32 位元乘 32 位元，答案是 64 位元。RV32M 沒辦法把 64 位元塞進一個暫存器，所以拆成兩條指令：<code>mul</code> 取低 32 位，<code>mulh</code> 家族取高 32 位。要拿完整的 64 位元乘積，就把同一對運算元做兩次。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 680 230" role="img" aria-label="32 位元乘 32 位元產生 64 位元乘積：低 32 位由 mul 取走寫進 rd，高 32 位由 mulh 家族取走；圖下方說明要取得完整 64 位元乘積需要連續執行 mulh 與 mul 兩條指令。">
+  <rect class="f-rs1" x="60" y="34" width="150" height="30"/>
+  <text x="135" y="54" text-anchor="middle">R[rs1] (32)</text>
+  <text class="hd" x="228" y="54" text-anchor="middle">×</text>
+  <rect class="f-rs2" x="250" y="34" width="150" height="30"/>
+  <text x="325" y="54" text-anchor="middle">R[rs2] (32)</text>
+
+  <path class="w" d="M230 70V96" marker-end="url(#ah)"/>
+  <rect class="f-imm" x="120" y="106" width="210" height="34"/>
+  <rect class="f-rd" x="330" y="106" width="210" height="34"/>
+  <text x="225" y="128" text-anchor="middle">product[63:32]</text>
+  <text x="435" y="128" text-anchor="middle">product[31:0]</text>
+  <text class="s mut" x="122" y="100">63</text>
+  <text class="s mut" x="312" y="100">32</text>
+  <text class="s mut" x="332" y="100">31</text>
+  <text class="s mut" x="530" y="100">0</text>
+
+  <path class="a" d="M225 140V172" marker-end="url(#ah)"/>
+  <path class="a" d="M435 140V172" marker-end="url(#ah)"/>
+  <rect class="af" x="140" y="172" width="170" height="30"/>
+  <text x="225" y="192" text-anchor="middle">mulh / mulhu / mulhsu</text>
+  <rect class="af" x="380" y="172" width="110" height="30"/>
+  <text x="435" y="192" text-anchor="middle">mul</text>
+
+  <text class="zh s mut" x="225" y="220" text-anchor="middle">高半 → rd</text>
+  <text class="zh s mut" x="435" y="220" text-anchor="middle">低半 → rd</text>
+  <text class="zh s mut" x="596" y="128">同一對運算元</text>
+  <text class="zh s mut" x="596" y="146">做兩次</text>
+</svg>
+</div>
+<figcaption><b>一次乘法，兩條指令各拿一半。</b>編譯器要 64 位元乘積時會發出 <code>mulh rd_hi, a, b</code> 緊接著 <code>mul rd_lo, a, b</code>——這也是為什麼硬體不需要一次寫兩個暫存器。</figcaption>
+</figure>
+
+<h3>為什麼低半不分有號無號，高半分</h3>
+
+<p>這是整個 Objective 2 的核心。用 4 位元乘 4 位元（結果 8 位元）就能看清楚：<code>0b1111 × 0b0011</code>。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 250" role="img" aria-label="4 位元乘法的有號與無號對照：0b1111 乘 0b0011 在無號解讀下是 15 乘 3 等於 45，二進位 0010_1101；在有號解讀下是負 1 乘 3 等於負 3，二進位 1111_1101。兩者的低 4 位都是 1101，高 4 位分別是 0010 與 1111。">
+  <text class="hd" x="16" y="28">同樣的位元 0b1111 × 0b0011，兩種解讀</text>
+
+  <text class="zh hd" x="16" y="66">無號</text>
+  <text class="mut" x="90" y="66">15 × 3 = 45</text>
+  <rect class="f-imm" x="300" y="46" width="130" height="30"/>
+  <rect class="f-rs1" x="430" y="46" width="130" height="30"/>
+  <text x="365" y="66" text-anchor="middle">0010</text>
+  <text x="495" y="66" text-anchor="middle">1101</text>
+  <text class="mut" x="576" y="66">= 0x2D</text>
+
+  <text class="zh hd" x="16" y="126">有號</text>
+  <text class="mut" x="90" y="126">-1 × 3 = -3</text>
+  <rect class="f-imm" x="300" y="106" width="130" height="30"/>
+  <rect class="f-rs1" x="430" y="106" width="130" height="30"/>
+  <text x="365" y="126" text-anchor="middle">1111</text>
+  <text x="495" y="126" text-anchor="middle">1101</text>
+  <text class="mut" x="576" y="126">= 0xFD</text>
+
+  <path class="x" d="M298 42H432V80H298Z"/>
+  <path class="x" d="M298 102H432V140H298Z"/>
+  <path class="a" d="M430 42H562V140H430Z"/>
+
+  <text class="wr zh s" x="365" y="166" text-anchor="middle">高半不同</text>
+  <text class="ac zh s" x="495" y="166" text-anchor="middle">低半完全相同</text>
+
+  <path class="wm" d="M120 186H660"/>
+  <text class="zh s mut" x="16" y="212">原因：把 a 看成有號數，等於把它看成無號數再減 2ⁿ。</text>
+  <text class="zh s mut" x="16" y="232">(a − 2ⁿ)·b = a·b − 2ⁿ·b，差的那一項 2ⁿ·b 只會動到第 n 位以上——低 n 位一個位元都沒變。</text>
+</svg>
+</div>
+<figcaption><b>低半是共用的，高半才需要知道你把運算元當成什麼。</b>所以 RV32I 只需要一條 <code>mul</code>，卻需要三條 <code>mulh</code>。<code>0xFD</code> 與 <code>0x2D</code> 的低 4 位都是 <code>1101</code>。</figcaption>
+</figure>
+
+<h3>現有乘法器怎麼處理正負號</h3>
+
+<p>迭代乘法器的核心其實只會做<b>無號</b>乘法。有號是靠外面包一層：先取絕對值、無號地乘、最後看兩個運算元的符號決定要不要把整個 64 位元結果取負。</p>
+
+<div class="ex">
+<div class="src">imuldiv/imuldiv-IntMulIterative.v · 第 142–154、224–231 行（節錄）</div>
+<pre><code class="language-verilog">// ① 結果的符號：兩個運算元的 MSB 互斥或
+wire   sign_next = mulreq_msg_a[31] ^ mulreq_msg_b[31];
+
+// ② 取絕對值後才餵給迭代核心
+wire [31:0] unsigned_a
+  = ( mulreq_msg_a[31] ) ? ~mulreq_msg_a + 1'b1
+  :                         mulreq_msg_a;
+
+wire [31:0] unsigned_b
+  = ( mulreq_msg_b[31] ) ? ~mulreq_msg_b + 1'b1
+  :                         mulreq_msg_b;
+
+...
+
+// ③ 最後依符號把整個 64 位元取負（sign_mux_sel 就是 sign_reg）
+wire [63:0] signed_result_mux_out
+  = ( sign_mux_sel == sign_u ) ? result_reg
+  : ( sign_mux_sel == sign_s ) ? ~result_reg + 1'b1
+  :                              64'bx;
+
+assign mulresp_msg_result = signed_result_mux_out;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 260" role="img" aria-label="迭代乘法器的符號處理包覆層：運算元 a 與 b 各自經過取絕對值電路進入無號迭代核心，核心算出無號乘積存在 result_reg；同時 a 與 b 的最高位做互斥或存進 sign_reg，最後由這個符號位決定 64 位元結果是否取二補數。圖上標出 mulhu 與 mulhsu 需要拆掉哪些部分。">
+  <text class="hd" x="16" y="24">目前：有號包覆層 + 無號核心</text>
+
+  <text x="16" y="72">mulreq_msg_a</text>
+  <path class="w" d="M16 80H120" marker-end="url(#ah)"/>
+  <rect class="k" x="120" y="58" width="90" height="36"/>
+  <text class="s" x="165" y="81" text-anchor="middle">|a| 取絕對值</text>
+  <text x="16" y="142">mulreq_msg_b</text>
+  <path class="w" d="M16 150H120" marker-end="url(#ah)"/>
+  <rect class="k" x="120" y="128" width="90" height="36"/>
+  <text class="s" x="165" y="151" text-anchor="middle">|b| 取絕對值</text>
+
+  <path class="w" d="M210 76H290V100" marker-end="url(#ah)"/>
+  <path class="w" d="M210 146H290V130" marker-end="url(#ah)"/>
+  <rect class="k" x="250" y="100" width="150" height="70"/>
+  <text class="s" x="325" y="128" text-anchor="middle">無號迭代核心</text>
+  <text class="zh s mut" x="325" y="148" text-anchor="middle">移位＋累加 32 輪</text>
+
+  <path class="w" d="M400 135H476" marker-end="url(#ah)"/>
+  <rect class="r" x="476" y="108" width="84" height="54"/>
+  <text class="s sq" x="518" y="132" text-anchor="middle">result_reg</text>
+  <path class="rl" d="M476 145l8 5l-8 5"/>
+
+  <path class="w" d="M560 135H600" marker-end="url(#ah)"/>
+  <path class="k" d="M600 106L626 118V152L600 164Z"/>
+  <path class="w" d="M626 135H730" marker-end="url(#ah)"/>
+  <text class="s" x="632" y="128">mulresp_msg_result</text>
+  <text class="s mut" x="560" y="112">原值</text>
+  <text class="s mut" x="556" y="176">~x+1</text>
+
+  <circle class="d" cx="70" cy="80" r="3"/>
+  <circle class="d" cx="70" cy="150" r="3"/>
+  <path class="c" d="M70 80V206H170" marker-end="url(#ahc)"/>
+  <path class="c" d="M70 150V222H170" marker-end="url(#ahc)"/>
+  <text class="cb s" x="76" y="202">a[31]</text>
+  <text class="cb s" x="76" y="236">b[31]</text>
+  <use href="#g-xor" x="170" y="199"/>
+  <path class="c" d="M212 214H250" marker-end="url(#ahc)"/>
+  <rect class="r" x="250" y="196" width="76" height="36"/>
+  <text class="s sq" x="288" y="218" text-anchor="middle">sign_reg</text>
+  <path class="rl" d="M250 214l8 5l-8 5"/>
+  <path class="c" d="M326 214H613V164" marker-end="url(#ahc)"/>
+  <text class="cb s" x="400" y="208">sign_mux_sel</text>
+
+  <path class="grp" d="M112 48H216V172H112Z"/>
+  <text class="wr zh s" x="164" y="44" text-anchor="middle">mulhu 不要這兩塊</text>
+  <path class="grp" d="M594 100H640V240H594Z"/>
+  <text class="wr zh s" x="700" y="252" text-anchor="middle">mulhu 不要這一塊</text>
+</svg>
+</div>
+<figcaption><b>有號能力全部集中在「進去前取絕對值」和「出來後看符號取負」這兩層。</b>這正好給了你一個乾淨的改法：<code>mulhu</code> 就是把這兩層都繞過去。</figcaption>
+</figure>
+</div>
+
+<div class="trap"><b>常見錯誤：只把一半取負</b><p>第 ③ 步是 <code>~result_reg + 1'b1</code>，對<b>完整 64 位元</b>取二補數。如果你先取高 32 位再取負（<code>~result_reg[63:32] + 1</code>），在低半有借位時答案會差 1。例：−1 × 3 的 64 位元正確答案是 <code>0xFFFFFFFF_FFFFFFFD</code>，高半是 <code>0xFFFFFFFF</code>；但 |−1|×3 = 3 的高半是 <code>0x00000000</code>，取負得到 <code>0x00000000</code>，錯了。<b>先取負、再切半，順序不能換。</b></p></div>
+
+<h3>三條新指令各要什麼</h3>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 260" role="img" aria-label="四條乘法指令的對照表圖：mul、mulh、mulhu、mulhsu 分別在運算元 a 的解讀、運算元 b 的解讀、結果符號規則、取哪一半四個面向上的差異。">
+  <text class="zh hd" x="16" y="34">指令</text>
+  <text class="zh hd" x="130" y="34">a 看成</text>
+  <text class="zh hd" x="250" y="34">b 看成</text>
+  <text class="zh hd" x="370" y="34">結果符號規則</text>
+  <text class="zh hd" x="580" y="34">取哪一半</text>
+  <path class="w" d="M16 42H690"/>
+
+  <text x="16" y="74">mul</text>
+  <text class="zh" x="130" y="74">有號</text>
+  <text class="zh" x="250" y="74">有號</text>
+  <text class="s" x="370" y="74">a[31] ^ b[31]</text>
+  <text class="zh s mut" x="370" y="90">（其實低半用不到）</text>
+  <text class="zh" x="580" y="74">低 32 位</text>
+  <path class="wm" d="M16 100H690"/>
+
+  <text x="16" y="132">mulh</text>
+  <text class="zh" x="130" y="132">有號</text>
+  <text class="zh" x="250" y="132">有號</text>
+  <text class="s" x="370" y="132">a[31] ^ b[31]</text>
+  <text class="zh s mut" x="370" y="148">跟現況完全一樣</text>
+  <text class="ac zh" x="580" y="132">高 32 位</text>
+  <path class="wm" d="M16 158H690"/>
+
+  <text x="16" y="190">mulhu</text>
+  <text class="wr zh" x="130" y="190">無號</text>
+  <text class="wr zh" x="250" y="190">無號</text>
+  <text class="zh" x="370" y="190">永遠不取負</text>
+  <text class="zh s mut" x="370" y="206">不取絕對值、不取二補數</text>
+  <text class="ac zh" x="580" y="190">高 32 位</text>
+  <path class="wm" d="M16 216H690"/>
+
+  <text x="16" y="248">mulhsu</text>
+  <text class="zh" x="130" y="248">有號</text>
+  <text class="wr zh" x="250" y="248">無號</text>
+  <text class="s" x="370" y="248">= a[31]</text>
+  <text class="zh s mut" x="440" y="248">只有 a 取絕對值</text>
+  <text class="ac zh" x="580" y="248">高 32 位</text>
+</svg>
+</div>
+<figcaption><b>三個面向獨立可調：a 怎麼看、b 怎麼看、結果符號怎麼定。</b>寫程式碼時，把 <code>unsigned_a</code>、<code>unsigned_b</code>、<code>sign_next</code> 這三個運算式各自加上「是否啟用」的條件，就涵蓋了全部四種組合。<code>mulh</code> 這一列跟現有硬體一模一樣——它唯一的新需求是取高半，而取高半是控制表的事。</figcaption>
+</figure>
+
+<div class="note"><b>先做 mulh，再做另外兩條</b><p>從上表看得出來：<code>mulh</code> 送給單元的仍然是 <code>md_mul</code>，單元不用改一個字，只要控制列把 <code>md muxsel</code> 從 <code>mdm_l</code> 改成 <code>mdm_u</code>——因為<a href="#ch17">第 17 章</a>那條「取高半」的路本來就為了 <code>rem</code> 存在。所以 <code>mulh</code> 只需要 InstMsg 的 define 與一列控制表。<code>mulhu</code>／<code>mulhsu</code> 才需要動到單元內部。</p></div>
+
+<h3>改動會碰到哪些檔案</h3>
+
+<p>先看 fn 欄位還有沒有空位——這決定了整個做法可不可行：</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 200" role="img" aria-label="乘除法請求的 3 位元 func 欄位使用狀況：編碼 0 到 4 已分別給 MUL、DIV、DIVU、REM、REMU 使用，編碼 5、6、7 尚未使用，剛好夠給 MULHU 與 MULHSU。">
+  <text class="hd" x="16" y="26">`IMULDIV_MULDIVREQ_MSG_FUNC_SZ = 3　→ 8 種編碼</text>
+  <rect class="f-op" x="40" y="48" width="70" height="36"/><text x="75" y="71" text-anchor="middle">MUL</text>
+  <rect class="f-op" x="110" y="48" width="70" height="36"/><text x="145" y="71" text-anchor="middle">DIV</text>
+  <rect class="f-op" x="180" y="48" width="70" height="36"/><text x="215" y="71" text-anchor="middle">DIVU</text>
+  <rect class="f-op" x="250" y="48" width="70" height="36"/><text x="285" y="71" text-anchor="middle">REM</text>
+  <rect class="f-op" x="320" y="48" width="70" height="36"/><text x="355" y="71" text-anchor="middle">REMU</text>
+  <rect class="gh" x="390" y="48" width="70" height="36"/><text class="mut" x="425" y="71" text-anchor="middle">空</text>
+  <rect class="gh" x="460" y="48" width="70" height="36"/><text class="mut" x="495" y="71" text-anchor="middle">空</text>
+  <rect class="gh" x="530" y="48" width="70" height="36"/><text class="mut" x="565" y="71" text-anchor="middle">空</text>
+  <text class="s mut" x="75" y="100" text-anchor="middle">3'd0</text>
+  <text class="s mut" x="145" y="100" text-anchor="middle">3'd1</text>
+  <text class="s mut" x="215" y="100" text-anchor="middle">3'd2</text>
+  <text class="s mut" x="285" y="100" text-anchor="middle">3'd3</text>
+  <text class="s mut" x="355" y="100" text-anchor="middle">3'd4</text>
+  <text class="s mut" x="425" y="100" text-anchor="middle">3'd5</text>
+  <text class="s mut" x="495" y="100" text-anchor="middle">3'd6</text>
+  <text class="s mut" x="565" y="100" text-anchor="middle">3'd7</text>
+
+  <path class="a" d="M392 114V124H528V114"/>
+  <text class="ac zh s" x="460" y="146" text-anchor="middle">兩個空位，剛好夠 MULHU 與 MULHSU</text>
+  <text class="zh s mut" x="16" y="186">mulh 不需要新編碼——它跟 mul 送的是同一個 MUL，只是取結果的另一半。</text>
+</svg>
+</div>
+<figcaption><b>欄位寬度先查清楚，再決定要不要加編碼。</b>3 位元、已用 5 個，剩 3 個。如果不夠，就得同時放寬 <code>FUNC_SZ</code> 與 <code>MULDIV_FN</code> 的位寬——而那是一連串會踩到的地雷。</figcaption>
+</figure>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 300" role="img" aria-label="Objective 2 的檔案相依圖：riscvstall-InstMsg.v 新增三個指令編碼 define，riscvstall-CoreCtrl.v 新增 md localparam 與三列控制表，imuldiv-MulDivReqMsg.v 新增兩個 func 編碼，imuldiv-IntMulDivIterative.v 修改請求分流條件並把 fn 轉送給乘法器，imuldiv-IntMulIterative.v 修改取絕對值與取負的條件，tests 目錄補上三個組合語言測試。">
+  <rect class="k" x="20" y="40" width="190" height="66"/>
+  <text class="s" x="115" y="64" text-anchor="middle">riscvstall-InstMsg.v</text>
+  <text class="zh s mut" x="115" y="82" text-anchor="middle">取消三個 define 的註解</text>
+  <text class="zh s mut" x="115" y="98" text-anchor="middle">（第 147–149 行）</text>
+
+  <rect class="k" x="20" y="150" width="190" height="82"/>
+  <text class="s" x="115" y="174" text-anchor="middle">riscvstall-CoreCtrl.v</text>
+  <text class="zh s mut" x="115" y="192" text-anchor="middle">新增 md_mulhu / md_mulhsu</text>
+  <text class="zh s mut" x="115" y="208" text-anchor="middle">localparam（第 314 行附近）</text>
+  <text class="zh s mut" x="115" y="224" text-anchor="middle">補三列控制表</text>
+
+  <path class="w" d="M115 106V150" marker-end="url(#ah)"/>
+  <text class="zh s mut" x="122" y="132">casez 比對誰</text>
+
+  <rect class="k" x="270" y="150" width="190" height="66"/>
+  <text class="s" x="365" y="174" text-anchor="middle">imuldiv-MulDivReqMsg.v</text>
+  <text class="zh s mut" x="365" y="192" text-anchor="middle">新增 FUNC_MULHU / MULHSU</text>
+  <text class="zh s mut" x="365" y="208" text-anchor="middle">（數值必須與 md_* 一致）</text>
+  <path class="w" d="M210 183H270" marker-end="url(#ah)"/>
+  <text class="wr s" x="240" y="176" text-anchor="middle">=</text>
+
+  <rect class="k" x="270" y="40" width="190" height="82"/>
+  <text class="s" x="365" y="64" text-anchor="middle">imuldiv-</text>
+  <text class="s" x="365" y="80" text-anchor="middle">IntMulDivIterative.v</text>
+  <text class="zh s mut" x="365" y="98" text-anchor="middle">請求分流條件（第 32–39 行）</text>
+  <text class="zh s mut" x="365" y="114" text-anchor="middle">並把 fn 轉送給 imul</text>
+  <path class="w" d="M365 150V122" marker-end="url(#ah)"/>
+
+  <rect class="k" x="520" y="40" width="190" height="82"/>
+  <text class="s" x="615" y="64" text-anchor="middle">imuldiv-</text>
+  <text class="s" x="615" y="80" text-anchor="middle">IntMulIterative.v</text>
+  <text class="zh s mut" x="615" y="98" text-anchor="middle">新增 fn 輸入；改 unsigned_a／</text>
+  <text class="zh s mut" x="615" y="114" text-anchor="middle">unsigned_b／sign 的條件</text>
+  <path class="w" d="M460 81H520" marker-end="url(#ah)"/>
+  <text class="zh s mut" x="490" y="74" text-anchor="middle">fn</text>
+
+  <rect class="k" x="520" y="150" width="190" height="66"/>
+  <text class="s" x="615" y="174" text-anchor="middle">tests/riscv/</text>
+  <text class="s" x="615" y="192" text-anchor="middle">riscv-mulh{,u,su}.S</text>
+  <text class="zh s mut" x="615" y="208" text-anchor="middle">目前只有 # TODO</text>
+  <path class="wm" d="M615 150V122"/>
+
+  <rect class="gh" x="270" y="248" width="440" height="36"/>
+  <text class="zh s" x="490" y="270" text-anchor="middle">別忘了：tests/riscv/riscv.mk 與 build/Makefile 的 tests 變數也要加上新 .vmh</text>
+  <path class="wm" d="M615 216V248"/>
+  <text class="zh s mut" x="20" y="270">六個檔案</text>
+</svg>
+</div>
+<figcaption><b>一條指令要穿過六個檔案。</b>最容易漏的是最右下角那條：測試寫好了卻沒登記進 <code>.mk</code>，<code>make check-asm-riscvstall</code> 就完全不會跑到它，你會以為「過了」。</figcaption>
+</figure>
+
+<div class="trap"><b>最隱晦的一個陷阱</b><p><code>imuldiv-IntMulDivIterative.v</code> 第 32–36 行用的是「等於 MUL 才給乘法器、<b>否則一律給除法器</b>」：</p><pre><code class="language-verilog">wire mulreq_val = ( muldivreq_msg_fn == `IMULDIV_MULDIVREQ_MSG_FUNC_MUL )
+                &amp;&amp;  muldivreq_val &amp;&amp; divreq_rdy;
+wire divreq_val = ( muldivreq_msg_fn != `IMULDIV_MULDIVREQ_MSG_FUNC_MUL )
+                &amp;&amp;  muldivreq_val &amp;&amp; mulreq_rdy;</code></pre><p>你新加的 <code>MULHU</code>／<code>MULHSU</code> 編碼不等於 <code>MUL</code>，於是<b>會被送進除法器</b>。症狀是回來一個莫名其妙的商和餘數。改這兩行的條件，並把 <code>muldivreq_msg_fn</code> 接到 <code>imul</code> 新增的 fn 埠上。</p></div>
+
+<div class="quiz"><b>想一想</b><p><code>imuldiv_IntMulIterative</code> 目前根本沒有 fn 輸入埠，而符號資訊 <code>sign_reg</code> 是在請求被接受的那一拍（<code>sign_en</code> 於 STATE_IDLE 為 y）鎖進去的。如果你新增 fn 輸入，要不要也把它鎖進暫存器？</p><details><summary>看答案</summary><p>要。因為結果是在 32 拍之後的 SIGN 狀態才使用符號規則，而那時 <code>muldivreq_msg_fn</code> 早就變成別的值了。除法器就是這樣做的：<code>IntDivIterativeCtrl</code> 有一個 <code>fn_reg</code>，在 <code>fn_en</code>（IDLE）時鎖住，第 395–396 行用的是 <code>fn_reg</code> 而不是 <code>divreq_msg_fn</code>。照抄這個模式就對了。</p></details></div>
+
+<h3>寫測試：挑向量比寫程式碼難</h3>
+
+<p>三個 <code>.S</code> 檔目前都只有 <code># TODO</code>。<code>riscv-mul.S</code> 用的巨集是 <code>TEST_RR_OP( inst, src0, src1, result )</code>——它把兩個立即值 <code>li</code> 進 x2、x3，執行指令，再檢查 x4：</p>
+
+<div class="ex">
+<div class="src">tests/riscv/riscv-macros.h · 第 153–157 行</div>
+<pre><code class="language-verilog">#define TEST_RR_OP( inst_, src0_, src1_, result_ )                      \
+    li    x2, src0_;                                                    \
+    li    x3, src1_;                                                    \
+    inst_ x4, x2, x3;                                                   \
+    TEST_CHECK_EQ( x4, result_ );                                       \</code></pre>
+</div>
+
+<p>挑測試向量的原則是「每一個你改過的條件分支，都要有一個向量會走到它」。對應到上面那張三面向表：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>要打到的情況</th><th>a</th><th>b</th><th>為什麼</th></tr></thead>
+<tbody>
+<tr><td>兩個都正</td><td class="num">42</td><td class="num">13</td><td>基本正確性，符號邏輯全不啟用</td></tr>
+<tr><td>一正一負</td><td class="num">-1</td><td class="num">3</td><td>啟用取負路徑；三條指令答案各不相同</td></tr>
+<tr><td>兩個都負</td><td class="num">-1</td><td class="num">-1</td><td><code>sign</code> 為 0，但兩邊都取了絕對值</td></tr>
+<tr><td>最小負數邊界</td><td class="num">0x80000000</td><td class="num">0x80000000</td><td><code>~x+1</code> 對 <code>0x80000000</code> 等於自己——絕對值電路的死角</td></tr>
+<tr><td>大無號數</td><td class="num">0xFFFFFFFF</td><td class="num">0xFFFFFFFF</td><td>只有無號路徑才會產生非零高半</td></tr>
+</tbody>
+</table></div>
+
+<p>把其中三組的預期高半算出來（下表的值都用 Python 的任意精度整數驗算過）：</p>
+
+<div class="tbl"><table id="mulTbl">
+<thead><tr><th>a</th><th>b</th><th class="num">mul（低半）</th><th class="num">mulh</th><th class="num">mulhu</th><th class="num">mulhsu</th></tr></thead>
+<tbody>
+<tr class="hi"><td class="num">0xFFFFFFFF<br><span class="num">(-1)</span></td><td class="num">0x00000003<br><span class="num">(3)</span></td><td class="num">0xFFFFFFFD</td><td class="num">0xFFFFFFFF</td><td class="num">0x00000002</td><td class="num">0xFFFFFFFF</td></tr>
+<tr><td class="num">0xFFFFFFFF</td><td class="num">0xFFFFFFFF</td><td class="num">0x00000001</td><td class="num">0x00000000</td><td class="num">0xFFFFFFFE</td><td class="num">0xFFFFFFFF</td></tr>
+<tr><td class="num">0x80000000</td><td class="num">0x80000000</td><td class="num">0x00000000</td><td class="num">0x40000000</td><td class="num">0x40000000</td><td class="num">0xC0000000</td></tr>
+</tbody>
+</table></div>
+
+<p>第一列親手驗一次：<code>-1 × 3 = -3</code>，64 位元是 <code>0xFFFFFFFF_FFFFFFFD</code>，高半 <code>0xFFFFFFFF</code>（<code>mulh</code>）。同樣的位元當無號看：<code>4294967295 × 3 = 12884901885 = 0x2_FFFFFFFD</code>，高半 <code>0x00000002</code>（<code>mulhu</code>）。<code>mulhsu</code> 是 a 有號、b 無號，b = 3 兩種解讀相同，所以答案跟 <code>mulh</code> 一樣是 <code>0xFFFFFFFF</code>。低半三者都是 <code>0xFFFFFFFD</code>——又一次印證了前面那張 4 位元的圖。</p>
+
+<div class="note"><b>寫成測試長這樣</b><p><code>TEST_RR_OP( mulh, 0xFFFFFFFF, 0x00000003, 0xFFFFFFFF )</code>。注意 <code>li</code> 對 <code>0xFFFFFFFF</code> 與 <code>-1</code> 產生的位元完全一樣，寫哪一種都可以；但 <b>預期值請用 16 進位寫</b>，避免自己在腦中做 32 位元截斷時出錯。第三列的 <code>mulhsu</code> = <code>0xC0000000</code> 特別值得放進測試：它是唯一一個三條指令答案兩兩不同的向量。</p></div>
+
+<div class="quiz"><b>想一想</b><p>為什麼 <code>0x80000000 × 0x80000000</code> 的 <code>mulh</code> 和 <code>mulhu</code> 都是 <code>0x40000000</code>，只有 <code>mulhsu</code> 不同？</p><details><summary>看答案</summary><p><code>mulh</code>：(−2³¹)×(−2³¹) = 2⁶² = <code>0x40000000_00000000</code>。<code>mulhu</code>：2³¹×2³¹ = 2⁶²，同一個數。兩個負號相乘抵消，所以結果碰巧相同。<code>mulhsu</code>：(−2³¹)×(+2³¹) = −2⁶² = <code>0xC0000000_00000000</code>，高半 <code>0xC0000000</code>。這也說明了為什麼「a 負 b 負」不足以測出 <code>mulhu</code> 的 bug——要用一正一負的向量。</p></details></div>
+</section>
+
+<!-- ============================================================ ch19 -->
+<section class="ch" id="ch19" data-part="乘除法與長管線" data-nav="riscvlong：把乘除法器也管線化">
+<p class="eyebrow">第 19 章 · 乘除法與長管線</p>
+<h2>riscvlong：把乘除法器也管線化（Objective 4）</h2>
+
+<p><a href="#ch17">第 17 章</a>的結論很刺眼：一次 <code>mul</code> 讓整條管線停 30 幾拍，而且停的原因跟後面的指令一點關係都沒有。Objective 4 的目標是把「一次服務一個請求、要 34 拍」的迭代單元，換成「每拍都能收一個新請求、固定 4 級延遲」的<b>管線化單元</b>——代價是整條處理器管線要從 5 級長成 7 級。</p>
+
+<h3>提供給你的管線化單元</h3>
+
+<p><code>riscvlong-CoreDpathPipeMulDiv.v</code> 不做迭代，它直接用 Verilog 的 <code>*</code>、<code>/</code>、<code>%</code> 在第一級算完，後面三級純粹是把結果往後傳的「假管線」——用來模擬真實管線乘法器的延遲。</p>
+
+<div class="note"><b>檔案在哪</b><p>這份發佈裡，檔案目前放在 <code>riscvstall/riscvstall-CoreDpathPipeMulDiv.v</code>，而 <code>riscvlong/</code> 目錄裡只有 <code>setup.sh</code>。不用手動搬：兩支 <code>setup.sh</code> 都是用 <code>rsync</code> 把上一個目錄<b>整個</b>複製過來再改檔名，所以這個檔案會一路跟著變成 <code>riscvbyp-CoreDpathPipeMulDiv.v</code>，再變成 <code>riscvlong-CoreDpathPipeMulDiv.v</code>（模組名 <code>riscv_CoreDpathPipeMulDiv</code> 不變）。你要做的是在 <code>riscvlong-CoreDpath.v</code> 把它 <code>`include</code> 進來並取代原本的迭代式單元。</p></div>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathPipeMulDiv.v · 第 33–34、51–52、69–86 行（節錄）</div>
+<pre><code class="language-verilog">assign muldivreq_rdy = !stall;
+wire   muldivreq_go  = muldivreq_val &amp;&amp; muldivreq_rdy;
+
+wire val1_next = (stall_Xhl) ? 1'b0: (val0_reg);
+wire val2_next = (stall_Mhl) ? 1'b0: (val1_reg);
+
+...
+  if ( muldivreq_go ) begin
+    fn_reg   &lt;= muldivreq_msg_fn;
+    a_reg    &lt;= muldivreq_msg_a;
+    b_reg    &lt;= muldivreq_msg_b;
+    val0_reg &lt;= 1'b1;
+  end else if (!stall_Xhl) begin
+    val0_reg &lt;= 1'b0;
+  end
+  if (! stall_Mhl) begin
+      result1_reg &lt;= result0;
+      val1_reg    &lt;= val1_next;
+  end
+  if ( !stall  ) begin
+    result2_reg &lt;= result1_reg;
+    result3_reg &lt;= result2_reg;
+    val2_reg    &lt;= val2_next;
+    val3_reg    &lt;= val2_reg;
+  end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 780 300" role="img" aria-label="管線化乘除法單元的內部結構：請求的 fn、a、b 與 val0 存進輸入暫存器，經由組合邏輯算出 result0，再依序經過 result1_reg、result2_reg、result3_reg 三級暫存器送出回應；各級的寫入致能分別由 muldivreq_go、非 stall_Mhl、非內部 stall 控制，val 位元另外被 stall_Xhl 與 stall_Mhl 清成 0。">
+  <text class="hd" x="16" y="24">四級：一級真的在算，三級只是把結果往後傳</text>
+
+  <text class="s" x="16" y="70">fn / a / b</text>
+  <path class="w" d="M16 80H86" marker-end="url(#ah)"/>
+  <rect class="r" x="86" y="52" width="64" height="120"/>
+  <text class="s sq" x="118" y="82" text-anchor="middle">fn_reg</text>
+  <text class="s sq" x="118" y="102" text-anchor="middle">a_reg</text>
+  <text class="s sq" x="118" y="122" text-anchor="middle">b_reg</text>
+  <text class="s sq" x="118" y="150" text-anchor="middle">val0_reg</text>
+  <path class="rl" d="M86 150l8 5l-8 5"/>
+
+  <path class="w" d="M150 100H206" marker-end="url(#ah)"/>
+  <rect class="k" x="206" y="60" width="110" height="80"/>
+  <text class="s" x="261" y="92" text-anchor="middle">* / %</text>
+  <text class="zh s mut" x="261" y="112" text-anchor="middle">組合邏輯</text>
+  <text class="zh s mut" x="261" y="128" text-anchor="middle">符號處理</text>
+  <path class="w" d="M316 100H366" marker-end="url(#ah)"/>
+  <text class="s ac" x="341" y="90" text-anchor="middle">result0</text>
+
+  <rect class="r" x="366" y="72" width="60" height="70"/>
+  <text class="s sq" x="396" y="100" text-anchor="middle">result1</text>
+  <text class="s sq" x="396" y="128" text-anchor="middle">val1</text>
+  <path class="rl" d="M366 118l8 5l-8 5"/>
+  <path class="w" d="M426 100H486" marker-end="url(#ah)"/>
+
+  <rect class="r" x="486" y="72" width="60" height="70"/>
+  <text class="s sq" x="516" y="100" text-anchor="middle">result2</text>
+  <text class="s sq" x="516" y="128" text-anchor="middle">val2</text>
+  <path class="rl" d="M486 118l8 5l-8 5"/>
+  <path class="w" d="M546 100H606" marker-end="url(#ah)"/>
+
+  <rect class="r" x="606" y="72" width="60" height="70"/>
+  <text class="s sq" x="636" y="100" text-anchor="middle">result3</text>
+  <text class="s sq" x="636" y="128" text-anchor="middle">val3</text>
+  <path class="rl" d="M606 118l8 5l-8 5"/>
+  <path class="a" d="M666 100H756" marker-end="url(#ah)"/>
+  <text class="s ac" x="672" y="92">resp</text>
+
+  <path class="c" d="M118 214V172" marker-end="url(#ahc)"/>
+  <text class="cb s" x="118" y="230" text-anchor="middle">muldivreq_go</text>
+  <text class="zh s mut" x="118" y="246" text-anchor="middle">／ !stall_Xhl 清 val0</text>
+
+  <path class="c" d="M396 214V142" marker-end="url(#ahc)"/>
+  <text class="cb s" x="396" y="230" text-anchor="middle">!stall_Mhl</text>
+
+  <path class="c" d="M576 214V190"/>
+  <path class="c" d="M516 190H636"/>
+  <path class="c" d="M516 190V142" marker-end="url(#ahc)"/>
+  <path class="c" d="M636 190V142" marker-end="url(#ahc)"/>
+  <text class="cb s" x="576" y="230" text-anchor="middle">!stall（單元內部）</text>
+  <text class="s mut" x="576" y="246" text-anchor="middle">= val3_reg &amp;&amp; !muldivresp_rdy</text>
+
+  <rect class="gh" x="16" y="262" width="430" height="30"/>
+  <text class="wr zh s" x="231" y="282" text-anchor="middle">stall_X2hl / stall_X3hl 兩個輸入埠在模組裡完全沒被用到</text>
+  <text class="zh s mut" x="462" y="282">「These need to be hooked up to something!」</text>
+</svg>
+</div>
+<figcaption><b>三個不同的致能訊號控制三組暫存器。</b>輸入級跟著 X、第一級跟著 M、後兩級跟著單元自己的 <code>stall</code>。第 27–28 行那兩個 <code>stall_X2hl</code>／<code>stall_X3hl</code> 是留給你的：檔案裡的註解直說了「These need to be hooked up to something!」。你把處理器延長成 7 級之後，後兩級應該跟著新的 X2／X3 走，而不是跟著單元自己的 <code>stall</code>。</figcaption>
+</figure>
+</div>
+
+<h3>把處理器延長成 7 級</h3>
+
+<p>手冊建議的做法是：乘除法單元的第 0、1 級疊在現有的 X、M 上，第 2、3 級變成兩個新的管線級 X2、X3，插在 M 和 W 之間。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 780 290" role="img" aria-label="七級管線結構圖：上排是 F、D、X、M、X2、X3、W 七個階段，下排是管線化乘除法單元的四級，分別與 X、M、X2、X3 對齊；乘除法結果在 X3 之後與主資料路徑的值在一個多工器會合，再進入 W 級寫回。請求在 D 級末端發出，運算元取自 op0_mux_out_Dhl。">
+  <text class="hd" x="16" y="24">7 級管線：F D X M X2 X3 W</text>
+
+  <rect class="k" x="30" y="46" width="72" height="50"/><text x="66" y="77" text-anchor="middle">F</text>
+  <rect class="af" x="112" y="46" width="72" height="50"/><text x="148" y="77" text-anchor="middle">D</text>
+  <rect class="k" x="194" y="46" width="72" height="50"/><text x="230" y="77" text-anchor="middle">X</text>
+  <rect class="k" x="276" y="46" width="72" height="50"/><text x="312" y="77" text-anchor="middle">M</text>
+  <rect class="af" x="358" y="46" width="72" height="50"/><text x="394" y="77" text-anchor="middle">X2</text>
+  <rect class="af" x="440" y="46" width="72" height="50"/><text x="476" y="77" text-anchor="middle">X3</text>
+  <rect class="k" x="600" y="46" width="72" height="50"/><text x="636" y="77" text-anchor="middle">W</text>
+  <text class="ac zh s" x="435" y="38" text-anchor="middle">新增的兩級</text>
+
+  <path class="w" d="M102 71H112"/><path class="w" d="M184 71H194"/>
+  <path class="w" d="M266 71H276"/><path class="w" d="M348 71H358"/>
+  <path class="w" d="M430 71H440"/>
+  <path class="w" d="M512 71H540V108" marker-end="url(#ah)"/>
+
+  <rect class="k" x="194" y="170" width="72" height="44"/><text class="s" x="230" y="197" text-anchor="middle">md0</text>
+  <rect class="k" x="276" y="170" width="72" height="44"/><text class="s" x="312" y="197" text-anchor="middle">md1</text>
+  <rect class="k" x="358" y="170" width="72" height="44"/><text class="s" x="394" y="197" text-anchor="middle">md2</text>
+  <rect class="k" x="440" y="170" width="72" height="44"/><text class="s" x="476" y="197" text-anchor="middle">md3</text>
+  <path class="w" d="M266 192H276"/>
+  <path class="w" d="M348 192H358"/><path class="w" d="M430 192H440"/>
+  <path class="grp" d="M186 160H520V224H186Z"/>
+  <text class="zh s mut" x="353" y="242" text-anchor="middle">管線化乘除法單元（4 級，與 X／M／X2／X3 對齊）</text>
+
+  <path class="a" d="M148 96V148H194" marker-end="url(#ah)"/>
+  <text class="ac s" x="168" y="142">op0/op1_mux_out_Dhl</text>
+  <text class="ac zh s" x="168" y="124">請求在 D 級末端發出</text>
+
+  <path class="a" d="M512 192H560V134" marker-end="url(#ah)"/>
+  <path class="k" d="M540 100L566 112V146L540 158Z"/>
+  <path class="w" d="M566 129H600" marker-end="url(#ah)"/>
+  <text class="zh s mut" x="572" y="180">會合</text>
+
+  <path class="wm" d="M186 46V160"/><path class="wm" d="M520 46V160"/>
+  <text class="zh s mut" x="16" y="272">乘除法單元不再跟 X 級交握等待，而是像另一條並行的管線一路往後流，最後在 W 之前併回主路徑。</text>
+</svg>
+</div>
+<figcaption><b>請求必須在 D 級末端發出，不能等到 X。</b>因為單元的第 0 級要和 X 級同時開始工作——若還從 <code>op0_mux_out_Xhl</code> 取運算元，單元就整整慢了一拍，四級會落在 M、X2、X3 與一個不存在的第八級上。手冊把這點特別用粗體寫出來。</figcaption>
+</figure>
+
+<div class="note"><b>為什麼 X2、X3 放在 M 後面而不是 X 後面</b><p>因為單元的第 0、1 級是「免費的」——它們疊在本來就存在的 X、M 上，不增加任何延遲。只有第 2、3 級沒有現成的級可以疊，才要真的新增。這也讓記憶體路徑（X 發請求、M 收回應）完全不用動。</p></div>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 580 170" role="img" aria-label="時空圖：在七級管線中，mul 指令依序經過 D、X、M、X2、X3、W，後面兩條互不相依的 addi 緊跟在後，全程沒有任何 stall。">
+  <text class="s mut" x="177" y="22" text-anchor="middle">1</text>
+  <text class="s mut" x="213" y="22" text-anchor="middle">2</text>
+  <text class="s mut" x="249" y="22" text-anchor="middle">3</text>
+  <text class="s mut" x="285" y="22" text-anchor="middle">4</text>
+  <text class="s mut" x="321" y="22" text-anchor="middle">5</text>
+  <text class="s mut" x="357" y="22" text-anchor="middle">6</text>
+  <text class="s mut" x="393" y="22" text-anchor="middle">7</text>
+  <text class="s mut" x="429" y="22" text-anchor="middle">8</text>
+
+  <text x="8" y="48">mul x3,x1,x2</text>
+  <rect class="pc" x="160" y="30" width="34" height="26"/><text x="177" y="48" text-anchor="middle">D</text>
+  <rect class="pc" x="196" y="30" width="34" height="26"/><text x="213" y="48" text-anchor="middle">X</text>
+  <rect class="pc" x="232" y="30" width="34" height="26"/><text x="249" y="48" text-anchor="middle">M</text>
+  <rect class="pc" x="268" y="30" width="34" height="26"/><text class="s" x="285" y="48" text-anchor="middle">X2</text>
+  <rect class="pc" x="304" y="30" width="34" height="26"/><text class="s" x="321" y="48" text-anchor="middle">X3</text>
+  <rect class="pc" x="340" y="30" width="34" height="26"/><text x="357" y="48" text-anchor="middle">W</text>
+
+  <text x="8" y="76">addi x5,x4,1</text>
+  <rect class="pc" x="160" y="58" width="34" height="26"/><text x="177" y="76" text-anchor="middle">F</text>
+  <rect class="pc" x="196" y="58" width="34" height="26"/><text x="213" y="76" text-anchor="middle">D</text>
+  <rect class="pc" x="232" y="58" width="34" height="26"/><text x="249" y="76" text-anchor="middle">X</text>
+  <rect class="pc" x="268" y="58" width="34" height="26"/><text x="285" y="76" text-anchor="middle">M</text>
+  <rect class="pc" x="304" y="58" width="34" height="26"/><text class="s" x="321" y="76" text-anchor="middle">X2</text>
+  <rect class="pc" x="340" y="58" width="34" height="26"/><text class="s" x="357" y="76" text-anchor="middle">X3</text>
+  <rect class="pc" x="376" y="58" width="34" height="26"/><text x="393" y="76" text-anchor="middle">W</text>
+
+  <text x="8" y="104">addi x6,x4,2</text>
+  <rect class="pc" x="196" y="86" width="34" height="26"/><text x="213" y="104" text-anchor="middle">F</text>
+  <rect class="pc" x="232" y="86" width="34" height="26"/><text x="249" y="104" text-anchor="middle">D</text>
+  <rect class="pc" x="268" y="86" width="34" height="26"/><text x="285" y="104" text-anchor="middle">X</text>
+  <rect class="pc" x="304" y="86" width="34" height="26"/><text x="321" y="104" text-anchor="middle">M</text>
+  <rect class="pc" x="340" y="86" width="34" height="26"/><text class="s" x="357" y="104" text-anchor="middle">X2</text>
+  <rect class="pc" x="376" y="86" width="34" height="26"/><text class="s" x="393" y="104" text-anchor="middle">X3</text>
+  <rect class="pc" x="412" y="86" width="34" height="26"/><text x="429" y="104" text-anchor="middle">W</text>
+
+  <text class="ac zh s" x="290" y="132" text-anchor="middle">零個 stall——對照第 17 章那張 33 拍的圖</text>
+  <text class="zh s mut" x="290" y="150" text-anchor="middle">代價：每條指令的延遲都多了兩級</text>
+</svg>
+</div>
+<figcaption><b>跟 mul 無關的指令不再陪等。</b>乘法的 4 拍延遲被管線吸收掉了，只要沒有人馬上要它的結果，throughput 完全不受影響。</figcaption>
+</figure>
+
+<h3>每個新增的級要補什麼</h3>
+
+<p>新增一級不是加一個名字而已。照著現有的 <code>M &lt;- X</code> 區塊抄，每一級在 <b>CoreDpath</b> 和 <b>CoreCtrl</b> 各有一份該有的東西：</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 300" role="img" aria-label="新增管線級的檢查清單：左欄是 CoreDpath 需要的資料暫存器 pc 與寫回值，右欄是 CoreCtrl 需要的控制暫存器 ir、rf_wen、rf_waddr、csr_wen、csr_addr、wb_mux_sel、bubble 位元，以及每級需要的 inst_val、squash、stall 三條線；下方標示 X2 與 X3 各需要一整份。">
+  <text class="hd" x="16" y="24">每新增一級，這三欄都要補一份</text>
+
+  <rect class="k" x="16" y="42" width="220" height="180"/>
+  <text class="s" x="126" y="66" text-anchor="middle">CoreDpath：資料</text>
+  <path class="wm" d="M26 76H226"/>
+  <text class="s" x="34" y="98">pc_X2hl</text>
+  <text class="s" x="34" y="122">execute_mux_out_X2hl</text>
+  <text class="zh s mut" x="34" y="144">（或 M 級選完的寫回值）</text>
+  <text class="zh s mut" x="34" y="176">每一項都是一個</text>
+  <text class="zh s mut" x="34" y="194">if(!stall_X2hl) 的 reg</text>
+
+  <rect class="k" x="256" y="42" width="220" height="180"/>
+  <text class="s" x="366" y="66" text-anchor="middle">CoreCtrl：控制</text>
+  <path class="wm" d="M266 76H466"/>
+  <text class="s" x="274" y="98">ir_X2hl</text>
+  <text class="s" x="274" y="120">rf_wen_X2hl</text>
+  <text class="s" x="274" y="142">rf_waddr_X2hl</text>
+  <text class="s" x="274" y="164">csr_wen_X2hl / csr_addr_X2hl</text>
+  <text class="s" x="274" y="186">wb_mux_sel_X2hl</text>
+  <text class="s wr" x="274" y="208">bubble_X2hl</text>
+
+  <rect class="k" x="496" y="42" width="228" height="180"/>
+  <text class="s" x="610" y="66" text-anchor="middle">每級的三條線</text>
+  <path class="wm" d="M506 76H714"/>
+  <text class="s" x="514" y="98">inst_val_X2hl</text>
+  <text class="zh s mut" x="514" y="116">= !bubble &amp;&amp; !squash</text>
+  <text class="s" x="514" y="144">squash_X2hl</text>
+  <text class="zh s mut" x="514" y="162">（可先接 1'b0）</text>
+  <text class="s" x="514" y="190">stall_X2hl</text>
+  <text class="zh s mut" x="514" y="208">= stall_X3hl（往前串）</text>
+
+  <rect class="af" x="16" y="240" width="340" height="34"/>
+  <text class="zh s" x="186" y="262" text-anchor="middle">X2 要一整份　→　把 X2 的每個名字改成 X3，再要一整份</text>
+  <rect class="gh" x="376" y="240" width="348" height="34"/>
+  <text class="zh s" x="550" y="262" text-anchor="middle">最後：W 級的來源從 M 改成 X3，stall 鏈也要接上</text>
+
+  <text class="zh s mut" x="16" y="294">漏掉 bubble 位元是最常見的 bug：bubble 會寫進暫存器檔，程式跑到一半暫存器莫名被改。</text>
+</svg>
+</div>
+<figcaption><b>把 <code>M &lt;- X</code> 那段 <code>always @(posedge clk)</code> 當模板，整段複製兩次再改字尾。</b>stall 鏈的方向別接反：<code>stall_Whl(0) → stall_X3hl → stall_X2hl → stall_Mhl → stall_Xhl → stall_Dhl → stall_Fhl</code>，後面的級決定前面的級能不能動。</figcaption>
+</figure>
+
+<h3>冒險：旁路來源從 3 個變 5 個</h3>
+
+<p>在 <code>riscvbyp</code>（<a href="#ch14">第 14 章</a>）裡，D 級的旁路多工器有 X、M、W 三個來源。管線變長之後，一個還沒寫回的值可能停在 X、M、X2、X3、W 五個地方的任何一個。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 300" role="img" aria-label="D 級的旁路多工器輸入從四個增加到六個：原本是暫存器檔讀出值加上 X、M、W 三個旁路來源，現在必須再加上 X2 與 X3 兩個來源；越靠近前面的來源優先權越高。">
+  <text class="hd" x="16" y="24">D 級 rs1 旁路多工器（示意）</text>
+
+  <rect class="k" x="20" y="48" width="96" height="34"/>
+  <text class="s" x="68" y="70" text-anchor="middle">rf_rdata0_Dhl</text>
+  <path class="w" d="M116 65H300" marker-end="url(#ah)"/>
+
+  <rect class="k" x="20" y="96" width="96" height="30"/><text class="s" x="68" y="116" text-anchor="middle">X</text>
+  <path class="w" d="M116 111H300" marker-end="url(#ah)"/>
+  <rect class="k" x="20" y="134" width="96" height="30"/><text class="s" x="68" y="154" text-anchor="middle">M</text>
+  <path class="w" d="M116 149H300" marker-end="url(#ah)"/>
+  <rect class="af" x="20" y="172" width="96" height="30"/><text class="s ac" x="68" y="192" text-anchor="middle">X2</text>
+  <path class="a" d="M116 187H300" marker-end="url(#ah)"/>
+  <rect class="af" x="20" y="210" width="96" height="30"/><text class="s ac" x="68" y="230" text-anchor="middle">X3</text>
+  <path class="a" d="M116 225H300" marker-end="url(#ah)"/>
+  <rect class="k" x="20" y="248" width="96" height="30"/><text class="s" x="68" y="268" text-anchor="middle">W</text>
+  <path class="w" d="M116 263H300" marker-end="url(#ah)"/>
+
+  <path class="k" d="M300 40L332 56V278L300 294Z"/>
+  <path class="w" d="M332 167H430" marker-end="url(#ah)"/>
+  <text class="s" x="340" y="160">op0_mux_out_Dhl</text>
+  <text class="zh s mut" x="340" y="186">→ X 級、以及乘除法單元</text>
+
+  <path class="c" d="M470 110H338" marker-end="url(#ahc)"/>
+  <text class="cb zh s" x="478" y="106">優先權：越前面的級越新</text>
+  <text class="zh s mut" x="478" y="126">X &gt; M &gt; X2 &gt; X3 &gt; W</text>
+  <text class="zh s mut" x="478" y="146">同一個暫存器可能同時有</text>
+  <text class="zh s mut" x="478" y="164">好幾級在寫，只能拿最新的</text>
+
+  <rect class="gh" x="470" y="200" width="212" height="76"/>
+  <text class="wr zh s" x="576" y="222" text-anchor="middle">注意：這兩個新來源</text>
+  <text class="zh s" x="576" y="242" text-anchor="middle">對 rs1 和 rs2 各要一份</text>
+  <text class="zh s mut" x="576" y="262" text-anchor="middle">共 4 個新的 byp 判斷訊號</text>
+</svg>
+</div>
+<figcaption><b>旁路來源的數量等於「寫回前還會經過幾級」。</b>判斷條件的形狀跟 <code>riscvbyp</code> 完全一樣：<code>rs1_en_Dhl &amp;&amp; inst_val_X2hl &amp;&amp; rf_wen_X2hl &amp;&amp; (rs1_addr_Dhl == rf_waddr_X2hl) &amp;&amp; (rf_waddr_X2hl != 0)</code>，只是多抄兩級。優先權順序千萬不能弄反。</figcaption>
+</figure>
+
+<h3>新的冒險：mul-use</h3>
+
+<p>旁路解決了「值已經算出來、只是還沒寫回」。但 <code>mul</code> 的結果<b>要到 X3 結束才存在</b>——單元的第 3 級。在那之前，X 級和 M 級裡的那格「mul」手上根本沒有值可以送出去。這跟 load-use 是同一類問題，只是距離更遠。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 580 190" role="img" aria-label="時空圖：mul 在週期 5 進入 X3 級，依賴它的 add 指令被卡在 D 級三個週期，直到週期 5 才能從 X3 旁路取得結果，週期 6 進入 X 級。">
+  <text class="s mut" x="177" y="22" text-anchor="middle">1</text>
+  <text class="s mut" x="213" y="22" text-anchor="middle">2</text>
+  <text class="s mut" x="249" y="22" text-anchor="middle">3</text>
+  <text class="s mut" x="285" y="22" text-anchor="middle">4</text>
+  <text class="s mut" x="321" y="22" text-anchor="middle">5</text>
+  <text class="s mut" x="357" y="22" text-anchor="middle">6</text>
+  <text class="s mut" x="393" y="22" text-anchor="middle">7</text>
+
+  <text x="8" y="48">mul x3,x1,x2</text>
+  <rect class="pc" x="160" y="30" width="34" height="26"/><text x="177" y="48" text-anchor="middle">D</text>
+  <rect class="pc" x="196" y="30" width="34" height="26"/><text x="213" y="48" text-anchor="middle">X</text>
+  <rect class="pc" x="232" y="30" width="34" height="26"/><text x="249" y="48" text-anchor="middle">M</text>
+  <rect class="pc" x="268" y="30" width="34" height="26"/><text class="s" x="285" y="48" text-anchor="middle">X2</text>
+  <rect class="pc-fwd" x="304" y="30" width="34" height="26"/><text class="s ac" x="321" y="48" text-anchor="middle">X3</text>
+  <rect class="pc" x="340" y="30" width="34" height="26"/><text x="357" y="48" text-anchor="middle">W</text>
+
+  <text x="8" y="76">add x5,x3,x4</text>
+  <rect class="pc" x="160" y="58" width="34" height="26"/><text x="177" y="76" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="196" y="58" width="34" height="26"/><text class="sq" x="213" y="76" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="232" y="58" width="34" height="26"/><text class="sq" x="249" y="76" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="268" y="58" width="34" height="26"/><text class="sq" x="285" y="76" text-anchor="middle">D</text>
+  <rect class="pc-fwd" x="304" y="58" width="34" height="26"/><text class="ac" x="321" y="76" text-anchor="middle">D</text>
+  <rect class="pc" x="340" y="58" width="34" height="26"/><text x="357" y="76" text-anchor="middle">X</text>
+  <rect class="pc" x="376" y="58" width="34" height="26"/><text x="393" y="76" text-anchor="middle">M</text>
+
+  <text class="ac zh s" x="430" y="48">結果在這一拍才存在</text>
+  <text class="ac zh s" x="430" y="76">從 X3 旁路回 D</text>
+  <text class="wr zh s" x="240" y="108">停 3 拍：跟 load-use 同一類，只是更遠</text>
+  <text class="zh s mut" x="8" y="136">手冊明文規定：不准在乘除法單元「內部」做旁路——不能從 md1、md2 把中途的值抓出來。</text>
+  <text class="zh s mut" x="8" y="158">所以停的拍數是固定的，你能做的只有正確地判斷「要停到什麼時候」。</text>
+  <text class="zh s mut" x="8" y="180">判斷訊號的形狀：is_muldiv_Xhl / _Mhl / _X2hl 各一份，只要對上 rs1/rs2 就 stall_Dhl。</text>
+</svg>
+</div>
+<figcaption><b>mul-use 冒險：消費者必須等到生產者抵達 X3。</b>做法跟 load-use 一樣——把「這一格是乘除法指令」這個位元也管線化（<code>is_muldiv_Xhl → _Mhl → _X2hl</code>），在 D 級比對 rs1／rs2；只要命中 X、M、X2 其中之一就停。命中 X3 時不用停，因為那一拍就能旁路。</figcaption>
+</figure>
+
+<h3>代價：管線變長，誰會變慢？</h3>
+
+<p>手冊提醒「延長管線會增加所有指令的延遲，你應該預期這會影響效能數字」。但要精確講清楚哪些變慢、哪些沒變：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>項目</th><th>5 級</th><th>7 級</th><th>為什麼</th></tr></thead>
+<tbody>
+<tr><td>分支誤判 penalty</td><td class="num">2</td><td class="num">2</td><td><b>不變</b>。分支仍然在 X 級解決（<code>brj_taken_Xhl</code>），被壓掉的還是 F 和 D 那兩格。X 後面加幾級都跟它無關</td></tr>
+<tr><td><code>jal</code>／<code>jalr</code> penalty</td><td class="num">1</td><td class="num">1</td><td><b>不變</b>。在 D 級轉向</td></tr>
+<tr><td>load-use stall</td><td class="num">1</td><td class="num">1</td><td><b>不變</b>。載入值在 M 級末端到手，M 仍然緊跟在 X 後面</td></tr>
+<tr><td>mul-use stall</td><td class="num">~33</td><td class="num">3</td><td><b>大幅改善</b>，這是整個 Objective 的重點</td></tr>
+<tr><td>與 mul 無關的指令</td><td class="num">陪等 ~33</td><td class="num">0</td><td><b>大幅改善</b></td></tr>
+<tr><td>每條指令的總延遲</td><td class="num">5</td><td class="num">7</td><td>變長，但管線化之後這只影響「排乾管線」的那幾拍</td></tr>
+</tbody>
+</table></div>
+
+<div class="quiz"><b>想一想</b><p>既然分支 penalty 不變、load-use 不變、每條指令又是流水線處理的，那延長成 7 級到底在哪裡真的變慢了？</p><details><summary>看答案</summary><p>三個地方。(1) <b>程式結束／中斷時</b>要多花兩拍把管線排乾——對 benchmark 來說可以忽略。(2) <b>W 級離 D 更遠了</b>：如果你的旁路沒有完整涵蓋 X2、X3，那些原本靠「等它寫回」解決的相依會多停兩拍。(3) <b>硬體成本</b>：多兩級的 pc、寫回值、控制位元暫存器。所以實務上 <code>ubmark-vvadd</code>、<code>ubmark-bin-search</code>（幾乎沒有乘法）的數字應該跟 <code>riscvbyp</code> 幾乎一樣，而 <code>ubmark-cmplx-mult</code> 會大幅變快。跑完四支 benchmark 對照 <code>-byp.out</code> 和 <code>-long.out</code>，如果 vvadd 明顯變慢，多半是你漏了某條旁路。</p></details></div>
+
+<h3>動手流程</h3>
+
+<p><code>riscvlong/setup.sh</code> 做的事和 <code>riscvbyp</code> 那支一樣：<code>rsync</code> 上一個階段的成果過來，把檔名和檔案內容裡的 <code>riscvbyp</code> 全部換成 <code>riscvlong</code>。所以<b>先把 Objective 3 做到全過，再跑它</b>。</p>
+
+<pre><code>% cd $LAB1_ROOT/riscvlong
+% ./setup.sh          # 從 ../riscvbyp 複製並改名</code></pre>
+
+<p>接著依序：</p>
+<ol>
+<li>在 <code>riscvlong-CoreDpath.v</code> 裡把 <code>`include "imuldiv-IntMulDivIterative.v"</code> 換成 <code>`include "riscvlong-CoreDpathPipeMulDiv.v"</code>，例化改成 <code>riscv_CoreDpathPipeMulDiv</code>，運算元改接 <code>op0_mux_out_Dhl</code>／<code>op1_mux_out_Dhl</code>。</li>
+<li>在 <code>riscvlong-CoreCtrl.v</code> 補上 X2、X3 兩級（前面那張檢查清單）。</li>
+<li>把 <code>stall_Xhl</code>／<code>stall_Mhl</code>／<code>stall_X2hl</code>／<code>stall_X3hl</code> 四條線接進單元。</li>
+<li>擴充旁路：5 個來源 × 2 個運算元。</li>
+<li>加上 mul-use 的 stall 判斷。</li>
+<li>在 <code>riscvlong-Core.v</code> 把新增的控制／資料埠對接起來。</li>
+</ol>
+
+<p>要繳交的檔案，手冊第 6.1 節列得很清楚：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>階段</th><th>檔案</th></tr></thead>
+<tbody>
+<tr><td>Objective 1、2</td><td><code>riscvstall-CoreCtrl.v</code>、<code>riscvstall-InstMsg.v</code>、<code>imuldiv-IntMulIterative.v</code>、<code>imuldiv-IntMulDivIterative.v</code>、<code>imuldiv-MulDivReqMsg.v</code></td></tr>
+<tr><td>Objective 3</td><td><code>riscvbyp-CoreCtrl.v</code>、<code>riscvbyp-CoreDpath.v</code>、<code>riscvbyp-Core.v</code></td></tr>
+<tr class="hi"><td>Objective 4</td><td><code>riscvlong-CoreCtrl.v</code>、<code>riscvlong-CoreDpath.v</code>、<code>riscvlong-Core.v</code>、<code>riscvlong-CoreDpathPipeMulDiv.v</code></td></tr>
+</tbody>
+</table></div>
+
+<div class="trap"><b>打包前</b><p>先 <code>cd $LAB1_ROOT/build &amp;&amp; make clean</code>，再把整個工作目錄（保持原本的結構，三個 <code>riscv*</code> 目錄都要在）打包成 <code>.tar.gz</code>。另外別忘了 Objective 2 要求的三個組合語言測試，以及手冊第 4 節另外要求的「至少一個針對你遇到的 bug 或驗證旁路路徑的自訂測試」。</p></div>
+</section>

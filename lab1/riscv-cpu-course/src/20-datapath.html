@@ -1,0 +1,1499 @@
+<!-- ============================================================ ch4 -->
+<section class="ch" id="ch4" data-part="一條指令的旅程" data-nav="五級管線總覽">
+<p class="eyebrow">第 4 章 · 一條指令的旅程</p>
+<h2>把一道指令切成五段：F / D / X / M / W</h2>
+<p>前三章我們把指令當成一個 32 位元的數字在看。從這一章開始，它要真的<b>跑起來</b>：走進 <code>lab1</code> 這顆處理器，一級一級往前推。</p>
+<p>為什麼要切？如果一道指令從頭到尾（讀記憶體取指令、讀暫存器、算、存記憶體、寫回暫存器）都在同一個時脈週期裡做完，那個週期就得長到塞得下整條路徑，時脈頻率會很難看。<b>管線 (pipeline)</b> 的作法是把這條長路徑切成五段，中間插入暫存器，每段只做一件事：週期變短，而且五道指令可以同時在不同段裡前進。這就像自助洗衣：洗、烘、摺、收各用一台機器，你不會等第一批衣服摺完才開始洗第二批。</p>
+<p>lab1 的五級是 <b>F</b>etch、<b>D</b>ecode、e<b>X</b>ecute、<b>M</b>emory、<b>W</b>riteback。訊號名字一律以 <code>_Fhl</code>、<code>_Dhl</code>、<code>_Xhl</code>、<code>_Mhl</code>、<code>_Whl</code> 結尾，看到後綴就知道這條線活在哪一級（<code>hl</code> 表示它在時脈邊緣之後的那個週期有效）。</p>
+
+<h3>第六級：那個沒有名字的 P</h3>
+<p>翻開 <code>riscvstall-CoreDpath.v</code>，你會先看到一堆 <code>_Phl</code>。這不是打錯字，而是 F 前面還有一小段「PC 邏輯」。原因是記憶體是<b>有延遲的</b>：送出位址之後，資料要下一個週期才回來。所以指令記憶體的<b>請求</b>必須提早一級送出——在 P 級用 PC mux 選好下一個位址就直接送出去，F 級才收到回應。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 86–91、119–135 行</div>
+<pre><code class="language-verilog">assign pc_mux_out_Phl
+  = ( pc_mux_sel_Phl == 2'd0 ) ? pc_plus4_Phl      // pm_p：循序
+  : ( pc_mux_sel_Phl == 2'd1 ) ? branch_targ_Phl   // pm_b：分支（來自 X）
+  : ( pc_mux_sel_Phl == 2'd2 ) ? jump_targ_Phl     // pm_j：jal（來自 D）
+  : ( pc_mux_sel_Phl == 2'd3 ) ? jumpreg_targ_Phl  // pm_r：jalr（來自 D）
+  :                              32'bx;
+...
+// Send out imem request early
+assign imemreq_msg_addr
+  = ( imem_initial_fetch_Fhl ) ? reset_vector       // 32'h00080000
+  :                              pc_mux_out_Phl_final;
+...
+reg  [31:0] pc_Fhl;
+always @ (posedge clk) begin
+  if( reset )            pc_Fhl &lt;= reset_vector;
+  else if( !stall_Fhl )  pc_Fhl &lt;= pc_mux_out_Phl_final;
+end</code></pre>
+<p>注意 PC mux 的四個輸入分別來自三個不同的級：<code>pc_plus4_Phl</code> 來自 F、<code>jump_targ_Phl</code> / <code>jumpreg_targ_Phl</code> 來自 D、<code>branch_targ_Phl</code> 來自 X。管線的「回頭路」全部集中在這一顆 mux 上。</p>
+</div>
+
+<h3>整條 datapath，一張圖</h3>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 800 336" role="img" aria-label="lab1 五級管線 datapath 的方塊圖總覽：P 級的 PC mux 選出下一個位址並直接送出指令記憶體請求，pc_Fhl 暫存 PC，F 級收到指令回應並算 PC+4，D 級做暫存器讀取、立即值產生與兩顆運算元 mux，X 級有 ALU、muldiv 與分支條件邏輯及 execute mux，M 級有資料記憶體回應 mux 與 writeback mux，W 級把結果寫回暫存器檔，分支與跳躍目標位址從 X 與 D 級繞回 PC mux。">
+<path class="k" d="M60 90L86 100V180L60 190Z"/>
+<text class="s mut" x="64" y="109">0</text>
+<text class="s mut" x="64" y="132">1</text>
+<text class="s mut" x="64" y="155">2</text>
+<text class="s mut" x="64" y="178">3</text>
+<path class="w" d="M86 140H130"/>
+<circle class="d" cx="104" cy="140" r="3"/>
+<path class="w" d="M104 140V56H207V84" marker-end="url(#ah)"/>
+<text class="zh s" x="110" y="50">imemreq_msg_addr（P 級就先送出）</text>
+<path class="c" d="M73 95V76"/>
+<text class="s cb" x="98" y="70" text-anchor="end">pc_mux_sel_Phl</text>
+<rect class="k" x="165" y="84" width="85" height="36"/><text x="207" y="106" text-anchor="middle">imem</text>
+<path class="w" d="M144 140H270"/>
+<text class="s" x="150" y="134">pc_Fhl</text>
+<circle class="d" cx="158" cy="140" r="3"/>
+<path class="w" d="M158 140V175H175"/>
+<rect class="k" x="175" y="160" width="40" height="30"/><text x="195" y="179" text-anchor="middle">+4</text>
+<path class="w" d="M215 175H270"/>
+<circle class="d" cx="240" cy="175" r="3"/>
+<path class="w" d="M250 102H270"/>
+<path class="w" d="M284 102H300M284 140H300M284 175H300"/>
+<rect class="k" x="300" y="84" width="110" height="112"/>
+<text class="s" x="355" y="108" text-anchor="middle">regfile</text>
+<text class="s" x="355" y="130" text-anchor="middle">imm gen</text>
+<text class="s" x="355" y="152" text-anchor="middle">op0 / op1 mux</text>
+<text class="zh s" x="355" y="174" text-anchor="middle">位址加法器</text>
+<path class="w" d="M410 102H430M410 130H430M410 158H430M410 186H430"/>
+<path class="w" d="M444 102H464M444 130H464M444 158H464"/>
+<rect class="k" x="464" y="84" width="86" height="112"/>
+<text class="s" x="507" y="108" text-anchor="middle">ALU</text>
+<text class="s" x="507" y="130" text-anchor="middle">muldiv</text>
+<text class="s" x="507" y="152" text-anchor="middle">branch cond</text>
+<text class="s" x="507" y="174" text-anchor="middle">execute mux</text>
+<path class="w" d="M550 130H570"/>
+<path class="c" d="M507 84V64" marker-end="url(#ahc)"/>
+<text class="s cb" x="450" y="58">branch_cond_*_Xhl → ctrl</text>
+<path class="w" d="M584 130H600"/>
+<rect class="k" x="600" y="84" width="90" height="112"/>
+<text class="s" x="645" y="116" text-anchor="middle">data memory</text>
+<text class="s" x="645" y="140" text-anchor="middle">dmemresp mux</text>
+<text class="s" x="645" y="164" text-anchor="middle">wb mux</text>
+<path class="w" d="M520 196V230H640V196" marker-end="url(#ah)"/>
+<text class="zh s" x="528" y="243">dmemreq：X 級送出位址與資料</text>
+<path class="w" d="M690 140H710"/>
+<path class="w" d="M724 140H760V30H355V84" marker-end="url(#ah)"/>
+<text class="s" x="365" y="24">wb_mux_out_Whl · rf_wen_out_Whl · rf_waddr_Whl → regfile</text>
+<path class="w" d="M320 196V246H52V174H60" marker-end="url(#ah)"/>
+<text class="s" x="252" y="242">jumpreg_targ_Dhl</text>
+<path class="w" d="M340 196V260H42V151H60" marker-end="url(#ah)"/>
+<text class="s" x="252" y="256">jump_targ_Dhl</text>
+<path class="w" d="M444 186H456V274H30V128H60" marker-end="url(#ah)"/>
+<text class="s" x="346" y="270">branch_targ_Xhl</text>
+<path class="w" d="M240 175V288H18V105H60" marker-end="url(#ah)"/>
+<text class="s" x="62" y="284">pc_plus4_Fhl</text>
+<rect class="r" x="130" y="70" width="14" height="140"/><path class="rl" d="M130 190l7 5l-7 5"/><text class="s sq" x="137" y="224" text-anchor="middle">F←P</text>
+<rect class="r" x="270" y="70" width="14" height="140"/><path class="rl" d="M270 190l7 5l-7 5"/><text class="s sq" x="277" y="224" text-anchor="middle">D←F</text>
+<rect class="r" x="430" y="70" width="14" height="140"/><path class="rl" d="M430 190l7 5l-7 5"/><text class="s sq" x="437" y="224" text-anchor="middle">X←D</text>
+<rect class="r" x="570" y="70" width="14" height="140"/><path class="rl" d="M570 190l7 5l-7 5"/><text class="s sq" x="577" y="224" text-anchor="middle">M←X</text>
+<rect class="r" x="710" y="70" width="14" height="140"/><path class="rl" d="M710 190l7 5l-7 5"/><text class="s sq" x="717" y="224" text-anchor="middle">W←M</text>
+<text class="hd" x="70" y="312" text-anchor="middle">P</text>
+<text class="zh s mut" x="70" y="328" text-anchor="middle">選下一個 PC</text>
+<text class="hd" x="207" y="312" text-anchor="middle">F</text>
+<text class="zh s mut" x="207" y="328" text-anchor="middle">取指令</text>
+<text class="hd" x="355" y="312" text-anchor="middle">D</text>
+<text class="zh s mut" x="355" y="328" text-anchor="middle">解碼、讀暫存器</text>
+<text class="hd" x="507" y="312" text-anchor="middle">X</text>
+<text class="zh s mut" x="507" y="328" text-anchor="middle">執行</text>
+<text class="hd" x="645" y="312" text-anchor="middle">M</text>
+<text class="zh s mut" x="645" y="328" text-anchor="middle">記憶體</text>
+<text class="hd" x="750" y="312" text-anchor="middle">W</text>
+<text class="zh s mut" x="750" y="328" text-anchor="middle">寫回</text>
+</svg>
+</div>
+<figcaption><b>五級管線的骨架。</b>銅色直條是管線暫存器，下方標的是它隔開哪兩級（<code>X←D</code> = 把 D 級的結果交給 X 級）。PC mux 的四個輸入 <code>+4 / b / j / r</code> 就是 <code>pm_p / pm_b / pm_j / pm_r</code>：<code>branch_targ_Xhl</code> 從 X 繞回來、<code>jump_targ_Dhl</code> 從 D 繞回來、<code>jumpreg_targ_Dhl</code>（<code>jalr</code>，<a href="#ch8">第 8 章</a>才會用到）也在 D。指令記憶體請求在 P 就送出去，回應在 F 收到——這就是那個沒有名字的第六級存在的理由。要看每一條線的完整接法，請開<a href="../riscvstall-datapath/riscvstall-datapath.html">管線接線圖</a>；這裡刻意只畫方塊。</figcaption>
+</figure>
+<h3>控制器與 datapath：兩個模組，一組介面</h3>
+<p><code>riscv_Core</code> 只做一件事：把 <code>riscv_CoreCtrl</code>（控制器）和 <code>riscv_CoreDpath</code>（資料路徑）接起來。這個切法是整個 lab 的重點——Objective 1 只要你改 <code>riscvstall-CoreCtrl.v</code>，因為 datapath 已經完整了。</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-Core.v · 第 152–216 行（節錄）</div>
+<pre><code class="language-verilog">riscv_CoreCtrl ctrl
+(
+  ...
+  // Controls Signals (ctrl-&gt;dpath)
+  .pc_mux_sel_Phl         (pc_mux_sel_Phl),
+  .op0_mux_sel_Dhl        (op0_mux_sel_Dhl),
+  .op1_mux_sel_Dhl        (op1_mux_sel_Dhl),
+  .alu_fn_Xhl             (alu_fn_Xhl),
+  .dmemresp_mux_sel_Mhl   (dmemresp_mux_sel_Mhl),
+  .wb_mux_sel_Mhl         (wb_mux_sel_Mhl),
+  .rf_wen_out_Whl         (rf_wen_Whl),
+  ...
+  // Control Signals (dpath-&gt;ctrl)
+  .branch_cond_eq_Xhl     (branch_cond_eq_Xhl),
+  .branch_cond_ne_Xhl     (branch_cond_ne_Xhl),
+  ...
+);</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 350" role="img" aria-label="控制器與資料路徑的介面：riscv_Core 同時實例化 riscv_CoreCtrl 與 riscv_CoreDpath，控制器往下送 mux 選擇線與 ALU 功能等控制訊號，資料路徑往上回送六條 branch_cond 訊號與 proc2csr_data_Whl，記憶體則掛在右邊，val/rdy 交握由控制器管、位址與資料由資料路徑出。">
+  <rect class="grp" x="14" y="14" width="692" height="322"/>
+  <text class="s mut" x="22" y="30">riscv_Core</text>
+
+  <rect class="k" x="44" y="40" width="530" height="50"/>
+  <text class="hd" x="309" y="62" text-anchor="middle">riscv_CoreCtrl</text>
+  <text class="zh s mut" x="309" y="80" text-anchor="middle">39 位元控制表 + stall / squash</text>
+
+  <rect class="k" x="44" y="258" width="530" height="50"/>
+  <text class="hd" x="309" y="280" text-anchor="middle">riscv_CoreDpath</text>
+  <text class="zh s mut" x="309" y="298" text-anchor="middle">暫存器 · mux · ALU · 記憶體埠</text>
+
+  <path class="c" d="M92 90V258" marker-end="url(#ahc)"/>
+  <path class="w" d="M534 258V90" marker-end="url(#ah)"/>
+  <text class="zh s cb" x="52" y="112">控制往下</text>
+  <text class="zh s" x="522" y="112" text-anchor="end">條件往上</text>
+  <text class="cb s" x="104" y="136">pc_mux_sel_Phl</text>
+  <text class="cb s" x="104" y="154">op0_mux_sel_Dhl · op1_mux_sel_Dhl</text>
+  <text class="cb s" x="104" y="172">alu_fn_Xhl · execute_mux_sel_Xhl</text>
+  <text class="cb s" x="104" y="190">dmemresp_mux_sel_Mhl · wb_mux_sel_Mhl</text>
+  <text class="cb s" x="104" y="208">rf_wen_Whl · rf_waddr_Whl</text>
+  <text class="cb s" x="104" y="226">stall_Fhl … stall_Whl · squash_Fhl</text>
+  <text class="s" x="522" y="136" text-anchor="end">branch_cond_eq / ne_Xhl</text>
+  <text class="s" x="522" y="154" text-anchor="end">branch_cond_lt / ltu_Xhl</text>
+  <text class="s" x="522" y="172" text-anchor="end">branch_cond_ge / geu_Xhl</text>
+  <text class="s" x="522" y="190" text-anchor="end">proc2csr_data_Whl</text>
+
+  <rect class="gh" x="604" y="140" width="92" height="66"/>
+  <text class="zh s mut" x="650" y="166" text-anchor="middle">記憶體</text>
+  <text class="s mut" x="650" y="182" text-anchor="middle">val / rdy</text>
+  <path class="w" d="M574 60H650V140" marker-end="url(#ah)"/>
+  <path class="w" d="M690 206V288H574" marker-end="url(#ah)"/>
+  <text class="zh s mut" x="596" y="120">val / rdy</text>
+  <text class="zh s mut" x="596" y="136">交握</text>
+  <text class="s mut" x="578" y="236">imemreq_msg_addr</text>
+  <text class="s mut" x="578" y="252">dmemreq_msg_addr</text>
+  <text class="s mut" x="578" y="268">dmemreq_msg_data</text>
+  <text class="s mut" x="578" y="304">dmemresp_msg_data</text>
+</svg>
+</div>
+<figcaption><b>控制訊號往下、條件訊號往上。</b>唯一從 datapath 往回送給控制器的「資料」是六條 <code>branch_cond_*_Xhl</code>（還有寫進 CSR 的 <code>proc2csr_data_Whl</code>）。這就是為什麼你加新指令時，幾乎永遠只需要改控制表——除非你要新的分支條件，那才需要在控制器裡多接一條線（<a href="#ch8">第 8 章</a>）。</figcaption>
+</figure>
+</div>
+
+<h3>每一級到底在做什麼</h3>
+<div class="tbl">
+<table>
+<thead><tr><th>級</th><th>做的事</th><th>關鍵訊號</th></tr></thead>
+<tbody>
+<tr><td class="num">P</td><td>PC mux 選出下一個位址，並<b>直接把指令記憶體請求送出去</b></td><td><code>pc_mux_sel_Phl</code>、<code>pc_mux_out_Phl</code>、<code>imemreq_msg_addr</code></td></tr>
+<tr><td class="num">F</td><td>收到指令回應；同時算 <code>pc + 4</code></td><td><code>pc_Fhl</code>、<code>pc_plus4_Fhl</code>、<code>imemresp_msg_data</code></td></tr>
+<tr><td class="num">D</td><td>把指令丟進 <code>casez</code> 產生 39 位元控制束；讀 regfile（組合讀）；產生立即值；兩顆運算元 mux；算 branch / jump 目標位址；<code>jal</code> 在這裡就轉向</td><td><code>ir_Dhl</code>、<code>cs</code>、<code>op0_mux_out_Dhl</code>、<code>op1_mux_out_Dhl</code>、<code>branch_targ_Dhl</code>、<code>jump_targ_Dhl</code></td></tr>
+<tr><td class="num">X</td><td>ALU 或 muldiv 算；判斷分支條件（分支在這裡才拍板）；<b>送出</b>資料記憶體請求</td><td><code>alu_fn_Xhl</code>、<code>alu_out_Xhl</code>、<code>branch_cond_*_Xhl</code>、<code>brj_taken_Xhl</code>、<code>dmemreq_msg_addr/data</code></td></tr>
+<tr><td class="num">M</td><td><b>收到</b>資料記憶體回應，做 subword 調整（sign / zero extend）；writeback mux 選 ALU 還是記憶體</td><td><code>dmemresp_mux_sel_Mhl</code>、<code>wb_mux_sel_Mhl</code>、<code>wb_mux_out_Mhl</code></td></tr>
+<tr><td class="num">W</td><td>在時脈上升緣寫回 regfile；<code>csrw</code> 也在這裡寫 <code>csr_status</code></td><td><code>rf_wen_Whl</code>、<code>rf_waddr_Whl</code>、<code>wb_mux_out_Whl</code></td></tr>
+</tbody>
+</table>
+</div>
+<div class="note"><b>這一章先假設「只有一道指令在跑」</b><p>五道指令同時在管線裡的時候，後面的指令可能需要前面還沒寫回的值，這叫<b>冒險 (hazard)</b>，處理方式是 stall（卡住）與 bubble（插空格）。<a href="#ch9">第 9 章</a>起才會處理；在第 4–8 章，你就當成整條管線裡只有你追蹤的那一道指令。</p></div>
+</section>
+<!-- ============================================================ ch5 -->
+<section class="ch" id="ch5" data-part="一條指令的旅程" data-nav="控制表：一列一道指令">
+<p class="eyebrow">第 5 章 · 一條指令的旅程</p>
+<h2>控制表：一列就是一道指令</h2>
+<p>很多教科書把控制器畫成有限狀態機 (FSM)。lab1 <b>不是</b>。這裡的控制器只是一張<b>查表</b>：把 32 位元的指令丟進一個 <code>casez</code>，比對出是哪一道指令，然後把 39 個位元一次填進一條叫 <code>cs</code> 的匯流排。沒有狀態、沒有轉移，純組合邏輯（基礎篇<a href="../verilog-course/index.html#ch11">第 11 章</a>的 <code>casez</code> 正是為此鋪路）。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 404–418 行</div>
+<pre><code class="language-verilog">localparam cs_sz = `RISCV_INST_MSG_CS_SZ;   // 39
+reg [cs_sz-1:0] cs;
+
+always @ (*) begin
+
+  cs = {cs_sz{1'bx}}; // Default to invalid instruction
+
+  casez ( ir_Dhl )
+
+    //                                j     br       pc      op0      rs1 op1       rs2 alu       md       md md     ex      mem  mem   memresp wb      rf      csr
+    //                            val taken type     muxsel  muxsel   en  muxsel    en  fn        fn       en muxsel muxsel  rq   len   muxsel  muxsel  wen wa  wen
+    `RISCV_INST_MSG_ADDI    :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_i, n,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };</code></pre>
+<p>這一列就是 <code>addi</code> 的全部。左邊的 <code>`RISCV_INST_MSG_ADDI</code> 是比對樣式（<code>riscvstall-InstMsg.v</code> 第 122 行：<code>32'b???????_?????_?????_000_?????_0010011</code>，只釘住 funct3 與 opcode，<code>?</code> 代表不比對）；右邊大括號裡用位元串接（基礎篇<a href="../verilog-course/index.html#ch5">第 5 章</a>）把 20 個欄位黏成 39 位元。<b>Objective 1 的工作，就是把註解掉的那幾十列補回來。</b></p>
+</div>
+
+<h3>39 個位元是怎麼切的</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-InstMsg.v · 第 159–180 行（節錄）</div>
+<pre><code class="language-verilog">`define RISCV_INST_MSG_CS_SZ      39
+`define RISCV_INST_MSG_INST_VAL   38:38
+`define RISCV_INST_MSG_J_EN       37:37
+`define RISCV_INST_MSG_BR_SEL     36:34
+`define RISCV_INST_MSG_PC_SEL     33:32
+`define RISCV_INST_MSG_OP0_SEL    31:30
+`define RISCV_INST_MSG_RS1_EN     29:29
+`define RISCV_INST_MSG_OP1_SEL    28:26
+`define RISCV_INST_MSG_RS2_EN     25:25
+`define RISCV_INST_MSG_ALU_FN     24:21
+...
+`define RISCV_INST_MSG_RF_WADDR   5:1
+`define RISCV_INST_MSG_CSR_WEN    0:0</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 780 302" role="img" aria-label="39 位元控制束 cs 的欄位分佈圖：從第 38 位元的 INST_VAL 到第 0 位元的 CSR_WEN 共二十個欄位，每個欄位下方拉一條線到它被消耗的管線級 D、X、M 或 W。">
+<text class="zh hd" x="20" y="20">cs[38:0]　一道指令 = 表格裡的一列 = 這 39 個位元</text>
+<rect class="f-rs1" x="20.0" y="158" width="19.0" height="26"/>
+<text class="s" transform="rotate(-90 29.5 154)" x="29.5" y="154">INST_VAL 38</text>
+<rect class="f-rs1" x="39.0" y="158" width="19.0" height="26"/>
+<text class="s" transform="rotate(-90 48.5 154)" x="48.5" y="154">J_EN 37</text>
+<rect class="f-rs2" x="58.0" y="158" width="57.0" height="26"/>
+<text class="s" transform="rotate(-90 86.5 154)" x="86.5" y="154">BR_SEL 36:34</text>
+<rect class="f-rs1" x="115.0" y="158" width="38.0" height="26"/>
+<text class="s" transform="rotate(-90 134.0 154)" x="134.0" y="154">PC_SEL 33:32</text>
+<rect class="f-rs1" x="153.0" y="158" width="38.0" height="26"/>
+<text class="s" transform="rotate(-90 172.0 154)" x="172.0" y="154">OP0_SEL 31:30</text>
+<rect class="f-rs1" x="191.0" y="158" width="19.0" height="26"/>
+<text class="s" transform="rotate(-90 200.5 154)" x="200.5" y="154">RS1_EN 29</text>
+<rect class="f-rs1" x="210.0" y="158" width="57.0" height="26"/>
+<text class="s" transform="rotate(-90 238.5 154)" x="238.5" y="154">OP1_SEL 28:26</text>
+<rect class="f-rs1" x="267.0" y="158" width="19.0" height="26"/>
+<text class="s" transform="rotate(-90 276.5 154)" x="276.5" y="154">RS2_EN 25</text>
+<rect class="f-rs2" x="286.0" y="158" width="76.0" height="26"/>
+<text class="s" transform="rotate(-90 324.0 154)" x="324.0" y="154">ALU_FN 24:21</text>
+<rect class="f-rs2" x="362.0" y="158" width="57.0" height="26"/>
+<text class="s" transform="rotate(-90 390.5 154)" x="390.5" y="154">MULDIV_FN 20:18</text>
+<rect class="f-rs2" x="419.0" y="158" width="19.0" height="26"/>
+<text class="s" transform="rotate(-90 428.5 154)" x="428.5" y="154">MULDIV_EN 17</text>
+<rect class="f-rs2" x="438.0" y="158" width="19.0" height="26"/>
+<text class="s" transform="rotate(-90 447.5 154)" x="447.5" y="154">MULDIV_SEL 16</text>
+<rect class="f-rs2" x="457.0" y="158" width="19.0" height="26"/>
+<text class="s" transform="rotate(-90 466.5 154)" x="466.5" y="154">EX_SEL 15</text>
+<rect class="f-rs2" x="476.0" y="158" width="38.0" height="26"/>
+<text class="s" transform="rotate(-90 495.0 154)" x="495.0" y="154">MEM_REQ 14:13</text>
+<rect class="f-rs2" x="514.0" y="158" width="38.0" height="26"/>
+<text class="s" transform="rotate(-90 533.0 154)" x="533.0" y="154">MEM_LEN 12:11</text>
+<rect class="f-fn" x="552.0" y="158" width="57.0" height="26"/>
+<text class="s" transform="rotate(-90 580.5 154)" x="580.5" y="154">MEM_SEL 10:8</text>
+<rect class="f-fn" x="609.0" y="158" width="19.0" height="26"/>
+<text class="s" transform="rotate(-90 618.5 154)" x="618.5" y="154">WB_SEL 7</text>
+<rect class="f-imm" x="628.0" y="158" width="19.0" height="26"/>
+<text class="s" transform="rotate(-90 637.5 154)" x="637.5" y="154">RF_WEN 6</text>
+<rect class="f-imm" x="647.0" y="158" width="95.0" height="26"/>
+<text class="s" transform="rotate(-90 694.5 154)" x="694.5" y="154">RF_WADDR 5:1</text>
+<rect class="f-imm" x="742.0" y="158" width="19.0" height="26"/>
+<text class="s" transform="rotate(-90 751.5 154)" x="751.5" y="154">CSR_WEN 0</text>
+<path class="re" d="M20 200 H761"/>
+<text class="s sq" x="766" y="204">D</text>
+<path class="re" d="M20 222 H761"/>
+<text class="s sq" x="766" y="226">X</text>
+<path class="re" d="M20 244 H761"/>
+<text class="s sq" x="766" y="248">M</text>
+<path class="re" d="M20 266 H761"/>
+<text class="s sq" x="766" y="270">W</text>
+<path class="c" d="M29.5 184V200"/>
+<circle class="dc" cx="29.5" cy="200" r="2.5"/>
+<path class="c" d="M48.5 184V200"/>
+<circle class="dc" cx="48.5" cy="200" r="2.5"/>
+<path class="c" d="M86.5 184V222"/>
+<circle class="dc" cx="86.5" cy="222" r="2.5"/>
+<path class="c" d="M134.0 184V200"/>
+<circle class="dc" cx="134.0" cy="200" r="2.5"/>
+<path class="c" d="M172.0 184V200"/>
+<circle class="dc" cx="172.0" cy="200" r="2.5"/>
+<path class="c" d="M200.5 184V200"/>
+<circle class="dc" cx="200.5" cy="200" r="2.5"/>
+<path class="c" d="M238.5 184V200"/>
+<circle class="dc" cx="238.5" cy="200" r="2.5"/>
+<path class="c" d="M276.5 184V200"/>
+<circle class="dc" cx="276.5" cy="200" r="2.5"/>
+<path class="c" d="M324.0 184V222"/>
+<circle class="dc" cx="324.0" cy="222" r="2.5"/>
+<path class="c" d="M390.5 184V222"/>
+<circle class="dc" cx="390.5" cy="222" r="2.5"/>
+<path class="c" d="M428.5 184V222"/>
+<circle class="dc" cx="428.5" cy="222" r="2.5"/>
+<path class="c" d="M447.5 184V222"/>
+<circle class="dc" cx="447.5" cy="222" r="2.5"/>
+<path class="c" d="M466.5 184V222"/>
+<circle class="dc" cx="466.5" cy="222" r="2.5"/>
+<path class="c" d="M495.0 184V222"/>
+<circle class="dc" cx="495.0" cy="222" r="2.5"/>
+<path class="c" d="M533.0 184V222"/>
+<circle class="dc" cx="533.0" cy="222" r="2.5"/>
+<path class="c" d="M580.5 184V244"/>
+<circle class="dc" cx="580.5" cy="244" r="2.5"/>
+<path class="c" d="M618.5 184V244"/>
+<circle class="dc" cx="618.5" cy="244" r="2.5"/>
+<path class="c" d="M637.5 184V266"/>
+<circle class="dc" cx="637.5" cy="266" r="2.5"/>
+<path class="c" d="M694.5 184V266"/>
+<circle class="dc" cx="694.5" cy="266" r="2.5"/>
+<path class="c" d="M751.5 184V266"/>
+<circle class="dc" cx="751.5" cy="266" r="2.5"/>
+<text class="zh s mut" x="20" y="294">每個欄位在 D 級一起被寫進 cs，再各自沿控制管線暫存器走到自己那一級</text>
+</svg>
+</div>
+<figcaption><b>大括號裡欄位的順序，就是位元由高到低的順序。</b>所以列的第一欄一定對到 <code>cs[38]</code>，最後一欄對到 <code>cs[0]</code>——<b>漏寫或多寫一欄，整列會整體位移</b>，編譯不會報錯，但每個控制訊號都會錯位。底下四條虛線是這個欄位最後被誰用到：顏色也照這個分。</figcaption>
+</figure>
+</div>
+
+<h3>控制訊號跟著指令一起走</h3>
+<p>控制表在 <b>D 級</b>一次算完，但 ALU 要到 X 才用 <code>alu_fn</code>，regfile 要到 W 才用 <code>rf_wen</code>。解法很直接：<b>把控制訊號也放進管線暫存器</b>，讓它和它要控制的資料同步前進。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 611–636、706–722、770–783 行（節錄）</div>
+<pre><code class="language-verilog">always @ ( posedge clk ) begin          // X &lt;- D
+  if ( reset ) bubble_Xhl &lt;= 1'b1;
+  else if( !stall_Xhl ) begin
+    alu_fn_Xhl           &lt;= alu_fn_Dhl;
+    wb_mux_sel_Xhl       &lt;= wb_mux_sel_Dhl;
+    rf_wen_Xhl           &lt;= rf_wen_Dhl;
+    rf_waddr_Xhl         &lt;= rf_waddr_Dhl;
+    ...
+  end
+end
+
+always @ ( posedge clk ) begin          // M &lt;- X
+  if( !stall_Mhl ) begin
+    dmemresp_mux_sel_Mhl &lt;= dmemresp_mux_sel_Xhl;
+    wb_mux_sel_Mhl       &lt;= wb_mux_sel_Xhl;
+    rf_wen_Mhl           &lt;= rf_wen_Xhl;
+    ...
+  end
+end
+
+always @ ( posedge clk ) begin          // W &lt;- M
+  if( !stall_Whl ) begin
+    rf_wen_Whl       &lt;= rf_wen_Mhl;
+    rf_waddr_Whl     &lt;= rf_waddr_Mhl;
+    ...
+  end
+end</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 280" role="img" aria-label="控制訊號與資料同步前進的示意：指令本體 ir 經過三組管線暫存器從 D 走到 W；alu_fn 只需要走一段從 alu_fn_Dhl 到 alu_fn_Xhl 就進 ALU；rf_wen 要走三段從 Dhl 到 Xhl 到 Mhl 到 Whl 才進暫存器檔的寫入埠。">
+  <text class="zh hd" x="100" y="20" text-anchor="middle">D</text>
+  <text class="zh hd" x="268" y="20" text-anchor="middle">X</text>
+  <text class="zh hd" x="436" y="20" text-anchor="middle">M</text>
+  <text class="zh hd" x="604" y="20" text-anchor="middle">W</text>
+  <rect class="r" x="180" y="34" width="14" height="216"/>
+  <rect class="r" x="348" y="34" width="14" height="216"/>
+  <rect class="r" x="516" y="34" width="14" height="216"/>
+  <text class="s sq" x="187" y="28" text-anchor="middle">X←D</text>
+  <text class="s sq" x="355" y="28" text-anchor="middle">M←X</text>
+  <text class="s sq" x="523" y="28" text-anchor="middle">W←M</text>
+
+  <path class="w" d="M36 70H180"/><path class="w" d="M194 70H348"/>
+  <path class="w" d="M362 70H516"/><path class="w" d="M530 70H700"/>
+  <text class="s" x="40" y="64">ir_Dhl</text><text class="s" x="200" y="64">ir_Xhl</text>
+  <text class="s" x="368" y="64">ir_Mhl</text><text class="s" x="536" y="64">ir_Whl</text>
+  <text class="zh s mut" x="36" y="90">指令本體（給反組譯與除錯用）</text>
+
+  <path class="c" d="M36 140H180"/><path class="c" d="M194 140H276" marker-end="url(#ahc)"/>
+  <text class="cb s" x="40" y="134">alu_fn_Dhl</text><text class="cb s" x="200" y="134">alu_fn_Xhl</text>
+  <rect class="k" x="276" y="118" width="64" height="44"/>
+  <text x="308" y="145" text-anchor="middle">ALU</text>
+  <path class="w" d="M340 140H348"/>
+  <text class="zh s mut" x="36" y="160">只需要走一段</text>
+
+  <path class="c" d="M36 210H180"/><path class="c" d="M194 210H348"/>
+  <path class="c" d="M362 210H516"/><path class="c" d="M530 210H600" marker-end="url(#ahc)"/>
+  <text class="cb s" x="40" y="204">rf_wen_Dhl</text><text class="cb s" x="200" y="204">rf_wen_Xhl</text>
+  <text class="cb s" x="368" y="204">rf_wen_Mhl</text><text class="cb s" x="536" y="204">rf_wen_Whl</text>
+  <rect class="k" x="600" y="188" width="72" height="44"/>
+  <text class="s" x="636" y="207" text-anchor="middle">regfile</text>
+  <text class="s" x="636" y="221" text-anchor="middle">寫入埠</text>
+  <text class="zh s mut" x="36" y="230">要走三段才到得了 W</text>
+  <text class="zh s mut" x="36" y="268">同一列填下去的值，各自在自己該到的那一級被用掉；「控制訊號跟著指令一起坐管線」</text>
+</svg>
+</div>
+<figcaption><b>控制訊號和資料在同一排管線暫存器裡並肩前進。</b><code>alu_fn</code> 只走一段（D→X），<code>rf_wen</code>／<code>rf_waddr</code> 要走三段（D→X→M→W）。注意 <code>rf_wen_Xhl</code>、<code>rf_wen_Mhl</code> 不只是「路過」——<a href="#ch10">第 10 章</a>的冒險偵測就是靠讀這些中途的值，才知道前面有哪道指令待會要寫哪個暫存器。</figcaption>
+</figure>
+</div>
+
+<h3>每一欄的合法值</h3>
+<p>所有值都在 <code>riscvstall-CoreCtrl.v</code> 第 249–359 行的 <code>localparam</code> 區。填表之前先把這一段讀熟，你會發現大部分「難題」其實只是挑一個常數。</p>
+<div class="tbl">
+<table>
+<thead><tr><th>欄</th><th>意思</th><th>合法值（localparam）</th></tr></thead>
+<tbody>
+<tr><td><code>val</code></td><td>是合法指令嗎（只給 assertion 用，沒對到的指令會印 Illegal instruction）</td><td><code>y</code> / <code>n</code></td></tr>
+<tr><td><code>j taken</code></td><td><code>J_EN</code>：在 D 級就能決定的跳躍（<code>jal</code>、<code>jalr</code>）</td><td><code>y</code> / <code>n</code></td></tr>
+<tr><td><code>br type</code></td><td>分支種類，X 級用它挑要看哪個條件</td><td><code>br_none</code> <code>br_beq</code> <code>br_bne</code> <code>br_blt</code> <code>br_bltu</code> <code>br_bge</code> <code>br_bgeu</code> <code>br_x</code></td></tr>
+<tr><td><code>pc muxsel</code></td><td>PC mux</td><td><code>pm_p</code>(+4) <code>pm_b</code>(分支) <code>pm_j</code>(jal) <code>pm_r</code>(jalr) <code>pm_x</code></td></tr>
+<tr><td><code>op0 muxsel</code></td><td>運算元 0</td><td><code>am_rdat</code>(rs1) <code>am_pc</code> <code>am_pc4</code> <code>am_0</code> <code>am_x</code></td></tr>
+<tr><td><code>rs1 en</code></td><td>op0 真的來自 regfile 嗎（冒險偵測／bypass 用）</td><td><code>y</code> / <code>n</code></td></tr>
+<tr><td><code>op1 muxsel</code></td><td>運算元 1</td><td><code>bm_rdat</code>(rs2) <code>bm_shamt</code> <code>bm_imm_u</code> <code>bm_imm_sb</code> <code>bm_imm_i</code> <code>bm_imm_s</code> <code>bm_0</code> <code>bm_x</code></td></tr>
+<tr><td><code>rs2 en</code></td><td>op1 真的來自 regfile 嗎</td><td><code>y</code> / <code>n</code></td></tr>
+<tr><td><code>alu fn</code></td><td>ALU 功能（<a href="#ch7">第 7 章</a>）</td><td><code>alu_add</code> <code>alu_sub</code> <code>alu_sll</code> <code>alu_or</code> <code>alu_lt</code> <code>alu_ltu</code> <code>alu_and</code> <code>alu_xor</code> <code>alu_nor</code> <code>alu_srl</code> <code>alu_sra</code> <code>alu_x</code></td></tr>
+<tr><td><code>md fn</code></td><td>乘除法器功能</td><td><code>md_mul</code> <code>md_div</code> <code>md_divu</code> <code>md_rem</code> <code>md_remu</code> <code>md_x</code></td></tr>
+<tr><td><code>md en</code></td><td>要不要發乘除法請求</td><td><code>y</code> / <code>n</code></td></tr>
+<tr><td><code>md muxsel</code></td><td>64 位元結果取低半還高半</td><td><code>mdm_l</code>(mul/div) <code>mdm_u</code>(rem) <code>mdm_x</code></td></tr>
+<tr><td><code>ex muxsel</code></td><td>X 級輸出取 ALU 還是 muldiv</td><td><code>em_alu</code> <code>em_md</code> <code>em_x</code></td></tr>
+<tr><td><code>mem rq</code></td><td>記憶體請求種類</td><td><code>nr</code>(無) <code>ld</code> <code>st</code></td></tr>
+<tr><td><code>mem len</code></td><td>存取長度</td><td><code>ml_w</code>(0=word) <code>ml_b</code>(1=byte) <code>ml_h</code>(2=half) <code>ml_x</code></td></tr>
+<tr><td><code>memresp muxsel</code></td><td>回應的 subword 調整</td><td><code>dmm_w</code> <code>dmm_b</code> <code>dmm_bu</code> <code>dmm_h</code> <code>dmm_hu</code> <code>dmm_x</code></td></tr>
+<tr><td><code>wb muxsel</code></td><td>寫回的值取 X 級輸出還是記憶體回應</td><td><code>wm_alu</code> <code>wm_mem</code> <code>wm_x</code></td></tr>
+<tr><td><code>rf wen</code> / <code>wa</code></td><td>要不要寫 regfile、寫到哪個暫存器</td><td><code>y</code>/<code>n</code>；<code>rd</code> / <code>r0</code> / <code>rx</code></td></tr>
+<tr><td><code>csr wen</code></td><td>寫 CSR（只有 <code>csrw</code> 是 <code>y</code>）</td><td><code>y</code> / <code>n</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="note"><b><code>x</code> 到底是什麼？</b>
+<p><code>am_x</code>、<code>alu_x</code>、<code>dmm_x</code> 這類值展開後是 <code>2'bx</code>、<code>4'bx</code>——<b>不在乎 (don't care)</b>。合成器可以自由選任何值來省邏輯；模擬時那條線會是 <code>x</code>。</p>
+<p><b>安全的時機：</b>這個欄位的「消費者」被關掉了。例如 <code>bne</code> 那列寫 <code>wm_x</code>，因為 <code>rf_wen = n</code>，writeback mux 的輸出根本沒人要；<code>em_x</code> 之於 <code>lw</code> 也一樣，因為 <code>wb_mux_sel = wm_mem</code>，沒人看 execute mux 的輸出。</p>
+<p><b>危險的時機：</b>消費者其實還活著。如果你替 <code>sw</code> 寫 <code>am_x</code>，位址就算不出來；替 <code>lb</code> 寫 <code>dmm_x</code>，寫回的值會是 <code>x</code>，測試會爆但波形上只看到一片紅色的 x，很難查。<b>拿不準就填一個真的值</b>——多花不了幾個閘。</p></div>
+<div class="trap"><b>常見錯誤</b><p><code>x</code> 一旦流進 <code>rf_wen</code>、<code>dmemreq_val</code> 這種<b>致能</b>訊號就是災難：<code>if (x)</code> 在模擬裡不成立、在合成後可能成立。致能欄位永遠寫 <code>y</code> 或 <code>n</code>，不要寫 <code>x</code>。</p></div>
+</section>
+<!-- ============================================================ ch6 -->
+<section class="ch" id="ch6" data-part="一條指令的旅程" data-nav="走一遍五道指令">
+<p class="eyebrow">第 6 章 · 一條指令的旅程</p>
+<h2>走一遍：addi、lw、sw、bne、jal</h2>
+<p>參考設計裡已經填好的指令只有十一道。這一章把其中五道拆開來走一遍——不是為了背，而是為了讓你之後看到任何一道新指令，都能先問：「它最像哪一道？差在哪一段？」</p>
+<p>接下來五張圖用的是<b>同一張簡化 datapath</b>，只是把該指令用到的路徑畫成<span style="color:var(--accent)">重點色</span>、沒用到的畫成灰虛線，並在每顆 mux 旁標出那一列填的值。請把注意力放在五張圖的<b>差異</b>上。</p>
+<div class="note"><b>圖上省略了什麼</b><p>op1 mux 實際有七個輸入（<code>rdat</code>、<code>shamt</code>、<code>imm_u</code>、<code>imm_sb</code>、<code>imm_i</code>、<code>imm_s</code>、<code>0</code>），圖上把四個立即值合併畫成一個 <code>imm gen</code>；bypass mux（Objective 3 才加）與 PC mux 也沒畫。完整接線請看<a href="../riscvstall-datapath/riscvstall-datapath.html">管線接線圖</a>。</p></div>
+
+<h3>addi：最短的那條路</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 418 行</div>
+<pre><code class="language-verilog">`RISCV_INST_MSG_ADDI    :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_i, n,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 820 416" role="img" aria-label="addi 在簡化 datapath 上的路徑：rs1 從 regfile 經 op0 mux，I 型立即值經 op1 mux，兩者在 X 級進 ALU 做加法，結果經 execute mux 與 writeback mux，在 W 級寫回 rd。">
+<path class="wd" d="M178 92H200"/>
+<text class="s mut" x="174" y="96" text-anchor="end">pc_Dhl</text>
+<path class="wd" d="M178 114H200"/>
+<text class="s mut" x="174" y="118" text-anchor="end">pc_plus4_Dhl</text>
+<path class="wd" d="M178 136H200"/>
+<text class="s mut" x="174" y="140" text-anchor="end">const0</text>
+<path class="wd" d="M55 140V200H200"/>
+<text class="s mut" x="62" y="194">rf_rdata1 (rs2)</text>
+<path class="wd" d="M178 222H200"/>
+<text class="s mut" x="174" y="226" text-anchor="end">shamt</text>
+<path class="wd" d="M178 266H200"/>
+<text class="s mut" x="174" y="270" text-anchor="end">const0</text>
+<path class="wd" d="M126 200V358H262"/>
+<text class="s mut" x="132" y="372">wdata_Dhl</text>
+<path class="wd" d="M522 168V92"/>
+<path class="wd" d="M522 168V330H636" marker-end="url(#ahd)"/>
+<text class="s mut" x="528" y="324">dmemreq_msg_addr</text>
+<path class="wd" d="M440 286H508V204H532"/>
+<path class="wd" d="M278 358H636" marker-end="url(#ahd)"/>
+<text class="s mut" x="283" y="352">wdata_Xhl → dmemreq_msg_data</text>
+<path class="wd" d="M683 322V270"/>
+<text class="s mut" x="677" y="308" text-anchor="end">dmemresp_msg_data</text>
+<path class="wd" d="M730 256H748"/>
+<path class="wd" d="M140 319H106" marker-end="url(#ahd)"/>
+<text class="s mut" x="140" y="346">jump_targ_Dhl</text>
+<path class="wd" d="M222 319H262"/>
+<path class="wd" d="M278 319H296V394H65V385" marker-end="url(#ahd)"/>
+<text class="s mut" x="302" y="389">branch_targ_Xhl</text>
+<path class="a" d="M86 70H200"/>
+<text class="s ac" x="92" y="64">rf_rdata0 (rs1)</text>
+<path class="a" d="M188 244H200"/>
+<path class="a" d="M226 103H262M278 103H384"/>
+<text class="s ac" x="283" y="97">op0_mux_out_Xhl</text>
+<path class="a" d="M226 233H262M278 233H384"/>
+<text class="s ac" x="283" y="227">op1_mux_out_Xhl</text>
+<path class="a" d="M440 168H522"/>
+<text class="s ac" x="444" y="162">alu_out_Xhl</text>
+<path class="a" d="M522 168H532"/>
+<path class="a" d="M558 184H596M612 184H748"/>
+<text class="s ac" x="617" y="178">execute_mux_out_Mhl</text>
+<path class="a" d="M774 220H784M800 220H812V22H55V55" marker-end="url(#aha)"/>
+<text class="s ac" x="300" y="16">wb_mux_out_Whl → regfile 寫入埠（W 級寫回）</text>
+<rect class="r" x="262" y="48" width="16" height="324"/><path class="rl" d="M262 350l8 6l-8 6"/><text class="s sq" x="270" y="42" text-anchor="middle">X←D</text>
+<rect class="r" x="596" y="48" width="16" height="242"/><path class="rl" d="M596 268l8 6l-8 6"/><text class="s sq" x="604" y="42" text-anchor="middle">M←X</text>
+<rect class="r" x="784" y="48" width="16" height="242"/><path class="rl" d="M784 268l8 6l-8 6"/><text class="s sq" x="792" y="42" text-anchor="middle">W←M</text>
+<rect class="k" x="24" y="55" width="62" height="85"/><text x="55" y="94" text-anchor="middle">reg</text><text x="55" y="108" text-anchor="middle">file</text><path class="k" d="M200 55L226 65V141L200 151Z"/><path class="k" d="M200 185L226 195V271L200 281Z"/><rect class="k" x="134" y="234" width="54" height="20"/><text class="s" x="161" y="248" text-anchor="middle">imm_i</text><rect class="kd" x="140" y="306" width="82" height="26"/><text class="s mut" x="181" y="323" text-anchor="middle">pc_Dhl + imm</text><rect class="k" x="24" y="300" width="82" height="85"/><text x="65" y="324" text-anchor="middle">PC mux</text><text class="zh s" x="65" y="340" text-anchor="middle">（P 級）</text><rect class="k" x="384" y="80" width="56" height="176"/><text x="412" y="172" text-anchor="middle">ALU</text><text class="s mut" x="389" y="107">in0</text><text class="s mut" x="389" y="237">in1</text><rect class="kd" x="384" y="272" width="56" height="28"/><text class="s mut" x="412" y="290" text-anchor="middle">muldiv</text><rect class="kd" x="506" y="56" width="74" height="36"/><text class="s mut" x="543" y="78" text-anchor="middle">branch cond</text><path class="k" d="M532 150L558 160V208L532 218Z"/><rect class="kd" x="636" y="322" width="94" height="54"/><text class="s mut" x="683" y="345" text-anchor="middle">data memory</text><text class="zh s mut" x="683" y="361" text-anchor="middle">X 請求 · M 回應</text><rect class="kd" x="636" y="242" width="94" height="28"/><text class="s mut" x="683" y="260" text-anchor="middle">dmemresp mux</text><path class="k" d="M748 160L774 170V270L748 280Z"/>
+<path class="c" d="M213 146V158"/>
+<text class="s cb" x="176" y="170">op0: am_rdat</text>
+<path class="c" d="M213 276V288"/>
+<text class="s cb" x="176" y="299">op1: bm_imm_i</text>
+<text class="s cb" x="412" y="72" text-anchor="middle">alu_add</text>
+<text class="s cb" x="526" y="142">ex: em_alu</text>
+<text class="s cb" x="636" y="236">memresp: dmm_x</text>
+<text class="zh s cb" x="683" y="392" text-anchor="middle">mem: nr（不發請求）</text>
+<text class="s cb" x="776" y="150" text-anchor="end">wb: wm_alu</text>
+<text class="s cb" x="766" y="36" text-anchor="end">rf_wen=y  waddr=rd</text>
+<text class="s cb" x="65" y="362" text-anchor="middle">pc: pm_p</text>
+<text class="hd" x="181" y="410" text-anchor="middle">D</text>
+<text class="hd" x="412" y="410" text-anchor="middle">X</text>
+<text class="hd" x="683" y="410" text-anchor="middle">M</text>
+</svg>
+</div>
+<figcaption><b>「讀一個暫存器、加一個立即值、寫回去」——資料只走 D→X→M→W 的主幹。</b>M 級對 <code>addi</code> 來說什麼也沒做（<code>nr</code>：不發記憶體請求），但它還是得老實走過去，因為寫回埠只有 W 級有。<code>rs2_en = n</code> 很重要：它告訴之後的冒險偵測「我沒有讀 rs2」，不然指令欄位裡那五個位元會被誤認成一個來源暫存器。</figcaption>
+</figure>
+</div>
+
+<h3>lw：請求在 X、回應在 M</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 439 行</div>
+<pre><code class="language-verilog">`RISCV_INST_MSG_LW      :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_i, n,  alu_add,  md_x,    n, mdm_x, em_x,   ld,  ml_w, dmm_w,  wm_mem, y,  rd, n   };</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 820 416" role="img" aria-label="lw 在簡化 datapath 上的路徑：和 addi 一樣用 ALU 把 rs1 與 I 型立即值相加，但結果當成位址在 X 級送出記憶體請求，回應在 M 級回來經 dmemresp mux，再由 writeback mux 選記憶體那一邊寫回 rd。">
+<path class="wd" d="M178 92H200"/>
+<text class="s mut" x="174" y="96" text-anchor="end">pc_Dhl</text>
+<path class="wd" d="M178 114H200"/>
+<text class="s mut" x="174" y="118" text-anchor="end">pc_plus4_Dhl</text>
+<path class="wd" d="M178 136H200"/>
+<text class="s mut" x="174" y="140" text-anchor="end">const0</text>
+<path class="wd" d="M55 140V200H200"/>
+<text class="s mut" x="62" y="194">rf_rdata1 (rs2)</text>
+<path class="wd" d="M178 222H200"/>
+<text class="s mut" x="174" y="226" text-anchor="end">shamt</text>
+<path class="wd" d="M178 266H200"/>
+<text class="s mut" x="174" y="270" text-anchor="end">const0</text>
+<path class="wd" d="M126 200V358H262"/>
+<text class="s mut" x="132" y="372">wdata_Dhl</text>
+<path class="wd" d="M522 168H532"/>
+<path class="wd" d="M522 168V92"/>
+<path class="wd" d="M440 286H508V204H532"/>
+<path class="wd" d="M558 184H596M612 184H748"/>
+<text class="s mut" x="617" y="178">execute_mux_out_Mhl</text>
+<path class="wd" d="M278 358H636" marker-end="url(#ahd)"/>
+<text class="s mut" x="283" y="352">wdata_Xhl → dmemreq_msg_data</text>
+<path class="wd" d="M140 319H106" marker-end="url(#ahd)"/>
+<text class="s mut" x="140" y="346">jump_targ_Dhl</text>
+<path class="wd" d="M222 319H262"/>
+<path class="wd" d="M278 319H296V394H65V385" marker-end="url(#ahd)"/>
+<text class="s mut" x="302" y="389">branch_targ_Xhl</text>
+<path class="a" d="M86 70H200"/>
+<text class="s ac" x="92" y="64">rf_rdata0 (rs1)</text>
+<path class="a" d="M188 244H200"/>
+<path class="a" d="M226 103H262M278 103H384"/>
+<text class="s ac" x="283" y="97">op0_mux_out_Xhl</text>
+<path class="a" d="M226 233H262M278 233H384"/>
+<text class="s ac" x="283" y="227">op1_mux_out_Xhl</text>
+<path class="a" d="M440 168H522"/>
+<text class="s ac" x="444" y="162">alu_out_Xhl</text>
+<path class="a" d="M522 168V330H636" marker-end="url(#aha)"/>
+<text class="s ac" x="528" y="324">dmemreq_msg_addr</text>
+<circle class="da" cx="522" cy="168" r="3"/>
+<path class="a" d="M683 322V270"/>
+<text class="s ac" x="677" y="308" text-anchor="end">dmemresp_msg_data</text>
+<path class="a" d="M730 256H748"/>
+<path class="a" d="M774 220H784M800 220H812V22H55V55" marker-end="url(#aha)"/>
+<text class="s ac" x="300" y="16">wb_mux_out_Whl → regfile 寫入埠（W 級寫回）</text>
+<rect class="r" x="262" y="48" width="16" height="324"/><path class="rl" d="M262 350l8 6l-8 6"/><text class="s sq" x="270" y="42" text-anchor="middle">X←D</text>
+<rect class="r" x="596" y="48" width="16" height="242"/><path class="rl" d="M596 268l8 6l-8 6"/><text class="s sq" x="604" y="42" text-anchor="middle">M←X</text>
+<rect class="r" x="784" y="48" width="16" height="242"/><path class="rl" d="M784 268l8 6l-8 6"/><text class="s sq" x="792" y="42" text-anchor="middle">W←M</text>
+<rect class="k" x="24" y="55" width="62" height="85"/><text x="55" y="94" text-anchor="middle">reg</text><text x="55" y="108" text-anchor="middle">file</text><path class="k" d="M200 55L226 65V141L200 151Z"/><path class="k" d="M200 185L226 195V271L200 281Z"/><rect class="k" x="134" y="234" width="54" height="20"/><text class="s" x="161" y="248" text-anchor="middle">imm_i</text><rect class="kd" x="140" y="306" width="82" height="26"/><text class="s mut" x="181" y="323" text-anchor="middle">pc_Dhl + imm</text><rect class="k" x="24" y="300" width="82" height="85"/><text x="65" y="324" text-anchor="middle">PC mux</text><text class="zh s" x="65" y="340" text-anchor="middle">（P 級）</text><rect class="k" x="384" y="80" width="56" height="176"/><text x="412" y="172" text-anchor="middle">ALU</text><text class="s mut" x="389" y="107">in0</text><text class="s mut" x="389" y="237">in1</text><rect class="kd" x="384" y="272" width="56" height="28"/><text class="s mut" x="412" y="290" text-anchor="middle">muldiv</text><rect class="kd" x="506" y="56" width="74" height="36"/><text class="s mut" x="543" y="78" text-anchor="middle">branch cond</text><path class="kd" d="M532 150L558 160V208L532 218Z"/><rect class="k" x="636" y="322" width="94" height="54"/><text class="s" x="683" y="345" text-anchor="middle">data memory</text><text class="zh s" x="683" y="361" text-anchor="middle">X 請求 · M 回應</text><rect class="k" x="636" y="242" width="94" height="28"/><text class="s" x="683" y="260" text-anchor="middle">dmemresp mux</text><path class="k" d="M748 160L774 170V270L748 280Z"/>
+<path class="c" d="M213 146V158"/>
+<text class="s cb" x="176" y="170">op0: am_rdat</text>
+<path class="c" d="M213 276V288"/>
+<text class="s cb" x="176" y="299">op1: bm_imm_i</text>
+<text class="s cb" x="412" y="72" text-anchor="middle">alu_add</text>
+<text class="s cb" x="526" y="142">ex: em_x</text>
+<text class="s cb" x="636" y="236">memresp: dmm_w</text>
+<text class="zh s cb" x="683" y="392" text-anchor="middle">mem: ld · ml_w</text>
+<text class="s cb" x="776" y="150" text-anchor="end">wb: wm_mem</text>
+<text class="s cb" x="766" y="36" text-anchor="end">rf_wen=y  waddr=rd</text>
+<text class="s cb" x="65" y="362" text-anchor="middle">pc: pm_p</text>
+<text class="hd" x="181" y="410" text-anchor="middle">D</text>
+<text class="hd" x="412" y="410" text-anchor="middle">X</text>
+<text class="hd" x="683" y="410" text-anchor="middle">M</text>
+</svg>
+</div>
+<figcaption><b><code>lw</code> 的前半段和 <code>addi</code> 一模一樣：ALU 做的是位址計算 <code>rs1 + imm_i</code>。</b>差別從 <code>alu_out_Xhl</code> 之後開始：它被當成 <code>dmemreq_msg_addr</code> 在 <b>X 級</b>送出去，資料在 <b>M 級</b>才回來（記憶體有一個週期的延遲，和 P 級提早發指令請求是同一個理由）。因為最後要的是記憶體的值，<code>wb_mux_sel = wm_mem</code>，於是 execute mux 那一路沒人看——所以 <code>ex muxsel</code> 可以安心填 <code>em_x</code>。</figcaption>
+</figure>
+</div>
+
+<h3>sw：唯一會用到 wdata 那條線的</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 440 行</div>
+<pre><code class="language-verilog">`RISCV_INST_MSG_SW      :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_s, y,  alu_add,  md_x,    n, mdm_x, em_x,   st,  ml_w, dmm_w,  wm_mem, n,  rx, n   };</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 820 416" role="img" aria-label="sw 在簡化 datapath 上的路徑：rs1 與 S 型立即值在 ALU 相加成為位址，rs2 的值沿著 wdata 這條獨立的線一路從 D 送到 X，成為 dmemreq_msg_data 寫進記憶體，不寫回暫存器檔。">
+<path class="wd" d="M178 92H200"/>
+<text class="s mut" x="174" y="96" text-anchor="end">pc_Dhl</text>
+<path class="wd" d="M178 114H200"/>
+<text class="s mut" x="174" y="118" text-anchor="end">pc_plus4_Dhl</text>
+<path class="wd" d="M178 136H200"/>
+<text class="s mut" x="174" y="140" text-anchor="end">const0</text>
+<path class="wd" d="M178 222H200"/>
+<text class="s mut" x="174" y="226" text-anchor="end">shamt</text>
+<path class="wd" d="M178 266H200"/>
+<text class="s mut" x="174" y="270" text-anchor="end">const0</text>
+<path class="wd" d="M522 168H532"/>
+<path class="wd" d="M522 168V92"/>
+<path class="wd" d="M440 286H508V204H532"/>
+<path class="wd" d="M558 184H596M612 184H748"/>
+<text class="s mut" x="617" y="178">execute_mux_out_Mhl</text>
+<path class="wd" d="M683 322V270"/>
+<text class="s mut" x="677" y="308" text-anchor="end">dmemresp_msg_data</text>
+<path class="wd" d="M730 256H748"/>
+<path class="wd" d="M774 220H784M800 220H812V22H55V55" marker-end="url(#ahd)"/>
+<text class="s mut" x="300" y="16">wb_mux_out_Whl → regfile 寫入埠（W 級寫回）</text>
+<path class="wd" d="M140 319H106" marker-end="url(#ahd)"/>
+<text class="s mut" x="140" y="346">jump_targ_Dhl</text>
+<path class="wd" d="M222 319H262"/>
+<path class="wd" d="M278 319H296V394H65V385" marker-end="url(#ahd)"/>
+<text class="s mut" x="302" y="389">branch_targ_Xhl</text>
+<path class="a" d="M86 70H200"/>
+<text class="s ac" x="92" y="64">rf_rdata0 (rs1)</text>
+<path class="a" d="M55 140V200H200"/>
+<text class="s ac" x="62" y="194">rf_rdata1 (rs2)</text>
+<path class="a" d="M188 244H200"/>
+<path class="a" d="M126 200V358H262"/>
+<text class="s ac" x="132" y="372">wdata_Dhl</text>
+<circle class="da" cx="126" cy="200" r="3"/>
+<path class="a" d="M226 103H262M278 103H384"/>
+<text class="s ac" x="283" y="97">op0_mux_out_Xhl</text>
+<path class="a" d="M226 233H262M278 233H384"/>
+<text class="s ac" x="283" y="227">op1_mux_out_Xhl</text>
+<path class="a" d="M440 168H522"/>
+<text class="s ac" x="444" y="162">alu_out_Xhl</text>
+<path class="a" d="M522 168V330H636" marker-end="url(#aha)"/>
+<text class="s ac" x="528" y="324">dmemreq_msg_addr</text>
+<circle class="da" cx="522" cy="168" r="3"/>
+<path class="a" d="M278 358H636" marker-end="url(#aha)"/>
+<text class="s ac" x="283" y="352">wdata_Xhl → dmemreq_msg_data</text>
+<rect class="r" x="262" y="48" width="16" height="324"/><path class="rl" d="M262 350l8 6l-8 6"/><text class="s sq" x="270" y="42" text-anchor="middle">X←D</text>
+<rect class="r" x="596" y="48" width="16" height="242"/><path class="rl" d="M596 268l8 6l-8 6"/><text class="s sq" x="604" y="42" text-anchor="middle">M←X</text>
+<rect class="r" x="784" y="48" width="16" height="242"/><path class="rl" d="M784 268l8 6l-8 6"/><text class="s sq" x="792" y="42" text-anchor="middle">W←M</text>
+<rect class="k" x="24" y="55" width="62" height="85"/><text x="55" y="94" text-anchor="middle">reg</text><text x="55" y="108" text-anchor="middle">file</text><path class="k" d="M200 55L226 65V141L200 151Z"/><path class="k" d="M200 185L226 195V271L200 281Z"/><rect class="k" x="134" y="234" width="54" height="20"/><text class="s" x="161" y="248" text-anchor="middle">imm_s</text><rect class="kd" x="140" y="306" width="82" height="26"/><text class="s mut" x="181" y="323" text-anchor="middle">pc_Dhl + imm</text><rect class="k" x="24" y="300" width="82" height="85"/><text x="65" y="324" text-anchor="middle">PC mux</text><text class="zh s" x="65" y="340" text-anchor="middle">（P 級）</text><rect class="k" x="384" y="80" width="56" height="176"/><text x="412" y="172" text-anchor="middle">ALU</text><text class="s mut" x="389" y="107">in0</text><text class="s mut" x="389" y="237">in1</text><rect class="kd" x="384" y="272" width="56" height="28"/><text class="s mut" x="412" y="290" text-anchor="middle">muldiv</text><rect class="kd" x="506" y="56" width="74" height="36"/><text class="s mut" x="543" y="78" text-anchor="middle">branch cond</text><path class="kd" d="M532 150L558 160V208L532 218Z"/><rect class="k" x="636" y="322" width="94" height="54"/><text class="s" x="683" y="345" text-anchor="middle">data memory</text><text class="zh s" x="683" y="361" text-anchor="middle">X 請求 · M 回應</text><rect class="kd" x="636" y="242" width="94" height="28"/><text class="s mut" x="683" y="260" text-anchor="middle">dmemresp mux</text><path class="kd" d="M748 160L774 170V270L748 280Z"/>
+<path class="c" d="M213 146V158"/>
+<text class="s cb" x="176" y="170">op0: am_rdat</text>
+<path class="c" d="M213 276V288"/>
+<text class="s cb" x="176" y="299">op1: bm_imm_s</text>
+<text class="s cb" x="412" y="72" text-anchor="middle">alu_add</text>
+<text class="s cb" x="526" y="142">ex: em_x</text>
+<text class="s cb" x="636" y="236">memresp: dmm_w</text>
+<text class="zh s cb" x="683" y="392" text-anchor="middle">mem: st · ml_w</text>
+<text class="s cb" x="776" y="150" text-anchor="end">wb: wm_mem</text>
+<text class="s cb" x="766" y="36" text-anchor="end">rf_wen=n</text>
+<text class="s cb" x="65" y="362" text-anchor="middle">pc: pm_p</text>
+<text class="hd" x="181" y="410" text-anchor="middle">D</text>
+<text class="hd" x="412" y="410" text-anchor="middle">X</text>
+<text class="hd" x="683" y="410" text-anchor="middle">M</text>
+</svg>
+</div>
+<figcaption><b>要寫進記憶體的值不經過 ALU，它有自己的一條路。</b><code>wdata_Dhl = rf_rdata1_Dhl</code>（CoreDpath 第 230 行）直接從 regfile 的第二個讀埠接出來，跟著 X 級的管線暫存器變成 <code>wdata_Xhl</code>，再接到 <code>dmemreq_msg_data</code>（第 273 行）。所以 op1 mux 那一路是給<b>立即值</b>用的（<code>bm_imm_s</code>，S 型），跟要存的資料無關——這是新手最容易接錯的地方。<code>rs2_en = y</code>：雖然 rs2 沒走 op1 mux，它確實被讀了。<code>rf_wen = n</code>，所以整個寫回路徑都是灰的，<code>wm</code> 那一欄填什麼都行。</figcaption>
+</figure>
+</div>
+
+<h3>bne：在 X 級才拍板</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 451 行</div>
+<pre><code class="language-verilog">`RISCV_INST_MSG_BNE     :cs={ y,  n,    br_bne,  pm_b,   am_rdat, y,  bm_rdat,  y,  alu_xor,  md_x,    n, mdm_x, em_x,   nr,  ml_x, dmm_x,  wm_x,   n,  rx, n   };</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 820 416" role="img" aria-label="bne 在簡化 datapath 上的路徑：兩個暫存器值分別經 op0 與 op1 mux 進 ALU 做 xor，結果送進 branch cond 邏輯產生 branch_cond_ne_Xhl 回報給控制器，控制器據此把 pc_mux_sel_Phl 設成 pm_b，不寫回暫存器也不動記憶體。">
+<path class="wd" d="M178 92H200"/>
+<text class="s mut" x="174" y="96" text-anchor="end">pc_Dhl</text>
+<path class="wd" d="M178 114H200"/>
+<text class="s mut" x="174" y="118" text-anchor="end">pc_plus4_Dhl</text>
+<path class="wd" d="M178 136H200"/>
+<text class="s mut" x="174" y="140" text-anchor="end">const0</text>
+<path class="wd" d="M178 222H200"/>
+<text class="s mut" x="174" y="226" text-anchor="end">shamt</text>
+<path class="wd" d="M188 244H200"/>
+<path class="wd" d="M178 266H200"/>
+<text class="s mut" x="174" y="270" text-anchor="end">const0</text>
+<path class="wd" d="M126 200V358H262"/>
+<text class="s mut" x="132" y="372">wdata_Dhl</text>
+<path class="wd" d="M522 168H532"/>
+<path class="wd" d="M522 168V330H636" marker-end="url(#ahd)"/>
+<text class="s mut" x="528" y="324">dmemreq_msg_addr</text>
+<path class="wd" d="M440 286H508V204H532"/>
+<path class="wd" d="M558 184H596M612 184H748"/>
+<text class="s mut" x="617" y="178">execute_mux_out_Mhl</text>
+<path class="wd" d="M278 358H636" marker-end="url(#ahd)"/>
+<text class="s mut" x="283" y="352">wdata_Xhl → dmemreq_msg_data</text>
+<path class="wd" d="M683 322V270"/>
+<text class="s mut" x="677" y="308" text-anchor="end">dmemresp_msg_data</text>
+<path class="wd" d="M730 256H748"/>
+<path class="wd" d="M774 220H784M800 220H812V22H55V55" marker-end="url(#ahd)"/>
+<text class="s mut" x="300" y="16">wb_mux_out_Whl → regfile 寫入埠（W 級寫回）</text>
+<path class="wd" d="M140 319H106" marker-end="url(#ahd)"/>
+<text class="s mut" x="140" y="346">jump_targ_Dhl</text>
+<path class="a" d="M86 70H200"/>
+<text class="s ac" x="92" y="64">rf_rdata0 (rs1)</text>
+<path class="a" d="M55 140V200H200"/>
+<text class="s ac" x="62" y="194">rf_rdata1 (rs2)</text>
+<path class="a" d="M226 103H262M278 103H384"/>
+<text class="s ac" x="283" y="97">op0_mux_out_Xhl</text>
+<path class="a" d="M226 233H262M278 233H384"/>
+<text class="s ac" x="283" y="227">op1_mux_out_Xhl</text>
+<path class="a" d="M440 168H522"/>
+<text class="s ac" x="444" y="162">alu_out_Xhl</text>
+<path class="a" d="M522 168V92"/>
+<circle class="da" cx="522" cy="168" r="3"/>
+<path class="a" d="M222 319H262"/>
+<path class="a" d="M278 319H296V394H65V385" marker-end="url(#aha)"/>
+<text class="s ac" x="302" y="389">branch_targ_Xhl</text>
+<rect class="r" x="262" y="48" width="16" height="324"/><path class="rl" d="M262 350l8 6l-8 6"/><text class="s sq" x="270" y="42" text-anchor="middle">X←D</text>
+<rect class="r" x="596" y="48" width="16" height="242"/><path class="rl" d="M596 268l8 6l-8 6"/><text class="s sq" x="604" y="42" text-anchor="middle">M←X</text>
+<rect class="r" x="784" y="48" width="16" height="242"/><path class="rl" d="M784 268l8 6l-8 6"/><text class="s sq" x="792" y="42" text-anchor="middle">W←M</text>
+<rect class="k" x="24" y="55" width="62" height="85"/><text x="55" y="94" text-anchor="middle">reg</text><text x="55" y="108" text-anchor="middle">file</text><path class="k" d="M200 55L226 65V141L200 151Z"/><path class="k" d="M200 185L226 195V271L200 281Z"/><rect class="kd" x="134" y="234" width="54" height="20"/><text class="s mut" x="161" y="248" text-anchor="middle">imm_sb</text><rect class="k" x="140" y="306" width="82" height="26"/><text class="s" x="181" y="323" text-anchor="middle">pc_Dhl + imm</text><rect class="k" x="24" y="300" width="82" height="85"/><text x="65" y="324" text-anchor="middle">PC mux</text><text class="zh s" x="65" y="340" text-anchor="middle">（P 級）</text><rect class="k" x="384" y="80" width="56" height="176"/><text x="412" y="172" text-anchor="middle">ALU</text><text class="s mut" x="389" y="107">in0</text><text class="s mut" x="389" y="237">in1</text><rect class="kd" x="384" y="272" width="56" height="28"/><text class="s mut" x="412" y="290" text-anchor="middle">muldiv</text><rect class="k" x="506" y="56" width="74" height="36"/><text class="s" x="543" y="78" text-anchor="middle">branch cond</text><path class="kd" d="M532 150L558 160V208L532 218Z"/><rect class="kd" x="636" y="322" width="94" height="54"/><text class="s mut" x="683" y="345" text-anchor="middle">data memory</text><text class="zh s mut" x="683" y="361" text-anchor="middle">X 請求 · M 回應</text><rect class="kd" x="636" y="242" width="94" height="28"/><text class="s mut" x="683" y="260" text-anchor="middle">dmemresp mux</text><path class="kd" d="M748 160L774 170V270L748 280Z"/>
+<path class="c" d="M543 56V42" marker-end="url(#ahc)"/>
+<text class="s cb" x="586" y="38" text-anchor="end">branch_cond_ne_Xhl → ctrl</text>
+<path class="c" d="M213 146V158"/>
+<text class="s cb" x="176" y="170">op0: am_rdat</text>
+<path class="c" d="M213 276V288"/>
+<text class="s cb" x="176" y="299">op1: bm_rdat</text>
+<text class="s cb" x="412" y="72" text-anchor="middle">alu_xor</text>
+<text class="s cb" x="526" y="142">ex: em_x</text>
+<text class="s cb" x="636" y="236">memresp: dmm_x</text>
+<text class="zh s cb" x="683" y="392" text-anchor="middle">mem: nr</text>
+<text class="s cb" x="776" y="150" text-anchor="end">wb: wm_x</text>
+<text class="s cb" x="766" y="36" text-anchor="end">rf_wen=n</text>
+<text class="s cb" x="65" y="362" text-anchor="middle">pc: pm_b</text>
+<text class="zh s cb" x="65" y="377" text-anchor="middle">（成立時）</text>
+<text class="hd" x="181" y="410" text-anchor="middle">D</text>
+<text class="hd" x="412" y="410" text-anchor="middle">X</text>
+<text class="hd" x="683" y="410" text-anchor="middle">M</text>
+</svg>
+</div>
+<figcaption><b>分支不是在 D 級決定的，是在 X 級。</b>ALU 做 <code>alu_xor</code>：兩數相同時結果為 0。<code>branch_cond_eq_Xhl = (alu_out_Xhl == 32'd0)</code>，而 <code>branch_cond_ne_Xhl</code> 就是它的反相（CoreDpath 第 263–264 行）。控制器把 <code>br_sel_Xhl == br_bne</code> 和這條線 AND 起來得到 <code>bne_taken_Xhl</code>（CoreCtrl 第 659 行），再經 <code>any_br_taken_Xhl → brj_taken_Xhl</code> 把 <code>pc_mux_sel_Phl</code> 切到 <code>pm_b</code>，PC 換成 <code>branch_targ_Xhl</code>（= <code>pc_Dhl + imm_sb</code> 在 D 算好、存進 X 級暫存器的值）。</figcaption>
+</figure>
+</div>
+<div class="note"><b>代價：兩格</b><p>分支要到 X 才知道走不走，這時 F 和 D 裡已經各進來一道<b>不該執行</b>的指令，必須作廢（squash）。<code>squash_Fhl</code> 和 <code>squash_Dhl</code> 就是幹這個的（CoreCtrl 第 187–189、548 行）。細節在<a href="#ch11">第 11 章</a>。</p></div>
+
+<h3>jal：在 D 級就轉向，順手把 PC+4 存起來</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 448 行</div>
+<pre><code class="language-verilog">`RISCV_INST_MSG_JAL     :cs={ y,  y,    br_none, pm_j,   am_pc4,  n,  bm_0,     n,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 820 416" role="img" aria-label="jal 在簡化 datapath 上的路徑：op0 mux 選 pc_plus4_Dhl、op1 mux 選常數 0，ALU 做加法等於把 PC+4 原封不動送到寫回路徑存進 rd；跳躍位址 jump_targ_Dhl 在 D 級就算好並直接送回 PC mux，不經過 ALU。">
+<path class="wd" d="M86 70H200"/>
+<text class="s mut" x="92" y="64">rf_rdata0 (rs1)</text>
+<path class="wd" d="M178 92H200"/>
+<text class="s mut" x="174" y="96" text-anchor="end">pc_Dhl</text>
+<path class="wd" d="M178 136H200"/>
+<text class="s mut" x="174" y="140" text-anchor="end">const0</text>
+<path class="wd" d="M55 140V200H200"/>
+<text class="s mut" x="62" y="194">rf_rdata1 (rs2)</text>
+<path class="wd" d="M178 222H200"/>
+<text class="s mut" x="174" y="226" text-anchor="end">shamt</text>
+<path class="wd" d="M188 244H200"/>
+<path class="wd" d="M126 200V358H262"/>
+<text class="s mut" x="132" y="372">wdata_Dhl</text>
+<path class="wd" d="M522 168V92"/>
+<path class="wd" d="M522 168V330H636" marker-end="url(#ahd)"/>
+<text class="s mut" x="528" y="324">dmemreq_msg_addr</text>
+<path class="wd" d="M440 286H508V204H532"/>
+<path class="wd" d="M278 358H636" marker-end="url(#ahd)"/>
+<text class="s mut" x="283" y="352">wdata_Xhl → dmemreq_msg_data</text>
+<path class="wd" d="M683 322V270"/>
+<text class="s mut" x="677" y="308" text-anchor="end">dmemresp_msg_data</text>
+<path class="wd" d="M730 256H748"/>
+<path class="wd" d="M222 319H262"/>
+<path class="wd" d="M278 319H296V394H65V385" marker-end="url(#ahd)"/>
+<text class="s mut" x="302" y="389">branch_targ_Xhl</text>
+<path class="a" d="M178 114H200"/>
+<text class="s ac" x="174" y="118" text-anchor="end">pc_plus4_Dhl</text>
+<path class="a" d="M178 266H200"/>
+<text class="s ac" x="174" y="270" text-anchor="end">const0</text>
+<path class="a" d="M226 103H262M278 103H384"/>
+<text class="s ac" x="283" y="97">op0_mux_out_Xhl</text>
+<path class="a" d="M226 233H262M278 233H384"/>
+<text class="s ac" x="283" y="227">op1_mux_out_Xhl</text>
+<path class="a" d="M440 168H522"/>
+<text class="s ac" x="444" y="162">alu_out_Xhl</text>
+<path class="a" d="M522 168H532"/>
+<path class="a" d="M558 184H596M612 184H748"/>
+<text class="s ac" x="617" y="178">execute_mux_out_Mhl</text>
+<path class="a" d="M774 220H784M800 220H812V22H55V55" marker-end="url(#aha)"/>
+<text class="s ac" x="300" y="16">wb_mux_out_Whl → regfile 寫入埠（W 級寫回）</text>
+<path class="a" d="M140 319H106" marker-end="url(#aha)"/>
+<text class="s ac" x="140" y="346">jump_targ_Dhl</text>
+<rect class="r" x="262" y="48" width="16" height="324"/><path class="rl" d="M262 350l8 6l-8 6"/><text class="s sq" x="270" y="42" text-anchor="middle">X←D</text>
+<rect class="r" x="596" y="48" width="16" height="242"/><path class="rl" d="M596 268l8 6l-8 6"/><text class="s sq" x="604" y="42" text-anchor="middle">M←X</text>
+<rect class="r" x="784" y="48" width="16" height="242"/><path class="rl" d="M784 268l8 6l-8 6"/><text class="s sq" x="792" y="42" text-anchor="middle">W←M</text>
+<rect class="k" x="24" y="55" width="62" height="85"/><text x="55" y="94" text-anchor="middle">reg</text><text x="55" y="108" text-anchor="middle">file</text><path class="k" d="M200 55L226 65V141L200 151Z"/><path class="k" d="M200 185L226 195V271L200 281Z"/><rect class="kd" x="134" y="234" width="54" height="20"/><text class="s mut" x="161" y="248" text-anchor="middle">imm_uj</text><rect class="k" x="140" y="306" width="82" height="26"/><text class="s" x="181" y="323" text-anchor="middle">pc_Dhl + imm</text><rect class="k" x="24" y="300" width="82" height="85"/><text x="65" y="324" text-anchor="middle">PC mux</text><text class="zh s" x="65" y="340" text-anchor="middle">（P 級）</text><rect class="k" x="384" y="80" width="56" height="176"/><text x="412" y="172" text-anchor="middle">ALU</text><text class="s mut" x="389" y="107">in0</text><text class="s mut" x="389" y="237">in1</text><rect class="kd" x="384" y="272" width="56" height="28"/><text class="s mut" x="412" y="290" text-anchor="middle">muldiv</text><rect class="kd" x="506" y="56" width="74" height="36"/><text class="s mut" x="543" y="78" text-anchor="middle">branch cond</text><path class="k" d="M532 150L558 160V208L532 218Z"/><rect class="kd" x="636" y="322" width="94" height="54"/><text class="s mut" x="683" y="345" text-anchor="middle">data memory</text><text class="zh s mut" x="683" y="361" text-anchor="middle">X 請求 · M 回應</text><rect class="kd" x="636" y="242" width="94" height="28"/><text class="s mut" x="683" y="260" text-anchor="middle">dmemresp mux</text><path class="k" d="M748 160L774 170V270L748 280Z"/>
+<path class="c" d="M213 146V158"/>
+<text class="s cb" x="176" y="170">op0: am_pc4</text>
+<path class="c" d="M213 276V288"/>
+<text class="s cb" x="176" y="299">op1: bm_0</text>
+<text class="s cb" x="412" y="72" text-anchor="middle">alu_add</text>
+<text class="s cb" x="526" y="142">ex: em_alu</text>
+<text class="s cb" x="636" y="236">memresp: dmm_x</text>
+<text class="zh s cb" x="683" y="392" text-anchor="middle">mem: nr</text>
+<text class="s cb" x="776" y="150" text-anchor="end">wb: wm_alu</text>
+<text class="s cb" x="766" y="36" text-anchor="end">rf_wen=y  waddr=rd</text>
+<text class="s cb" x="65" y="362" text-anchor="middle">pc: pm_j</text>
+<text class="zh s cb" x="65" y="377" text-anchor="middle">（D 級就轉向）</text>
+<text class="hd" x="181" y="410" text-anchor="middle">D</text>
+<text class="hd" x="412" y="410" text-anchor="middle">X</text>
+<text class="hd" x="683" y="410" text-anchor="middle">M</text>
+</svg>
+</div>
+<figcaption><b>ALU 被拿來當「搬運工」：<code>pc_plus4 + 0</code>。</b>沒有一條專門的「把 PC+4 送進 writeback mux」的路，所以 <code>am_pc4 + bm_0 + alu_add</code> 就是那條路——這是控制表的典型手法，<b>用現成的硬體湊出你要的行為</b>。跳躍位址完全不經過 ALU：<code>jump_targ_Dhl = pc_Dhl + imm_uj_Dhl</code>（CoreDpath 第 183 行）有自己的加法器，D 級算完就送回 PC mux。因為在 D 級就轉向，只浪費 F 裡的一格（分支浪費兩格）。</figcaption>
+</figure>
+</div>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 81–84、475 行</div>
+<pre><code class="language-verilog">assign pc_mux_sel_Phl
+  = brj_taken_Xhl    ? pm_b            // X 的分支優先
+  : brj_taken_Dhl    ? pc_mux_sel_Dhl  // 再來是 D 的 jal / jalr
+  :                    pm_p;           // 都沒有就 +4
+...
+wire brj_taken_Dhl = ( inst_val_Dhl &amp;&amp; !stall_Dhl &amp;&amp; cs[`RISCV_INST_MSG_J_EN] );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 250" role="img" aria-label="PC 轉向的優先權：X 級的 brj_taken_Xhl 優先於 D 級的 brj_taken_Dhl，兩者都沒有才用 pc+4；圖中並列兩個時空圖，分支在 X 才解出來所以作廢兩格，jal 在 D 就解出來只作廢一格。">
+  <text class="zh hd" x="16" y="20">分支在 X 解出來：作廢兩格</text>
+  <text class="s" x="16" y="52">bne</text>
+  <rect class="pc" x="96" y="36" width="34" height="22"/><text class="s" x="113" y="51" text-anchor="middle">F</text>
+  <rect class="pc" x="132" y="36" width="34" height="22"/><text class="s" x="149" y="51" text-anchor="middle">D</text>
+  <rect class="pc-fwd" x="168" y="36" width="34" height="22"/><text class="s ac" x="185" y="51" text-anchor="middle">X</text>
+  <rect class="pc" x="204" y="36" width="34" height="22"/><text class="s" x="221" y="51" text-anchor="middle">M</text>
+  <rect class="pc" x="240" y="36" width="34" height="22"/><text class="s" x="257" y="51" text-anchor="middle">W</text>
+  <text class="s mut" x="16" y="80">pc+4</text>
+  <rect class="pc" x="132" y="64" width="34" height="22"/><text class="s" x="149" y="79" text-anchor="middle">F</text>
+  <rect class="pc-kill" x="168" y="64" width="34" height="22"/><text class="s wr" x="185" y="79" text-anchor="middle">D</text>
+  <text class="s mut" x="16" y="108">pc+8</text>
+  <rect class="pc-kill" x="168" y="92" width="34" height="22"/><text class="s wr" x="185" y="107" text-anchor="middle">F</text>
+  <text class="s" x="16" y="136">目標</text>
+  <rect class="pc" x="204" y="120" width="34" height="22"/><text class="s" x="221" y="135" text-anchor="middle">F</text>
+  <text class="zh s wr" x="284" y="80">squash_Dhl</text>
+  <text class="zh s wr" x="284" y="108">squash_Fhl</text>
+
+  <path class="wm" d="M400 10V152"/>
+  <text class="zh hd" x="420" y="20">jal 在 D 解出來：只作廢一格</text>
+  <text class="s" x="420" y="52">jal</text>
+  <rect class="pc" x="480" y="36" width="34" height="22"/><text class="s" x="497" y="51" text-anchor="middle">F</text>
+  <rect class="pc-fwd" x="516" y="36" width="34" height="22"/><text class="s ac" x="533" y="51" text-anchor="middle">D</text>
+  <rect class="pc" x="552" y="36" width="34" height="22"/><text class="s" x="569" y="51" text-anchor="middle">X</text>
+  <rect class="pc" x="588" y="36" width="34" height="22"/><text class="s" x="605" y="51" text-anchor="middle">M</text>
+  <rect class="pc" x="624" y="36" width="34" height="22"/><text class="s" x="641" y="51" text-anchor="middle">W</text>
+  <text class="s mut" x="420" y="80">pc+4</text>
+  <rect class="pc-kill" x="516" y="64" width="34" height="22"/><text class="s wr" x="533" y="79" text-anchor="middle">F</text>
+  <text class="s" x="420" y="108">目標</text>
+  <rect class="pc" x="552" y="92" width="34" height="22"/><text class="s" x="569" y="107" text-anchor="middle">F</text>
+
+  <text class="zh s mut" x="16" y="176">pc_mux_sel_Phl 的優先權（CoreCtrl 第 81–84 行）：</text>
+  <text class="s" x="16" y="196">brj_taken_Xhl → pm_b</text>
+  <text class="s mut" x="200" y="196">＞</text>
+  <text class="s" x="226" y="196">brj_taken_Dhl → pm_j / pm_r</text>
+  <text class="s mut" x="436" y="196">＞</text>
+  <text class="s" x="462" y="196">pm_p（pc+4）</text>
+  <text class="zh s mut" x="16" y="222">X 一定要贏：D 裡那道指令本來就是分支猜錯才被抓進來的，它的跳躍不算數。</text>
+</svg>
+</div>
+<figcaption><b>愈晚才知道要轉向，丟掉的格子愈多。</b>這也是為什麼真實處理器要做分支預測。lab1 不做預測：一律先照 <code>pc+4</code> 抓下去，錯了再作廢。</figcaption>
+</figure>
+</div>
+
+<h3>lui 與 auipc：兩個只差一個 mux 的鄰居</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 415–416 行</div>
+<pre><code class="language-verilog">`RISCV_INST_MSG_LUI     :cs={ y,  n,    br_none, pm_p,   am_0,    n,  bm_imm_u, n,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };
+`RISCV_INST_MSG_AUIPC   :cs={ y,  n,    br_none, pm_p,   am_pc,   n,  bm_imm_u, n,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };</code></pre>
+<p>這兩列只差第五欄。<code>lui</code>（load upper immediate）要的是「把 U 型立即值原封不動寫進 rd」——於是 <code>am_0 + bm_imm_u + alu_add</code>，也就是 <code>0 + imm_u</code>，又一次拿 ALU 當搬運工。<code>auipc</code>（add upper immediate to PC）只是把那個 0 換成 <code>am_pc</code>，變成 <code>pc_Dhl + imm_u</code>。兩道都 <code>rs1_en = n</code>、<code>rs2_en = n</code>：它們根本不讀暫存器。</p>
+<p>把這兩列並排看，你就抓到這一章真正要教的方法：<b>先找到最像的那一列，再問「差在 datapath 的哪一段」，然後只改那一欄。</b><a href="#ch8">第 8 章</a>會把這件事變成一套可以重複使用的流程。</p>
+</div>
+</section>
+<!-- ============================================================ ch7 -->
+<section class="ch" id="ch7" data-part="一條指令的旅程" data-nav="ALU 與分支條件">
+<p class="eyebrow">第 7 章 · 一條指令的旅程</p>
+<h2>ALU 與分支條件</h2>
+<p><code>alu_fn</code> 那一欄只有 11 個合法值，但它背後是整顆 <code>riscv_CoreDpathAlu</code>。這一章拆開它，順便回答兩個每年都有人踩的問題：<b>為什麼移位指令的兩個運算元是反的</b>，以及<b>為什麼 <code>blt</code> 不能只看減法結果的最高位元</b>。</p>
+
+<h3>ALU 其實是「解碼器 + 四個單元 + 一顆輸出 mux」</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 201–226、272–276 行（節錄）</div>
+<pre><code class="language-verilog">reg [10:0] cs;
+always @(*)
+begin
+  cs = 11'bx;
+  case ( fn )
+    4'd0  : cs = { 2'd0, 2'b00, 2'bxx, 2'bxx, 3'bxx  }; // ADD
+    4'd1  : cs = { 2'd0, 2'b01, 2'bxx, 2'bxx, 3'bxx  }; // SUB
+    4'd2  : cs = { 2'd1, 2'bxx, 2'b00, 2'bxx, 3'bxx  }; // SLL
+    ...
+    4'd10 : cs = { 2'd1, 2'bxx, 2'b11, 2'bxx, 3'bxx  }; // SRA
+  endcase
+  { out_mux_sel, fn_addsub, fn_shifter, fn_logical, fn_muldiv } = cs;
+end
+...
+assign out = ( out_mux_sel == 2'd0 ) ? addsub_out
+           : ( out_mux_sel == 2'd1 ) ? shifter_out
+           : ( out_mux_sel == 2'd2 ) ? logical_out
+           : ( out_mux_sel == 2'd3 ) ? muldiv_out
+           :                           32'bx;</code></pre>
+<p>看出來了嗎？<b>ALU 裡面也是一張控制表</b>，結構跟控制器的 <code>casez</code> 完全一樣：一個 <code>case</code> 填一條 11 位元的 <code>cs</code>，再用位元串接拆成五組訊號。四個單元<b>永遠同時在算</b>（組合邏輯沒辦法「不算」），只是最後 mux 只挑一個。</p>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 360" role="img" aria-label="ALU 內部結構：fn 解碼器把四位元的 fn 展開成 out_mux_sel 與四組單元功能碼，in0 與 in1 同時送進 addsub、shifter、logical、muldiv 四個單元，四個輸出再由 out_mux_sel 控制的多工器挑一個送出；注意 shifter 的兩個輸入是交換接的。">
+  <text class="s" x="16" y="28">in0</text><path class="w" d="M44 24H180"/>
+  <text class="s" x="16" y="44">in1</text><path class="w" d="M44 40H196"/>
+  <path class="w" d="M180 24V142"/><path class="w" d="M196 40V270"/>
+  <text class="s mut" x="16" y="60">= op0_mux_out_Xhl</text>
+  <text class="s mut" x="16" y="76">= op1_mux_out_Xhl</text>
+
+  <rect class="k" x="250" y="40" width="150" height="50"/>
+  <text class="s" x="325" y="62" text-anchor="middle">addsub</text>
+  <text class="s mut" x="325" y="78" text-anchor="middle">add sub slt sltu</text>
+  <path class="w" d="M180 58H250"/><circle class="d" cx="180" cy="58" r="3"/>
+  <path class="w" d="M196 74H250"/><circle class="d" cx="196" cy="74" r="3"/>
+
+  <rect class="af" x="250" y="104" width="150" height="50"/>
+  <text class="s" x="325" y="126" text-anchor="middle">shifter</text>
+  <text class="s mut" x="325" y="142" text-anchor="middle">sll srl sra</text>
+  <path class="a" d="M196 122H250"/><circle class="d" cx="196" cy="122" r="3"/>
+  <path class="a" d="M180 138H250"/><circle class="d" cx="180" cy="138" r="3"/>
+  <text class="s ac" x="96" y="118">in1 → alu_a</text>
+  <text class="s ac" x="96" y="152">in0 → alu_b</text>
+
+  <rect class="k" x="250" y="168" width="150" height="50"/>
+  <text class="s" x="325" y="190" text-anchor="middle">logical</text>
+  <text class="s mut" x="325" y="206" text-anchor="middle">and or xor nor</text>
+  <path class="w" d="M180 186H250"/><circle class="d" cx="180" cy="186" r="3"/>
+  <path class="w" d="M196 202H250"/><circle class="d" cx="196" cy="202" r="3"/>
+  <path class="w" d="M180 142V186"/>
+
+  <rect class="gh" x="250" y="232" width="150" height="50"/>
+  <text class="s mut" x="325" y="254" text-anchor="middle">muldiv（組合式）</text>
+  <text class="s mut" x="325" y="270" text-anchor="middle">這顆 CPU 不用它</text>
+  <path class="wm" d="M180 250H250"/>
+  <path class="wm" d="M196 266H250"/><circle class="d" cx="196" cy="266" r="3"/>
+  <path class="wm" d="M180 186V250"/>
+
+  <path class="w" d="M400 65H470"/><path class="a" d="M400 129H470"/>
+  <path class="w" d="M400 193H470"/><path class="wm" d="M400 257H470"/>
+  <path class="k" d="M470 40L494 52V270L470 282Z"/>
+  <text class="s mut" x="474" y="69">0</text><text class="s mut" x="474" y="133">1</text>
+  <text class="s mut" x="474" y="197">2</text><text class="s mut" x="474" y="261">3</text>
+  <path class="w" d="M494 161H600" marker-end="url(#ah)"/>
+  <text class="s" x="504" y="155">out = alu_out_Xhl</text>
+
+  <rect class="k" x="30" y="300" width="110" height="34"/>
+  <text class="zh s" x="85" y="321" text-anchor="middle">fn 解碼器</text>
+  <path class="c" d="M8 317H30"/><text class="cb s" x="8" y="292">fn[3:0]</text>
+  <path class="c" d="M140 317H220"/>
+  <path class="c" d="M220 317V84"/>
+  <path class="c" d="M220 84H250" marker-end="url(#ahc)"/>
+  <path class="c" d="M220 148H250" marker-end="url(#ahc)"/>
+  <path class="c" d="M220 212H250" marker-end="url(#ahc)"/>
+  <path class="c" d="M220 276H250" marker-end="url(#ahc)"/>
+  <circle class="dc" cx="220" cy="84" r="3"/><circle class="dc" cx="220" cy="148" r="3"/>
+  <circle class="dc" cx="220" cy="212" r="3"/><circle class="dc" cx="220" cy="276" r="3"/>
+  <path class="c" d="M220 300H482V282" marker-end="url(#ahc)"/>
+  <circle class="dc" cx="220" cy="300" r="3"/>
+  <text class="cb s" x="300" y="296">out_mux_sel</text>
+  <text class="cb s" x="150" y="350">{ out_mux_sel, fn_addsub, fn_shifter, fn_logical, fn_muldiv } = cs;</text>
+</svg>
+</div>
+<figcaption><b>四個單元同時算，輸出 mux 挑一個。</b><code>muldiv</code> 那一格用了 <code>*</code>、<code>/</code>、<code>%</code>，是<b>功能模型</b>；<code>fn</code> 只能是 0–10，永遠選不到 <code>out_mux_sel == 2'd3</code>，真正的乘除法由 X 級獨立的 <code>imuldiv_IntMulDivIterative</code> 負責（<a href="#ch17">第 17 章</a>）。注意 shifter 那兩條線<b>是交叉的</b>——下一節。</figcaption>
+</figure>
+</div>
+
+<div class="tbl">
+<table>
+<thead><tr><th class="num">alu_fn</th><th>localparam</th><th>選到哪個單元</th><th>做什麼</th></tr></thead>
+<tbody>
+<tr><td class="num">4'd0</td><td><code>alu_add</code></td><td>addsub (00)</td><td><code>in0 + in1</code>；也用於位址計算、lui、jal 的 PC+4</td></tr>
+<tr><td class="num">4'd1</td><td><code>alu_sub</code></td><td>addsub (01)</td><td><code>in0 - in1</code></td></tr>
+<tr><td class="num">4'd2</td><td><code>alu_sll</code></td><td>shifter (00)</td><td><code>in0 &lt;&lt; in1[4:0]</code></td></tr>
+<tr><td class="num">4'd3</td><td><code>alu_or</code></td><td>logical (01)</td><td><code>in0 | in1</code></td></tr>
+<tr><td class="num">4'd4</td><td><code>alu_lt</code></td><td>addsub (10)</td><td>signed <code>&lt;</code>，輸出 0 或 1</td></tr>
+<tr><td class="num">4'd5</td><td><code>alu_ltu</code></td><td>addsub (11)</td><td>unsigned <code>&lt;</code>，輸出 0 或 1</td></tr>
+<tr><td class="num">4'd6</td><td><code>alu_and</code></td><td>logical (00)</td><td><code>in0 &amp; in1</code></td></tr>
+<tr><td class="num">4'd7</td><td><code>alu_xor</code></td><td>logical (10)</td><td><code>in0 ^ in1</code>；<code>bne</code> 用它</td></tr>
+<tr><td class="num">4'd8</td><td><code>alu_nor</code></td><td>logical (11)</td><td><code>~(in0 | in1)</code>；rv32i 沒有這道指令，但硬體有</td></tr>
+<tr><td class="num">4'd9</td><td><code>alu_srl</code></td><td>shifter (01)</td><td>邏輯右移</td></tr>
+<tr><td class="num">4'd10</td><td><code>alu_sra</code></td><td>shifter (11)</td><td>算術右移（補符號位元）</td></tr>
+</tbody>
+</table>
+</div>
+<div class="note"><b><code>alu_lt</code> 與 <code>slt</code> 是兩件事</b><p><code>alu_lt</code> 讓 ALU 輸出 0 或 1，這正是 <code>slt</code> 指令要寫回暫存器的值。但<b>分支</b>用的 <code>branch_cond_lt_Xhl</code> 是另一套邏輯，它吃的是 <code>alu_sub</code> 的結果（見本章最後一節）。同一個「小於」，兩條不同的路。</p></div>
+
+<h3>一顆加法器兼四種用途</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 12–24 行</div>
+<pre><code class="language-verilog">module riscv_CoreDpathAluAddSub
+(
+  input      [ 1:0] addsub_fn, // 00 = add, 01 = sub, 10 = slt, 11 = sltu
+  input      [31:0] alu_a,
+  input      [31:0] alu_b,
+  output reg [31:0] result
+);
+  // We use one adder to perform both additions and subtractions
+  wire [31:0] xB  = ( addsub_fn != 2'b00 ) ? ( ~alu_b + 1 ) : alu_b;
+  wire [31:0] sum = alu_a + xB;
+  wire diffSigns = alu_a[31] ^ alu_b[31];</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 250" role="img" aria-label="addsub 單元共用一顆加法器：alu_b 先經過一顆二選一多工器，addsub_fn 不為 00 時選 ~alu_b+1，於是同一顆加法器可以做加法也可以做減法；sum 一路送到結果多工器，另一路和 diffSigns 一起餵給 slt 與 sltu 的判斷邏輯。">
+  <text class="s" x="16" y="76">alu_a</text><path class="w" d="M56 84H330"/>
+  <text class="s" x="16" y="156">alu_b</text><path class="w" d="M56 164H120"/>
+  <circle class="d" cx="120" cy="164" r="3"/>
+  <path class="w" d="M120 164V124H240"/>
+  <path class="w" d="M120 164V196H150"/>
+  <rect class="k" x="150" y="182" width="80" height="28"/>
+  <text class="s" x="190" y="201" text-anchor="middle">~alu_b + 1</text>
+  <path class="w" d="M230 196H240"/>
+  <path class="k" d="M240 108L262 120V196L240 208Z"/>
+  <text class="s mut" x="244" y="128">0</text><text class="s mut" x="244" y="200">1</text>
+  <path class="w" d="M262 158H310V164H330"/>
+  <text class="s" x="266" y="152">xB</text>
+  <path class="c" d="M251 208V222" marker-end="url(#ahc)"/>
+  <text class="cb s" x="251" y="236" text-anchor="middle">addsub_fn != 2'b00</text>
+
+  <rect class="k" x="330" y="60" width="70" height="130"/>
+  <text x="365" y="130" text-anchor="middle">＋</text>
+  <path class="w" d="M400 125H470"/>
+  <circle class="d" cx="440" cy="125" r="3"/>
+  <text class="s" x="404" y="119">sum</text>
+  <path class="w" d="M440 125V90H610"/>
+  <path class="w" d="M440 125V162H470"/>
+  <rect class="k" x="470" y="140" width="110" height="46"/>
+  <text class="s" x="525" y="158" text-anchor="middle">slt / sltu</text>
+  <text class="zh s" x="525" y="174" text-anchor="middle">判斷</text>
+  <path class="w" d="M580 162H600V160H610"/>
+  <text class="zh s mut" x="380" y="206">另一個輸入：</text>
+  <text class="s mut" x="380" y="222">diffSigns = alu_a[31] ^ alu_b[31]</text>
+  <path class="k" d="M610 58L632 70V190L610 202Z"/>
+  <text class="s mut" x="614" y="94">0/1</text><text class="s mut" x="614" y="164">2/3</text>
+  <path class="w" d="M632 130H690" marker-end="url(#ah)"/>
+  <text class="s" x="638" y="124">result</text>
+  <path class="c" d="M621 202V220" marker-end="url(#ahc)"/>
+  <text class="cb s" x="621" y="234" text-anchor="middle">addsub_fn</text>
+</svg>
+</div>
+<figcaption><b>減法 = 加上二補數。</b>這就是基礎篇<a href="../verilog-course/index.html#ch3">第 3 章</a>那顆加法器的實際用途：只要在 <code>alu_b</code> 前面放一顆 mux，同一排全加器就同時是加法器與減法器。<code>slt</code>／<code>sltu</code> 也共用這顆加法器的 <code>sum</code>，只是再加一層「看符號」的判斷——下一節你會看到分支條件用的是同一招。</figcaption>
+</figure>
+</div>
+
+<h3>移位器的兩個輸入是反的</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathAlu.v · 第 96–110、242–248 行</div>
+<pre><code class="language-verilog">module riscv_CoreDpathAluShifter
+(
+  input  [ 1:0] shift_fn,  // 00 = lsl, 01 = lsr, 11 = asr
+  input  [31:0] alu_a,     // Shift ammount
+  input  [31:0] alu_b,     // Operand to shift
+  output [31:0] result
+);
+  assign result
+    = ( shift_fn == 2'b00 ) ? ( alu_b &lt;&lt; alu_a[4:0] ) : ...
+...
+riscv_CoreDpathAluShifter shifter
+(
+  .shift_fn   (fn_shifter),
+  .alu_a      (in1),        // &lt;-- in1，不是 in0
+  .alu_b      (in0),        // &lt;-- in0，不是 in1
+  .result     (shifter_out)
+);</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 230" role="img" aria-label="移位器輸入交換示意：in0 也就是 op0 接到 shifter 的 alu_b 也就是被移位的值，in1 也就是 op1 接到 alu_a 也就是移位量，兩條線在圖中交叉；右邊列出 slli 與 sll 兩種情況下 op0 與 op1 各自是什麼。">
+  <text class="zh hd" x="16" y="22">接線：in0 與 in1 交叉進 shifter</text>
+  <text class="s" x="16" y="68">in0 = op0_mux_out_Xhl</text>
+  <path class="a" d="M150 76H250V126H300" marker-end="url(#ah)"/>
+  <text class="s" x="16" y="112">in1 = op1_mux_out_Xhl</text>
+  <path class="a" d="M150 104H270V92H300" marker-end="url(#ah)"/>
+  <rect class="af" x="300" y="70" width="112" height="70"/>
+  <text class="s" x="306" y="96">alu_a</text>
+  <text class="s" x="306" y="130">alu_b</text>
+  <text class="zh s ac" x="360" y="96">移位量</text>
+  <text class="zh s ac" x="360" y="130">被移的值</text>
+  <text class="s" x="306" y="158">shifter</text>
+  <path class="w" d="M412 105H450" marker-end="url(#ah)"/>
+  <text class="s mut" x="200" y="186">兩條線在這裡交叉，整章的 bug 來源</text>
+
+  <path class="wm" d="M470 10V220"/>
+  <text class="zh hd" x="490" y="22">於是：</text>
+  <text class="s" x="490" y="52">slli rd, rs1, 5</text>
+  <text class="zh s mut" x="490" y="70">op0 = rs1（被移的值）</text>
+  <text class="zh s mut" x="490" y="86">op1 = shamt（bm_shamt）</text>
+  <text class="s" x="490" y="122">sll  rd, rs1, rs2</text>
+  <text class="zh s mut" x="490" y="140">op0 = rs1（被移的值）</text>
+  <text class="zh s mut" x="490" y="156">op1 = rs2（bm_rdat）</text>
+  <text class="zh s wr" x="490" y="180">只有 alu_a[4:0] 會被用到，</text>
+  <text class="zh s wr" x="490" y="196">rs2 的高 27 位元自動被忽略</text>
+</svg>
+</div>
+<figcaption><b>「被移位的值放 op0，移多少放 op1」——和其他指令的直覺一樣，但接線是交叉的。</b>所以 <code>slli</code>／<code>srli</code>／<code>srai</code> 填 <code>am_rdat + bm_shamt</code>，<code>sll</code>／<code>srl</code>／<code>sra</code> 填 <code>am_rdat + bm_rdat</code>。RISC-V 規定移位量只看低 5 位元，硬體用 <code>alu_a[4:0]</code> 直接做掉了，你不必在控制表裡處理。</figcaption>
+</figure>
+</div>
+
+<h3>分支條件：從 ALU 的結果推出六種比較</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 262–268 行</div>
+<pre><code class="language-verilog">wire   diffSigns_Xhl         = op0_mux_out_Xhl[31] ^ op1_mux_out_Xhl[31];
+assign branch_cond_eq_Xhl    = ( alu_out_Xhl == 32'd0 );
+assign branch_cond_ne_Xhl    = ~branch_cond_eq_Xhl;
+assign branch_cond_lt_Xhl    = diffSigns_Xhl ? op0_mux_out_Xhl[31] :  alu_out_Xhl[31];
+assign branch_cond_ltu_Xhl   = diffSigns_Xhl ? op1_mux_out_Xhl[31] :  alu_out_Xhl[31];
+assign branch_cond_ge_Xhl    = diffSigns_Xhl ? op1_mux_out_Xhl[31] : ~alu_out_Xhl[31];
+assign branch_cond_geu_Xhl   = diffSigns_Xhl ? op0_mux_out_Xhl[31] : ~alu_out_Xhl[31];</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 270" role="img" aria-label="六條分支條件訊號的產生方式：eq 由 alu_out 是否為零決定、ne 是 eq 的反相；lt、ltu、ge、geu 各是一顆二選一多工器，選擇線都是 diffSigns，兩個運算元符號不同時取某一個運算元的最高位元，符號相同時取減法結果的最高位元或其反相。">
+  <text class="s" x="16" y="44">op0_mux_out_Xhl[31]</text>
+  <path class="w" d="M140 48H176V62H184"/>
+  <text class="s" x="16" y="80">op1_mux_out_Xhl[31]</text>
+  <path class="w" d="M140 84H180V76H184"/>
+  <use href="#g-xor" x="184" y="54"/>
+  <path class="w" d="M228 69H260"/>
+  <text class="s" x="232" y="63">diffSigns_Xhl</text>
+  <path class="c" d="M260 69V112"/>
+  <circle class="dc" cx="260" cy="112" r="3"/>
+  <path class="c" d="M110 112H700"/>
+
+  <text class="s" x="330" y="44">alu_out_Xhl</text>
+  <path class="w" d="M410 48H432"/>
+  <rect class="k" x="432" y="34" width="50" height="28"/>
+  <text class="s" x="457" y="53" text-anchor="middle">== 0</text>
+  <path class="w" d="M482 48H520" marker-end="url(#ah)"/>
+  <circle class="d" cx="500" cy="48" r="3"/>
+  <text class="s" x="524" y="52">branch_cond_eq_Xhl</text>
+  <path class="w" d="M500 48V82H520"/>
+  <use href="#g-not" x="520" y="67"/>
+  <path class="w" d="M554 82H580" marker-end="url(#ah)"/>
+  <text class="s" x="584" y="86">branch_cond_ne_Xhl</text>
+
+<text class="s" x="108" y="150" text-anchor="end">op0[31]</text>
+<text class="s" x="108" y="186" text-anchor="end">alu_out[31]</text>
+<path class="a" d="M112 146H128"/>
+<path class="a" d="M112 182H128"/>
+<path class="af" d="M128 134L150 146V182L128 194Z"/>
+<text class="s mut" x="132" y="150">1</text>
+<text class="s mut" x="132" y="186">0</text>
+<path class="a" d="M150 164H174" marker-end="url(#ah)"/>
+<path class="c" d="M139 112V134" marker-end="url(#ahc)"/>
+<text class="s ac" x="116" y="220" text-anchor="middle">branch_cond_lt_Xhl</text>
+<text class="s" x="288" y="150" text-anchor="end">op1[31]</text>
+<text class="s" x="288" y="186" text-anchor="end">alu_out[31]</text>
+<path class="w" d="M292 146H308"/>
+<path class="w" d="M292 182H308"/>
+<path class="k" d="M308 134L330 146V182L308 194Z"/>
+<text class="s mut" x="312" y="150">1</text>
+<text class="s mut" x="312" y="186">0</text>
+<path class="w" d="M330 164H354" marker-end="url(#ah)"/>
+<path class="c" d="M319 112V134" marker-end="url(#ahc)"/>
+<text class="s " x="296" y="220" text-anchor="middle">branch_cond_ltu_Xhl</text>
+<text class="s" x="468" y="150" text-anchor="end">op1[31]</text>
+<text class="s" x="468" y="186" text-anchor="end">~alu_out[31]</text>
+<path class="w" d="M472 146H488"/>
+<path class="w" d="M472 182H488"/>
+<path class="k" d="M488 134L510 146V182L488 194Z"/>
+<text class="s mut" x="492" y="150">1</text>
+<text class="s mut" x="492" y="186">0</text>
+<path class="w" d="M510 164H534" marker-end="url(#ah)"/>
+<path class="c" d="M499 112V134" marker-end="url(#ahc)"/>
+<text class="s " x="476" y="220" text-anchor="middle">branch_cond_ge_Xhl</text>
+<text class="s" x="648" y="150" text-anchor="end">op0[31]</text>
+<text class="s" x="648" y="186" text-anchor="end">~alu_out[31]</text>
+<path class="w" d="M652 146H668"/>
+<path class="w" d="M652 182H668"/>
+<path class="k" d="M668 134L690 146V182L668 194Z"/>
+<text class="s mut" x="672" y="150">1</text>
+<text class="s mut" x="672" y="186">0</text>
+<path class="w" d="M690 164H714" marker-end="url(#ah)"/>
+<path class="c" d="M679 112V134" marker-end="url(#ahc)"/>
+<text class="s " x="656" y="220" text-anchor="middle">branch_cond_geu_Xhl</text>
+  <text class="zh s mut" x="16" y="248">四顆 mux 的選擇線都是 diffSigns_Xhl；差別只在兩個輸入挑哪一條線</text>
+  <text class="zh s mut" x="16" y="264">alu_out 必須是 op0 - op1（alu_sub），這四條線才有意義</text>
+</svg>
+</div>
+<figcaption><b>六條線，其實只有三種零件：一個等於零比較器、一個反相器、四顆選擇線相同的 mux。</b>注意 <code>ltu</code> 和 <code>lt</code> 只差「符號不同時看誰的最高位元」——有號比較看 <code>op0</code>（負的那個比較小），無號比較看 <code>op1</code>（最高位元是 1 的那個比較大，所以 op1 的 MSB 是 1 就代表 op0 比較小）。</figcaption>
+</figure>
+</div>
+
+<h3>為什麼不能只看 <code>alu_out[31]</code>？</h3>
+<p>直覺的做法是：想知道 <code>a &lt; b</code>，就算 <code>a - b</code>，看結果是不是負的。問題是 32 位元減法會<b>溢位</b>。</p>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 200" role="img" aria-label="有號比較溢位的數線示意：op0 等於負二的三十一次方、op1 等於一，兩者相減的正確答案超出 32 位元有號數的範圍，實際算出來繞回到最大正數，最高位元變成 0，會被誤判成不小於；因為兩者符號不同，改看 op0 的最高位元就一定對。">
+  <text class="zh hd" x="16" y="22">例：op0 = 0x80000000（-2147483648），op1 = 0x00000001</text>
+  <path class="w" d="M40 80H680"/>
+  <path class="w" d="M40 74V86M360 74V86M680 74V86"/>
+  <text class="s mut" x="40" y="102" text-anchor="middle">-2^31</text>
+  <text class="s mut" x="360" y="102" text-anchor="middle">0</text>
+  <text class="s mut" x="680" y="102" text-anchor="middle">2^31-1</text>
+  <circle class="d" cx="44" cy="80" r="4"/>
+  <text class="s ac" x="44" y="66" text-anchor="middle">op0</text>
+  <circle class="d" cx="366" cy="80" r="4"/>
+  <text class="s ac" x="380" y="66" text-anchor="middle">op1</text>
+  <path class="x" style="stroke-dasharray:5 3" d="M44 56H676" marker-end="url(#ah)"/>
+  <text class="zh s wr" x="200" y="50">正確答案 -2147483649 放不下，繞到這裡</text>
+  <circle class="x" cx="676" cy="80" r="4"/>
+  <text class="s wr" x="690" y="124" text-anchor="end">alu_out = 0x7FFFFFFF</text>
+  <text class="zh s wr" x="690" y="140" text-anchor="end">alu_out[31] = 0 → 「不小於」✗</text>
+  <text class="zh s ac" x="40" y="166">但兩者符號不同（diffSigns = 1），這時根本不用算：負的那個一定比較小。</text>
+  <text class="s ac" x="40" y="186">→ lt = op0_mux_out_Xhl[31] = 1 ✓</text>
+</svg>
+</div>
+<figcaption><b>符號相同才能相信減法結果；符號不同時直接看誰是負的。</b>這正是 <code>diffSigns ? op0[31] : alu_out[31]</code> 的兩個分支。<code>addsub</code> 單元裡的 <code>slt</code> 判斷（第 33–56 行）用的是一模一樣的推理，只是它把結果包成 0 或 1 寫回暫存器。</figcaption>
+</figure>
+
+<h3>所以每種分支該配哪個 alu_fn？</h3>
+<p>把上面兩張圖合起來想，你自己就能推出來。三個線索：</p>
+<ul>
+<li><code>branch_cond_eq_Xhl</code> 只問「<code>alu_out</code> 是不是 0」——<b>任何</b>讓「兩數相同 ⇔ 結果為 0」的運算都可以。已實作的 <code>bne</code> 選了 <code>alu_xor</code>（相同則每個位元都抵銷成 0）。</li>
+<li><code>lt / ltu / ge / geu</code> 讀的是 <code>alu_out[31]</code>，而且推理建立在「<code>alu_out = op0 - op1</code>」這個前提上。已實作的 <code>blt</code> 選了 <code>alu_sub</code>。</li>
+<li>四顆 mux 的選擇線是 <code>diffSigns_Xhl</code>，它直接看 <code>op0_mux_out_Xhl[31]</code> 和 <code>op1_mux_out_Xhl[31]</code>，<b>和 <code>alu_fn</code> 無關</b>——所以兩個運算元一定要走 <code>am_rdat</code> / <code>bm_rdat</code>，不能拿去放別的東西。</li>
+</ul>
+<div class="quiz"><b>想一想</b><p><code>beq</code> 可以直接沿用 <code>bne</code> 的 <code>alu_xor</code> 嗎？<code>alu_sub</code> 行不行？</p>
+<details><summary>看答案</summary><p>兩個都行。<code>beq</code> 只用到 <code>branch_cond_eq_Xhl</code>，而它只問 <code>alu_out == 0</code>：<code>a ^ b == 0</code> 和 <code>a - b == 0</code> 都恰好等價於 <code>a == b</code>。差別在 <code>br_sel</code> 要填 <code>br_beq</code>，而且控制器裡要多一條 <code>beq_taken_Xhl</code>（<a href="#ch8">第 8 章</a>）。習慣上會讓同一族的指令用同一個 <code>alu_fn</code>，比較好讀。</p></details></div>
+<div class="quiz"><b>想一想</b><p><code>bge</code>、<code>bltu</code>、<code>bgeu</code> 三道，<code>alu_fn</code> 該填什麼？為什麼不能填 <code>alu_ltu</code>？</p>
+<details><summary>看答案</summary><p>都填 <code>alu_sub</code>。因為 <code>branch_cond_ge/ltu/geu_Xhl</code> 全都讀 <code>alu_out[31]</code>，而那段推理只有在 <code>alu_out</code> 是「op0 減 op1」時才成立。<code>alu_ltu</code> 會讓 ALU 輸出 0 或 1，<code>alu_out[31]</code> 永遠是 0，六條分支條件線全部失效。要小心的是：ALU 的 <code>alu_ltu</code> 是給 <code>sltu</code> <b>指令</b>用的，不是給分支用的。</p></details></div>
+</section>
+<!-- ============================================================ ch8 -->
+<section class="ch" id="ch8" data-part="一條指令的旅程" data-nav="加一道新指令的方法">
+<p class="eyebrow">第 8 章 · 一條指令的旅程</p>
+<h2>加一道新指令的方法（Objective 1）</h2>
+<p>到這裡你手上的工具已經齊了。Objective 1 要補的那幾十列，靠的不是記憶，而是一套可以重複跑的流程。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 380" role="img" aria-label="加入一道新指令的流程圖：先找到最像的現有指令，列出它和新指令在 datapath 上的差異，把差異翻譯成控制表的欄位，加上一列，把測試加進 Makefile 的 tests 變數，跑測試；沒過就回到第二步重新檢查差異。">
+  <rect class="k" x="130" y="14" width="300" height="42"/>
+  <text class="zh" x="280" y="34" text-anchor="middle">① 找到最像的現有指令</text>
+  <text class="zh s mut" x="280" y="50" text-anchor="middle">同一族、同一種立即值、同一條資料路徑</text>
+  <path class="w" d="M280 56V72" marker-end="url(#ah)"/>
+
+  <rect class="af" x="130" y="72" width="300" height="56"/>
+  <text class="zh" x="280" y="92" text-anchor="middle">② 沿著 datapath 列出差異</text>
+  <text class="zh s" x="280" y="108" text-anchor="middle">op0 是什麼？op1 是什麼？ALU 做什麼？</text>
+  <text class="zh s" x="280" y="124" text-anchor="middle">要不要動記憶體？寫回什麼？寫去哪？</text>
+  <path class="w" d="M280 128V144" marker-end="url(#ah)"/>
+
+  <rect class="k" x="130" y="144" width="300" height="42"/>
+  <text class="zh" x="280" y="164" text-anchor="middle">③ 把每個差異翻成一欄</text>
+  <text class="zh s mut" x="280" y="180" text-anchor="middle">回到第 5 章那張 localparam 表</text>
+  <path class="w" d="M280 186V202" marker-end="url(#ah)"/>
+
+  <rect class="k" x="130" y="202" width="300" height="42"/>
+  <text class="zh" x="280" y="222" text-anchor="middle">④ 在 casez 裡加一列（寫在同一行）</text>
+  <text class="s mut" x="280" y="238" text-anchor="middle">riscvstall-CoreCtrl.v</text>
+  <path class="w" d="M280 244V260" marker-end="url(#ah)"/>
+
+  <rect class="k" x="130" y="260" width="300" height="42"/>
+  <text class="zh" x="280" y="280" text-anchor="middle">⑤ 把 .vmh 加進 tests 變數</text>
+  <text class="s mut" x="280" y="296" text-anchor="middle">build/Makefile</text>
+  <path class="w" d="M280 302V318" marker-end="url(#ah)"/>
+
+  <rect class="k" x="130" y="318" width="300" height="42"/>
+  <text class="zh" x="280" y="338" text-anchor="middle">⑥ make check-asm-riscvstall</text>
+  <text class="zh s mut" x="280" y="354" text-anchor="middle">一次只加一道、馬上測</text>
+
+  <path class="x" style="stroke-dasharray:5 3" d="M430 339H500V100H430" marker-end="url(#ah)"/>
+  <text class="zh s wr" x="506" y="200">沒過？</text>
+  <text class="zh s wr" x="506" y="216">回②，</text>
+  <text class="zh s wr" x="506" y="232">用 +vcd=1</text>
+  <text class="zh s wr" x="506" y="248">看波形</text>
+  <text class="zh s mut" x="16" y="180">大部分指令</text>
+  <text class="zh s mut" x="16" y="196">只會動到</text>
+  <text class="zh s mut" x="16" y="212">兩三欄</text>
+</svg>
+</div>
+<figcaption><b>一次一道，加完就測。</b>把二十道指令一口氣寫完再測，你會拿到一堆同時失敗的測試而分不出誰是誰。<code>+vcd=1</code> 產生的波形檔在 <code>tests/build/vmh/</code>，用 <code>gtkwave</code> 打開，先看 <code>cs</code> 和你那道指令在 X 級的 <code>alu_out_Xhl</code>。</figcaption>
+</figure>
+
+<h3>範例：把 lh 加進去（講義 3.2 節）</h3>
+<p>照流程走一遍。<b>①</b> 最像的是 <code>lw</code>：同樣是 load、同樣用 I 型立即值、同樣把 <code>rs1 + imm_i</code> 當位址。<b>②</b> 差異只有兩點：讀的是<b>半字</b>（2 bytes）而不是整字；讀回來要<b>符號延伸</b>成 32 位元。<b>③</b> 這兩點各對到一欄：<code>mem len</code> 從 <code>ml_w</code> 改成 <code>ml_h</code>；<code>memresp muxsel</code> 從 <code>dmm_w</code> 改成 <code>dmm_h</code>。其他十八欄原封不動。</p>
+<div class="ex">
+<div class="src mine">lab1.pdf 第 3.2 節給的那一列（實際貼進去時必須寫在同一行）</div>
+<pre><code class="language-verilog">`RISCV_INST_MSG_LW      :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_i, n,  alu_add,  md_x,    n, mdm_x, em_x,   ld,  ml_w, dmm_w,  wm_mem, y,  rd, n   };
+`RISCV_INST_MSG_LH      :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_i, n,  alu_add,  md_x,    n, mdm_x, em_x,   ld,  ml_h, dmm_h,  wm_mem, y,  rd, n   };</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 320" role="img" aria-label="資料記憶體回應的 subword 調整多工器：dmemresp_msg_data 分成五條支線，整字、有號位元組、無號位元組、有號半字、無號半字，由 dmemresp_mux_sel_Mhl 選出一條；圖中把 dmm_h 這條有號半字的支線標成重點，並在下方畫出它如何把第 15 位元複製十六次再接上低 16 位元。">
+  <text class="s" x="16" y="44">dmemresp_msg_data</text>
+  <path class="w" d="M126 48H170"/>
+  <path class="w" d="M170 48V248"/>
+  <circle class="d" cx="170" cy="48" r="3"/>
+  <circle class="d" cx="170" cy="98" r="3"/>
+  <circle class="d" cx="170" cy="148" r="3"/>
+  <circle class="d" cx="170" cy="198" r="3"/>
+  <circle class="d" cx="170" cy="248" r="3"/>
+
+  <path class="w" d="M170 48H300"/>
+  <text class="s mut" x="182" y="42">整字，直接用</text>
+  <path class="w" d="M170 98H240"/>
+  <rect class="k" x="240" y="84" width="60" height="28"/>
+  <text class="s" x="270" y="103" text-anchor="middle">lb</text>
+  <path class="w" d="M170 148H240"/>
+  <rect class="k" x="240" y="134" width="60" height="28"/>
+  <text class="s" x="270" y="153" text-anchor="middle">lbu</text>
+  <path class="a" d="M170 198H240"/>
+  <rect class="af" x="240" y="184" width="60" height="28"/>
+  <text class="s ac" x="270" y="203" text-anchor="middle">lh</text>
+  <path class="w" d="M170 248H240"/>
+  <rect class="k" x="240" y="234" width="60" height="28"/>
+  <text class="s" x="270" y="253" text-anchor="middle">lhu</text>
+
+  <path class="w" d="M300 98H340"/><path class="w" d="M300 148H340"/>
+  <path class="a" d="M300 198H340"/><path class="w" d="M300 248H340"/>
+  <path class="k" d="M340 34L364 46V262L340 274Z"/>
+  <text class="s mut" x="344" y="52">0</text><text class="s mut" x="344" y="102">1</text>
+  <text class="s mut" x="344" y="152">2</text><text class="s ac" x="344" y="202">3</text>
+  <text class="s mut" x="344" y="252">4</text>
+  <path class="w" d="M364 154H440" marker-end="url(#ah)"/>
+  <text class="s" x="368" y="148">dmemresp_mux_out_Mhl</text>
+  <path class="c" d="M352 274V292" marker-end="url(#ahc)"/>
+  <text class="cb s" x="352" y="306" text-anchor="middle">dmemresp_mux_sel_Mhl</text>
+  <text class="ac s" x="428" y="306">lh 這一列填 dmm_h（3'd3）</text>
+
+  <text class="s ac" x="500" y="44">dmemresp_lh_Mhl =</text>
+  <text class="s ac" x="500" y="60">{ {16{dmemresp_msg_data[15]}},</text>
+  <text class="s ac" x="500" y="76">  dmemresp_msg_data[15:0] }</text>
+  <rect class="f-imm" x="500" y="94" width="112" height="26"/>
+  <text class="s" x="556" y="112" text-anchor="middle">第 15 位元 ×16</text>
+  <rect class="f-rs1" x="612" y="94" width="118" height="26"/>
+  <text class="s" x="671" y="112" text-anchor="middle">原本的 [15:0]</text>
+  <text class="s mut" x="500" y="134">31</text>
+  <text class="s mut" x="590" y="134">16</text>
+  <text class="s mut" x="622" y="134">15</text>
+  <text class="s mut" x="722" y="134">0</text>
+  <text class="zh s mut" x="500" y="164">lhu 只差這 16 位元填 0，</text>
+  <text class="zh s mut" x="500" y="180">不是複製符號；lb / lbu 同理，</text>
+  <text class="zh s mut" x="500" y="196">只是切在第 7 位元。</text>
+  <text class="zh s mut" x="500" y="226">mem len（ml_h）決定記憶體</text>
+  <text class="zh s mut" x="500" y="242">要回多少 byte；memresp</text>
+  <text class="zh s mut" x="500" y="258">muxsel（dmm_h）決定回來之後</text>
+  <text class="zh s mut" x="500" y="274">怎麼補滿 32 位元。兩欄都要改。</text>
+</svg>
+</div>
+<figcaption><b>五條支線同時算好，控制表決定用哪一條。</b>程式碼在 <code>riscvstall-CoreDpath.v</code> 第 313–333 行——五條 <code>wire</code> 加一顆 5 選 1 mux，datapath 早就替你準備好了，<b>你只要在控制表裡指名道姓</b>。</figcaption>
+</figure>
+</div>
+<div class="ex">
+<div class="src">lab1/build/Makefile · List of Assembly Tests</div>
+<pre><code>tests = \
+riscv-addi.vmh \
+riscv-ori.vmh \
+...
+riscv-jr.vmh \
+riscv-lh.vmh \      &lt;- 新增這一行</code></pre>
+<p>然後 <code>cd $LAB1_ROOT/build &amp;&amp; make check-asm-riscvstall</code>。測試怎麼判定通過？每個 <code>tests/riscv/*.S</code> 最後會用 <code>csrw 21, x29</code> 把 1（通過）或失敗的行號寫進 <code>csr_status</code>，模擬器讀它來印結果。</p>
+</div>
+
+<h3>各類指令的提示</h3>
+<p>以下每一類給的是<b>要問自己的問題</b>，不是答案。照第 6 章五張圖的路徑走一遍，答案自己會浮出來。</p>
+
+<div class="note"><b>暫存器－立即值的邏輯／比較（andi、xori、slti、sltiu）</b>
+<p>範本是 <code>ori</code>（第 419 行）。只有 <code>alu fn</code> 那一欄要換。<code>slti</code>／<code>sltiu</code> 的結果是 0 或 1，走的還是 <code>wm_alu</code>——ALU 的 <code>alu_lt</code>／<code>alu_ltu</code> 已經幫你包好了，不要跟分支條件那一套搞混（<a href="#ch7">第 7 章</a>）。</p></div>
+
+<div class="note"><b>移位（slli、srli、srai / sll、srl、sra）</b>
+<p>立即值版的 op1 不是 <code>bm_imm_i</code>，因為移位量藏在指令的 <code>shamt</code> 欄位，datapath 有專門的 <code>shamt_Dhl = {27'b0, inst_shamt_Dhl}</code>（CoreDpath 第 201 行）和對應的 <code>bm_shamt</code>。暫存器版用 <code>bm_rdat</code>，記得 <code>rs2_en = y</code>。至於「誰被移、誰是移位量」——回去看<a href="#ch7">第 7 章</a>那張交叉接線圖。</p></div>
+
+<div class="note"><b>暫存器－暫存器運算（sub、and、or、xor、slt、sltu、sll、srl、sra）</b>
+<p>範本是 <code>add</code>（第 428 行）。<code>op1</code> 改 <code>bm_rdat</code>、<code>rs2_en</code> 改 <code>y</code>、<code>alu fn</code> 換掉，其他照抄。這一族最容易漏的是 <code>rs2_en</code>。</p></div>
+
+<div class="note"><b>subword load / store（lb、lbu、lh、lhu、sb、sh）</b>
+<p>Load 照 <code>lh</code> 的作法：<code>ml_*</code> 和 <code>dmm_*</code> 成對改。Store 只有 <code>ml_*</code> 要改——store 沒有回應要處理，所以 <code>dmm</code> 和 <code>wm</code> 兩欄填什麼都行（<code>rf_wen = n</code>，沒人看 writeback mux）。既有的 <code>sw</code> 那一列就寫了 <code>dmm_w, wm_mem</code>，其實填 <code>dmm_x, wm_x</code> 也一樣跑得動。另外別忘了 store 用的是 <b>S 型</b>立即值 <code>bm_imm_s</code>，不是 <code>bm_imm_i</code>。</p></div>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 194–197 行</div>
+<pre><code class="language-verilog">wire [31:0] jumpreg_targ_Dhl;
+
+wire [31:0] jumpreg_targ_pretruncate_Dhl = rf_rdata0_Dhl + imm_i_Dhl;
+assign jumpreg_targ_Dhl  = {jumpreg_targ_pretruncate_Dhl[31:1], 1'b0};</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 210" role="img" aria-label="jalr 的目標位址路徑：rs1 的值與 I 型立即值相加後把最低位元強制清成 0，成為 jumpreg_targ_Dhl 送回 PC mux 的第四個輸入；同時 op0 選 pc_plus4、op1 選常數 0，讓 ALU 把回返位址寫進 rd。">
+  <text class="zh hd" x="16" y="22">jalr：目標位址（不經過 ALU）</text>
+  <text class="s" x="16" y="62">rf_rdata0_Dhl</text>
+  <path class="w" d="M104 66H160"/>
+  <text class="s" x="16" y="98">imm_i_Dhl</text>
+  <path class="w" d="M104 102H160"/>
+  <rect class="k" x="160" y="50" width="56" height="66"/>
+  <text x="188" y="90" text-anchor="middle">＋</text>
+  <path class="w" d="M216 83H270"/>
+  <rect class="af" x="270" y="66" width="110" height="34"/>
+  <text class="s ac" x="325" y="88" text-anchor="middle">[31:1], 1'b0</text>
+  <path class="a" d="M380 83H520" marker-end="url(#ah)"/>
+  <text class="s ac" x="386" y="77">jumpreg_targ_Dhl</text>
+  <path class="k" d="M520 46L542 58V110L520 122Z"/>
+  <text class="s mut" x="524" y="66">p</text><text class="s mut" x="524" y="82">b</text>
+  <text class="s mut" x="524" y="98">j</text><text class="s ac" x="524" y="114">r</text>
+  <path class="w" d="M542 84H600" marker-end="url(#ah)"/>
+  <text class="s mut" x="546" y="78">PC mux</text>
+  <path class="c" d="M531 122V140" marker-end="url(#ahc)"/>
+  <text class="cb s" x="531" y="154" text-anchor="middle">pc_mux_sel_Phl = pm_r</text>
+  <text class="zh s wr" x="270" y="118">最低位元強制清 0</text>
+  <text class="zh s mut" x="16" y="180">另一半：J_EN = y（在 D 就轉向）、pc muxsel = pm_r、rs1_en = y，</text>
+  <text class="zh s mut" x="16" y="196">回返位址和 jal 一樣用 am_pc4 + bm_0 + alu_add 寫進 rd。</text>
+</svg>
+</div>
+<figcaption><b><code>jalr</code> = <code>jal</code> 的目標位址換一條路。</b>兩者都在 D 級轉向（<code>J_EN = y</code>），差別只在 PC mux 選 <code>pm_r</code> 而不是 <code>pm_j</code>，以及 <code>rs1_en</code> 要是 <code>y</code>（它真的讀了 rs1，冒險偵測需要知道）。RISC-V 規定 <code>jalr</code> 的目標位址最低位元要清成 0，datapath 已經做掉了。</figcaption>
+</figure>
+</div>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 657–666 行</div>
+<pre><code class="language-verilog">// Resolve Branch
+
+wire bne_taken_Xhl  = ( ( br_sel_Xhl == br_bne ) &amp;&amp; branch_cond_ne_Xhl );
+wire blt_taken_Xhl  = ( ( br_sel_Xhl == br_blt ) &amp;&amp; branch_cond_lt_Xhl );
+
+wire any_br_taken_Xhl
+  = ( bne_taken_Xhl || blt_taken_Xhl
+    );
+
+wire brj_taken_Xhl = ( inst_val_Xhl &amp;&amp; any_br_taken_Xhl );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 270" role="img" aria-label="控制器裡的分支解析邏輯：br_sel_Xhl 與每一種分支型別比較，結果和對應的 branch_cond 訊號做 AND，得到各自的 taken 訊號，全部 OR 起來成為 any_br_taken_Xhl，再和 inst_val_Xhl 做 AND 得到 brj_taken_Xhl；圖中用灰色虛線標出還沒實作、要你自己加的四條。">
+  <text class="s" x="16" y="52">br_sel_Xhl == br_bne</text>
+  <use href="#g-and" x="190" y="34"/>
+  <path class="w" d="M146 42H190"/>
+  <path class="w" d="M146 60H190"/>
+  <text class="s" x="16" y="70">branch_cond_ne_Xhl</text>
+  <path class="w" d="M225 49H330"/>
+  <text class="s" x="230" y="43">bne_taken_Xhl</text>
+
+  <text class="s" x="16" y="112">br_sel_Xhl == br_blt</text>
+  <use href="#g-and" x="190" y="94"/>
+  <path class="w" d="M146 102H190"/>
+  <path class="w" d="M146 120H190"/>
+  <text class="s" x="16" y="130">branch_cond_lt_Xhl</text>
+  <text class="s" x="230" y="128">blt_taken_Xhl</text>
+
+  <text class="s mut" x="16" y="172">br_sel_Xhl == br_beq / bltu / bge / bgeu</text>
+  <use href="#g-and" x="190" y="154"/>
+  <path class="wm" d="M146 162H190"/>
+  <path class="wm" d="M146 180H190"/>
+  <text class="s mut" x="16" y="190">branch_cond_eq / ltu / ge / geu_Xhl</text>
+  <path class="wm" d="M225 169H330"/>
+  <text class="zh s wr" x="376" y="188">還沒有——你要加的</text>
+
+  <use href="#g-or" x="330" y="94"/>
+  <path class="w" d="M330 49V102"/>
+  <path class="w" d="M225 109H334"/>
+  <path class="wm" d="M330 169V116"/>
+  <path class="w" d="M370 109H500"/>
+  <text class="s" x="376" y="103">any_br_taken_Xhl</text>
+
+  <use href="#g-and" x="500" y="94"/>
+  <path class="w" d="M500 102H502"/>
+  <path class="w" d="M440 138H500V120"/>
+  <text class="s" x="352" y="142">inst_val_Xhl</text>
+  <path class="w" d="M535 109H600" marker-end="url(#ah)"/>
+  <text class="s ac" x="540" y="103">brj_taken_Xhl</text>
+  <text class="zh s mut" x="500" y="168">→ squash_Fhl / squash_Dhl</text>
+  <text class="zh s mut" x="500" y="184">→ pc_mux_sel_Phl = pm_b</text>
+
+  <text class="zh s mut" x="16" y="230">每加一種分支，要做三件事：控制表加一列（br_sel 填對）、</text>
+  <text class="zh s mut" x="16" y="246">新增一條 *_taken_Xhl、把它接進 any_br_taken_Xhl 的 OR 裡。</text>
+  <text class="zh s wr" x="16" y="262">只加控制表那一列，分支永遠不會成立——這是最常見的「表填對了卻不動」。</text>
+</svg>
+</div>
+<figcaption><b>新分支是這個 lab 裡唯一需要動控制表以外程式碼的一類。</b>講義說「additional helper signals... are typically only necessary for branch instructions」，指的就是這幾條 <code>*_taken_Xhl</code>。<code>inst_val_Xhl</code> 那顆 AND 也別忽略：bubble 裡的垃圾指令不可以讓 PC 亂跳（<a href="#ch11">第 11 章</a>）。</figcaption>
+</figure>
+</div>
+
+<div class="note"><b>mul / div / divu / rem / remu</b>
+<p>這一族不走 ALU。<code>md fn</code> 填 <code>md_mul</code>…、<code>md en</code> 填 <code>y</code>、<code>ex muxsel</code> 填 <code>em_md</code>（X 級輸出取乘除法器而不是 ALU），<code>alu fn</code> 這時反而可以是 <code>alu_x</code>。關鍵在 <code>md muxsel</code>：乘除法器回的是 <b>64 位元</b>，<code>mdm_l</code> 取低 32 位元（<code>mul</code>、<code>div</code>、<code>divu</code> 要的商與乘積低位），<code>mdm_u</code> 取高 32 位元（<code>rem</code>、<code>remu</code> 的餘數放在高半部）。<code>md en = y</code> 還會讓 D 與 X 級在迭代式乘除法器還沒好時卡住——這是 riscvstall 唯一的多週期操作，<a href="#ch17">第 17 章</a>會把它換成管線式的。</p></div>
+
+<div class="trap"><b>常見錯誤</b>
+<p><b>一、列被折行。</b><code>casez</code> 的一列如果跨行，Verilog 語法上還是合法，但講義明確要求寫在同一行；更實際的理由是：折行之後欄位對不齊，你再也看不出自己少填了一欄。</p>
+<p><b>二、忘了 <code>rs2_en</code>（或 <code>rs1_en</code>）。</b>這兩欄不影響資料路徑，所以測試在 riscvstall 上<b>可能還是會過</b>——然後你到 Objective 3 加 bypass 時炸掉，而且很難聯想到是幾天前填錯的一欄。填表時把它當成「我有沒有真的讀這個暫存器」老實回答。</p>
+<p><b>三、忘了把 <code>.vmh</code> 加進 <code>build/Makefile</code> 的 <code>tests</code> 變數。</b><code>make check-asm-riscvstall</code> 不會抱怨，它只是<b>沒跑</b>你的新測試，你會以為自己通過了。</p>
+<p><b>四、store 用錯立即值型別。</b>S 型（<code>bm_imm_s</code>）和 I 型（<code>bm_imm_i</code>）的位元擺法不同（<a href="#ch2">第 2 章</a>），填錯的話小的偏移量可能還對、大的就錯，最難查。分支同理：<code>branch_targ_Dhl</code> 用的是 <code>imm_sb</code>，而分支那一列的 <code>op1</code> 要的是 <code>bm_rdat</code>——兩個立即值不要弄混。</p></div>
+
+<div class="quiz"><b>想一想</b><p><code>sb</code>（store byte）那一列，<code>memresp muxsel</code> 該填什麼？</p>
+<details><summary>看答案</summary><p>填什麼都可以，<code>dmm_x</code> 最誠實。Store 不寫回暫存器（<code>rf_wen = n</code>），<code>dmemresp_mux_out_Mhl</code> 只會流進 writeback mux，而那顆 mux 的輸出沒有人取用。重點是 <code>mem len</code> 要填 <code>ml_b</code>，<code>mem rq</code> 要填 <code>st</code>，<code>op1</code> 要填 <code>bm_imm_s</code>。</p></details></div>
+<div class="quiz"><b>想一想</b><p><code>lui</code> 用 <code>am_0 + bm_imm_u + alu_add</code>。如果你改成 <code>am_rdat + bm_imm_u</code>，測試會過嗎？</p>
+<details><summary>看答案</summary><p>不會，而且會錯得很有趣。<code>lui</code> 的指令編碼裡沒有 rs1 欄位，那五個位元是立即值的一部分，會被當成某個隨機暫存器號碼讀出來加上去。更糟的是 <code>rs1_en</code> 如果也跟著填 <code>y</code>，冒險偵測會對一個根本不存在的相依性 stall，效能莫名其妙變差。這就是為什麼 <code>lui</code>／<code>auipc</code> 的 <code>rs1_en</code> 是 <code>n</code>。</p></details></div>
+<div class="quiz"><b>想一想</b><p>你加了 <code>bge</code>，控制表那一列 <code>br_sel</code> 填 <code>br_bge</code>、<code>alu fn</code> 填 <code>alu_sub</code>，其他照抄 <code>blt</code>。跑 <code>riscv-bge</code> 測試，結果是「分支永遠不成立」。哪裡漏了？</p>
+<details><summary>看答案</summary><p>漏了控制器裡的 <code>bge_taken_Xhl</code>。<code>any_br_taken_Xhl</code> 目前只 OR 了 <code>bne_taken_Xhl</code> 和 <code>blt_taken_Xhl</code>（第 662–664 行），<code>br_sel_Xhl == br_bge</code> 沒有人去比對，<code>branch_cond_ge_Xhl</code> 也沒有人去讀。要新增 <code>wire bge_taken_Xhl = ( ( br_sel_Xhl == br_bge ) &amp;&amp; branch_cond_ge_Xhl );</code> 並加進那個 OR。</p></details></div>
+<div class="quiz"><b>想一想</b><p>為什麼 <code>lw</code> 那一列可以填 <code>em_x</code>，<code>addi</code> 那一列卻一定要填 <code>em_alu</code>？</p>
+<details><summary>看答案</summary><p>因為 <code>em</code> 控制的是 execute mux，而它的輸出只有在 <code>wb_mux_sel = wm_alu</code> 時才會被取用。<code>lw</code> 填 <code>wm_mem</code>，writeback mux 選的是記憶體那一邊，execute mux 輸出 <code>x</code> 也沒人理；<code>addi</code> 填 <code>wm_alu</code>，那條路是活的，<code>em_x</code> 會讓寫回暫存器的值變成 <code>x</code>。這就是第 5 章說的「消費者有沒有被關掉」。</p></details></div>
+</section>

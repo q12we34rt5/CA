@@ -1,0 +1,1358 @@
+<!-- ============================================================ ch9 -->
+<section class="ch" id="ch9" data-part="管線與 hazard" data-nav="時空圖與 IPC">
+<p class="eyebrow">第 9 章 · 管線與 hazard</p>
+<h2>時空圖：一張圖看完整條管線</h2>
+<p>前面幾章都在跟著<b>一道</b>指令走。但管線的重點從來不是一道指令走得多快，而是五道指令<b>同時</b>在不同的級上工作。要討論這件事，需要一種新的圖：橫軸是時間（週期），縱軸是指令，每一格寫著「這道指令在這個週期位於哪一級」。這張圖叫<b>時空圖 (pipeline diagram)</b>，是這一篇後面所有討論的共同語言。</p>
+
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 464 262" role="img" aria-label="理想情況的管線時空圖：五道指令每個週期往右前進一格，第 5 個週期起五級同時各有一道指令在工作，第 9 個週期全部完成。">
+<text class="s mut" x="149" y="60" text-anchor="middle">1</text>
+<text class="s mut" x="185" y="60" text-anchor="middle">2</text>
+<text class="s mut" x="221" y="60" text-anchor="middle">3</text>
+<text class="s mut" x="257" y="60" text-anchor="middle">4</text>
+<text class="s mut" x="293" y="60" text-anchor="middle">5</text>
+<text class="s mut" x="329" y="60" text-anchor="middle">6</text>
+<text class="s mut" x="365" y="60" text-anchor="middle">7</text>
+<text class="s mut" x="401" y="60" text-anchor="middle">8</text>
+<text class="s mut" x="437" y="60" text-anchor="middle">9</text>
+<text class="s" x="122" y="86" text-anchor="end">addi x1, x0, 1</text>
+<rect class="pc" x="132" y="68" width="34" height="26" rx="3"/>
+<text class="s" x="149" y="86" text-anchor="middle">F</text>
+<rect class="pc" x="168" y="68" width="34" height="26" rx="3"/>
+<text class="s" x="185" y="86" text-anchor="middle">D</text>
+<rect class="pc" x="204" y="68" width="34" height="26" rx="3"/>
+<text class="s" x="221" y="86" text-anchor="middle">X</text>
+<rect class="pc" x="240" y="68" width="34" height="26" rx="3"/>
+<text class="s" x="257" y="86" text-anchor="middle">M</text>
+<rect class="pc" x="276" y="68" width="34" height="26" rx="3"/>
+<text class="s" x="293" y="86" text-anchor="middle">W</text>
+<text class="s" x="122" y="116" text-anchor="end">addi x2, x0, 2</text>
+<rect class="pc" x="168" y="98" width="34" height="26" rx="3"/>
+<text class="s" x="185" y="116" text-anchor="middle">F</text>
+<rect class="pc" x="204" y="98" width="34" height="26" rx="3"/>
+<text class="s" x="221" y="116" text-anchor="middle">D</text>
+<rect class="pc" x="240" y="98" width="34" height="26" rx="3"/>
+<text class="s" x="257" y="116" text-anchor="middle">X</text>
+<rect class="pc" x="276" y="98" width="34" height="26" rx="3"/>
+<text class="s" x="293" y="116" text-anchor="middle">M</text>
+<rect class="pc" x="312" y="98" width="34" height="26" rx="3"/>
+<text class="s" x="329" y="116" text-anchor="middle">W</text>
+<text class="s" x="122" y="146" text-anchor="end">addi x3, x0, 3</text>
+<rect class="pc" x="204" y="128" width="34" height="26" rx="3"/>
+<text class="s" x="221" y="146" text-anchor="middle">F</text>
+<rect class="pc" x="240" y="128" width="34" height="26" rx="3"/>
+<text class="s" x="257" y="146" text-anchor="middle">D</text>
+<rect class="pc" x="276" y="128" width="34" height="26" rx="3"/>
+<text class="s" x="293" y="146" text-anchor="middle">X</text>
+<rect class="pc" x="312" y="128" width="34" height="26" rx="3"/>
+<text class="s" x="329" y="146" text-anchor="middle">M</text>
+<rect class="pc" x="348" y="128" width="34" height="26" rx="3"/>
+<text class="s" x="365" y="146" text-anchor="middle">W</text>
+<text class="s" x="122" y="176" text-anchor="end">addi x4, x0, 4</text>
+<rect class="pc" x="240" y="158" width="34" height="26" rx="3"/>
+<text class="s" x="257" y="176" text-anchor="middle">F</text>
+<rect class="pc" x="276" y="158" width="34" height="26" rx="3"/>
+<text class="s" x="293" y="176" text-anchor="middle">D</text>
+<rect class="pc" x="312" y="158" width="34" height="26" rx="3"/>
+<text class="s" x="329" y="176" text-anchor="middle">X</text>
+<rect class="pc" x="348" y="158" width="34" height="26" rx="3"/>
+<text class="s" x="365" y="176" text-anchor="middle">M</text>
+<rect class="pc" x="384" y="158" width="34" height="26" rx="3"/>
+<text class="s" x="401" y="176" text-anchor="middle">W</text>
+<text class="s" x="122" y="206" text-anchor="end">addi x5, x0, 5</text>
+<rect class="pc" x="276" y="188" width="34" height="26" rx="3"/>
+<text class="s" x="293" y="206" text-anchor="middle">F</text>
+<rect class="pc" x="312" y="188" width="34" height="26" rx="3"/>
+<text class="s" x="329" y="206" text-anchor="middle">D</text>
+<rect class="pc" x="348" y="188" width="34" height="26" rx="3"/>
+<text class="s" x="365" y="206" text-anchor="middle">X</text>
+<rect class="pc" x="384" y="188" width="34" height="26" rx="3"/>
+<text class="s" x="401" y="206" text-anchor="middle">M</text>
+<rect class="pc" x="420" y="188" width="34" height="26" rx="3"/>
+<text class="s" x="437" y="206" text-anchor="middle">W</text>
+<path class="a" d="M134 30H308" marker-end="url(#ah)"/><text class="zh ac s" x="221" y="18" text-anchor="middle">一道指令的延遲 = 5 個週期</text><path class="grp" d="M274 64 V230"/><path class="grp" d="M456 64 V230"/><text class="zh mut s" x="365" y="248" text-anchor="middle">這一段：每個週期完成一道指令</text>
+</svg>
+</div>
+<figcaption><b>一列是一道指令，一行是一個週期。</b>指令每個週期往右前進一格。第 5 個週期起，F、D、X、M、W 五級同時各有一道指令在工作——這就是管線的全部意義。</figcaption>
+</figure>
+</div>
+
+<h3>延遲與吞吐量是兩件事</h3>
+<p>從上圖讀兩個數字：</p>
+<ul>
+  <li><b>延遲 (latency)</b>：一道指令從進入管線到離開，永遠是 5 個週期。管線<b>沒有</b>讓任何一道指令變快，反而因為多了四排管線暫存器而讓單道指令變慢一點點。</li>
+  <li><b>吞吐量 (throughput)</b>：穩定之後每個週期完成一道指令。這才是管線買到的東西。</li>
+</ul>
+<p>如果把同樣的五道指令交給一顆「單週期做完整道指令」的 CPU，它每道指令要花一個很長的週期；管線把那個長週期切成五段，讓時脈可以快五倍左右，代價是延遲變成 5 段。<b>切得愈多段，時脈愈快，但只要有一道指令必須等另一道，浪費的就是「段數」那麼多個週期。</b>這句話就是接下來三章的主題。</p>
+
+<h3>IPC：拿一個數字衡量它</h3>
+<p>衡量管線效率的標準指標是 <b>IPC (instructions per cycle)</b>：完成的指令數除以花掉的週期數。倒過來寫就是 <b>CPI (cycles per instruction)</b>。理想的五級管線 IPC = 1；實際上永遠小於 1。</p>
+<p>lab1 的模擬器加上 <code>+stats=1</code> 就會印出這三個數字。把 <code>riscv-add</code> 這個測試跑在 <code>riscvstall</code>（也就是你現在手上這顆只會 stall、還不會 bypass 的處理器）上：</p>
+<div class="ex">
+<div class="src">lab1/build/riscv-add-stall.out</div>
+<pre><code> STATS
+ status     =          1
+ num_cycles =        468
+ num_inst   =        232
+ ipc        = 0.495726</code></pre>
+</div>
+<p>232 道指令花了 468 個週期。<b>差不多一半的週期是浪費掉的。</b>換成會隨機延遲記憶體回應的 <code>-rand-</code> 版本更慘：</p>
+<div class="tbl">
+<table>
+<thead><tr><th>模擬器</th><th class="num">num_inst</th><th class="num">num_cycles</th><th class="num">ipc</th><th>差別</th></tr></thead>
+<tbody>
+<tr class="hi"><td><code>riscv-add-stall</code></td><td class="num">232</td><td class="num">468</td><td class="num">0.4957</td><td>理想記憶體，1 週期回應</td></tr>
+<tr><td><code>riscv-add-stall-rand</code></td><td class="num">232</td><td class="num">618</td><td class="num">0.3754</td><td>記憶體回應隨機延遲</td></tr>
+</tbody>
+</table>
+</div>
+<p>那 236 個被浪費的週期去哪了？答案有三個：<b>data hazard</b> 造成的 stall（<a href="#ch11">第 11 章</a>）、<b>control hazard</b> 造成的 squash（<a href="#ch12">第 12 章</a>）、以及記憶體沒有馬上回應造成的 stall（<a href="#ch13">第 13 章</a>）。作業的 Objective 3（bypass，<a href="#ch14">第 14 章</a>起）就是要把第一種浪費拿回來大半——做完之後回來重跑這個數字，是這份作業最有成就感的一刻。</p>
+
+<h3>這門課的時空圖怎麼讀</h3>
+<p>後面的圖會用五種格子。先認得它們，後面就不用再解釋：</p>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 296 198" role="img" aria-label="時空圖的五種格子：一般格、hold（stall 住原地不動）、bubble（空的一格）、kill（被 squash 掉）、fwd（有 bypass 值經過）。">
+<text class="s mut" x="125" y="34" text-anchor="middle">1</text>
+<text class="s mut" x="161" y="34" text-anchor="middle">2</text>
+<text class="s mut" x="197" y="34" text-anchor="middle">3</text>
+<text class="s mut" x="233" y="34" text-anchor="middle">4</text>
+<text class="s mut" x="269" y="34" text-anchor="middle">5</text>
+<text class="s" x="98" y="60" text-anchor="end">正常前進</text>
+<rect class="pc" x="108" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="125" y="60" text-anchor="middle">F</text>
+<rect class="pc" x="144" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="161" y="60" text-anchor="middle">D</text>
+<rect class="pc" x="180" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="197" y="60" text-anchor="middle">X</text>
+<rect class="pc" x="216" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="233" y="60" text-anchor="middle">M</text>
+<rect class="pc" x="252" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="269" y="60" text-anchor="middle">W</text>
+<text class="s" x="98" y="90" text-anchor="end">被 stall 住</text>
+<rect class="pc" x="108" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="125" y="90" text-anchor="middle">F</text>
+<rect class="pc-hold" x="144" y="72" width="34" height="26" rx="3"/>
+<text class="s sq" x="161" y="90" text-anchor="middle">D</text>
+<rect class="pc-hold" x="180" y="72" width="34" height="26" rx="3"/>
+<text class="s sq" x="197" y="90" text-anchor="middle">D</text>
+<rect class="pc" x="216" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="233" y="90" text-anchor="middle">D</text>
+<rect class="pc" x="252" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="269" y="90" text-anchor="middle">X</text>
+<text class="s" x="98" y="120" text-anchor="end">bubble</text>
+<rect class="pc-bub" x="108" y="102" width="34" height="26" rx="3"/>
+<rect class="pc-bub" x="144" y="102" width="34" height="26" rx="3"/>
+<rect class="pc" x="180" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="197" y="120" text-anchor="middle">X</text>
+<rect class="pc" x="216" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="233" y="120" text-anchor="middle">M</text>
+<rect class="pc" x="252" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="269" y="120" text-anchor="middle">W</text>
+<text class="s" x="98" y="150" text-anchor="end">被 squash</text>
+<rect class="pc-kill" x="108" y="132" width="34" height="26" rx="3"/>
+<text class="s wr" x="125" y="150" text-anchor="middle">F</text>
+<rect class="pc-kill" x="144" y="132" width="34" height="26" rx="3"/>
+<text class="s wr" x="161" y="150" text-anchor="middle">D</text>
+<text class="s" x="98" y="180" text-anchor="end">bypass</text>
+<rect class="pc" x="108" y="162" width="34" height="26" rx="3"/>
+<text class="s" x="125" y="180" text-anchor="middle">F</text>
+<rect class="pc-fwd" x="144" y="162" width="34" height="26" rx="3"/>
+<text class="s ac" x="161" y="180" text-anchor="middle">D</text>
+<rect class="pc-fwd" x="180" y="162" width="34" height="26" rx="3"/>
+<text class="s ac" x="197" y="180" text-anchor="middle">X</text>
+<rect class="pc" x="216" y="162" width="34" height="26" rx="3"/>
+<text class="s" x="233" y="180" text-anchor="middle">M</text>
+<rect class="pc" x="252" y="162" width="34" height="26" rx="3"/>
+<text class="s" x="269" y="180" text-anchor="middle">W</text>
+</svg>
+</div>
+<figcaption><b>五種格子。</b>灰底＝正常前進；銅色＝這個週期被 stall 住，字母重複代表它原地踏步；虛線空格＝bubble（管線裡的空洞，沒有任何指令）；紅底刪除線＝被 squash 掉的錯路指令；綠框＝有 bypass 的值經過（<a href="#ch14">第 14 章</a>之後才會出現）。</figcaption>
+</figure>
+</div>
+
+<h3>互動：自己排一段程式試試</h3>
+<p>下面這個小工具可以讓你輸入一段短短的組合語言，切換「只有 stall」與「有 bypass」兩種模式，直接看時空圖和總週期數怎麼變。現在先隨便試幾行有相依的指令，感覺一下；讀完<a href="#ch11">第 11 章</a>（data hazard）、<a href="#ch12">第 12 章</a>（分支）之後各回來一次，用它驗證你自己推的 stall 週期數對不對；等你做完 Objective 3、讀完<a href="#ch15">第 15 章</a>，再切到 bypass 模式，看看同一段程式省下多少週期。</p>
+<p>建議的第一個例子：<code>addi x1, x0, 5</code> 後面接 <code>add x2, x1, x1</code>，然後試著在中間插入一、兩道 <code>nop</code>，看週期數怎麼掉。</p>
+<div class="widget" id="w-pipe"></div>
+</section>
+
+<!-- ============================================================ ch10 -->
+<section class="ch" id="ch10" data-part="管線與 hazard" data-nav="bubble、stall、squash">
+<p class="eyebrow">第 10 章 · 管線與 hazard</p>
+<h2>三個基本動作：bubble、stall、squash</h2>
+<p>管線只要遇到「這個週期不能照常往前走」，能做的事只有三種。這三種動作在 <code>riscvstall-CoreCtrl.v</code> 裡的實作非常固定，看懂一次，後面所有 hazard 處理都只是在決定「什麼時候做哪一個」。</p>
+<div class="tbl">
+<table>
+<thead><tr><th>動作</th><th>做什麼</th><th>誰受影響</th><th>這顆 CPU 的訊號</th></tr></thead>
+<tbody>
+<tr><td><b>bubble</b></td><td>某一級<b>裡面沒有真的指令</b>，只是一個佔位的空洞</td><td>一級</td><td><code>bubble_Fhl</code>…<code>bubble_Whl</code></td></tr>
+<tr><td><b>stall</b></td><td>某一級<b>原地不動</b>（管線暫存器不載入新值），前面所有級跟著停</td><td>這一級 + 它前面全部</td><td><code>stall_Fhl</code>…<code>stall_Whl</code></td></tr>
+<tr><td><b>squash</b></td><td>已經抓進來的指令<b>作廢</b>，變成 bubble</td><td>一級</td><td><code>squash_Fhl</code>、<code>squash_Dhl</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>差別要記牢：<b>stall 是「等一下」，指令還在，之後會繼續執行；squash 是「不要了」，那道指令永遠不會完成。</b>bubble 則是前兩者的共同產物——stall 一級會往下游擠出 bubble，squash 一級會把自己變成 bubble。</p>
+
+<h3>bubble 位元與 inst_val</h3>
+<p>教科書上常說「插入 nop」，但這顆 CPU 沒有真的去合成一道 <code>nop</code> 指令。它每一級只多帶一個位元 <code>bubble_Shl</code>：1 代表「這一級裝的東西不是真的指令」。handout 3.5 對這個設計的說明是：</p>
+<div class="note"><b>handout 3.5</b><p><i>Bubble bits indicate whether a pipeline stage contains an invalid entry. … This mechanism represents invalid entries without requiring explicit nop instructions. Control logic must prevent bubble entries from causing architectural side effects, such as register writes or memory requests.</i></p></div>
+<p>每一級再把 bubble 位元和 squash 訊號合成一個「這一級現在是不是一道有效指令」的旗標：</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 644 行（X 級；其他級形狀相同）</div>
+<pre><code class="language-verilog">wire inst_val_Xhl = ( !bubble_Xhl &amp;&amp; !squash_Xhl );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 400" role="img" aria-label="inst_val_Xhl 由 bubble_Xhl 與 squash_Xhl 各經過一顆反相器後 AND 起來；這條訊號再分別與 muldivreq_val_Xhl、dmemreq_val_Xhl、any_br_taken_Xhl AND 起來，作為對外動作的閘門；W 級用同樣形狀的 inst_val_Whl 控制 rf_wen_out_Whl。">
+  <text x="20" y="42">bubble_Xhl</text><path class="w" d="M110 38H150"/>
+  <use href="#g-not" x="150" y="23"/><path class="w" d="M184 38H220V58H250"/>
+  <text x="20" y="90">squash_Xhl</text><path class="w" d="M110 86H150"/>
+  <use href="#g-not" x="150" y="71"/><path class="w" d="M184 86H230V72H250"/>
+  <use href="#g-and" x="250" y="50"/>
+  <path class="w" d="M285 65H380"/><text class="ac" x="292" y="57">inst_val_Xhl</text>
+  <path class="w" d="M380 65V110H60V296"/>
+  <circle class="d" cx="60" cy="148" r="3"/><circle class="d" cx="60" cy="218" r="3"/>
+  <path class="w" d="M60 148H470M60 218H470M60 288H470"/>
+
+  <text class="s" x="425" y="166" text-anchor="end">muldivreq_val_Xhl</text><path class="w" d="M430 162H470"/>
+  <use href="#g-and" x="470" y="140"/><path class="w" d="M505 155H560" marker-end="url(#ah)"/><text x="568" y="159">muldivreq_val</text>
+
+  <text class="s" x="425" y="236" text-anchor="end">dmemreq_val_Xhl &amp;&amp; !stall_Xhl</text><path class="w" d="M430 232H470"/>
+  <use href="#g-and" x="470" y="210"/><path class="w" d="M505 225H560" marker-end="url(#ah)"/><text x="568" y="229">dmemreq_val</text>
+
+  <text class="s" x="425" y="306" text-anchor="end">any_br_taken_Xhl</text><path class="w" d="M430 302H470"/>
+  <use href="#g-and" x="470" y="280"/><path class="w" d="M505 295H560" marker-end="url(#ah)"/><text x="568" y="299">brj_taken_Xhl</text>
+
+  <text class="mut" x="20" y="362">inst_val_Whl</text><path class="wm" d="M110 358H470"/>
+  <text class="s mut" x="425" y="376" text-anchor="end">rf_wen_Whl &amp;&amp; !stall_Whl</text><path class="wm" d="M430 372H470"/>
+  <use href="#g-and" x="470" y="350"/><path class="w" d="M505 365H560" marker-end="url(#ah)"/><text x="568" y="369">rf_wen_out_Whl</text>
+  <text class="zh s mut" x="20" y="392">（W 級，同樣的形狀）</text>
+</svg>
+</div>
+<figcaption><b><code>inst_val</code> 是所有「對外動作」的總閘門。</b>bubble 之所以不會弄壞機器狀態，靠的就是這幾顆 AND：bubble 時 <code>inst_val</code> 為 0，於是不寫暫存器檔（<code>rf_wen_out_Whl</code>，第 798 行）、不對資料記憶體發 request（<code>dmemreq_val</code>，第 655 行）、不對乘除法器發 request（<code>muldivreq_val</code>，第 648 行）、也不會跳分支（<code>brj_taken_Xhl</code>，第 666 行）。<b>你自己加新功能時，任何會改變機器狀態的輸出都必須經過這道閘門。</b></figcaption>
+</figure>
+</div>
+<div class="trap"><b>常見錯誤</b><p>「反正 bubble 的指令欄位是 x，算出來的東西也沒人用」——不對。<code>dmemreq_val</code> 如果漏掉 <code>inst_val_Xhl</code>，bubble 會對記憶體發出一個位址是 x 的 request，模擬直接爆掉；<code>rf_wen_out_Whl</code> 漏掉的話，bubble 會拿一個 x 值去寫某個暫存器。這類 bug 的症狀是「測試在某個看起來無關的地方開始噴 x」。</p></div>
+
+<h3>stall：兩件事一起做</h3>
+<p>stall 一級不是只有「不要載入」而已，而是<b>兩個動作同時發生</b>：</p>
+<ol>
+  <li><b>這一級的管線暫存器 enable 關掉</b>，原封不動保留現在的內容（就是<a href="../verilog-course/index.html#ch15">基礎篇第 15 章</a>的 enable 暫存器，<code>else if (!stall_Xhl)</code>）。</li>
+  <li><b>往下游塞一個 bubble</b>。因為下一級並沒有停，它這個週期一定要收到<i>某個東西</i>；既然上游卡住了，只能給它一個空洞。</li>
+</ol>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 585–588 行</div>
+<pre><code class="language-verilog">wire bubble_sel_Dhl  = ( squash_Dhl || stall_Dhl );
+wire bubble_next_Dhl = ( !bubble_sel_Dhl ) ? bubble_Dhl
+                     : ( bubble_sel_Dhl )  ? 1'b1
+                     :                       1'bx;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 210" role="img" aria-label="squash_Dhl 與 stall_Dhl 經過 OR 得到 bubble_sel_Dhl，當作一顆二選一多工器的選擇線；選 1 時輸出常數 1，選 0 時輸出原本的 bubble_Dhl；多工器輸出 bubble_next_Dhl 進入 X 級的 bubble 暫存器。">
+  <text x="20" y="64">squash_Dhl</text><path class="w" d="M110 60H152"/>
+  <text x="20" y="92">stall_Dhl</text><path class="w" d="M110 88H152"/>
+  <use href="#g-or" x="150" y="59"/>
+  <path class="w" d="M190 74H258"/><circle class="dc" cx="200" cy="74" r="3"/><text class="cb s" x="210" y="190">bubble_sel_Dhl</text>
+  <path class="k" d="M300 36L326 48V132L300 144Z"/>
+  <text x="228" y="66">1'b1</text><path class="w" d="M270 62H300"/><text class="s" x="305" y="66">1</text>
+  <text x="212" y="126">bubble_Dhl</text><path class="w" d="M288 122H300"/><text class="s" x="305" y="126">0</text>
+  <path class="c" d="M200 74V174H313V144" marker-end="url(#ahc)"/>
+  <path class="w" d="M326 90H450"/>
+  <text class="s" x="332" y="84">bubble_next_Dhl</text>
+  <rect class="r" x="450" y="60" width="80" height="60"/><text x="458" y="95">D</text><text x="512" y="95">Q</text>
+  <path class="rl" d="M450 98l9 6l-9 6"/>
+  <path class="c" d="M470 156V120"/><text class="cb s" x="404" y="172">!stall_Xhl（enable）</text>
+  <path class="w" d="M530 90H620" marker-end="url(#ah)"/><text class="sq" x="536" y="82">bubble_Xhl</text>
+</svg>
+</div>
+<figcaption><b>「塞 bubble」就是一顆 mux。</b><code>bubble_next_Dhl</code> 平常把自己原本的 bubble 位元往下傳，只要 D 被 stall 或 squash 就改傳常數 1。注意右邊那顆暫存器的 enable 是 <code>!stall_<b>X</b>hl</code>：D 塞出來的 bubble 只有在 <b>X 沒有被 stall</b> 時才會真的被收進去——如果 X 自己也卡住，X 就保留原本的內容，什麼都不會發生。</figcaption>
+</figure>
+</div>
+
+<h3>stall 鏈：從最後一級往前傳</h3>
+<p>管線只能「往前面擠」：如果 M 卡住了，X 就不能把東西送進 M，於是 X 也得卡住，依此類推。所以每一級的 stall 訊號都是「<b>我自己的 stall 原因</b> OR <b>後面那一級的 stall</b>」，而 W 級永遠不 stall，整條鏈就從 0 開始往前長。</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 196、579–581、682、742、803 行</div>
+<pre><code class="language-verilog">assign stall_Whl = 1'b0;
+assign stall_Mhl = stall_dmem_Mhl;
+assign stall_Xhl = ( stall_Mhl || stall_muldiv_Xhl || stall_dmem_Xhl );
+assign stall_Dhl = ( stall_Xhl || stall_muldiv_Dhl || stall_hazard_Dhl );
+assign stall_Fhl = ( stall_Dhl || stall_imem_Fhl );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 380" role="img" aria-label="stall 鏈的 OR 閘串接圖：stall_Whl 固定為 0，往前依序經過 M、X、D、F 四顆 OR 閘，每一級把自己的區域 stall 原因 OR 進來，最後得到 stall_Fhl。">
+  <text class="hd" x="26" y="59">F</text>
+  <text class="s" x="290" y="46" text-anchor="end">stall_imem_Fhl</text><path class="w" d="M295 48H402"/>
+  <use href="#g-or" x="400" y="40"/>
+  <path class="w" d="M440 55H600" marker-end="url(#ah)"/><circle class="d" cx="535" cy="55" r="3"/>
+  <text class="ac" x="450" y="47">stall_Fhl</text>
+
+  <text class="hd" x="26" y="129">D</text>
+  <text class="s" x="290" y="116" text-anchor="end">stall_muldiv_Dhl</text><path class="w" d="M295 118H302"/>
+  <text class="s" x="290" y="144" text-anchor="end">stall_hazard_Dhl</text><path class="w" d="M295 146H302"/>
+  <use href="#g-or" x="300" y="112"/>
+  <path class="w" d="M340 127H370V118H402"/>
+  <use href="#g-or" x="400" y="110"/>
+  <path class="w" d="M440 125H575"/><circle class="d" cx="520" cy="125" r="3"/>
+  <text x="450" y="117">stall_Dhl</text>
+  <path class="w" d="M535 125V85H370V62H402"/>
+
+  <text class="hd" x="26" y="199">X</text>
+  <text class="s" x="290" y="186" text-anchor="end">stall_muldiv_Xhl</text><path class="w" d="M295 188H302"/>
+  <text class="s" x="290" y="214" text-anchor="end">stall_dmem_Xhl</text><path class="w" d="M295 216H302"/>
+  <use href="#g-or" x="300" y="182"/>
+  <path class="w" d="M340 197H370V188H402"/>
+  <use href="#g-or" x="400" y="180"/>
+  <path class="w" d="M440 195H560"/><circle class="d" cx="505" cy="195" r="3"/>
+  <text x="450" y="187">stall_Xhl</text>
+  <path class="w" d="M520 195V155H370V132H402"/>
+
+  <text class="hd" x="26" y="269">M</text>
+  <text class="s" x="290" y="256" text-anchor="end">stall_dmem_Mhl</text><path class="w" d="M295 258H402"/>
+  <use href="#g-or" x="400" y="250"/>
+  <path class="w" d="M440 265H545"/><circle class="d" cx="490" cy="265" r="3"/>
+  <text x="450" y="257">stall_Mhl</text>
+  <path class="w" d="M505 265V225H370V202H402"/>
+
+  <text class="hd" x="26" y="339">W</text>
+  <text x="400" y="339" text-anchor="end">stall_Whl = 1'b0</text>
+  <path class="w" d="M405 335H490"/>
+  <path class="w" d="M490 335V295H370V272H402"/>
+  <text class="zh ac s" x="600" y="340" text-anchor="middle">往前傳的方向 ↑</text>
+</svg>
+</div>
+<figcaption><b>stall 從後面往前傳，永遠不會反過來。</b>每顆 OR 閘的下方輸入來自<b>後一級</b>的 stall，上方輸入是<b>這一級自己</b>的理由。所以 <code>stall_Fhl</code> 是 1 的原因可能遠在 M 級；反過來，M 級永遠不會因為 F 卡住而停。<code>stall_Whl</code> 寫死成 0（第 803 行），是整條鏈的終點。</figcaption>
+</figure>
+</div>
+
+<h3>一格一格看：D 被 stall 三個週期時發生什麼事</h3>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 320" role="img" aria-label="三個連續週期的五級快照：D 級被 stall 住不動，F 級跟著不動，X、M、W 繼續把舊指令往後送，於是 X 和 M 依序出現 bubble。">
+  <text class="s mut" x="206" y="30" text-anchor="middle">F</text>
+  <text class="s mut" x="318" y="30" text-anchor="middle">D</text>
+  <text class="s mut" x="430" y="30" text-anchor="middle">X</text>
+  <text class="s mut" x="542" y="30" text-anchor="middle">M</text>
+  <text class="s mut" x="654" y="30" text-anchor="middle">W</text>
+
+  <text class="zh s" x="20" y="88">週期 1</text>
+  <text class="zh s wr" x="20" y="106">stall_Dhl=1</text>
+  <rect class="pc-hold" x="160" y="60" width="92" height="48" rx="3"/><text class="s sq" x="206" y="90" text-anchor="middle">and x6</text>
+  <rect class="pc-hold" x="272" y="60" width="92" height="48" rx="3"/><text class="s sq" x="318" y="90" text-anchor="middle">or x5</text>
+  <rect class="pc" x="384" y="60" width="92" height="48" rx="3"/><text class="s" x="430" y="90" text-anchor="middle">add x2</text>
+  <rect class="pc" x="496" y="60" width="92" height="48" rx="3"/><text class="s" x="542" y="90" text-anchor="middle">sub x3</text>
+  <rect class="pc" x="608" y="60" width="92" height="48" rx="3"/><text class="s" x="654" y="90" text-anchor="middle">xor x4</text>
+
+  <text class="zh s" x="20" y="178">週期 2</text>
+  <text class="zh s wr" x="20" y="196">stall_Dhl=1</text>
+  <rect class="pc-hold" x="160" y="150" width="92" height="48" rx="3"/><text class="s sq" x="206" y="180" text-anchor="middle">and x6</text>
+  <rect class="pc-hold" x="272" y="150" width="92" height="48" rx="3"/><text class="s sq" x="318" y="180" text-anchor="middle">or x5</text>
+  <rect class="pc-bub" x="384" y="150" width="92" height="48" rx="3"/><text class="s mut" x="430" y="180" text-anchor="middle">bubble</text>
+  <rect class="pc" x="496" y="150" width="92" height="48" rx="3"/><text class="s" x="542" y="180" text-anchor="middle">add x2</text>
+  <rect class="pc" x="608" y="150" width="92" height="48" rx="3"/><text class="s" x="654" y="180" text-anchor="middle">sub x3</text>
+
+  <text class="zh s" x="20" y="268">週期 3</text>
+  <text class="zh s ac" x="20" y="286">stall_Dhl=0</text>
+  <rect class="pc-hold" x="160" y="240" width="92" height="48" rx="3"/><text class="s sq" x="206" y="270" text-anchor="middle">and x6</text>
+  <rect class="pc-hold" x="272" y="240" width="92" height="48" rx="3"/><text class="s sq" x="318" y="270" text-anchor="middle">or x5</text>
+  <rect class="pc-bub" x="384" y="240" width="92" height="48" rx="3"/><text class="s mut" x="430" y="270" text-anchor="middle">bubble</text>
+  <rect class="pc-bub" x="496" y="240" width="92" height="48" rx="3"/><text class="s mut" x="542" y="270" text-anchor="middle">bubble</text>
+  <rect class="pc" x="608" y="240" width="92" height="48" rx="3"/><text class="s" x="654" y="270" text-anchor="middle">add x2</text>
+
+  <path class="a" d="M366 84H382" marker-end="url(#ah)"/>
+  <path class="a" d="M366 174H382" marker-end="url(#ah)"/>
+  <text class="zh ac s" x="374" y="306" text-anchor="middle">每個 stall 的週期，D 就往 X 擠出一個 bubble</text>
+</svg>
+</div>
+<figcaption><b>stall 不是「整條管線停住」，是「前半段停住、後半段繼續排空」。</b>F 和 D 兩格原地不動（銅色），X／M／W 照常把舊指令往後送，於是空洞從 X 開始往後蔓延。等 D 放行時，管線後半段已經空了好幾格——這些空格就是 <a href="#ch9">第 9 章</a>那 236 個浪費掉的週期的來源。</figcaption>
+</figure>
+</div>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 482 204" role="img" aria-label="D 被 stall 住三個週期的時空圖：D 原地不動，X、M、W 繼續把舊指令往後送，D 與 X 之間每個週期塞進一個 bubble。">
+<text class="s mut" x="167" y="34" text-anchor="middle">1</text>
+<text class="s mut" x="203" y="34" text-anchor="middle">2</text>
+<text class="s mut" x="239" y="34" text-anchor="middle">3</text>
+<text class="s mut" x="275" y="34" text-anchor="middle">4</text>
+<text class="s mut" x="311" y="34" text-anchor="middle">5</text>
+<text class="s mut" x="347" y="34" text-anchor="middle">6</text>
+<text class="s mut" x="383" y="34" text-anchor="middle">7</text>
+<text class="s mut" x="419" y="34" text-anchor="middle">8</text>
+<text class="s mut" x="455" y="34" text-anchor="middle">9</text>
+<text class="s" x="140" y="60" text-anchor="end">add  x2, x1, x1</text>
+<rect class="pc" x="150" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="167" y="60" text-anchor="middle">F</text>
+<rect class="pc" x="186" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="60" text-anchor="middle">D</text>
+<rect class="pc" x="222" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="60" text-anchor="middle">X</text>
+<rect class="pc" x="258" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="60" text-anchor="middle">M</text>
+<rect class="pc" x="294" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="60" text-anchor="middle">W</text>
+<text class="s" x="140" y="90" text-anchor="end">or   x5, x3, x4</text>
+<rect class="pc" x="186" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="90" text-anchor="middle">F</text>
+<rect class="pc-hold" x="222" y="72" width="34" height="26" rx="3"/>
+<text class="s sq" x="239" y="90" text-anchor="middle">D</text>
+<rect class="pc-hold" x="258" y="72" width="34" height="26" rx="3"/>
+<text class="s sq" x="275" y="90" text-anchor="middle">D</text>
+<rect class="pc" x="294" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="90" text-anchor="middle">D</text>
+<rect class="pc" x="330" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="90" text-anchor="middle">X</text>
+<rect class="pc" x="366" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="383" y="90" text-anchor="middle">M</text>
+<rect class="pc" x="402" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="419" y="90" text-anchor="middle">W</text>
+<text class="s" x="140" y="120" text-anchor="end">and  x6, x3, x4</text>
+<rect class="pc-hold" x="222" y="102" width="34" height="26" rx="3"/>
+<text class="s sq" x="239" y="120" text-anchor="middle">F</text>
+<rect class="pc-hold" x="258" y="102" width="34" height="26" rx="3"/>
+<text class="s sq" x="275" y="120" text-anchor="middle">F</text>
+<rect class="pc" x="294" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="120" text-anchor="middle">F</text>
+<rect class="pc" x="330" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="120" text-anchor="middle">D</text>
+<rect class="pc" x="366" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="383" y="120" text-anchor="middle">X</text>
+<rect class="pc" x="402" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="419" y="120" text-anchor="middle">M</text>
+<rect class="pc" x="438" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="455" y="120" text-anchor="middle">W</text>
+<text class="s" x="140" y="150" text-anchor="end">D 擠進 X 的 bubble</text>
+<rect class="pc-bub" x="258" y="132" width="34" height="26" rx="3"/>
+<rect class="pc-bub" x="294" y="132" width="34" height="26" rx="3"/>
+<path class="grp" d="M220 38 V168"/><path class="grp" d="M292 38 V168"/><text class="zh wr s" x="258" y="186" text-anchor="middle">stall_Dhl = 1</text>
+</svg>
+</div>
+<figcaption><b>同一件事畫成時空圖。</b>時空圖只是把上面三張快照疊起來看：銅色格代表那道指令停在原地，虛線格代表 D 擠進 X 的 bubble。後面幾章一律用這種畫法。</figcaption>
+</figure>
+</div>
+
+<h3>squash：把已經抓進來的指令作廢</h3>
+<p>stall 的前提是「這道指令之後還要執行」。但分支跳走的時候，已經抓進 F 和 D 的指令<b>根本不該存在</b>——留著它只會算出錯的結果。這時要用的是 squash：把那一級直接標成 bubble。</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 187–189、548 行</div>
+<pre><code class="language-verilog">assign squash_Fhl
+  = (inst_val_Dhl &amp;&amp; brj_taken_Dhl)      // D 裡的 jal/jalr 要跳
+ || (inst_val_Xhl &amp;&amp; brj_taken_Xhl);     // X 裡的分支成立
+
+wire squash_Dhl = ( inst_val_Xhl &amp;&amp; brj_taken_Xhl );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 210" role="img" aria-label="squash_Fhl 是兩個 AND 的 OR：一個來自 D 級的 jal 跳躍，一個來自 X 級的分支成立；squash_Dhl 只用到 X 級那一項。">
+  <text x="240" y="52" text-anchor="end">inst_val_Dhl</text><path class="w" d="M245 48H260"/>
+  <text x="240" y="66" text-anchor="end">brj_taken_Dhl</text><path class="w" d="M245 62H260"/>
+  <use href="#g-and" x="260" y="40"/>
+  <path class="w" d="M295 55H340V78H402"/>
+  <text x="240" y="142" text-anchor="end">inst_val_Xhl</text><path class="w" d="M245 138H260"/>
+  <text x="240" y="156" text-anchor="end">brj_taken_Xhl</text><path class="w" d="M245 152H260"/>
+  <use href="#g-and" x="260" y="130"/>
+  <path class="w" d="M295 145H560" marker-end="url(#ah)"/>
+  <circle class="d" cx="330" cy="145" r="3"/>
+  <path class="w" d="M330 145V92H402"/>
+  <use href="#g-or" x="400" y="70"/>
+  <path class="w" d="M440 85H560" marker-end="url(#ah)"/>
+  <text class="wr" x="462" y="77">squash_Fhl</text>
+  <text class="wr" x="462" y="137">squash_Dhl</text>
+  <text class="zh s mut" x="20" y="185">D 級的跳躍只會波及 F；X 級的分支會波及 F 和 D 兩級。</text>
+</svg>
+</div>
+<figcaption><b>誰在後面，誰波及的範圍就大。</b><code>squash_Dhl</code> 只有 X 那一項——因為 D 級的跳躍發生時，D 裡的就是那道 jal 自己，當然不能把自己 squash 掉。詳細的時空圖在<a href="#ch12">第 12 章</a>。</figcaption>
+</figure>
+</div>
+<div class="note"><b>squash 之後那一格還是 bubble</b><p>squash 不是另一套機制，它最後也是走 bubble 這條路：<code>bubble_sel_Fhl = ( squash_Fhl || stall_Fhl || imem_abandoned_Fhl )</code>（第 220 行）。也就是說，<b>「作廢」和「等待」在硬體上共用同一顆 mux</b>，差別只在誰把 select 拉起來。</p></div>
+<div class="quiz"><b>想一想</b><p>如果某一級同時 <code>stall</code> 和 <code>squash</code>（例如 X 有分支成立、同時 D 有 data hazard），會怎樣？</p><details><summary>看答案</summary><p><code>bubble_sel_Dhl = squash_Dhl || stall_Dhl</code>，兩者都會把 select 拉到 1，所以往下游送的一定是 bubble——結果一致。但要注意 D 自己的暫存器 enable 是 <code>!stall_Dhl</code>：stall 時 D 保留舊內容，被 squash 的那道指令其實還留在 D 裡，只是它的 <code>bubble_Dhl</code>… 沒有被更新。真正讓它作廢的是 <code>inst_val_Dhl = !bubble_Dhl &amp;&amp; !squash_Dhl</code> 這個<b>組合</b>條件：只要 <code>squash_Dhl</code> 為 1，那一級這個週期的所有對外動作就都被關掉了。這就是為什麼 squash 要同時出現在 <code>inst_val</code> 和 <code>bubble_sel</code> 兩個地方。</p></details></div>
+</section>
+
+<!-- ============================================================ ch11 -->
+<section class="ch" id="ch11" data-part="管線與 hazard" data-nav="Data hazard：讀到還沒寫回的值">
+<p class="eyebrow">第 11 章 · 管線與 hazard</p>
+<h2>Data hazard：讀到還沒寫回的值</h2>
+<p>第一種<b>冒險 (hazard)</b>。兩道指令排在一起：</p>
+<div class="ex">
+<div class="src mine">示意範例</div>
+<pre><code>addi x1, x0, 5      # 寫 x1
+add  x2, x1, x1     # 讀 x1</code></pre>
+</div>
+<p>在單週期 CPU 上這完全沒問題：第一道做完才輪到第二道。但在管線上，第二道指令在 D 級讀暫存器檔的時候，第一道還在 X 級——它算出來的 5 還躺在 ALU 輸出上，離「寫進暫存器檔」還有三個週期。</p>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 410 166" role="img" aria-label="若完全不處理 data hazard：add 在第 3 週期於 D 讀暫存器，而 addi 要到第 5 週期結束才寫回 x1，因此 add 讀到的是舊的 x1。">
+<text class="s mut" x="167" y="58" text-anchor="middle">1</text>
+<text class="s mut" x="203" y="58" text-anchor="middle">2</text>
+<text class="s mut" x="239" y="58" text-anchor="middle">3</text>
+<text class="s mut" x="275" y="58" text-anchor="middle">4</text>
+<text class="s mut" x="311" y="58" text-anchor="middle">5</text>
+<text class="s mut" x="347" y="58" text-anchor="middle">6</text>
+<text class="s mut" x="383" y="58" text-anchor="middle">7</text>
+<text class="s" x="140" y="84" text-anchor="end">addi x1, x0, 5</text>
+<rect class="pc" x="150" y="66" width="34" height="26" rx="3"/>
+<text class="s" x="167" y="84" text-anchor="middle">F</text>
+<rect class="pc" x="186" y="66" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="84" text-anchor="middle">D</text>
+<rect class="pc" x="222" y="66" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="84" text-anchor="middle">X</text>
+<rect class="pc" x="258" y="66" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="84" text-anchor="middle">M</text>
+<rect class="pc" x="294" y="66" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="84" text-anchor="middle">W</text>
+<text class="s" x="140" y="114" text-anchor="end">add  x2, x1, x1</text>
+<rect class="pc" x="186" y="96" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="114" text-anchor="middle">F</text>
+<rect class="pc" x="222" y="96" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="114" text-anchor="middle">D</text>
+<rect class="pc" x="258" y="96" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="114" text-anchor="middle">X</text>
+<rect class="pc" x="294" y="96" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="114" text-anchor="middle">M</text>
+<rect class="pc" x="330" y="96" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="114" text-anchor="middle">W</text>
+<path class="x" d="M311 22 V46"/><text class="zh wr s" x="279" y="16" text-anchor="middle">第 5 週期結尾才寫進 x1</text><path class="x" d="M239 124 V136"/><text class="zh wr s" x="269" y="152" text-anchor="middle">第 3 週期在 D 讀 x1 → 讀到舊值</text>
+</svg>
+</div>
+<figcaption><b>如果什麼都不做，<code>add</code> 會讀到 x1 的舊值。</b>關鍵是兩個時間點：暫存器檔的<b>讀</b>是組合的、發生在 D（<code>rdata0 = registers[raddr0]</code>，<a href="../verilog-course/index.html#ch9">基礎篇第 9 章</a>），而<b>寫</b>是 <code>posedge clk</code>、發生在 W 的<b>結尾</b>。所以第 3 週期讀到的，一定是第 5 週期才寫進去那個值之前的舊內容。</figcaption>
+</figure>
+</div>
+<div class="note"><b>暫存器檔沒有內部 bypass</b><p>有些設計會在暫存器檔裡做「同週期寫入直通讀出」。<code>riscvstall-CoreDpathRegfile.v</code> <b>沒有</b>：讀出的永遠是 <code>registers[raddr]</code> 的現值。所以「生產者在 W、消費者在 D」的<b>同一個週期</b>仍然算是 hazard，這一點直接決定了下面 stall 幾個週期。</p></div>
+
+<h3>riscvstall 的作法：把消費者擋在 D</h3>
+<p>最笨但最正確的解法：既然 D 讀不到對的值，就讓它<b>不要往前走</b>，一直停在 D，直到生產者離開 W 為止。</p>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 446 136" role="img" aria-label="相距 1 的相依：消費者停在 D 三個週期，分別等生產者通過 X、M、W。">
+<text class="s mut" x="167" y="34" text-anchor="middle">1</text>
+<text class="s mut" x="203" y="34" text-anchor="middle">2</text>
+<text class="s mut" x="239" y="34" text-anchor="middle">3</text>
+<text class="s mut" x="275" y="34" text-anchor="middle">4</text>
+<text class="s mut" x="311" y="34" text-anchor="middle">5</text>
+<text class="s mut" x="347" y="34" text-anchor="middle">6</text>
+<text class="s mut" x="383" y="34" text-anchor="middle">7</text>
+<text class="s mut" x="419" y="34" text-anchor="middle">8</text>
+<text class="s" x="140" y="60" text-anchor="end">addi x1, x0, 5</text>
+<rect class="pc" x="150" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="167" y="60" text-anchor="middle">F</text>
+<rect class="pc" x="186" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="60" text-anchor="middle">D</text>
+<rect class="pc" x="222" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="60" text-anchor="middle">X</text>
+<rect class="pc" x="258" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="60" text-anchor="middle">M</text>
+<rect class="pc" x="294" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="60" text-anchor="middle">W</text>
+<text class="s" x="140" y="90" text-anchor="end">add  x2, x1, x1</text>
+<rect class="pc" x="186" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="90" text-anchor="middle">F</text>
+<rect class="pc-hold" x="222" y="72" width="34" height="26" rx="3"/>
+<text class="s sq" x="239" y="90" text-anchor="middle">D</text>
+<rect class="pc-hold" x="258" y="72" width="34" height="26" rx="3"/>
+<text class="s sq" x="275" y="90" text-anchor="middle">D</text>
+<rect class="pc-hold" x="294" y="72" width="34" height="26" rx="3"/>
+<text class="s sq" x="311" y="90" text-anchor="middle">D</text>
+<rect class="pc" x="330" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="90" text-anchor="middle">D</text>
+<rect class="pc" x="366" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="383" y="90" text-anchor="middle">X</text>
+<rect class="pc" x="402" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="419" y="90" text-anchor="middle">M</text>
+<text class="zh wr s" x="275" y="114" text-anchor="middle">3 個 stall 週期</text>
+</svg>
+</div>
+<figcaption><b>相距 1 的相依要 stall 3 個週期。</b><code>add</code> 在第 3 週期進到 D，這時 <code>addi</code> 在 X：停。第 4 週期 <code>addi</code> 在 M：還是停。第 5 週期 <code>addi</code> 在 W：<b>仍然要停</b>（寫入要到這個週期結尾才發生）。第 6 週期 <code>addi</code> 已經離開管線，x1 也寫好了，<code>add</code> 才放行。</figcaption>
+</figure>
+</div>
+
+<h3>真正的 stall_hazard_Dhl</h3>
+<p>這段程式碼是整個 <code>riscvstall</code> 最值得逐字讀的一段。它把 D 級的兩個來源暫存器編號，分別跟 X、M、W 三級的目的暫存器編號比對，六項任一成立就 stall：</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 557–575 行</div>
+<pre><code class="language-verilog">wire stall_hazard_Dhl   = inst_val_Dhl &amp;&amp; (
+                          ( rs1_en_Dhl &amp;&amp; inst_val_Xhl &amp;&amp; rf_wen_Xhl
+                            &amp;&amp; ( rs1_addr_Dhl == rf_waddr_Xhl )
+                            &amp;&amp; ( rf_waddr_Xhl != 5'd0 ) )
+                       || ( rs1_en_Dhl &amp;&amp; inst_val_Mhl &amp;&amp; rf_wen_Mhl
+                            &amp;&amp; ( rs1_addr_Dhl == rf_waddr_Mhl )
+                            &amp;&amp; ( rf_waddr_Mhl != 5'd0 ) )
+                       || ( rs1_en_Dhl &amp;&amp; inst_val_Whl &amp;&amp; rf_wen_Whl
+                            &amp;&amp; ( rs1_addr_Dhl == rf_waddr_Whl )
+                            &amp;&amp; ( rf_waddr_Whl != 5'd0 ) )
+                       || ( rs2_en_Dhl &amp;&amp; ... )      // rs2 對 X / M / W，共三項
+                       ... );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 270" role="img" aria-label="六項 hazard 條件中的一項畫成電路：rs1_addr_Dhl 與 rf_waddr_Xhl 進比較器得到相等訊號，rf_waddr_Xhl 另外進一個不等於零的判斷，這兩項再和 rs1_en_Dhl、inst_val_Xhl、rf_wen_Xhl 一起進 AND 閘。">
+  <text x="200" y="48" text-anchor="end">rs1_addr_Dhl</text><path class="w" d="M205 44H250"/>
+  <text x="200" y="76" text-anchor="end">rf_waddr_Xhl</text><path class="w" d="M205 72H250"/>
+  <circle class="d" cx="225" cy="72" r="3"/>
+  <path class="w" d="M225 72V120H250"/>
+  <rect class="k" x="250" y="30" width="60" height="50"/><text x="280" y="60" text-anchor="middle">==</text>
+  <rect class="k" x="250" y="100" width="60" height="40"/><text x="280" y="125" text-anchor="middle">≠ 0</text>
+  <path class="w" d="M310 55H400"/>
+  <path class="w" d="M310 120H400"/>
+  <text x="345" y="164" text-anchor="end">rs1_en_Dhl</text><path class="w" d="M350 160H400"/>
+  <text x="345" y="194" text-anchor="end">inst_val_Xhl</text><path class="w" d="M350 190H400"/>
+  <text x="345" y="224" text-anchor="end">rf_wen_Xhl</text><path class="w" d="M350 220H400"/>
+  <rect class="k" x="400" y="30" width="60" height="210"/><text x="430" y="139" text-anchor="middle">AND</text>
+  <path class="w" d="M460 135H560" marker-end="url(#ah)"/>
+  <text class="ac s" x="470" y="127">六項之一：成立就 stall</text>
+  <text class="zh s mut" x="20" y="256">另外五項只是把 rs1→rs2、X→M→W 換掉，形狀完全相同。</text>
+</svg>
+</div>
+<figcaption><b>一項條件 = 一個比較器 + 四個守門條件。</b>比較器本身只回答「編號一樣嗎」；真正難的是那四個 <code>&amp;&amp;</code>。下面一項一項說它們在擋什麼。</figcaption>
+</figure>
+</div>
+
+<h3>四個守門條件，少一個就是一個 bug</h3>
+<div class="tbl">
+<table>
+<thead><tr><th>條件</th><th>它在擋什麼</th><th>拿掉會發生什麼</th></tr></thead>
+<tbody>
+<tr><td><code>rf_waddr_* != 5'd0</code></td><td>x0</td><td>任何寫 x0 的指令（例如編譯器常用 <code>addi x0, x0, 0</code> 當 nop）都會讓後面每一道讀 x0 的指令 stall 三次。x0 恆為 0，讀它永遠是對的，完全不需要等。</td></tr>
+<tr><td><code>inst_val_*</code></td><td>bubble 與被 squash 的指令</td><td>bubble 的 <code>rf_waddr</code> 是上一道指令留下來的<b>殘值</b>（管線暫存器只在 <code>!stall</code> 時更新，bubble 不會把資料欄位清成 0）。拿殘值去比對，會莫名其妙 stall——甚至在剛 reset 完是 x，比較結果是 x，整條 stall 訊號變成 x。</td></tr>
+<tr><td><code>rf_wen_*</code></td><td>不寫暫存器的指令</td><td><code>sw</code>、<code>bne</code> 這類指令的 <code>rf_waddr</code> 欄位是無意義的（控制表裡通常填 <code>rx</code>）。不檢查 <code>rf_wen</code> 就會拿垃圾編號去比。</td></tr>
+<tr><td><code>rs1_en_Dhl</code> / <code>rs2_en_Dhl</code></td><td>指令根本沒用到的來源欄位</td><td>見下。</td></tr>
+</tbody>
+</table>
+</div>
+<p>最後一項跟你的作業直接相關。<code>rs1_en</code>／<code>rs2_en</code> 是<a href="#ch5">第 5 章</a>那張控制表裡的兩欄，意思是「這道指令的 <code>ir[19:15]</code>／<code>ir[24:20]</code> 這幾個位元<b>真的是</b>來源暫存器編號嗎」。以 I-type 的 <code>addi</code> 為例，<code>ir[24:20]</code> 其實是立即值的一部分，所以 <code>rs2_en</code> 必須是 <code>n</code>。</p>
+<div class="trap"><b>常見錯誤</b><p>你在控制表新增一列時把 <code>rs2_en</code> 填錯，症狀分兩種，而且都不會馬上炸：</p>
+<p>填成 <code>y</code>（多讀了）：立即值的某幾個位元被當成暫存器編號去比對，結果<b>偶爾</b>會撞上前面指令的目的暫存器，多 stall 幾個週期。程式答案是對的，只是慢——<code>riscvstall</code> 階段你可能根本察覺不到，但到了 Objective 3 做 bypass，這個錯誤會讓你「把立即值位元對應的暫存器值 bypass 進來」，答案就真的錯了。</p>
+<p>填成 <code>n</code>（漏讀了）：真正需要的相依被漏掉，<code>add</code> 拿到舊值，測試直接失敗。這種比較好抓，因為 <code>tests/riscv/riscv-*.S</code> 裡的 <code>TEST_RR_*</code> 巨集就是專門在測這個。</p></div>
+
+<h3>六項比對的全貌</h3>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 396" role="img" aria-label="六項 hazard 比對的全貌：rs1 與 rs2 各自和 X、M、W 三級的 rf_waddr 比對，六個結果 OR 起來，再和 inst_val_Dhl AND 之後得到 stall_hazard_Dhl。">
+  <rect class="grp" x="170" y="24" width="250" height="158"/>
+  <text class="zh ac s" x="176" y="18">rs1 端（三項）</text>
+  <rect class="k" x="180" y="34" width="230" height="40"/><text class="s" x="295" y="59" text-anchor="middle">rs1_addr_Dhl == rf_waddr_Xhl</text>
+  <rect class="k" x="180" y="86" width="230" height="40"/><text class="s" x="295" y="111" text-anchor="middle">rs1_addr_Dhl == rf_waddr_Mhl</text>
+  <rect class="k" x="180" y="138" width="230" height="40"/><text class="s" x="295" y="163" text-anchor="middle">rs1_addr_Dhl == rf_waddr_Whl</text>
+
+  <rect class="grp" x="170" y="198" width="250" height="166"/>
+  <text class="zh ac s" x="176" y="192">rs2 端（三項）</text>
+  <rect class="k" x="180" y="208" width="230" height="40"/><text class="s" x="295" y="233" text-anchor="middle">rs2_addr_Dhl == rf_waddr_Xhl</text>
+  <rect class="k" x="180" y="260" width="230" height="40"/><text class="s" x="295" y="285" text-anchor="middle">rs2_addr_Dhl == rf_waddr_Mhl</text>
+  <rect class="k" x="180" y="312" width="230" height="40"/><text class="s" x="295" y="337" text-anchor="middle">rs2_addr_Dhl == rf_waddr_Whl</text>
+
+  <path class="w" d="M410 54H470M410 106H470M410 158H470M410 228H470M410 280H470M410 332H470"/>
+  <rect class="k" x="470" y="34" width="44" height="318"/><text x="492" y="198" text-anchor="middle">OR</text>
+  <path class="w" d="M514 189H545V183H570"/>
+  <text x="540" y="252" text-anchor="end">inst_val_Dhl</text><path class="w" d="M545 248H556V197H570"/>
+  <use href="#g-and" x="570" y="175"/>
+  <path class="w" d="M605 190H745" marker-end="url(#ah)"/>
+  <text class="wr" x="614" y="182">stall_hazard_Dhl</text>
+  <text class="zh s mut" x="20" y="60">每一格除了比較器</text>
+  <text class="zh s mut" x="20" y="78">之外，都還串著</text>
+  <text class="s mut" x="20" y="96">rs?_en_Dhl、</text>
+  <text class="s mut" x="20" y="114">inst_val_*、</text>
+  <text class="s mut" x="20" y="132">rf_wen_*、≠ 0</text>
+  <text class="zh s mut" x="20" y="150">這四個守門條件。</text>
+</svg>
+</div>
+<figcaption><b>2 個來源 × 3 個下游級 = 6 項。</b>這個 2×3 的矩陣形狀在 Objective 3 會原封不動地再出現一次——只是那時候每一格的輸出不是「要 stall」，而是「這個運算元要從哪一級 bypass 過來」。先把這張圖記熟。</figcaption>
+</figure>
+</div>
+
+<h3>相依距離決定 stall 幾個週期</h3>
+<p>把兩道指令拉開，stall 就變少。推導方法永遠一樣：<b>消費者進到 D 的那個週期，生產者在哪一級？</b>只要生產者還在 X、M 或 W，就得停一個週期。</p>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 446 166" role="img" aria-label="相距 2 的相依：中間隔一道無關指令，消費者只需要停在 D 兩個週期。">
+<text class="s mut" x="167" y="34" text-anchor="middle">1</text>
+<text class="s mut" x="203" y="34" text-anchor="middle">2</text>
+<text class="s mut" x="239" y="34" text-anchor="middle">3</text>
+<text class="s mut" x="275" y="34" text-anchor="middle">4</text>
+<text class="s mut" x="311" y="34" text-anchor="middle">5</text>
+<text class="s mut" x="347" y="34" text-anchor="middle">6</text>
+<text class="s mut" x="383" y="34" text-anchor="middle">7</text>
+<text class="s mut" x="419" y="34" text-anchor="middle">8</text>
+<text class="s" x="140" y="60" text-anchor="end">addi x1, x0, 5</text>
+<rect class="pc" x="150" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="167" y="60" text-anchor="middle">F</text>
+<rect class="pc" x="186" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="60" text-anchor="middle">D</text>
+<rect class="pc" x="222" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="60" text-anchor="middle">X</text>
+<rect class="pc" x="258" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="60" text-anchor="middle">M</text>
+<rect class="pc" x="294" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="60" text-anchor="middle">W</text>
+<text class="s" x="140" y="90" text-anchor="end">addi x7, x0, 9</text>
+<rect class="pc" x="186" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="90" text-anchor="middle">F</text>
+<rect class="pc" x="222" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="90" text-anchor="middle">D</text>
+<rect class="pc" x="258" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="90" text-anchor="middle">X</text>
+<rect class="pc" x="294" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="90" text-anchor="middle">M</text>
+<rect class="pc" x="330" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="90" text-anchor="middle">W</text>
+<text class="s" x="140" y="120" text-anchor="end">add  x2, x1, x1</text>
+<rect class="pc" x="222" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="120" text-anchor="middle">F</text>
+<rect class="pc-hold" x="258" y="102" width="34" height="26" rx="3"/>
+<text class="s sq" x="275" y="120" text-anchor="middle">D</text>
+<rect class="pc-hold" x="294" y="102" width="34" height="26" rx="3"/>
+<text class="s sq" x="311" y="120" text-anchor="middle">D</text>
+<rect class="pc" x="330" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="120" text-anchor="middle">D</text>
+<rect class="pc" x="366" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="383" y="120" text-anchor="middle">X</text>
+<rect class="pc" x="402" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="419" y="120" text-anchor="middle">M</text>
+<text class="zh wr s" x="311" y="144" text-anchor="middle">2 個 stall 週期</text>
+</svg>
+</div>
+<figcaption><b>距離 2 → 2 個 stall 週期。</b>消費者第 4 週期進 D 時生產者在 M，停；第 5 週期生產者在 W，還是停；第 6 週期放行。</figcaption>
+</figure>
+</div>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 446 196" role="img" aria-label="相距 3 的相依：消費者只需要停在 D 一個週期，等生產者離開 W。">
+<text class="s mut" x="167" y="34" text-anchor="middle">1</text>
+<text class="s mut" x="203" y="34" text-anchor="middle">2</text>
+<text class="s mut" x="239" y="34" text-anchor="middle">3</text>
+<text class="s mut" x="275" y="34" text-anchor="middle">4</text>
+<text class="s mut" x="311" y="34" text-anchor="middle">5</text>
+<text class="s mut" x="347" y="34" text-anchor="middle">6</text>
+<text class="s mut" x="383" y="34" text-anchor="middle">7</text>
+<text class="s mut" x="419" y="34" text-anchor="middle">8</text>
+<text class="s" x="140" y="60" text-anchor="end">addi x1, x0, 5</text>
+<rect class="pc" x="150" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="167" y="60" text-anchor="middle">F</text>
+<rect class="pc" x="186" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="60" text-anchor="middle">D</text>
+<rect class="pc" x="222" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="60" text-anchor="middle">X</text>
+<rect class="pc" x="258" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="60" text-anchor="middle">M</text>
+<rect class="pc" x="294" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="60" text-anchor="middle">W</text>
+<text class="s" x="140" y="90" text-anchor="end">addi x7, x0, 9</text>
+<rect class="pc" x="186" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="90" text-anchor="middle">F</text>
+<rect class="pc" x="222" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="90" text-anchor="middle">D</text>
+<rect class="pc" x="258" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="90" text-anchor="middle">X</text>
+<rect class="pc" x="294" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="90" text-anchor="middle">M</text>
+<rect class="pc" x="330" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="90" text-anchor="middle">W</text>
+<text class="s" x="140" y="120" text-anchor="end">addi x8, x0, 9</text>
+<rect class="pc" x="222" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="120" text-anchor="middle">F</text>
+<rect class="pc" x="258" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="120" text-anchor="middle">D</text>
+<rect class="pc" x="294" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="120" text-anchor="middle">X</text>
+<rect class="pc" x="330" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="120" text-anchor="middle">M</text>
+<rect class="pc" x="366" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="383" y="120" text-anchor="middle">W</text>
+<text class="s" x="140" y="150" text-anchor="end">add  x2, x1, x1</text>
+<rect class="pc" x="258" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="150" text-anchor="middle">F</text>
+<rect class="pc-hold" x="294" y="132" width="34" height="26" rx="3"/>
+<text class="s sq" x="311" y="150" text-anchor="middle">D</text>
+<rect class="pc" x="330" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="150" text-anchor="middle">D</text>
+<rect class="pc" x="366" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="383" y="150" text-anchor="middle">X</text>
+<rect class="pc" x="402" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="419" y="150" text-anchor="middle">M</text>
+<text class="zh wr s" x="347" y="174" text-anchor="middle">1 個 stall 週期</text>
+</svg>
+</div>
+<figcaption><b>距離 3 → 1 個 stall 週期。</b>消費者第 5 週期進 D 時生產者正在 W；因為暫存器檔的寫入要到這個週期結尾才生效，這一拍還是得等。</figcaption>
+</figure>
+</div>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 482 226" role="img" aria-label="相距 4 的相依：消費者在 D 讀暫存器時，生產者已經在上一個週期結束時寫完，完全不需要 stall。">
+<text class="s mut" x="167" y="34" text-anchor="middle">1</text>
+<text class="s mut" x="203" y="34" text-anchor="middle">2</text>
+<text class="s mut" x="239" y="34" text-anchor="middle">3</text>
+<text class="s mut" x="275" y="34" text-anchor="middle">4</text>
+<text class="s mut" x="311" y="34" text-anchor="middle">5</text>
+<text class="s mut" x="347" y="34" text-anchor="middle">6</text>
+<text class="s mut" x="383" y="34" text-anchor="middle">7</text>
+<text class="s mut" x="419" y="34" text-anchor="middle">8</text>
+<text class="s mut" x="455" y="34" text-anchor="middle">9</text>
+<text class="s" x="140" y="60" text-anchor="end">addi x1, x0, 5</text>
+<rect class="pc" x="150" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="167" y="60" text-anchor="middle">F</text>
+<rect class="pc" x="186" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="60" text-anchor="middle">D</text>
+<rect class="pc" x="222" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="60" text-anchor="middle">X</text>
+<rect class="pc" x="258" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="60" text-anchor="middle">M</text>
+<rect class="pc" x="294" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="60" text-anchor="middle">W</text>
+<text class="s" x="140" y="90" text-anchor="end">nop</text>
+<rect class="pc" x="186" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="203" y="90" text-anchor="middle">F</text>
+<rect class="pc" x="222" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="90" text-anchor="middle">D</text>
+<rect class="pc" x="258" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="90" text-anchor="middle">X</text>
+<rect class="pc" x="294" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="90" text-anchor="middle">M</text>
+<rect class="pc" x="330" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="90" text-anchor="middle">W</text>
+<text class="s" x="140" y="120" text-anchor="end">nop</text>
+<rect class="pc" x="222" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="239" y="120" text-anchor="middle">F</text>
+<rect class="pc" x="258" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="120" text-anchor="middle">D</text>
+<rect class="pc" x="294" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="120" text-anchor="middle">X</text>
+<rect class="pc" x="330" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="120" text-anchor="middle">M</text>
+<rect class="pc" x="366" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="383" y="120" text-anchor="middle">W</text>
+<text class="s" x="140" y="150" text-anchor="end">nop</text>
+<rect class="pc" x="258" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="275" y="150" text-anchor="middle">F</text>
+<rect class="pc" x="294" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="150" text-anchor="middle">D</text>
+<rect class="pc" x="330" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="150" text-anchor="middle">X</text>
+<rect class="pc" x="366" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="383" y="150" text-anchor="middle">M</text>
+<rect class="pc" x="402" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="419" y="150" text-anchor="middle">W</text>
+<text class="s" x="140" y="180" text-anchor="end">add  x2, x1, x1</text>
+<rect class="pc" x="294" y="162" width="34" height="26" rx="3"/>
+<text class="s" x="311" y="180" text-anchor="middle">F</text>
+<rect class="pc" x="330" y="162" width="34" height="26" rx="3"/>
+<text class="s" x="347" y="180" text-anchor="middle">D</text>
+<rect class="pc" x="366" y="162" width="34" height="26" rx="3"/>
+<text class="s" x="383" y="180" text-anchor="middle">X</text>
+<rect class="pc" x="402" y="162" width="34" height="26" rx="3"/>
+<text class="s" x="419" y="180" text-anchor="middle">M</text>
+<rect class="pc" x="438" y="162" width="34" height="26" rx="3"/>
+<text class="s" x="455" y="180" text-anchor="middle">W</text>
+<text class="zh ac s" x="355" y="204" text-anchor="middle">不用 stall</text>
+</svg>
+</div>
+<figcaption><b>距離 4 → 不用 stall。</b>消費者第 6 週期進 D，生產者已經在第 5 週期結尾把值寫進暫存器檔，三個比對對象（X、M、W）裡都沒有它了。</figcaption>
+</figure>
+</div>
+<div class="tbl">
+<table>
+<thead><tr><th>相依距離（中間隔幾道無關指令）</th><th class="num">stall 週期數</th><th>消費者進 D 時，生產者在</th></tr></thead>
+<tbody>
+<tr class="hi"><td>1（緊接著）</td><td class="num">3</td><td>X → M → W</td></tr>
+<tr><td>2</td><td class="num">2</td><td>M → W</td></tr>
+<tr><td>3</td><td class="num">1</td><td>W</td></tr>
+<tr><td>4 以上</td><td class="num">0</td><td>已經離開管線</td></tr>
+</tbody>
+</table>
+</div>
+<div class="note"><b>為什麼測試檔裡有一堆 <code>nop</code></b><p><code>tests/riscv/riscv-macros.h</code> 定義了 <code>TEST_INSERT_NOPS_0</code> 到 <code>TEST_INSERT_NOPS_10</code>，測試巨集會在生產者和消費者之間插入 0～10 道 <code>nop</code>。這不是為了「避開 hazard」，剛好相反：它是為了<b>系統性地掃過所有相依距離</b>，確保距離 1、2、3 的每一條 bypass 路徑都被測到。<a href="#ch16">第 16 章</a>會再回來看這些巨集。</p></div>
+
+<h3>代價</h3>
+<p>回到 <a href="#ch9">第 9 章</a>的數字：<code>riscv-add</code> 的 232 道指令花了 468 個週期。這個測試幾乎每一組 <code>TEST_RR_OP</code> 都是「設好兩個來源、馬上做運算、馬上檢查結果」，相依距離大多是 1 或 2——每一組就這樣送掉兩三個週期。IPC 0.4957 幾乎全部是這裡吃掉的。</p>
+<p><b>而這些 stall 完全是不必要的。</b>第 1 週期 <code>addi</code> 算出的 5，在第 3 週期就已經躺在 X／M 之間的管線暫存器上了；<code>add</code> 需要的東西明明已經在晶片裡，只是沒有一條線把它送到該去的地方。補上那幾條線，就是 <a href="#ch14">第 14 章</a>開始的<b>旁路／前饋 (bypass / forwarding)</b>。</p>
+</section>
+
+<!-- ============================================================ ch12 -->
+<section class="ch" id="ch12" data-part="管線與 hazard" data-nav="Control hazard：抓錯指令了">
+<p class="eyebrow">第 12 章 · 管線與 hazard</p>
+<h2>Control hazard：抓錯指令了</h2>
+<p>第二種 hazard 跟資料無關，跟<b>下一道指令是哪一道</b>有關。F 級每個週期都要送出一個位址去抓指令，但遇到分支時，「下一道指令的位址」要等到分支條件算出來才知道——而條件是在 <b>X 級</b>用 ALU 算的。F 不可能等三個週期，它只能猜。</p>
+<p>這顆 CPU 的猜法是最簡單的一種：<b>預測不跳 (predict not-taken)</b>——先照 <code>pc + 4</code> 一直抓下去。猜對就零成本，猜錯就把抓錯的指令 squash 掉。</p>
+
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 418 138" role="img" aria-label="bne 不成立時：預測不跳是對的，後面兩道指令照常前進，一個週期都不浪費。">
+<text class="s mut" x="175" y="34" text-anchor="middle">1</text>
+<text class="s mut" x="211" y="34" text-anchor="middle">2</text>
+<text class="s mut" x="247" y="34" text-anchor="middle">3</text>
+<text class="s mut" x="283" y="34" text-anchor="middle">4</text>
+<text class="s mut" x="319" y="34" text-anchor="middle">5</text>
+<text class="s mut" x="355" y="34" text-anchor="middle">6</text>
+<text class="s mut" x="391" y="34" text-anchor="middle">7</text>
+<text class="s" x="148" y="60" text-anchor="end">bne  x1, x2, L</text>
+<rect class="pc" x="158" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="175" y="60" text-anchor="middle">F</text>
+<rect class="pc" x="194" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="211" y="60" text-anchor="middle">D</text>
+<rect class="pc" x="230" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="247" y="60" text-anchor="middle">X</text>
+<rect class="pc" x="266" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="283" y="60" text-anchor="middle">M</text>
+<rect class="pc" x="302" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="319" y="60" text-anchor="middle">W</text>
+<text class="s" x="148" y="90" text-anchor="end">下一道</text>
+<rect class="pc" x="194" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="211" y="90" text-anchor="middle">F</text>
+<rect class="pc" x="230" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="247" y="90" text-anchor="middle">D</text>
+<rect class="pc" x="266" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="283" y="90" text-anchor="middle">X</text>
+<rect class="pc" x="302" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="319" y="90" text-anchor="middle">M</text>
+<rect class="pc" x="338" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="355" y="90" text-anchor="middle">W</text>
+<text class="s" x="148" y="120" text-anchor="end">再下一道</text>
+<rect class="pc" x="230" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="247" y="120" text-anchor="middle">F</text>
+<rect class="pc" x="266" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="283" y="120" text-anchor="middle">D</text>
+<rect class="pc" x="302" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="319" y="120" text-anchor="middle">X</text>
+<rect class="pc" x="338" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="355" y="120" text-anchor="middle">M</text>
+<rect class="pc" x="374" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="391" y="120" text-anchor="middle">W</text>
+</svg>
+</div>
+<figcaption><b>猜對的情況：一個週期都不浪費。</b>大部分的分支（例如迴圈的離開條件）在大多數次數上都是可預測的，所以「預測不跳」雖然原始，平均起來也不算太糟。</figcaption>
+</figure>
+</div>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 490 206" role="img" aria-label="bne 成立時的時空圖：分支在 X 才解出來，此時 F 與 D 裡的兩道指令都是錯路上的指令，被 squash 成 bubble，浪費兩個週期。">
+<text class="s mut" x="175" y="34" text-anchor="middle">1</text>
+<text class="s mut" x="211" y="34" text-anchor="middle">2</text>
+<text class="s mut" x="247" y="34" text-anchor="middle">3</text>
+<text class="s mut" x="283" y="34" text-anchor="middle">4</text>
+<text class="s mut" x="319" y="34" text-anchor="middle">5</text>
+<text class="s mut" x="355" y="34" text-anchor="middle">6</text>
+<text class="s mut" x="391" y="34" text-anchor="middle">7</text>
+<text class="s mut" x="427" y="34" text-anchor="middle">8</text>
+<text class="s mut" x="463" y="34" text-anchor="middle">9</text>
+<text class="s" x="148" y="60" text-anchor="end">bne  x1, x2, L</text>
+<rect class="pc" x="158" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="175" y="60" text-anchor="middle">F</text>
+<rect class="pc" x="194" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="211" y="60" text-anchor="middle">D</text>
+<rect class="pc" x="230" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="247" y="60" text-anchor="middle">X</text>
+<rect class="pc" x="266" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="283" y="60" text-anchor="middle">M</text>
+<rect class="pc" x="302" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="319" y="60" text-anchor="middle">W</text>
+<text class="s" x="148" y="90" text-anchor="end">錯路指令 1</text>
+<rect class="pc" x="194" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="211" y="90" text-anchor="middle">F</text>
+<rect class="pc-kill" x="230" y="72" width="34" height="26" rx="3"/>
+<text class="s wr" x="247" y="90" text-anchor="middle">D</text>
+<text class="s" x="148" y="120" text-anchor="end">錯路指令 2</text>
+<rect class="pc-kill" x="230" y="102" width="34" height="26" rx="3"/>
+<text class="s wr" x="247" y="120" text-anchor="middle">F</text>
+<text class="s" x="148" y="150" text-anchor="end">L: 目標指令</text>
+<rect class="pc" x="266" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="283" y="150" text-anchor="middle">F</text>
+<rect class="pc" x="302" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="319" y="150" text-anchor="middle">D</text>
+<rect class="pc" x="338" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="355" y="150" text-anchor="middle">X</text>
+<rect class="pc" x="374" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="391" y="150" text-anchor="middle">M</text>
+<rect class="pc" x="410" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="427" y="150" text-anchor="middle">W</text>
+<path class="c" style="stroke-dasharray:none" d="M264 55 H264 V145 H270" marker-end="url(#ahc)"/><text class="zh cb s" x="283" y="184" text-anchor="middle">brj_taken_Xhl → PC 改成分支目標</text>
+</svg>
+</div>
+<figcaption><b>猜錯的情況：兩個週期。</b>第 3 週期 <code>bne</code> 在 X 解出「要跳」。這時 D 和 F 裡已經各坐著一道照 <code>pc+4</code> 抓進來的錯路指令，兩道都被 squash（<code>squash_Dhl</code>、<code>squash_Fhl</code>）。第 4 週期才開始抓正確的目標指令。</figcaption>
+</figure>
+</div>
+<p><code>jal</code> 就好一點：跳躍目標只需要 <code>pc + 立即值</code>，D 級解碼完就算得出來，不必等 ALU。</p>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 454 176" role="img" aria-label="jal 的時空圖：跳躍在 D 就解出來，只有 F 裡的一道指令是錯路上的，只浪費一個週期。">
+<text class="s mut" x="175" y="34" text-anchor="middle">1</text>
+<text class="s mut" x="211" y="34" text-anchor="middle">2</text>
+<text class="s mut" x="247" y="34" text-anchor="middle">3</text>
+<text class="s mut" x="283" y="34" text-anchor="middle">4</text>
+<text class="s mut" x="319" y="34" text-anchor="middle">5</text>
+<text class="s mut" x="355" y="34" text-anchor="middle">6</text>
+<text class="s mut" x="391" y="34" text-anchor="middle">7</text>
+<text class="s mut" x="427" y="34" text-anchor="middle">8</text>
+<text class="s" x="148" y="60" text-anchor="end">jal  x1, L</text>
+<rect class="pc" x="158" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="175" y="60" text-anchor="middle">F</text>
+<rect class="pc" x="194" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="211" y="60" text-anchor="middle">D</text>
+<rect class="pc" x="230" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="247" y="60" text-anchor="middle">X</text>
+<rect class="pc" x="266" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="283" y="60" text-anchor="middle">M</text>
+<rect class="pc" x="302" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="319" y="60" text-anchor="middle">W</text>
+<text class="s" x="148" y="90" text-anchor="end">錯路指令</text>
+<rect class="pc-kill" x="194" y="72" width="34" height="26" rx="3"/>
+<text class="s wr" x="211" y="90" text-anchor="middle">F</text>
+<text class="s" x="148" y="120" text-anchor="end">L: 目標指令</text>
+<rect class="pc" x="230" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="247" y="120" text-anchor="middle">F</text>
+<rect class="pc" x="266" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="283" y="120" text-anchor="middle">D</text>
+<rect class="pc" x="302" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="319" y="120" text-anchor="middle">X</text>
+<rect class="pc" x="338" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="355" y="120" text-anchor="middle">M</text>
+<rect class="pc" x="374" y="102" width="34" height="26" rx="3"/>
+<text class="s" x="391" y="120" text-anchor="middle">W</text>
+<path class="c" style="stroke-dasharray:none" d="M228 55 H228 V115 H234" marker-end="url(#ahc)"/><text class="zh cb s" x="283" y="154" text-anchor="middle">brj_taken_Dhl → PC 改成跳躍目標</text>
+</svg>
+</div>
+<figcaption><b>jal 只浪費一個週期。</b>因為它在 D 就能改 PC，只有 F 裡那一道是錯的。<code>jalr</code> 也一樣在 D 解決（目標是 <code>rs1 + 立即值</code>，用的是暫存器檔讀出來的值，不經過 ALU）。</figcaption>
+</figure>
+</div>
+
+<h3>PC mux：四個輸入來自三個不同的級</h3>
+<p>「預測不跳」在電路上長什麼樣子？就是 PC 那顆 mux 的<b>預設輸入是 <code>pc+4</code></b>，其他三個輸入是從後面的級倒著拉回來的修正值。</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 81–91 行</div>
+<pre><code class="language-verilog">assign pc_plus4_Phl       = pc_plus4_Fhl;     // 來自 F
+assign branch_targ_Phl    = branch_targ_Xhl;  // 來自 X
+assign jump_targ_Phl      = jump_targ_Dhl;    // 來自 D
+assign jumpreg_targ_Phl   = jumpreg_targ_Dhl; // 來自 D
+
+assign pc_mux_out_Phl
+  = ( pc_mux_sel_Phl == 2'd0 ) ? pc_plus4_Phl
+  : ( pc_mux_sel_Phl == 2'd1 ) ? branch_targ_Phl
+  : ( pc_mux_sel_Phl == 2'd2 ) ? jump_targ_Phl
+  : ( pc_mux_sel_Phl == 2'd3 ) ? jumpreg_targ_Phl
+  :                              32'bx;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 300" role="img" aria-label="PC 多工器有四個輸入：pc_plus4 來自 F 級、branch_targ 來自 X 級、jump_targ 與 jumpreg_targ 來自 D 級；輸出送進 pc_Fhl 暫存器。">
+  <rect class="gh" x="120" y="58" width="30" height="22" rx="3"/><text class="s" x="135" y="74" text-anchor="middle">F</text>
+  <text x="295" y="74" text-anchor="end">pc_plus4_Fhl</text><path class="w" d="M300 70H420"/>
+  <rect class="gh" x="120" y="113" width="30" height="22" rx="3"/><text class="s" x="135" y="129" text-anchor="middle">X</text>
+  <text x="295" y="129" text-anchor="end">branch_targ_Xhl</text><path class="w" d="M300 125H420"/>
+  <rect class="gh" x="120" y="168" width="30" height="22" rx="3"/><text class="s" x="135" y="184" text-anchor="middle">D</text>
+  <text x="295" y="184" text-anchor="end">jump_targ_Dhl</text><path class="w" d="M300 180H420"/>
+  <rect class="gh" x="120" y="223" width="30" height="22" rx="3"/><text class="s" x="135" y="239" text-anchor="middle">D</text>
+  <text x="295" y="239" text-anchor="end">jumpreg_targ_Dhl</text><path class="w" d="M300 235H420"/>
+
+  <path class="k" d="M420 40L450 55V245L420 260Z"/>
+  <text class="s" x="426" y="74">0</text><text class="s" x="426" y="129">1</text><text class="s" x="426" y="184">2</text><text class="s" x="426" y="239">3</text>
+  <path class="c" d="M435 292V260" marker-end="url(#ahc)"/><text class="cb s" x="336" y="296">pc_mux_sel_Phl</text>
+  <path class="w" d="M450 150H580"/><text x="458" y="142">pc_mux_out_Phl</text>
+  <rect class="r" x="580" y="125" width="90" height="50"/><text x="625" y="156" text-anchor="middle">pc_Fhl</text>
+  <path class="rl" d="M580 152l9 6l-9 6"/>
+  <path class="w" d="M670 150H705" marker-end="url(#ah)"/>
+  <text class="zh ac s" x="60" y="26">「預設走 0 號輸入」＝預測不跳</text>
+  <path class="a" d="M155 32V54" marker-end="url(#ah)"/>
+</svg>
+</div>
+<figcaption><b>一顆 mux 就是整個分支預測器。</b>0 號輸入 <code>pc_plus4</code> 來自 F 級本身，其餘三個都是「後面的級發現猜錯了，把正確答案送回來」。<code>branch_targ_Xhl</code> 要橫跨三級拉回 P，這條線在實體佈局上很長，也是真實處理器裡時脈路徑的常客。</figcaption>
+</figure>
+</div>
+
+<h3>誰說了算：X 的分支優先於 D 的跳躍</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 81–84 行</div>
+<pre><code class="language-verilog">assign pc_mux_sel_Phl
+  = brj_taken_Xhl    ? pm_b              // X 的分支最優先
+  : brj_taken_Dhl    ? pc_mux_sel_Dhl    // 其次是 D 的 jal / jalr
+  :                    pm_p;             // 都沒有就 pc + 4</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 230" role="img" aria-label="pc_mux_sel_Phl 的優先權是兩顆串接的二選一多工器：內層由 brj_taken_Dhl 在 pc_mux_sel_Dhl 與 pm_p 之間選，外層由 brj_taken_Xhl 決定是否覆蓋成 pm_b。">
+  <text x="200" y="89" text-anchor="end">pc_mux_sel_Dhl</text><path class="w" d="M205 85H280"/>
+  <text x="200" y="139" text-anchor="end">pm_p（pc+4）</text><path class="w" d="M205 135H280"/>
+  <path class="k" d="M280 60L306 72V148L280 160Z"/>
+  <text class="s" x="286" y="89">1</text><text class="s" x="286" y="139">0</text>
+  <path class="c" d="M293 196V160" marker-end="url(#ahc)"/><text class="cb s" x="293" y="212" text-anchor="middle">brj_taken_Dhl</text>
+  <path class="w" d="M306 110H360V125H420"/>
+  <text x="390" y="79" text-anchor="end">pm_b（分支目標）</text><path class="w" d="M395 75H420"/>
+  <path class="k" d="M420 50L446 62V138L420 150Z"/>
+  <text class="s" x="426" y="79">1</text><text class="s" x="426" y="129">0</text>
+  <path class="c" d="M433 186V150" marker-end="url(#ahc)"/><text class="cb s" x="433" y="202" text-anchor="middle">brj_taken_Xhl</text>
+  <path class="w" d="M446 100H600" marker-end="url(#ah)"/><text x="454" y="92">pc_mux_sel_Phl</text>
+</svg>
+</div>
+<figcaption><b>巢狀的 <code>? :</code> 就是串接的 mux，順序就是優先權。</b>外層（<code>brj_taken_Xhl</code>）離輸出最近，所以最優先。</figcaption>
+</figure>
+</div>
+<p>為什麼 X 要贏？想一個具體情境：</p>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 454 204" role="img" aria-label="X 的分支優先於 D 的跳躍：第 3 週期 bne 在 X 成立，同一個週期 D 裡的 jal 其實是錯路上的指令，所以 jal 的跳躍位址必須被忽略。">
+<text class="s mut" x="175" y="34" text-anchor="middle">1</text>
+<text class="s mut" x="211" y="34" text-anchor="middle">2</text>
+<text class="s mut" x="247" y="34" text-anchor="middle">3</text>
+<text class="s mut" x="283" y="34" text-anchor="middle">4</text>
+<text class="s mut" x="319" y="34" text-anchor="middle">5</text>
+<text class="s mut" x="355" y="34" text-anchor="middle">6</text>
+<text class="s mut" x="391" y="34" text-anchor="middle">7</text>
+<text class="s mut" x="427" y="34" text-anchor="middle">8</text>
+<text class="s" x="148" y="60" text-anchor="end">bne  x1, x2, L</text>
+<rect class="pc" x="158" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="175" y="60" text-anchor="middle">F</text>
+<rect class="pc" x="194" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="211" y="60" text-anchor="middle">D</text>
+<rect class="pc" x="230" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="247" y="60" text-anchor="middle">X</text>
+<rect class="pc" x="266" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="283" y="60" text-anchor="middle">M</text>
+<rect class="pc" x="302" y="42" width="34" height="26" rx="3"/>
+<text class="s" x="319" y="60" text-anchor="middle">W</text>
+<text class="s" x="148" y="90" text-anchor="end">jal  x3, F</text>
+<rect class="pc" x="194" y="72" width="34" height="26" rx="3"/>
+<text class="s" x="211" y="90" text-anchor="middle">F</text>
+<rect class="pc-kill" x="230" y="72" width="34" height="26" rx="3"/>
+<text class="s wr" x="247" y="90" text-anchor="middle">D</text>
+<text class="s" x="148" y="120" text-anchor="end">錯路指令</text>
+<rect class="pc-kill" x="230" y="102" width="34" height="26" rx="3"/>
+<text class="s wr" x="247" y="120" text-anchor="middle">F</text>
+<text class="s" x="148" y="150" text-anchor="end">L: 目標指令</text>
+<rect class="pc" x="266" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="283" y="150" text-anchor="middle">F</text>
+<rect class="pc" x="302" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="319" y="150" text-anchor="middle">D</text>
+<rect class="pc" x="338" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="355" y="150" text-anchor="middle">X</text>
+<rect class="pc" x="374" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="391" y="150" text-anchor="middle">M</text>
+<rect class="pc" x="410" y="132" width="34" height="26" rx="3"/>
+<text class="s" x="427" y="150" text-anchor="middle">W</text>
+<text class="zh wr s" x="303" y="182" text-anchor="middle">D 裡這道 jal 根本不該執行，它的跳躍位址必須被忽略</text>
+</svg>
+</div>
+<figcaption><b>D 裡那道 <code>jal</code> 本來就在錯的路上。</b>第 3 週期 <code>bne</code> 在 X 成立，代表 <code>bne</code> 後面那兩道（包含 D 裡的 <code>jal</code>）根本不該被執行。如果讓 D 的 <code>jal</code> 贏，PC 會跳到一個程式邏輯上從來不該到達的位址。所以優先權<b>必須</b>是「管線愈後面的指令愈老、愈有權決定」。</figcaption>
+</figure>
+</div>
+<p>同一個道理解釋了 <code>brj_taken_Dhl</code> 為什麼長這樣：</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 475 行</div>
+<pre><code class="language-verilog">wire brj_taken_Dhl = ( inst_val_Dhl &amp;&amp; !stall_Dhl &amp;&amp; cs[`RISCV_INST_MSG_J_EN] );</code></pre>
+</div>
+<ul>
+  <li><code>inst_val_Dhl</code>：D 裡如果是 bubble 或已被 squash，當然不能跳。</li>
+  <li><code>!stall_Dhl</code>：這一項比較微妙。<b>如果 D 被 stall 住，這道 <code>jal</code> 這個週期不會前進</b>；但 <code>brj_taken_Dhl</code> 只要拉起來，PC 就被改掉、<code>squash_Fhl</code> 也會拉起來。下個週期 D 還是同一道 <code>jal</code>，它會<b>再跳一次</b>——而 PC 早就跳走了，於是第二次跳的起點是錯的。加上 <code>!stall_Dhl</code>，等於規定「只有在我這個週期真的要離開 D 的時候，才對外宣告我要跳」。</li>
+</ul>
+<div class="quiz"><b>想一想</b><p><code>brj_taken_Xhl = inst_val_Xhl &amp;&amp; any_br_taken_Xhl</code>（第 666 行）。如果拿掉 <code>inst_val_Xhl</code>，一個停在 X 的 bubble 會發生什麼事？</p><details><summary>看答案</summary><p>bubble 的 <code>br_sel_Xhl</code> 是上一道指令留下來的殘值（管線暫存器只在 <code>!stall_Xhl</code> 時更新，bubble 位元和資料欄位是分開的）。如果上一道剛好是 <code>bne</code>，殘值就是 <code>br_bne</code>；而 ALU 的比較結果 <code>branch_cond_ne_Xhl</code> 是對當下輸入（也是殘值）算出來的，完全可能是 1。於是這個<b>不存在的指令</b>會跳走，並且順手 squash 掉 F 和 D 兩道真正該執行的指令。症狀是程式在某個分支附近隨機跳到奇怪的位址。<br>更麻煩的是 <a href="#ch11">第 11 章</a>提過的：剛 reset 完這些殘值是 x，比較結果是 x，<code>pc_mux_sel_Phl</code> 也變成 x，整顆 CPU 從第一個週期就死了。<b>凡是「往回影響 PC 或機器狀態」的訊號，一律要先問 <code>inst_val</code>。</b></p></details></div>
+<div class="note"><b>把兩種 hazard 的成本放在一起看</b><p>data hazard 一次最多吃掉 3 個週期，但它<b>非常頻繁</b>（幾乎每一對相鄰指令都可能撞上）；control hazard 一次只吃 1～2 個週期，但<b>無法用 bypass 消除</b>——Objective 3 做完之後，data hazard 的 stall 會掉到只剩 <code>lw</code> 之後緊接著用的那一種，而分支的 2 個週期仍然原封不動地在那裡。要再動它，就得做分支預測，那超出這份作業的範圍。</p></div>
+</section>
+
+<!-- ============================================================ ch13 -->
+<section class="ch" id="ch13" data-part="管線與 hazard" data-nav="進階：val/rdy 記憶體與取指狀態機">
+<p class="eyebrow">第 13 章 · 管線與 hazard</p>
+<h2>進階：val/rdy 記憶體與取指狀態機</h2>
+<div class="note"><b>這章可以先跳過</b><p>要完成 Objective 1～3，你其實不需要改這一章講的任何東西。但你<b>非常容易不小心弄壞它</b>：所有 <code>-rand-</code> 結尾的模擬器（記憶體回應會隨機延遲）都仰賴這裡的邏輯。如果你的 <code>riscv-*-stall.out</code> 全過、<code>riscv-*-stall-rand.out</code> 卻掛掉，答案九成在這一章。</p></div>
+<p>前面所有時空圖都偷偷假設「指令記憶體一定在下一個週期把指令交出來」。真實的記憶體不保證這件事，所以 lab1 的兩個記憶體埠都用 <b>val/rdy 交握</b>（<a href="../verilog-course/index.html#ch14">基礎篇第 14 章</a>）：送方拉 <code>val</code>，收方拉 <code>rdy</code>，<b>兩個都是 1 的那個時脈上升緣</b>，一筆資料才算交出去。</p>
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 250" role="img" aria-label="處理器與指令記憶體之間的四條交握訊號：request 方向的 val 與 rdy，response 方向的 val 與 rdy 以及資料。">
+  <rect class="grp" x="20" y="30" width="290" height="190"/>
+  <text class="zh hd" x="30" y="24">處理器</text>
+  <rect class="k" x="50" y="56" width="110" height="44"/><text class="s" x="105" y="82" text-anchor="middle">P：算位址</text>
+  <rect class="k" x="50" y="126" width="110" height="44"/><text class="s" x="105" y="152" text-anchor="middle">F：收指令</text>
+  <rect class="r" x="190" y="50" width="12" height="150"/>
+  <path class="w" d="M160 78H190M160 148H190"/>
+
+  <rect class="k" x="490" y="66" width="180" height="120"/>
+  <text class="zh" x="580" y="118" text-anchor="middle">指令記憶體</text>
+  <text class="s mut" x="580" y="140" text-anchor="middle">vc_TestDualPort…Mem</text>
+
+  <path class="w" d="M320 74H480" marker-end="url(#ah)"/><text class="s" x="330" y="68">imemreq_val</text>
+  <path class="w" d="M480 100H320" marker-end="url(#ah)"/><text class="s" x="330" y="94">imemreq_rdy</text>
+  <path class="w" d="M480 150H320" marker-end="url(#ah)"/><text class="s" x="330" y="144">imemresp_val / msg</text>
+  <path class="w" d="M320 176H480" marker-end="url(#ah)"/><text class="s" x="330" y="170">imemresp_rdy</text>
+
+  <text class="zh s mut" x="20" y="240">request 在 P 級送出；response 在 F 級收下，同一拍寫進 ir_Dhl。</text>
+</svg>
+</div>
+<figcaption><b>取指令被切成兩半。</b>request 由 P 級（PC mux 的輸出）直接送出，response 由 F 級收下。這是為了讓記憶體有一整個週期的時間可以回應——代價是 F 級必須自己記住「我有沒有一筆 request 還在外面」。</figcaption>
+</figure>
+</div>
+
+<h3>取指狀態機</h3>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 119–135、147–150 行</div>
+<pre><code class="language-verilog">localparam imem_idle = 1'b0;    // 沒有 request 在外面
+localparam imem_wait = 1'b1;    // 有一筆 request 已送出、response 還沒回來
+
+reg imem_state_Fhl;
+always @ (posedge clk) begin
+  if (reset)                          imem_state_Fhl &lt;= imem_idle;
+  else if (imem_send_accepted_Fhl)    imem_state_Fhl &lt;= imem_wait;
+  else if (imem_consumed_Fhl)         imem_state_Fhl &lt;= imem_idle;
+end
+
+wire imem_send_accepted_Fhl = imemreq_val  &amp;&amp; imemreq_rdy;    // req 交握成立
+wire imem_consumed_Fhl      = imemresp_val &amp;&amp; imemresp_rdy;   // resp 交握成立</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 620 250" role="img" aria-label="取指狀態機只有兩個狀態：imem_idle 與 imem_wait；request 交握成立時從 idle 進到 wait，response 交握成立時回到 idle。">
+  <path class="w" d="M60 110H112" marker-end="url(#ah)"/><text class="s mut" x="20" y="106">reset</text>
+  <circle class="k" cx="170" cy="110" r="54"/><text class="s" x="170" y="114" text-anchor="middle">imem_idle</text>
+  <circle class="k" cx="430" cy="110" r="54"/><text class="s" x="430" y="114" text-anchor="middle">imem_wait</text>
+  <path class="w" d="M198 70Q300 14 402 70" marker-end="url(#ah)"/>
+  <text class="s ac" x="300" y="30" text-anchor="middle">imem_send_accepted_Fhl</text>
+  <path class="w" d="M402 150Q300 206 198 150" marker-end="url(#ah)"/>
+  <text class="s ac" x="300" y="226" text-anchor="middle">imem_consumed_Fhl</text>
+  <text class="zh s mut" x="20" y="244">（兩個交握同時成立時，可以直接發下一筆——見 imem_ready_to_send_Fhl）</text>
+</svg>
+</div>
+<figcaption><b>兩個狀態就夠了。</b>整顆 CPU 同時最多只有一筆指令 request 在外面。<code>imem_ready_to_send_Fhl = (imem_state_Fhl == imem_idle) || imem_consumed_Fhl</code>（第 152–153 行）多了後面那一項，讓「這拍剛收完回應」的情況可以立刻發下一筆，不必浪費一個週期回到 idle。</figcaption>
+</figure>
+</div>
+<p>另外三條線值得記住：</p>
+<div class="tbl">
+<table>
+<thead><tr><th>訊號</th><th class="num">行</th><th>意思</th></tr></thead>
+<tbody>
+<tr><td><code>imemreq_val = imemreq_pending_Fhl || imemreq_start_Fhl</code></td><td class="num">173</td><td>val 一旦拉起來，就要<b>一直維持</b>到對方 rdy 為止——這是 val/rdy 的基本規矩，<code>imemreq_pending_Fhl</code> 就是那個「還沒被接走」的記憶位元（第 160–171 行）。</td></tr>
+<tr><td><code>imemresp_rdy = !stall_Dhl</code></td><td class="num">226</td><td>「我收得下嗎」＝「D 這拍會不會前進」。D 卡住時就不收，讓記憶體自己抱著。</td></tr>
+<tr><td><code>stall_imem_Fhl = !imemresp_val</code></td><td class="num">194</td><td>手上沒有一份可用的回應，F 就 stall。注意它<b>沒有</b>加任何條件——只要回應沒到，F 一律停。</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>麻煩的情況：request 還在飛，分支卻跳了</h3>
+<p>假設 F 在某個週期送出了對 <code>pc+4</code> 的 request，但記憶體慢了兩拍還沒回應。就在這期間，X 級的分支成立了——<code>squash_Fhl</code> 拉起來，PC 也改成了分支目標。問題有兩個：</p>
+<ol>
+  <li>那筆還在外面的 request 回來的時候，帶回的是<b>錯路上</b>的指令。不能讓它進 D。</li>
+  <li><code>pc_mux_out_Phl</code> 是<b>組合</b>算出來的，只在 <code>brj_taken_Xhl</code> 為 1 的那一個週期是正確的分支目標；下一個週期它就變回 <code>pc+4</code> 了。但 F 這時還 stall 著（在等回應），來不及把正確位址收進 <code>pc_Fhl</code>。</li>
+</ol>
+<p>兩個問題各有一個記憶位元負責。第一個在控制器：</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 202–221 行</div>
+<pre><code class="language-verilog">reg imem_abandoned_Fhl;
+always @ (posedge clk) begin
+  if (reset)                        imem_abandoned_Fhl &lt;= 1'b0;
+  else if (imem_consumed_Fhl)       imem_abandoned_Fhl &lt;= 1'b0;
+  else if ( squash_Fhl
+         &amp;&amp; ( ( imem_state_Fhl == imem_wait )
+           || imemreq_pending_Fhl
+           || imem_send_accepted_Fhl ) ) imem_abandoned_Fhl &lt;= 1'b1;
+end
+
+wire bubble_sel_Fhl  = ( squash_Fhl || stall_Fhl || imem_abandoned_Fhl );</code></pre>
+</div>
+<p>第二個在資料路徑：</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 96–115 行</div>
+<pre><code class="language-verilog">reg        pc_redirect_pending;
+reg [31:0] pc_redirect_targ;
+
+always @ (posedge clk) begin
+  if (reset)            begin pc_redirect_pending &lt;= 1'b0; ... end
+  else if (!stall_Fhl)        pc_redirect_pending &lt;= 1'b0;
+  else if (squash_Fhl) begin
+    pc_redirect_targ    &lt;= pc_mux_out_Phl;   // 把正確目標存起來
+    pc_redirect_pending &lt;= 1'b1;
+  end
+end
+
+wire [31:0] pc_mux_out_Phl_final
+  = pc_redirect_pending ? pc_redirect_targ : pc_mux_out_Phl;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 320" role="img" aria-label="時序圖：第一週期送出 imem request，第二週期回應還沒回來同時分支成立拉起 squash_Fhl，於是 imem_abandoned_Fhl 與 pc_redirect_pending 都被設起來；第三週期回應回到，被當成 bubble 丟掉，同時用 pc_redirect_targ 重新發出正確位址的 request。">
+  <path class="re" d="M200 32V296M280 32V296M360 32V296M440 32V296M520 32V296M600 32V296M680 32V296"/>
+  <text class="s mut" x="240" y="26" text-anchor="middle">1</text><text class="s mut" x="320" y="26" text-anchor="middle">2</text>
+  <text class="s mut" x="400" y="26" text-anchor="middle">3</text><text class="s mut" x="480" y="26" text-anchor="middle">4</text>
+  <text class="s mut" x="560" y="26" text-anchor="middle">5</text><text class="s mut" x="640" y="26" text-anchor="middle">6</text>
+  <text class="cb s" x="150" y="54" text-anchor="end">clk</text>
+  <path class="c" style="stroke-dasharray:none" d="M160 60H200V40H240V60H280V40H320V60H360V40H400V60H440V40H480V60H520V40H560V60H600V40H640V60H680"/>
+
+  <text class="s" x="150" y="104" text-anchor="end">imemreq_val</text>
+  <path class="w" d="M160 110H200V88H280V110H360V88H440V110H680"/>
+  <text class="s ac" x="204" y="84">送出 pc+4</text><text class="s ac" x="364" y="84">送出分支目標</text>
+
+  <text class="s" x="150" y="144" text-anchor="end">imemresp_val</text>
+  <path class="w" d="M160 150H360V128H440V150H680"/>
+  <text class="s mut" x="364" y="166">回應回來（錯路指令）</text>
+
+  <text class="s" x="150" y="184" text-anchor="end">squash_Fhl</text>
+  <path class="w" d="M160 190H280V168H360V190H680"/>
+  <text class="s wr" x="284" y="164">X 的分支成立</text>
+
+  <text class="s" x="150" y="224" text-anchor="end">imem_abandoned_Fhl</text>
+  <path class="w" d="M160 230H360V208H440V230H680"/>
+
+  <text class="s" x="150" y="264" text-anchor="end">pc_redirect_pending</text>
+  <path class="w" d="M160 270H360V248H440V270H680"/>
+  <text class="s ac" x="444" y="246">用它把正確位址發出去後清掉</text>
+
+  <path class="a" d="M360 300V230" marker-end="url(#ah)"/>
+  <text class="zh ac s" x="364" y="312">第 2 週期結尾一起設起來</text>
+</svg>
+</div>
+<figcaption><b>兩個 latch，各修一個問題。</b>第 3 週期回應終於回來：<code>imem_abandoned_Fhl</code> 讓 <code>bubble_sel_Fhl</code> 為 1，那份錯路指令被當成 bubble 丟掉；同一個週期 <code>pc_redirect_pending</code> 讓 <code>pc_mux_out_Phl_final</code> 輸出第 2 週期存下來的分支目標，新的 request 就帶著正確位址出去。兩個 latch 都在這一拍被清掉。</figcaption>
+</figure>
+</div>
+
+<h3>資料記憶體：request 在 X，response 在 M</h3>
+<p>dmem 的切法和 imem 一樣，只是跨的是 X 和 M：</p>
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 655、678、738、742、748 行</div>
+<pre><code class="language-verilog">assign dmemreq_val   = ( inst_val_Xhl &amp;&amp; !stall_Xhl &amp;&amp; dmemreq_val_Xhl );
+wire stall_dmem_Xhl  = ( dmemreq_val_Xhl &amp;&amp; inst_val_Xhl &amp;&amp; !dmemreq_rdy );
+
+wire stall_dmem_Mhl  = ( !reset &amp;&amp; dmemreq_val_Mhl &amp;&amp; inst_val_Mhl &amp;&amp; !dmemresp_val );
+assign stall_Mhl     = stall_dmem_Mhl;
+assign dmemresp_rdy  = !stall_Mhl;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 300" role="img" aria-label="lw 的時序圖：第一週期在 X 送出 request 並被接受，第二三週期回應還沒回來，M 級因此 stall，dmemresp_rdy 為 0；第四週期回應抵達，M 放行，lw 在第五週期進入 W。">
+  <path class="re" d="M200 32V276M280 32V276M360 32V276M440 32V276M520 32V276M600 32V276M680 32V276"/>
+  <text class="s mut" x="240" y="26" text-anchor="middle">1</text><text class="s mut" x="320" y="26" text-anchor="middle">2</text>
+  <text class="s mut" x="400" y="26" text-anchor="middle">3</text><text class="s mut" x="480" y="26" text-anchor="middle">4</text>
+  <text class="s mut" x="560" y="26" text-anchor="middle">5</text><text class="s mut" x="640" y="26" text-anchor="middle">6</text>
+  <text class="cb s" x="150" y="54" text-anchor="end">clk</text>
+  <path class="c" style="stroke-dasharray:none" d="M160 60H200V40H240V60H280V40H320V60H360V40H400V60H440V40H480V60H520V40H560V60H600V40H640V60H680"/>
+
+  <text class="s" x="150" y="98" text-anchor="end">lw 所在的級</text>
+  <text class="s" x="240" y="98" text-anchor="middle">X</text>
+  <text class="s sq" x="320" y="98" text-anchor="middle">M</text>
+  <text class="s sq" x="400" y="98" text-anchor="middle">M</text>
+  <text class="s sq" x="480" y="98" text-anchor="middle">M</text>
+  <text class="s" x="560" y="98" text-anchor="middle">W</text>
+
+  <text class="s" x="150" y="134" text-anchor="end">dmemreq_val</text>
+  <path class="w" d="M160 140H200V118H280V140H680"/>
+
+  <text class="s" x="150" y="174" text-anchor="end">dmemresp_val</text>
+  <path class="w" d="M160 180H440V158H520V180H680"/>
+  <text class="s ac" x="444" y="154">資料慢了兩拍才到</text>
+
+  <text class="s" x="150" y="214" text-anchor="end">stall_dmem_Mhl</text>
+  <path class="w" d="M160 220H280V198H520V220H680"/>
+  <text class="s wr" x="284" y="194">M 卡住 → stall_Xhl → 整個前段停住</text>
+
+  <text class="s" x="150" y="254" text-anchor="end">dmemresp_rdy</text>
+  <path class="w" d="M160 238H280V260H520V238H680"/>
+  <text class="s mut" x="284" y="276">= !stall_Mhl：卡住時就不收</text>
+</svg>
+</div>
+<figcaption><b>backpressure：收不下就不拉 rdy，讓記憶體自己抱著。</b>handout 3.5 特別說明這是刻意的設計——因為回應被穩穩地留在記憶體那邊，處理器<b>不需要</b>在回應端另外做 skid buffer。注意 <code>stall_dmem_Mhl</code> 用的是 <code>dmemreq_val_Mhl</code>（第 721 行，在 M 級的管線暫存器區塊裡<b>不受 <code>!stall_Mhl</code> 保護、每拍無條件更新</b>的位元），它記的是「上一拍 X 真的發出了一筆 request」，而不是「M 裡這道指令是不是 load/store」。</figcaption>
+</figure>
+</div>
+<div class="note"><b>lab 用的鐵則</b>
+<p>你改管線時只要守住這三條，<code>-rand-</code> 測試就不會壞：</p>
+<p>1. <b>每一筆回應剛好被消費一次。</b><code>*resp_rdy</code> 要和「這一拍那個級真的會前進」完全一致，不多不少。</p>
+<p>2. <b>絕不從一個被 stall 住或裝著 bubble 的級發出 request。</b>這就是 <code>dmemreq_val</code> 上那兩個守門條件 <code>inst_val_Xhl &amp;&amp; !stall_Xhl</code> 的意義。</p>
+<p>3. <b>val 拉起來之後不能中途放掉</b>，要一直等到對方的 rdy 出現（<code>imemreq_pending_Fhl</code> 就是為此存在）。</p></div>
+<div class="quiz"><b>想一想</b><p>你在 Objective 4 把管線加長兩級之後，<code>dmemresp_rdy = !stall_Mhl</code> 這條線需要改嗎？</p><details><summary>看答案</summary><p>要看你把 dmem 的回應接在哪一級。這條線的意思永遠是「<b>接收這筆回應的那一級</b>這一拍會不會前進」。只要你沒有把 M 級搬走，它就不用改；但如果你為了配合乘除法器把 W 之前多插了兩級，而讓資料回寫改在更後面才用到，就要重新問一次：這筆回應是被<b>誰</b>收下的？那一級的 stall 是什麼？<b>永遠不要憑感覺改這條線，要從「誰消費它」推回來。</b></p></details></div>
+</section>

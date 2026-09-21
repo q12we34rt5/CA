@@ -1,0 +1,377 @@
+<!-- ============================================================ interactive widgets
+     Mount points live inside the chapters: #w-decoder (ch1) and #w-pipe (ch9). -->
+<script>
+(function () {
+  function h(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function sext(v, bits) { var s = 32 - bits; return (v << s) >> s; }
+  function hex8(v) { return ('00000000' + (v >>> 0).toString(16)).slice(-8); }
+  var REG = function (n) { return 'x' + n; };
+
+  // =====================================================================
+  // Widget 1: instruction decoder
+  // =====================================================================
+  var OPC = {
+    0x37: { fmt: 'U', name: function () { return 'lui'; } },
+    0x17: { fmt: 'U', name: function () { return 'auipc'; } },
+    0x6f: { fmt: 'UJ', name: function () { return 'jal'; } },
+    0x67: { fmt: 'I', name: function (f3) { return f3 === 0 ? 'jalr' : null; } },
+    0x63: { fmt: 'SB', name: function (f3) { return ['beq', 'bne', null, null, 'blt', 'bge', 'bltu', 'bgeu'][f3]; } },
+    0x03: { fmt: 'I', name: function (f3) { return ['lb', 'lh', 'lw', null, 'lbu', 'lhu', null, null][f3]; } },
+    0x23: { fmt: 'S', name: function (f3) { return ['sb', 'sh', 'sw', null, null, null, null, null][f3]; } },
+    0x13: { fmt: 'I', name: function (f3, f7) {
+      if (f3 === 1) return f7 === 0 ? 'slli' : null;
+      if (f3 === 5) return f7 === 0 ? 'srli' : f7 === 0x20 ? 'srai' : null;
+      return ['addi', null, 'slti', 'sltiu', 'xori', null, 'ori', 'andi'][f3];
+    } },
+    0x33: { fmt: 'R', name: function (f3, f7) {
+      if (f7 === 0) return ['add', 'sll', 'slt', 'sltu', 'xor', 'srl', 'or', 'and'][f3];
+      if (f7 === 0x20) return f3 === 0 ? 'sub' : f3 === 5 ? 'sra' : null;
+      if (f7 === 1) return ['mul', 'mulh', 'mulhsu', 'mulhu', 'div', 'divu', 'rem', 'remu'][f3];
+      return null;
+    } },
+    0x73: { fmt: 'I', name: function (f3, f7, w) { return (f3 === 1 && ((w >>> 7) & 31) === 0) ? 'csrw' : null; } }
+  };
+  // rows that already exist in the casez table of the lab's starting riscvstall-CoreCtrl.v
+  var GIVEN = { lui: 1, auipc: 1, addi: 1, ori: 1, add: 1, lw: 1, sw: 1, jal: 1, bne: 1, blt: 1, csrw: 1 };
+  var NOT_DEFINED = { mulh: 1, mulhsu: 1, mulhu: 1 };
+
+  function decode(w) {
+    var op = w & 0x7f, rd = (w >>> 7) & 31, f3 = (w >>> 12) & 7, rs1 = (w >>> 15) & 31,
+        rs2 = (w >>> 20) & 31, f7 = (w >>> 25) & 0x7f;
+    var o = OPC[op];
+    var d = { w: w, op: op, rd: rd, f3: f3, rs1: rs1, rs2: rs2, f7: f7, fmt: o ? o.fmt : null, name: o ? o.name(f3, f7, w) : null };
+    d.imm_i = sext(w >>> 20, 12);
+    d.imm_s = sext(((w >>> 25) << 5) | rd, 12);
+    d.imm_sb = sext((((w >>> 31) & 1) << 12) | (((w >>> 7) & 1) << 11) | (((w >>> 25) & 0x3f) << 5) | (((w >>> 8) & 0xf) << 1), 13);
+    d.imm_u = (w & 0xfffff000) | 0;
+    d.imm_uj = sext((((w >>> 31) & 1) << 20) | (((w >>> 12) & 0xff) << 12) | (((w >>> 20) & 1) << 11) | (((w >>> 21) & 0x3ff) << 1), 21);
+    var n = d.name;
+    if (!n) d.asm = '（不在本課程的 rv32im 子集內）';
+    else if (w === 0x00000013) d.asm = 'nop   ( = addi x0, x0, 0 )';
+    else if (d.fmt === 'R') d.asm = n + ' ' + REG(rd) + ', ' + REG(rs1) + ', ' + REG(rs2);
+    else if (n === 'csrw') d.asm = 'csrw ' + (w >>> 20) + ', ' + REG(rs1);
+    else if (n === 'slli' || n === 'srli' || n === 'srai') d.asm = n + ' ' + REG(rd) + ', ' + REG(rs1) + ', ' + rs2;
+    else if (op === 0x03 || n === 'jalr') d.asm = n + ' ' + REG(rd) + ', ' + d.imm_i + '(' + REG(rs1) + ')';
+    else if (d.fmt === 'I') d.asm = n + ' ' + REG(rd) + ', ' + REG(rs1) + ', ' + d.imm_i;
+    else if (d.fmt === 'S') d.asm = n + ' ' + REG(rs2) + ', ' + d.imm_s + '(' + REG(rs1) + ')';
+    else if (d.fmt === 'SB') d.asm = n + ' ' + REG(rs1) + ', ' + REG(rs2) + ', pc' + (d.imm_sb < 0 ? ' - ' : ' + ') + Math.abs(d.imm_sb);
+    else if (d.fmt === 'U') d.asm = n + ' ' + REG(rd) + ', 0x' + (w >>> 12).toString(16);
+    else if (d.fmt === 'UJ') d.asm = n + ' ' + REG(rd) + ', pc' + (d.imm_uj < 0 ? ' - ' : ' + ') + Math.abs(d.imm_uj);
+    return d;
+  }
+
+  // field layout per format: [hi, lo, css class, label]
+  var LAYOUT = {
+    R:  [[31, 25, 'b-fn', 'funct7'], [24, 20, 'b-rs2', 'rs2'], [19, 15, 'b-rs1', 'rs1'], [14, 12, 'b-fn', 'funct3'], [11, 7, 'b-rd', 'rd'], [6, 0, 'b-op', 'opcode']],
+    I:  [[31, 20, 'b-imm', 'imm[11:0]'], [19, 15, 'b-rs1', 'rs1'], [14, 12, 'b-fn', 'funct3'], [11, 7, 'b-rd', 'rd'], [6, 0, 'b-op', 'opcode']],
+    S:  [[31, 25, 'b-imm', 'imm[11:5]'], [24, 20, 'b-rs2', 'rs2'], [19, 15, 'b-rs1', 'rs1'], [14, 12, 'b-fn', 'funct3'], [11, 7, 'b-imm', 'imm[4:0]'], [6, 0, 'b-op', 'opcode']],
+    SB: [[31, 31, 'b-imm', '[12]'], [30, 25, 'b-imm', 'imm[10:5]'], [24, 20, 'b-rs2', 'rs2'], [19, 15, 'b-rs1', 'rs1'], [14, 12, 'b-fn', 'funct3'], [11, 8, 'b-imm', 'imm[4:1]'], [7, 7, 'b-imm', '[11]'], [6, 0, 'b-op', 'opcode']],
+    U:  [[31, 12, 'b-imm', 'imm[31:12]'], [11, 7, 'b-rd', 'rd'], [6, 0, 'b-op', 'opcode']],
+    UJ: [[31, 31, 'b-imm', '[20]'], [30, 21, 'b-imm', 'imm[10:1]'], [20, 20, 'b-imm', '[11]'], [19, 12, 'b-imm', 'imm[19:12]'], [11, 7, 'b-rd', 'rd'], [6, 0, 'b-op', 'opcode']]
+  };
+  var SHIFT_I = [[31, 25, 'b-fn', 'funct7'], [24, 20, 'b-imm', 'shamt'], [19, 15, 'b-rs1', 'rs1'], [14, 12, 'b-fn', 'funct3'], [11, 7, 'b-rd', 'rd'], [6, 0, 'b-op', 'opcode']];
+
+  function mountDecoder(root) {
+    var presets = [
+      ['00d00e93', 'addi（riscv-addi.vmh 第 3 個字）'], ['1c121e63', 'bne'], ['00812183', 'lw'], ['00512423', 'sw'],
+      ['008000ef', 'jal'], ['000120b7', 'lui'], ['402081b3', 'sub'], ['4020d093', 'srai'], ['022081b3', 'mul'], ['015e9073', 'csrw']
+    ];
+    var bar = h('div', 'bar');
+    var lab = h('label', '', '32 位元指令（16 進位）');
+    var inp = h('input'); inp.type = 'text'; inp.value = presets[0][0]; inp.maxLength = 10; inp.size = 12;
+    inp.setAttribute('spellcheck', 'false');
+    lab.appendChild(inp); bar.appendChild(lab);
+    presets.forEach(function (p) {
+      var b = h('button', '', p[1]); b.type = 'button';
+      b.addEventListener('click', function () { inp.value = p[0]; render(); });
+      bar.appendChild(b);
+    });
+    var out = h('div');
+    root.appendChild(bar); root.appendChild(out);
+
+    function render() {
+      out.textContent = '';
+      var t = inp.value.trim().replace(/^0x/i, '').replace(/_/g, '');
+      if (!/^[0-9a-fA-F]{1,8}$/.test(t)) { out.appendChild(h('p', 'err', '請輸入最多 8 位的 16 進位數字，例如 00d00e93。')); return; }
+      var w = parseInt(t, 16) >>> 0, d = decode(w);
+      var bin = ('0'.repeat(32) + w.toString(2)).slice(-32);
+      out.appendChild(h('p', 'out', '0x' + hex8(w) + '  →  ' + d.asm));
+      var lay = d.fmt ? ((d.name === 'slli' || d.name === 'srli' || d.name === 'srai') ? SHIFT_I : LAYOUT[d.fmt]) : [[31, 7, '', '?'], [6, 0, 'b-op', 'opcode']];
+      var sc = h('div', 'scroll'), bits = h('div', 'bits');
+      lay.forEach(function (f) {
+        var c = h('div', f[2]); c.style.flex = (f[0] - f[1] + 1) + ' 0 0';
+        c.appendChild(document.createTextNode(bin.slice(31 - f[0], 32 - f[1])));
+        c.appendChild(h('small', '', f[3]));
+        c.title = 'inst[' + f[0] + (f[0] !== f[1] ? ':' + f[1] : '') + ']';
+        bits.appendChild(c);
+      });
+      sc.appendChild(bits); out.appendChild(sc);
+      if (!d.fmt) { out.appendChild(h('p', 'err', 'opcode ' + bin.slice(25) + ' 不屬於這個 lab 用到的任何一類指令。')); return; }
+
+      var rows = [['格式', d.fmt + '-type'], ['opcode', bin.slice(25)]];
+      if (d.fmt !== 'U' && d.fmt !== 'UJ') rows.push(['funct3', bin.slice(17, 20)]);
+      if (d.fmt === 'R' || lay === SHIFT_I) rows.push(['funct7', bin.slice(0, 7)]);
+      if (d.fmt !== 'S' && d.fmt !== 'SB' && d.name !== 'csrw') rows.push(['rd', 'x' + d.rd]);
+      if (d.fmt !== 'U' && d.fmt !== 'UJ') rows.push(['rs1', 'x' + d.rs1]);
+      if (d.fmt === 'R' || d.fmt === 'S' || d.fmt === 'SB') rows.push(['rs2', 'x' + d.rs2]);
+      var imm = { I: d.imm_i, S: d.imm_s, SB: d.imm_sb, U: d.imm_u, UJ: d.imm_uj }[d.fmt];
+      if (lay === SHIFT_I) rows.push(['shamt', String(d.rs2)]);
+      else if (d.name === 'csrw') rows.push(['CSR 位址 (inst[31:20])', String(w >>> 20)]);
+      else if (d.fmt !== 'R') rows.push(['組好的立即數 imm_' + d.fmt.toLowerCase(), imm + '  (0x' + hex8(imm) + ')']);
+      if (d.name) {
+        rows.push(['casez 會比對到', '`RISCV_INST_MSG_' + d.name.toUpperCase()]);
+        rows.push(['lab 起始狀態', GIVEN[d.name] ? '控制表已經有這一列' : NOT_DEFINED[d.name] ? '連 `define 都還被註解掉（Objective 2）' : '這一列要你自己加（Objective 1）']);
+      }
+      var tw = h('div', 'tbl'), tb = h('table'), body = h('tbody');
+      tb.style.minWidth = '0'; tw.style.maxWidth = '560px';
+      rows.forEach(function (r) { var tr = h('tr'); tr.appendChild(h('td', '', r[0])); tr.appendChild(h('td', 'num', r[1])); body.appendChild(tr); });
+      tb.appendChild(body); tw.appendChild(tb); out.appendChild(tw);
+    }
+    inp.addEventListener('input', render);
+    render();
+  }
+
+  // =====================================================================
+  // Widget 2: pipeline time–space simulator (ideal 1-cycle memory)
+  // =====================================================================
+  var ABI = ['zero', 'ra', 'sp', 'gp', 'tp', 't0', 't1', 't2', 's0', 's1', 'a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7',
+             's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 't3', 't4', 't5', 't6'];
+  function reg(tok, ln) {
+    var m = /^x(\d+)$/.exec(tok), n = m ? +m[1] : (tok === 'fp' ? 8 : ABI.indexOf(tok));
+    if (n < 0 || n > 31 || isNaN(n)) throw new Error('第 ' + ln + ' 行：看不懂暫存器「' + tok + '」');
+    return n;
+  }
+  function num(tok, ln) {
+    var v = Number(tok);
+    if (tok === '' || isNaN(v)) throw new Error('第 ' + ln + ' 行：看不懂數字「' + tok + '」');
+    return v | 0;
+  }
+  var RI = { addi: 1, andi: 1, ori: 1, xori: 1, slti: 1, sltiu: 1, slli: 1, srli: 1, srai: 1 };
+  var RR = { add: 1, sub: 1, and: 1, or: 1, xor: 1, slt: 1, sltu: 1, sll: 1, srl: 1, sra: 1 };
+  var LD = { lw: 1, lh: 1, lhu: 1, lb: 1, lbu: 1 }, ST = { sw: 1, sh: 1, sb: 1 };
+  var BR = { beq: 1, bne: 1, blt: 1, bge: 1, bltu: 1, bgeu: 1 };
+
+  function assemble(text) {
+    var prog = [], labels = {}, pending = [];
+    text.split('\n').forEach(function (raw, i) {
+      var ln = i + 1, s = raw.replace(/(#|\/\/).*$/, '').trim(), m;
+      while ((m = /^([A-Za-z_]\w*):\s*/.exec(s))) { labels[m[1]] = prog.length; s = s.slice(m[0].length); }
+      if (!s) return;
+      var sp = s.search(/\s/), op = (sp < 0 ? s : s.slice(0, sp)).toLowerCase();
+      var a = sp < 0 ? [] : s.slice(sp).split(',').map(function (t) { return t.trim(); });
+      var I = { op: op, text: s.replace(/\s+/g, ' '), rd: 0, rs1: -1, rs2: -1, imm: 0, ln: ln };
+      function need(n) { if (a.length !== n) throw new Error('第 ' + ln + ' 行：' + op + ' 需要 ' + n + ' 個運算元'); }
+      function memop(tok) { var mm = /^(-?\w*)\((\w+)\)$/.exec(tok); if (!mm) throw new Error('第 ' + ln + ' 行：位址要寫成 imm(rs1)'); I.imm = mm[1] === '' ? 0 : num(mm[1], ln); I.rs1 = reg(mm[2], ln); }
+      if (op === 'nop') { need(0); I.op = 'addi'; I.rs1 = 0; I.nop = true; }
+      else if (op === 'mv') { need(2); I.op = 'addi'; I.rd = reg(a[0], ln); I.rs1 = reg(a[1], ln); }
+      else if (op === 'li') {
+        need(2); var v = num(a[1], ln), rd = reg(a[0], ln);
+        if (v >= -2048 && v <= 2047) { I.op = 'addi'; I.rd = rd; I.rs1 = 0; I.imm = v; }
+        else { // li expands to lui + addi, exactly like the assembler does
+          var lo = sext(v & 0xfff, 12), hi = (v - lo) | 0;
+          prog.push({ op: 'lui', text: 'lui ' + a[0] + ', 0x' + ((hi >>> 12) & 0xfffff).toString(16) + '   (li)', rd: rd, rs1: -1, rs2: -1, imm: hi, ln: ln });
+          I.op = 'addi'; I.text = 'addi ' + a[0] + ', ' + a[0] + ', ' + lo + '   (li)'; I.rd = rd; I.rs1 = rd; I.imm = lo;
+        }
+      }
+      else if (RI[op]) { need(3); I.rd = reg(a[0], ln); I.rs1 = reg(a[1], ln); I.imm = num(a[2], ln); }
+      else if (RR[op]) { need(3); I.rd = reg(a[0], ln); I.rs1 = reg(a[1], ln); I.rs2 = reg(a[2], ln); }
+      else if (op === 'lui') { need(2); I.rd = reg(a[0], ln); I.imm = num(a[1], ln) << 12; }
+      else if (LD[op]) { need(2); I.rd = reg(a[0], ln); memop(a[1]); I.load = true; }
+      else if (ST[op]) { need(2); I.rs2 = reg(a[0], ln); memop(a[1]); }
+      else if (BR[op]) { need(3); I.rs1 = reg(a[0], ln); I.rs2 = reg(a[1], ln); pending.push([I, a[2]]); }
+      else if (op === 'jal') { if (a.length === 1) a.unshift('x1'); need(2); I.rd = reg(a[0], ln); I.jump = true; pending.push([I, a[1]]); }
+      else if (op === 'j') { need(1); I.op = 'jal'; I.jump = true; pending.push([I, a[0]]); }
+      else if (op === 'jr') { need(1); I.op = 'jalr'; I.rs1 = reg(a[0], ln); I.jump = true; }
+      else if (op === 'ret') { need(0); I.op = 'jalr'; I.rs1 = 1; I.jump = true; }
+      else if (op === 'jalr') { need(2); I.rd = reg(a[0], ln); memop(a[1]); I.jump = true; }
+      else throw new Error('第 ' + ln + ' 行：這個小模擬器不支援「' + op + '」（支援整數運算、load/store、branch、jal/jalr、li/mv/nop/j/jr/ret）');
+      prog.push(I);
+    });
+    pending.forEach(function (p) {
+      if (!(p[1] in labels)) throw new Error('第 ' + p[0].ln + ' 行：找不到標籤「' + p[1] + '」');
+      p[0].target = labels[p[1]];
+    });
+    if (!prog.length) throw new Error('請至少輸入一道指令。');
+    return prog;
+  }
+
+  function writes(I) { return I.rd !== 0 && !ST[I.op] && !BR[I.op]; }
+
+  function execute(I, pc, st) { // architectural effect; returns next pc index if control flow changes
+    var R = st.regs, a = I.rs1 >= 0 ? R[I.rs1] : 0, b = I.rs2 >= 0 ? R[I.rs2] : I.imm, v, next = null;
+    switch (I.op) {
+      case 'addi': case 'add': v = a + b; break;
+      case 'sub': v = a - b; break;
+      case 'andi': case 'and': v = a & b; break;
+      case 'ori': case 'or': v = a | b; break;
+      case 'xori': case 'xor': v = a ^ b; break;
+      case 'slti': case 'slt': v = a < b ? 1 : 0; break;
+      case 'sltiu': case 'sltu': v = (a >>> 0) < (b >>> 0) ? 1 : 0; break;
+      case 'slli': case 'sll': v = a << (b & 31); break;
+      case 'srli': case 'srl': v = a >>> (b & 31); break;
+      case 'srai': case 'sra': v = a >> (b & 31); break;
+      case 'lui': v = I.imm; break;
+      case 'lw': case 'lh': case 'lhu': case 'lb': case 'lbu':
+        v = st.mem[(a + I.imm) | 0] | 0;
+        if (I.op === 'lh') v = sext(v & 0xffff, 16); else if (I.op === 'lhu') v &= 0xffff;
+        else if (I.op === 'lb') v = sext(v & 0xff, 8); else if (I.op === 'lbu') v &= 0xff;
+        break;
+      case 'sw': case 'sh': case 'sb': st.mem[(a + I.imm) | 0] = R[I.rs2]; break;
+      case 'beq': if (a === b) next = I.target; break;
+      case 'bne': if (a !== b) next = I.target; break;
+      case 'blt': if (a < b) next = I.target; break;
+      case 'bge': if (a >= b) next = I.target; break;
+      case 'bltu': if ((a >>> 0) < (b >>> 0)) next = I.target; break;
+      case 'bgeu': if ((a >>> 0) >= (b >>> 0)) next = I.target; break;
+      case 'jal': v = (pc + 1) * 4; break;
+      case 'jalr': v = (pc + 1) * 4; break;
+    }
+    if (v !== undefined && I.rd !== 0 && !BR[I.op] && !ST[I.op]) R[I.rd] = v | 0;
+    return next;
+  }
+
+  var MAX_CYCLES = 48, MAX_ROWS = 28;
+
+  function simulate(prog, bypass) {
+    var st = { regs: new Int32Array(32), mem: {} };
+    var rows = [], slot = { F: null, D: null, X: null, M: null, W: null }, pc = 0, cycle = 0;
+    var stats = { retired: 0, stalls: 0, squashed: 0, fwd: 0, truncated: false };
+    function fetch() {
+      if (pc < 0 || pc >= prog.length) return null;
+      var r = { I: prog[pc], pc: pc, cells: {}, id: rows.length }; rows.push(r); pc += 1; return r;
+    }
+    slot.F = fetch();
+    while ((slot.F || slot.D || slot.X || slot.M || slot.W) && cycle < MAX_CYCLES && rows.length <= MAX_ROWS) {
+      var F = slot.F, D = slot.D, X = slot.X, M = slot.M, W = slot.W;
+      var takenX = X && X.taken != null, squashD = !!takenX, stallD = false, fwdNotes = [];
+      if (D && !squashD) {
+        [D.I.rs1, D.I.rs2].forEach(function (r) {
+          if (r <= 0) return; // not read, or x0
+          var src = null;
+          [['X', X], ['M', M], ['W', W]].some(function (p) { if (p[1] && writes(p[1].I) && p[1].I.rd === r) { src = p; return true; } return false; });
+          if (!src) return;
+          if (!bypass) stallD = true;
+          else if (src[0] === 'X' && src[1].I.load) stallD = true;   // load-use: data not back until M
+          else fwdNotes.push([src, r]);
+        });
+      }
+      var jumpD = D && !squashD && !stallD && D.I.jump;
+      var squashF = takenX || jumpD;
+      // record this cycle
+      if (W) W.cells[cycle] = ['W', 's'];
+      if (M) M.cells[cycle] = ['M', 's'];
+      if (X) X.cells[cycle] = ['X', 's'];
+      if (D) D.cells[cycle] = ['D', squashD ? 'kill' : stallD ? 'hold' : 's'];
+      if (F) F.cells[cycle] = ['F', squashF ? 'kill' : stallD ? 'hold' : 's'];
+      if (!stallD) fwdNotes.forEach(function (n) {
+        D.cells[cycle] = ['D', 'fwd', 'x' + n[1] + ' 從 ' + n[0][0] + ' 級 bypass 進來'];
+        n[0][1].cells[cycle] = [n[0][0], 'fwd', '把 x' + n[1] + ' 送回 D 級'];
+        stats.fwd += 1;
+      });
+      if (stallD) stats.stalls += 1;
+      if (squashD && D) { stats.squashed += 1; D.dead = true; }
+      if (squashF && F) { stats.squashed += 1; F.dead = true; }
+      if (W) stats.retired += 1;
+      // redirect
+      var newpc = null;
+      if (takenX) newpc = X.taken;
+      else if (jumpD) newpc = D.I.op === 'jalr' ? ((st.regs[D.I.rs1] + D.I.imm) >> 2) : D.I.target;
+      // advance
+      slot.W = M; slot.M = X;
+      if (stallD) { slot.X = null; }
+      else {
+        slot.X = squashD ? null : D;
+        if (slot.X) { var nx = execute(slot.X.I, slot.X.pc, st); if (nx != null && BR[slot.X.I.op]) slot.X.taken = nx; }
+        slot.D = squashF ? null : F;
+        if (newpc != null) pc = newpc;
+        slot.F = fetch();
+      }
+      if (stallD && squashF) { /* cannot happen: a squashed D never stalls, and a stalled D never jumps */ }
+      cycle += 1;
+    }
+    if (slot.F || slot.D || slot.X || slot.M || slot.W) stats.truncated = true;
+    stats.cycles = cycle;
+    return { rows: rows, stats: stats };
+  }
+
+  var PRESETS = [
+    ['data hazard', 'addi x1, x0, 5\nadd  x2, x1, x1\nsub  x3, x2, x1\nori  x4, x0, 7'],
+    ['距離 1/2/3', 'addi x1, x0, 1\nnop\naddi x2, x1, 1\nnop\nnop\naddi x3, x2, 1'],
+    ['load-use', 'addi x1, x0, 64\nsw   x1, 0(x1)\nlw   x2, 0(x1)\naddi x3, x2, 1\nadd  x4, x3, x2'],
+    ['迴圈 (branch)', 'addi x1, x0, 2\nloop:\naddi x1, x1, -1\nbne  x1, x0, loop\naddi x2, x0, 9'],
+    ['jal 跳躍', 'jal  x1, func\naddi x5, x0, 1\naddi x6, x0, 2\nfunc:\naddi x7, x0, 3'],
+    ['連寫兩次', 'addi x1, x0, 1\naddi x1, x1, 1\naddi x2, x1, 0']
+  ];
+
+  function mountPipe(root) {
+    var bypass = false;
+    var bar = h('div', 'bar');
+    var modes = [['只有 stall（riscvstall）', false], ['有 bypass（riscvbyp）', true]].map(function (m) {
+      var b = h('button', '', m[0]); b.type = 'button'; b.setAttribute('aria-pressed', String(m[1] === bypass));
+      b.addEventListener('click', function () { bypass = m[1]; modes.forEach(function (x) { x[0].setAttribute('aria-pressed', String(x[1] === bypass)); }); render(); });
+      bar.appendChild(b); return [b, m[1]];
+    });
+    var pbar = h('div', 'bar');
+    pbar.appendChild(h('span', '', '範例：')).style.cssText = 'font-size:12.5px;color:var(--muted)';
+    var ta = h('textarea'); ta.setAttribute('spellcheck', 'false'); ta.setAttribute('aria-label', '組合語言程式'); ta.value = PRESETS[0][1];
+    PRESETS.forEach(function (p) {
+      var b = h('button', '', p[0]); b.type = 'button';
+      b.addEventListener('click', function () { ta.value = p[1]; render(); });
+      pbar.appendChild(b);
+    });
+    var out = h('div');
+    root.appendChild(bar); root.appendChild(pbar); root.appendChild(ta); root.appendChild(out);
+
+    function render() {
+      out.textContent = '';
+      var prog, res;
+      try { prog = assemble(ta.value); res = simulate(prog, bypass); }
+      catch (e) { out.appendChild(h('p', 'err', e.message)); return; }
+      var s = res.stats;
+      var ipc = s.cycles ? (s.retired / s.cycles) : 0;
+      out.appendChild(h('p', 'out', '共 ' + s.cycles + ' 個週期，完成 ' + s.retired + ' 道指令，IPC ≈ ' + ipc.toFixed(2) +
+        '　｜　stall ' + s.stalls + ' 週期、squash ' + s.squashed + ' 道' + (bypass ? '、bypass ' + s.fwd + ' 次' : '')))
+        .style.margin = '12px 0 8px';
+      var sc = h('div', 'scroll'), tb = h('table', 'pipe'), hr = h('tr');
+      hr.appendChild(h('th', '', ''));
+      for (var c = 0; c < s.cycles; c++) hr.appendChild(h('th', '', String(c + 1)));
+      var th = h('thead'); th.appendChild(hr); tb.appendChild(th);
+      var body = h('tbody');
+      res.rows.forEach(function (r) {
+        var tr = h('tr'), name = h('td', 'ins', r.I.text);
+        if (r.dead) name.style.cssText = 'color:var(--muted);text-decoration:line-through';
+        tr.appendChild(name);
+        for (var c = 0; c < s.cycles; c++) {
+          var cell = r.cells[c], td = h('td', cell ? 'c ' + cell[1] : '', cell ? cell[0] : '');
+          if (cell && cell[2]) td.title = cell[2];
+          tr.appendChild(td);
+        }
+        body.appendChild(tr);
+      });
+      tb.appendChild(body); sc.appendChild(tb); out.appendChild(sc);
+      var keys = h('ul', 'keys');
+      [['var(--blk)', 'var(--ink)', '正常前進'], ['var(--seq-fill)', 'var(--seq)', '被 stall，停在原地'],
+       ['var(--warn-soft)', 'var(--warn)', '被 squash（抓錯的指令）'], ['var(--accent-soft)', 'var(--accent)', 'bypass 的來源與去向（滑鼠停在格子上看是哪個暫存器）']
+      ].forEach(function (k) {
+        var li = h('li'), sw = h('i'); sw.style.background = k[0]; sw.style.border = '1px solid ' + k[1];
+        li.appendChild(sw); li.appendChild(document.createTextNode(k[2])); keys.appendChild(li);
+      });
+      out.appendChild(keys);
+      if (s.truncated) out.appendChild(h('p', 'err', '只顯示前 ' + s.cycles + ' 個週期（程式太長或迴圈沒有結束）。'));
+      out.appendChild(h('p', '', '假設：記憶體固定 1 個週期回應（非 -rand- 模擬器）；branch 在 X 級決定、jal/jalr 在 D 級決定；不支援 mul/div。'))
+        .style.cssText = 'font-size:12.5px;color:var(--muted);margin:8px 0 0;max-width:none';
+    }
+    var timer = null;
+    ta.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(render, 250); });
+    render();
+  }
+
+  var d = document.getElementById('w-decoder'); if (d) mountDecoder(d);
+  var p = document.getElementById('w-pipe'); if (p) mountPipe(p);
+})();
+</script>

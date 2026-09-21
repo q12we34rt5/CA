@@ -1,0 +1,834 @@
+<!-- ============================================================ ch14 -->
+<section class="ch" id="ch14" data-part="Bypassing" data-nav="Bypass：結果早就算好了">
+<p class="eyebrow">第 14 章 · Bypassing</p>
+<h2>Bypass：結果早就算好了</h2>
+
+<p><a href="#ch11">第 11 章</a>看到的 <code>stall_hazard_Dhl</code> 解法很粗暴：只要 D 要讀的暫存器還握在 X／M／W 任何一級手上，就把 D 卡住，一路等到寫回 regfile 為止。但把時空圖攤開來看，會發現這個等待幾乎全是白等的——<b>值早就算出來了，只是還沒走到 regfile 而已</b>。</p>
+
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 620 256" role="img" aria-label="上半：riscvstall 的時空圖，add 在 D 級連續停了三個週期，等 addi 走完 W 級。下半：加上 bypass 之後，add 在第 3 週期進 D，同一個週期 addi 正好在 X，值直接從 X 送回 D，完全不用停。">
+  <text class="hd" x="20" y="16">現在（riscvstall）：停 3 個週期</text>
+  <text class="s mut" x="157" y="32" text-anchor="middle">1</text><text class="s mut" x="193" y="32" text-anchor="middle">2</text><text class="s mut" x="229" y="32" text-anchor="middle">3</text><text class="s mut" x="265" y="32" text-anchor="middle">4</text><text class="s mut" x="301" y="32" text-anchor="middle">5</text><text class="s mut" x="337" y="32" text-anchor="middle">6</text><text class="s mut" x="373" y="32" text-anchor="middle">7</text><text class="s mut" x="409" y="32" text-anchor="middle">8</text><text class="s mut" x="445" y="32" text-anchor="middle">9</text>
+
+  <text x="134" y="56" text-anchor="end">addi x1, x0, 1</text>
+  <rect class="pc" x="140" y="38" width="34" height="26"/><text x="157" y="56" text-anchor="middle">F</text>
+  <rect class="pc" x="176" y="38" width="34" height="26"/><text x="193" y="56" text-anchor="middle">D</text>
+  <rect class="pc" x="212" y="38" width="34" height="26"/><text x="229" y="56" text-anchor="middle">X</text>
+  <rect class="pc" x="248" y="38" width="34" height="26"/><text x="265" y="56" text-anchor="middle">M</text>
+  <rect class="pc" x="284" y="38" width="34" height="26"/><text x="301" y="56" text-anchor="middle">W</text>
+
+  <text x="134" y="86" text-anchor="end">add  x2, x1, x1</text>
+  <rect class="pc" x="176" y="68" width="34" height="26"/><text x="193" y="86" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="212" y="68" width="34" height="26"/><text class="sq" x="229" y="86" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="248" y="68" width="34" height="26"/><text class="sq" x="265" y="86" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="284" y="68" width="34" height="26"/><text class="sq" x="301" y="86" text-anchor="middle">D</text>
+  <rect class="pc" x="320" y="68" width="34" height="26"/><text x="337" y="86" text-anchor="middle">D</text>
+  <rect class="pc" x="356" y="68" width="34" height="26"/><text x="373" y="86" text-anchor="middle">X</text>
+  <rect class="pc" x="392" y="68" width="34" height="26"/><text x="409" y="86" text-anchor="middle">M</text>
+  <rect class="pc" x="428" y="68" width="34" height="26"/><text x="445" y="86" text-anchor="middle">W</text>
+  <text class="zh s sq" x="470" y="86">白等 3 拍</text>
+
+  <text class="hd" x="20" y="126">加上 bypass：完全不用停</text>
+  <text class="s mut" x="157" y="142" text-anchor="middle">1</text><text class="s mut" x="193" y="142" text-anchor="middle">2</text><text class="s mut" x="229" y="142" text-anchor="middle">3</text><text class="s mut" x="265" y="142" text-anchor="middle">4</text><text class="s mut" x="301" y="142" text-anchor="middle">5</text><text class="s mut" x="337" y="142" text-anchor="middle">6</text>
+
+  <text x="134" y="166" text-anchor="end">addi x1, x0, 1</text>
+  <rect class="pc" x="140" y="148" width="34" height="26"/><text x="157" y="166" text-anchor="middle">F</text>
+  <rect class="pc" x="176" y="148" width="34" height="26"/><text x="193" y="166" text-anchor="middle">D</text>
+  <rect class="pc-fwd" x="212" y="148" width="34" height="26"/><text class="ac" x="229" y="166" text-anchor="middle">X</text>
+  <rect class="pc" x="248" y="148" width="34" height="26"/><text x="265" y="166" text-anchor="middle">M</text>
+  <rect class="pc" x="284" y="148" width="34" height="26"/><text x="301" y="166" text-anchor="middle">W</text>
+
+  <text x="134" y="204" text-anchor="end">add  x2, x1, x1</text>
+  <rect class="pc" x="176" y="196" width="34" height="26"/><text x="193" y="214" text-anchor="middle">F</text>
+  <rect class="pc-fwd" x="212" y="196" width="34" height="26"/><text class="ac" x="229" y="214" text-anchor="middle">D</text>
+  <rect class="pc" x="248" y="196" width="34" height="26"/><text x="265" y="214" text-anchor="middle">X</text>
+  <rect class="pc" x="284" y="196" width="34" height="26"/><text x="301" y="214" text-anchor="middle">M</text>
+  <rect class="pc" x="320" y="196" width="34" height="26"/><text x="337" y="214" text-anchor="middle">W</text>
+  <path class="a" d="M229 174V194" marker-end="url(#ah)"/>
+  <text class="zh s ac" x="140" y="244">第 3 週期：addi 的結果已經在 execute_mux_out_Xhl 上，而 add 正好在 D 要用它。</text>
+</svg>
+</div>
+<figcaption><b>Stall 等的是「值走到 regfile」，可是值在 X 結束時就存在了。</b><b>旁路／前饋 (bypass / forwarding)</b> 就是多拉幾條線，把後面幾級手上的值直接送回 D，再用一顆 mux 選要哪一個。</figcaption>
+</figure>
+</div>
+
+<h3>這顆 CPU 的 bypass 接在 D，不是 X</h3>
+<p>課本上的五級管線通常把前饋接到 <b>X</b>（ALU 的輸入端）。lab1 不是——它的 operand mux 在 <b>D</b>，選好的值才被打進 <code>op0_mux_out_Xhl</code> / <code>op1_mux_out_Xhl</code>：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 207–230、246–248 行</div>
+<pre><code class="language-verilog">  // Operand 0 mux
+  wire [31:0] op0_mux_out_Dhl
+    = ( op0_mux_sel_Dhl == 2'd0 ) ? rf_rdata0_Dhl
+    : ( op0_mux_sel_Dhl == 2'd1 ) ? pc_Dhl
+    : ( op0_mux_sel_Dhl == 2'd2 ) ? pc_plus4_Dhl
+    : ( op0_mux_sel_Dhl == 2'd3 ) ? const0
+    :                               32'bx;
+  ...
+  // wdata with bypassing
+  wire [31:0] wdata_Dhl = rf_rdata1_Dhl;
+  ...
+      op0_mux_out_Xhl &lt;= op0_mux_out_Dhl;
+      op1_mux_out_Xhl &lt;= op1_mux_out_Dhl;
+      wdata_Xhl       &lt;= wdata_Dhl;</code></pre>
+<p>控制端的 localparam 註解也已經先幫你寫好答案了：</p>
+</div>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 281、289 行</div>
+<pre><code class="language-verilog">  localparam am_rdat  = 2'd0; // Use output of bypass mux for rs1
+  localparam bm_rdat   = 3'd0; // Use output of bypass mux for rs2</code></pre>
+<p>「<code>am_rdat</code> 用的是 <b>bypass mux 的輸出</b>」——目前它接的是 <code>rf_rdata0_Dhl</code>，但命名早就預告了：你要在 regfile 和 operand mux 之間塞一顆新的 mux。</p>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 720 370" role="img" aria-label="上半是現在的 D 級：regfile 的 rf_rdata0_Dhl 直接當 op0 mux 的第 0 個輸入。下半是加上 bypass 之後：先經過一顆四選一的 rs1 bypass mux，輸入是 regfile、X、M、W 四個來源，輸出才接到 op0 mux 的第 0 個輸入。">
+  <text class="hd" x="20" y="16">現在：regfile 直接接 op0 mux</text>
+  <rect class="r" x="20" y="24" width="86" height="44"/><text x="63" y="51" text-anchor="middle">Reg File</text>
+  <path class="w" d="M106 46H200"/><text class="s" x="112" y="40">rf_rdata0_Dhl</text>
+  <text class="s mut" x="172" y="74" text-anchor="end">pc_Dhl</text><path class="wm" d="M176 70H200"/>
+  <text class="s mut" x="172" y="98" text-anchor="end">pc_plus4_Dhl</text><path class="wm" d="M176 94H200"/>
+  <text class="s mut" x="172" y="122" text-anchor="end">const0</text><path class="wm" d="M176 118H200"/>
+  <path class="k" d="M200 30L226 44V132L200 146Z"/>
+  <text class="s mut" x="204" y="50">0</text><text class="s mut" x="204" y="74">1</text><text class="s mut" x="204" y="98">2</text><text class="s mut" x="204" y="122">3</text>
+  <path class="w" d="M226 88H360" marker-end="url(#ah)"/><text class="s" x="234" y="82">op0_mux_out_Dhl</text>
+  <rect class="r" x="360" y="60" width="16" height="56"/><path class="rl" d="M360 100l7 6l-7 6"/>
+  <text class="sq" x="384" y="92">op0_mux_out_Xhl</text>
+  <path class="c" d="M213 146V162" marker-end="url(#ahc)"/><text class="cb s" x="213" y="176" text-anchor="middle">op0_mux_sel_Dhl</text>
+
+  <path class="wm" d="M20 196H700"/>
+  <text class="hd" x="20" y="222">加上 bypass 之後（示意）：中間多一顆四選一</text>
+  <text class="s" x="214" y="250" text-anchor="end">rf_rdata0_Dhl</text><path class="w" d="M218 246H250"/>
+  <text class="s ac" x="214" y="276" text-anchor="end">execute_mux_out_Xhl</text><path class="a" d="M218 272H250"/>
+  <text class="s ac" x="214" y="302" text-anchor="end">wb_mux_out_Mhl</text><path class="a" d="M218 298H250"/>
+  <text class="s ac" x="214" y="328" text-anchor="end">wb_mux_out_Whl</text><path class="a" d="M218 324H250"/>
+  <path class="af" d="M250 232L276 246V324L250 338Z"/>
+  <text class="s mut" x="254" y="250">0</text><text class="s mut" x="254" y="276">1</text><text class="s mut" x="254" y="302">2</text><text class="s mut" x="254" y="328">3</text>
+  <path class="w" d="M276 285H430"/><text class="s" x="290" y="279">byp 輸出</text>
+  <text class="s mut" x="426" y="315" text-anchor="end">pc_Dhl</text><path class="wm" d="M430 311h0"/>
+  <text class="s mut" x="426" y="339" text-anchor="end">pc+4 / const0</text>
+  <path class="k" d="M430 271L456 285V335L430 349Z"/>
+  <text class="s mut" x="434" y="289">0</text><text class="s mut" x="434" y="315">1</text><text class="s mut" x="434" y="339">2,3</text>
+  <path class="w" d="M456 310H580" marker-end="url(#ah)"/><text class="s" x="462" y="304">op0_mux_out_Dhl</text>
+  <rect class="r" x="580" y="284" width="16" height="52"/><path class="rl" d="M580 320l7 6l-7 6"/>
+  <text class="sq s" x="604" y="314">op0_mux_out_Xhl</text>
+  <path class="c" d="M263 338V352" marker-end="url(#ahc)"/><text class="cb s" x="255" y="366" text-anchor="middle">rs1_byp_mux_sel_Dhl（新增）</text>
+  <path class="c" d="M443 349V356" marker-end="url(#ahc)"/><text class="cb s" x="470" y="366">op0_mux_sel_Dhl（不變）</text>
+</svg>
+</div>
+<figcaption><b>Objective 3 的第一個動作：在 <code>rf_rdata0_Dhl</code> 和 op0 mux 之間插一顆 bypass mux。</b><code>rf_rdata1_Dhl</code>／op1 mux 那一邊同理。原本的 op0 mux 完全不用動，<code>op0_mux_sel_Dhl</code> 的編碼也不變。</figcaption>
+</figure>
+</div>
+
+<div class="note"><b>接在 D 的代價</b><p>因為 operand 在 D 就選定了，「可以前饋」的條件變成：<b>生產者在 X／M／W 的那個週期，消費者必須正好在 D</b>。課本把 mux 放 X，消費者在 X 時生產者在 M／W，可用的視窗往後移一格。兩種做法都對，但條件寫法不同——不要照抄課本的 <code>EX/MEM</code>、<code>MEM/WB</code> 比較式。</p></div>
+
+<h3>三條線分別從哪裡接出來</h3>
+<p>每一級要拉出來的，是那一級「這條指令最後會寫進 regfile 的值」在該級已經成形的版本：</p>
+<div class="tbl"><table>
+<thead><tr><th>來源級</th><th>接哪條線</th><th>為什麼是它</th></tr></thead>
+<tbody>
+<tr><td>X</td><td><code>execute_mux_out_Xhl</code></td><td>CoreDpath 288–291 行：ALU 結果與 muldiv 結果選完之後的值，也就是 X 級能給出的最終結果。</td></tr>
+<tr><td>M</td><td><code>wb_mux_out_Mhl</code></td><td>CoreDpath 340–343 行：<code>execute_mux_out_Mhl</code> 和 <code>dmemresp_mux_out_Mhl</code> 選完之後的值——load 的資料也含在裡面。</td></tr>
+<tr><td>W</td><td><code>wb_mux_out_Whl</code></td><td>CoreDpath 350–356 行：正要寫進 regfile 的那個值（第 411 行接到 <code>.wdata_p</code>）。</td></tr>
+</tbody>
+</table></div>
+
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 262" role="img" aria-label="整條管線圖，從 X、M、W 三級各拉一條強調色的線繞回 D 級底部，分別是 execute_mux_out_Xhl、wb_mux_out_Mhl、wb_mux_out_Whl。">
+  <rect class="k" x="60" y="60" width="110" height="70"/><text class="zh" x="115" y="88" text-anchor="middle">D</text><text class="zh s" x="115" y="108" text-anchor="middle">讀 regfile</text><text class="zh s ac" x="115" y="122" text-anchor="middle">+ bypass mux（新）</text>
+  <rect class="r" x="178" y="50" width="14" height="90"/><path class="rl" d="M178 112l6 5l-6 5"/>
+  <rect class="k" x="200" y="60" width="110" height="70"/><text class="zh" x="255" y="88" text-anchor="middle">X</text><text class="zh s" x="255" y="108" text-anchor="middle">ALU / muldiv</text>
+  <rect class="r" x="318" y="50" width="14" height="90"/><path class="rl" d="M318 112l6 5l-6 5"/>
+  <rect class="k" x="340" y="60" width="110" height="70"/><text class="zh" x="395" y="88" text-anchor="middle">M</text><text class="zh s" x="395" y="108" text-anchor="middle">dmem 回應 + wb mux</text>
+  <rect class="r" x="458" y="50" width="14" height="90"/><path class="rl" d="M458 112l6 5l-6 5"/>
+  <rect class="k" x="480" y="60" width="110" height="70"/><text class="zh" x="535" y="88" text-anchor="middle">W</text><text class="zh s" x="535" y="108" text-anchor="middle">寫回 regfile</text>
+  <path class="w" d="M170 95H178M192 95H200M310 95H318M332 95H340M450 95H458M472 95H480"/>
+  <path class="w" d="M590 95H650" marker-end="url(#ah)"/><text class="s mut" x="596" y="88">wen</text>
+
+  <path class="a" d="M314 95V170H140V132" marker-end="url(#ah)"/>
+  <text class="s ac" x="150" y="164">execute_mux_out_Xhl</text>
+  <path class="a" d="M454 95V196H118V132" marker-end="url(#ah)"/>
+  <text class="s ac" x="128" y="190">wb_mux_out_Mhl</text>
+  <path class="a" d="M594 95V222H96V132" marker-end="url(#ah)"/>
+  <text class="s ac" x="106" y="216">wb_mux_out_Whl</text>
+  <text class="zh s mut" x="20" y="36">每條線都在「那一級已經算完」的地方接出來，往回繞到 D 的 bypass mux。</text>
+  <text class="zh s mut" x="20" y="250">注意方向：資料往右流，bypass 線往左回——這就是它叫 forwarding 卻畫成往回接的原因。</text>
+</svg>
+</div>
+<figcaption><b>三個接點，一張圖看完。</b>這三條線就是 Figure 1 裡 bypass mux 要接的東西。X 的那條最短、最常用；W 的那條救的是距離 3 條指令的相依。</figcaption>
+</figure>
+</div>
+
+<h3>D 級不只有 operand mux 在讀 regfile</h3>
+<p>很容易漏掉的是：<code>rf_rdata0_Dhl</code> / <code>rf_rdata1_Dhl</code> 在 D 級<b>有三個下游</b>，不是只有 operand mux。如果只把 bypass 接到 operand mux，<code>sw</code> 會存到舊值、<code>jalr</code> 會跳到舊位址。</p>
+
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 314" role="img" aria-label="rs1 bypass mux 的輸出要同時餵給 op0 mux 和 jalr 的位址加法器；rs2 bypass mux 的輸出要同時餵給 op1 mux 和 sw 的寫入資料 wdata_Dhl。">
+  <text class="s mut" x="105" y="30" text-anchor="middle">輸入：regfile / X / M / W</text>
+  <rect class="af" x="40" y="40" width="130" height="46"/><text x="105" y="60" text-anchor="middle">rs1 bypass mux</text><text class="zh s" x="105" y="78" text-anchor="middle">（示意，新增）</text>
+  <path class="w" d="M170 63H380" marker-end="url(#ah)"/><circle class="d" cx="250" cy="63" r="3"/>
+  <path class="k" d="M380 36L406 48V90L380 102Z"/>
+  <text class="s mut" x="376" y="88" text-anchor="end">pc / pc+4 / 0</text>
+  <path class="w" d="M406 69H470" marker-end="url(#ah)"/><text class="s" x="474" y="73">op0_mux_out_Dhl</text>
+
+  <path class="w" d="M250 63V141H300" marker-end="url(#ah)"/>
+  <rect class="k" x="300" y="126" width="30" height="30"/><text x="315" y="147" text-anchor="middle">+</text>
+  <path class="w" d="M315 190V156" marker-end="url(#ah)"/><text class="s mut" x="315" y="204" text-anchor="middle">imm_i_Dhl</text>
+  <path class="w" d="M330 141H430" marker-end="url(#ah)"/><text class="s" x="434" y="137">jumpreg_targ_Dhl</text>
+  <text class="zh s mut" x="434" y="153">→ PC mux（jalr）</text>
+  <text class="s wr" x="434" y="118">目前接 rf_rdata0_Dhl</text>
+
+  <path class="wm" d="M20 166H240"/>
+  <text class="s mut" x="105" y="192" text-anchor="middle">輸入：regfile / X / M / W</text>
+  <rect class="af" x="40" y="202" width="130" height="46"/><text x="105" y="222" text-anchor="middle">rs2 bypass mux</text><text class="zh s" x="105" y="240" text-anchor="middle">（示意，新增）</text>
+  <path class="w" d="M170 225H380" marker-end="url(#ah)"/><circle class="d" cx="250" cy="225" r="3"/>
+  <path class="k" d="M380 198L406 210V252L380 264Z"/>
+  <text class="s mut" x="376" y="250" text-anchor="end">shamt / imm</text>
+  <path class="w" d="M406 231H470" marker-end="url(#ah)"/><text class="s" x="474" y="235">op1_mux_out_Dhl</text>
+  <path class="w" d="M250 225V288H430" marker-end="url(#ah)"/><text class="s" x="434" y="284">wdata_Dhl</text>
+  <text class="zh s mut" x="434" y="300">→ wdata_Xhl（sw 的寫入資料）</text>
+</svg>
+</div>
+<figcaption><b>一顆 bypass mux，四個下游。</b>把 bypass mux 的輸出取代掉 <code>rf_rdata0_Dhl</code> / <code>rf_rdata1_Dhl</code> 的<b>所有</b>使用點，就自動涵蓋 operand mux、<code>wdata_Dhl</code>、<code>jumpreg_targ_Dhl</code>。原始碼裡 <code>jumpreg_targ_pretruncate_Dhl</code>（第 196 行）目前寫的是 <code>rf_rdata0_Dhl</code>，很多人會忘了改。</figcaption>
+</figure>
+</div>
+
+<div class="quiz"><b>想一想</b><p><code>wdata_Dhl</code> 上面那行註解寫的是 <code>// wdata with bypassing</code>，但下一行卻是 <code>= rf_rdata1_Dhl;</code>。為什麼 riscvstall 裡這樣寫不會錯？</p><details><summary>看答案</summary><p>因為 riscvstall 用 stall 擋掉了所有 data hazard：D 級能往前走的時候，regfile 讀出來的一定已經是最新值。註解是寫給 riscvbyp 的你看的——它標出了「這裡要換成 bypass mux 輸出」的位置。</p></details></div>
+
+<h3>開工：setup.sh 與 Makefile</h3>
+<p>Objective 3 在 <code>riscvbyp/</code> 做，而這個目錄裡<b>只有一個 <code>setup.sh</code></b>。它不會幫你寫 bypass，它只負責把你在 Objective 1、2 改好的 riscvstall 複製過來改名：</p>
+
+<div class="ex">
+<div class="src">riscvbyp/setup.sh</div>
+<pre><code>rsync -av --exclude=setup.sh ../riscvstall/ .
+
+for file in *; do
+  if [[ "$file" == *riscvstall* ]]; then
+    mv "$file" "${file/riscvstall/riscvbyp}"
+  fi
+done
+# 然後對每個檔案做 sed 's/riscvstall/riscvbyp/g'</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 220" role="img" aria-label="setup.sh 的三個動作：rsync 把 riscvstall 目錄複製到 riscvbyp，接著把檔名裡的 riscvstall 換成 riscvbyp，最後用 sed 把檔案內容裡的 riscvstall 字串也換掉，包含 module 名稱與 include 路徑。">
+  <rect class="gh" x="20" y="40" width="170" height="150"/>
+  <text class="hd" x="105" y="60" text-anchor="middle">riscvstall/</text>
+  <text class="s" x="34" y="84">riscvstall-Core.v</text>
+  <text class="s" x="34" y="104">riscvstall-CoreCtrl.v</text>
+  <text class="s" x="34" y="124">riscvstall-CoreDpath.v</text>
+  <text class="s" x="34" y="144">riscvstall-InstMsg.v</text>
+  <text class="s mut" x="34" y="164">...</text>
+  <text class="zh s ac" x="105" y="184" text-anchor="middle">你的 Objective 1／2 成果</text>
+
+  <path class="a" d="M190 115H290" marker-end="url(#ah)"/>
+  <text class="s ac" x="196" y="86">① rsync -av</text>
+  <text class="s ac" x="196" y="104">② mv 改檔名</text>
+  <text class="s ac" x="196" y="140">③ sed 改內容</text>
+  <text class="zh s mut" x="196" y="158">module 名、`include</text>
+
+  <rect class="gh" x="330" y="40" width="190" height="150"/>
+  <text class="hd" x="425" y="60" text-anchor="middle">riscvbyp/</text>
+  <text class="s" x="344" y="84">riscvbyp-Core.v</text>
+  <text class="s" x="344" y="104">riscvbyp-CoreCtrl.v</text>
+  <text class="s" x="344" y="124">riscvbyp-CoreDpath.v</text>
+  <text class="s" x="344" y="144">riscvbyp-InstMsg.v</text>
+  <text class="s mut" x="344" y="164">...</text>
+  <text class="zh s ac" x="425" y="184" text-anchor="middle">在這裡加 bypass</text>
+
+  <rect class="gh" x="540" y="66" width="145" height="98"/>
+  <text class="hd" x="612" y="86" text-anchor="middle">build/Makefile</text>
+  <text class="zh s wr" x="612" y="108" text-anchor="middle">把 5 行 riscvbyp</text>
+  <text class="zh s wr" x="612" y="124" text-anchor="middle">的註解取消掉</text>
+  <text class="s mut" x="612" y="146" text-anchor="middle">72 / 117 / 178</text>
+  <text class="s mut" x="612" y="160" text-anchor="middle">217 / 260 行</text>
+  <path class="wm" d="M520 115H540" marker-end="url(#ah)"/>
+</svg>
+</div>
+<figcaption><b><code>setup.sh</code> 是純粹的複製改名，跑之前先確定 riscvstall 已經是你要的版本。</b>跑完一定要自己 <code>ls</code> 檢查檔名，以及 <code>grep riscvstall *</code> 確認沒有殘留。</figcaption>
+</figure>
+</div>
+
+<p>然後打開 <code>build/Makefile</code>，把 5 個被註解掉的 riscvbyp 條目取消註解：</p>
+<div class="ex">
+<div class="src">build/Makefile · 第 72、117、178、217、260 行</div>
+<pre><code># subpkgs += riscvbyp
+# sim_incs += -I $(topdir)/riscvbyp
+# $(eval $(call proc_template,riscvbyp,RISCVBYP,byp))
+# $(eval $(call asm_template,riscvbyp,RISCVBYP,byp))
+# $(eval $(call bmark_template,riscvbyp,RISCVBYP,byp))</code></pre>
+</div>
+
+<h3>新的控制訊號要接三個地方</h3>
+<p>Bypass mux 的 select 是控制訊號，所以它誕生在 <code>riscvbyp-CoreCtrl.v</code>，使用在 <code>riscvbyp-CoreDpath.v</code>。這兩個模組之間沒有直接連線——中間隔著 <code>riscvbyp-Core.v</code>。少寫任何一處，Verilog 不會報錯，只會給你一條永遠是 <code>z</code> 或預設值的線。</p>
+
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 236" role="img" aria-label="新的 bypass select 訊號必須寫在三個地方：CoreCtrl.v 的 output 埠、Core.v 裡的 wire 宣告加上兩個模組實例的埠連接、CoreDpath.v 的 input 埠。">
+  <rect class="k" x="20" y="50" width="190" height="96"/>
+  <text class="hd" x="115" y="72" text-anchor="middle">riscvbyp-CoreCtrl.v</text>
+  <text class="s" x="32" y="96">output [1:0]</text>
+  <text class="s" x="32" y="112">  rs1_byp_mux_sel_Dhl,</text>
+  <text class="zh s mut" x="32" y="134">① 加 output 埠 + assign</text>
+
+  <rect class="k" x="255" y="30" width="190" height="136"/>
+  <text class="hd" x="350" y="52" text-anchor="middle">riscvbyp-Core.v</text>
+  <text class="s" x="267" y="76">wire [1:0]</text>
+  <text class="s" x="267" y="92">  rs1_byp_mux_sel_Dhl;</text>
+  <text class="s mut" x="267" y="114">.rs1_byp_mux_sel_Dhl(...)</text>
+  <text class="s mut" x="267" y="130">.rs1_byp_mux_sel_Dhl(...)</text>
+  <text class="zh s mut" x="267" y="154">② 宣告 wire + 兩個實例各接一次</text>
+
+  <rect class="k" x="490" y="50" width="190" height="96"/>
+  <text class="hd" x="585" y="72" text-anchor="middle">riscvbyp-CoreDpath.v</text>
+  <text class="s" x="502" y="96">input [1:0]</text>
+  <text class="s" x="502" y="112">  rs1_byp_mux_sel_Dhl,</text>
+  <text class="zh s mut" x="502" y="134">③ 加 input 埠 + 接到 mux</text>
+
+  <path class="c" d="M210 98H255" marker-end="url(#ahc)"/>
+  <path class="c" d="M445 98H490" marker-end="url(#ahc)"/>
+  <text class="zh s wr" x="350" y="196" text-anchor="middle">rs1／rs2 各一條 select，兩條都要走完這三步</text>
+  <text class="zh s mut" x="350" y="216" text-anchor="middle">參考既有的 op0_mux_sel_Dhl：CoreCtrl 34 行、Core 62／182／245 行、CoreDpath 32 行</text>
+</svg>
+</div>
+<figcaption><b>照著 <code>op0_mux_sel_Dhl</code> 抄一遍就對了。</b>它在 CoreCtrl 的 output、Core 的 wire、兩個模組實例的埠、CoreDpath 的 input 各出現一次——你的新訊號要出現在完全一樣的五個位置。</figcaption>
+</figure>
+</div>
+</section>
+
+<!-- ============================================================ ch15 -->
+<section class="ch" id="ch15" data-part="Bypassing" data-nav="Bypass 控制邏輯與 load-use">
+<p class="eyebrow">第 15 章 · Bypassing</p>
+<h2>Bypass 控制邏輯與 load-use</h2>
+
+<p>好消息：<b>偵測條件不用重寫</b>。<a href="#ch11">第 11 章</a>那個又臭又長的 <code>stall_hazard_Dhl</code> 已經把「D 要的暫存器正握在哪一級手上」算得清清楚楚，你要做的只是<b>改變反應</b>：以前這些條件 OR 起來去卡住 D，現在它們去挑 mux。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 557–562 行（六項裡的前兩項）</div>
+<pre><code class="language-verilog">  wire stall_hazard_Dhl   = inst_val_Dhl && (
+                            ( rs1_en_Dhl && inst_val_Xhl && rf_wen_Xhl
+                              && ( rs1_addr_Dhl == rf_waddr_Xhl )
+                              && ( rf_waddr_Xhl != 5'd0 ) )
+                         || ( rs1_en_Dhl && inst_val_Mhl && rf_wen_Mhl
+                              && ( rs1_addr_Dhl == rf_waddr_Mhl )
+                              && ( rf_waddr_Mhl != 5'd0 ) )
+                         || ...</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 276" role="img" aria-label="六個比較器組成 rs1 與 rs2 乘上 X、M、W 的矩陣。riscvstall 把六個輸出 OR 起來變成 stall_hazard_Dhl；riscvbyp 改成讓每一列的三個輸出送進一個優先權編碼器，產生 rs1 與 rs2 的 bypass mux select。">
+  <text class="s mut" x="150" y="30" text-anchor="middle">vs X 級</text>
+  <text class="s mut" x="270" y="30" text-anchor="middle">vs M 級</text>
+  <text class="s mut" x="390" y="30" text-anchor="middle">vs W 級</text>
+  <text class="s mut" x="150" y="46" text-anchor="middle">rf_waddr_Xhl</text>
+  <text class="s mut" x="270" y="46" text-anchor="middle">rf_waddr_Mhl</text>
+  <text class="s mut" x="390" y="46" text-anchor="middle">rf_waddr_Whl</text>
+  <text class="s" x="110" y="78" text-anchor="end">rs1_addr_Dhl</text>
+  <text class="s" x="110" y="148" text-anchor="end">rs2_addr_Dhl</text>
+
+  <path class="w" d="M114 73H118M114 143H118"/>
+  <rect class="k" x="118" y="56" width="64" height="34"/><text x="150" y="78" text-anchor="middle">=?</text>
+  <rect class="k" x="238" y="56" width="64" height="34"/><text x="270" y="78" text-anchor="middle">=?</text>
+  <rect class="k" x="358" y="56" width="64" height="34"/><text x="390" y="78" text-anchor="middle">=?</text>
+  <rect class="k" x="118" y="126" width="64" height="34"/><text x="150" y="148" text-anchor="middle">=?</text>
+  <rect class="k" x="238" y="126" width="64" height="34"/><text x="270" y="148" text-anchor="middle">=?</text>
+  <rect class="k" x="358" y="126" width="64" height="34"/><text x="390" y="148" text-anchor="middle">=?</text>
+
+  <path class="a" d="M150 90V114H470"/>
+  <path class="a" d="M270 90V106H470"/>
+  <path class="a" d="M390 90V98H470"/>
+  <path class="a" d="M150 160V186H470"/>
+  <path class="a" d="M270 160V178H470"/>
+  <path class="a" d="M390 160V170H470"/>
+  <rect class="af" x="470" y="90" width="150" height="100"/>
+  <text class="s mut" x="478" y="86">rs1 三條</text>
+  <text class="s mut" x="478" y="204">rs2 三條</text>
+  <text class="zh" x="545" y="134" text-anchor="middle">優先權編碼</text>
+  <text class="zh s" x="545" y="154" text-anchor="middle">X &gt; M &gt; W &gt; regfile</text>
+  <path class="c" d="M620 140H666" marker-end="url(#ahc)"/><text class="cb s" x="628" y="134">sel ×2</text>
+
+  <text class="zh s mut" x="20" y="238">同樣這六個條件，在 riscvstall 是 OR 起來變成 stall_hazard_Dhl → stall_Dhl；</text>
+  <text class="zh s wr" x="20" y="262">在 riscvbyp 裡條件完全不變，只是改接到 mux select 而不是 stall。</text>
+</svg>
+</div>
+<figcaption><b>偵測條件不變，反應改變。</b>六個比較器原封不動，差別只在輸出接去哪裡。rs1 那一列決定 <code>rs1_byp_mux_sel_Dhl</code>，rs2 那一列決定 <code>rs2_byp_mux_sel_Dhl</code>。</figcaption>
+</figure>
+</div>
+
+<h3>優先權：近的贏</h3>
+<p>同一個暫存器可能同時符合兩三個條件。想一段連寫兩次 <code>x1</code> 的程式：</p>
+
+<div class="ex">
+<div class="src mine">示意範例</div>
+<pre><code>addi x1, x0, 1
+addi x1, x0, 2
+add  x3, x1, x1     # 正確答案是 4，不是 2</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 600 194" role="img" aria-label="時空圖：第 4 週期時 add 在 D 級，第一個 addi 在 M 級，第二個 addi 在 X 級，兩級都符合 rs1 的比較條件，必須選比較近的 X 級。">
+  <text class="s mut" x="197" y="30" text-anchor="middle">1</text><text class="s mut" x="233" y="30" text-anchor="middle">2</text><text class="s mut" x="269" y="30" text-anchor="middle">3</text><text class="s mut" x="305" y="30" text-anchor="middle">4</text><text class="s mut" x="341" y="30" text-anchor="middle">5</text><text class="s mut" x="377" y="30" text-anchor="middle">6</text><text class="s mut" x="413" y="30" text-anchor="middle">7</text>
+
+  <text x="174" y="54" text-anchor="end">addi x1, x0, 1</text>
+  <rect class="pc" x="180" y="36" width="34" height="26"/><text x="197" y="54" text-anchor="middle">F</text>
+  <rect class="pc" x="216" y="36" width="34" height="26"/><text x="233" y="54" text-anchor="middle">D</text>
+  <rect class="pc" x="252" y="36" width="34" height="26"/><text x="269" y="54" text-anchor="middle">X</text>
+  <rect class="pc-kill" x="288" y="36" width="34" height="26"/><text class="wr" x="305" y="54" text-anchor="middle">M</text>
+  <rect class="pc" x="324" y="36" width="34" height="26"/><text x="341" y="54" text-anchor="middle">W</text>
+  <text class="zh s wr" x="366" y="54">舊值 1，不能選</text>
+
+  <text x="174" y="92" text-anchor="end">addi x1, x0, 2</text>
+  <rect class="pc" x="216" y="74" width="34" height="26"/><text x="233" y="92" text-anchor="middle">F</text>
+  <rect class="pc" x="252" y="74" width="34" height="26"/><text x="269" y="92" text-anchor="middle">D</text>
+  <rect class="pc-fwd" x="288" y="74" width="34" height="26"/><text class="ac" x="305" y="92" text-anchor="middle">X</text>
+  <rect class="pc" x="324" y="74" width="34" height="26"/><text x="341" y="92" text-anchor="middle">M</text>
+  <rect class="pc" x="360" y="74" width="34" height="26"/><text x="377" y="92" text-anchor="middle">W</text>
+  <text class="zh s ac" x="402" y="92">新值 2，要選它</text>
+
+  <text x="174" y="140" text-anchor="end">add  x3, x1, x1</text>
+  <rect class="pc" x="252" y="122" width="34" height="26"/><text x="269" y="140" text-anchor="middle">F</text>
+  <rect class="pc-fwd" x="288" y="122" width="34" height="26"/><text class="ac" x="305" y="140" text-anchor="middle">D</text>
+  <rect class="pc" x="324" y="122" width="34" height="26"/><text x="341" y="140" text-anchor="middle">X</text>
+  <rect class="pc" x="360" y="122" width="34" height="26"/><text x="377" y="140" text-anchor="middle">M</text>
+  <rect class="pc" x="396" y="122" width="34" height="26"/><text x="413" y="140" text-anchor="middle">W</text>
+  <path class="a" d="M305 100V120" marker-end="url(#ah)"/>
+  <text class="zh s" x="20" y="178">第 4 週期，rs1 同時符合「vs X」和「vs M」兩個條件——程式順序上比較晚的那一級（X）才是對的。</text>
+</svg>
+</div>
+<figcaption><b>優先權：X &gt; M &gt; W &gt; regfile。</b>越靠近 D 的級，裝的是越新的指令，也就是越新的值。把 select 寫成一串巢狀 <code>?:</code>，順序就天生是優先權。</figcaption>
+</figure>
+</div>
+
+<div class="ex">
+<div class="src mine">示意範例 · 只示範 rs1 的其中一項，rs2 與 M／W 請自行類推</div>
+<pre><code class="language-verilog">// 「rs1 應該從 X 級前饋」——把原本 stall 條件的一項原封不動搬過來
+wire rs1_X_byp_Dhl = inst_val_Dhl &amp;&amp; rs1_en_Dhl
+                  &amp;&amp; inst_val_Xhl &amp;&amp; rf_wen_Xhl
+                  &amp;&amp; ( rs1_addr_Dhl == rf_waddr_Xhl )
+                  &amp;&amp; ( rf_waddr_Xhl != 5'd0 );
+
+// select 編碼：近的先判斷，天然就是優先權
+wire [1:0] rs1_byp_mux_sel_Dhl
+  = rs1_X_byp_Dhl ? 2'd1        // execute_mux_out_Xhl
+  : rs1_M_byp_Dhl ? 2'd2        // wb_mux_out_Mhl
+  : rs1_W_byp_Dhl ? 2'd3        // wb_mux_out_Whl
+  :                 2'd0;       // rf_rdata0_Dhl</code></pre>
+</div>
+
+<div class="quiz"><b>想一想</b><p><code>rs1_X_byp_Dhl</code> 為什麼要 <code>&amp;&amp; rs1_en_Dhl</code>？如果拿掉會怎樣？</p><details><summary>看答案</summary><p><code>rs1_en_Dhl</code>（控制表的 RS_EN 欄）表示這條指令真的要從 regfile 讀 rs1。<code>lui</code>、<code>auipc</code>、<code>jal</code> 這類指令的 op0 選的是 <code>pc</code> 或 <code>const0</code>（<code>am_pc</code>／<code>am_pc4</code>／<code>am_0</code>），指令欄位 rs1 那幾個 bit 根本不是暫存器編號，但它仍然會湊巧等於某個 <code>rf_waddr</code>。拿掉 <code>rs1_en_Dhl</code> 不會馬上壞（因為 op0 mux 本來就沒選 bypass 那條路），但一旦你把 bypass 輸出接到 <code>jumpreg_targ_Dhl</code> 就會出事——而且這種假相依也會讓你的 load-use stall 誤觸發，白白吃掉 IPC。</p></details></div>
+
+<h3>Load-use：唯一還得 stall 的情況</h3>
+<p>Bypass 不是萬靈丹。<code>lw</code> 的資料在 X 級<b>還不存在</b>——X 只負責把位址算出來、把 request 送出去，資料要等到 M 級才會以 <code>dmemresp_msg_data</code> 的形式回來：</p>
+
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 680 256" role="img" aria-label="load 的資料路徑：X 級用 ALU 算出位址送出 dmem request，資料要到 M 級才以 dmemresp 回來，經過 subword mux 與 wb mux 才成為 wb_mux_out_Mhl。因此 X 級沒有東西可以前饋。">
+  <rect class="k" x="30" y="70" width="110" height="70"/><text class="zh" x="85" y="98" text-anchor="middle">X 級</text><text class="s" x="85" y="118" text-anchor="middle">ALU = base+imm</text>
+  <path class="w" d="M140 92H260" marker-end="url(#ah)"/><text class="s" x="148" y="86">dmemreq_msg_addr</text>
+  <rect class="r" x="260" y="60" width="110" height="90"/><text class="zh" x="315" y="92" text-anchor="middle">Data Mem</text><text class="zh s" x="315" y="112" text-anchor="middle">val/rdy，可能慢</text>
+  <path class="w" d="M315 150V176H475V142" marker-end="url(#ah)"/>
+  <text class="s" x="330" y="170">dmemresp_msg_data</text>
+  <rect class="k" x="420" y="70" width="110" height="70" style="stroke-dasharray:none"/>
+  <text class="zh" x="475" y="94" text-anchor="middle">M 級</text><text class="zh s" x="475" y="112" text-anchor="middle">subword + wb mux</text>
+  <path class="a" d="M530 105H630" marker-end="url(#ah)"/><text class="s ac" x="538" y="98">wb_mux_out_Mhl</text>
+  <text class="zh s ac" x="538" y="124">可以前饋</text>
+
+  <path class="x" d="M70 68L100 40M100 68L70 40"/>
+  <text class="zh s wr" x="114" y="52">X 級這裡沒有資料可以拉出來</text>
+  <text class="zh s mut" x="30" y="208">execute_mux_out_Xhl 在 load 的情況下裝的是「位址」，不是「載入的值」——</text>
+  <text class="zh s mut" x="30" y="226">前饋它等於把位址當成資料用。</text>
+  <text class="zh s mut" x="30" y="244">（而且用 -rand- 模擬器時，回應還可能更晚才到。）</text>
+</svg>
+</div>
+<figcaption><b>Load 的資料比別人晚一級成形。</b>ALU 結果在 X 結束就有，記憶體回應要到 M。所以 load 只能從 <b>M</b> 或 <b>W</b> 前饋，不能從 X。</figcaption>
+</figure>
+</div>
+
+<p>後果：<code>lw</code> 的下一條指令如果馬上要用它的結果，就非停一拍不可。停完那一拍，生產者剛好從 X 走到 M，就能前饋了：</p>
+
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 600 160" role="img" aria-label="load-use 時空圖：lw 在第 3 週期進 X，addi 在第 3 週期進 D 但被 stall 一拍，第 4 週期 lw 進 M，addi 從 M 前饋成功繼續往前。">
+  <text class="s mut" x="197" y="30" text-anchor="middle">1</text><text class="s mut" x="233" y="30" text-anchor="middle">2</text><text class="s mut" x="269" y="30" text-anchor="middle">3</text><text class="s mut" x="305" y="30" text-anchor="middle">4</text><text class="s mut" x="341" y="30" text-anchor="middle">5</text><text class="s mut" x="377" y="30" text-anchor="middle">6</text><text class="s mut" x="413" y="30" text-anchor="middle">7</text>
+
+  <text x="174" y="54" text-anchor="end">lw   x4, 0(x2)</text>
+  <rect class="pc" x="180" y="36" width="34" height="26"/><text x="197" y="54" text-anchor="middle">F</text>
+  <rect class="pc" x="216" y="36" width="34" height="26"/><text x="233" y="54" text-anchor="middle">D</text>
+  <rect class="pc" x="252" y="36" width="34" height="26"/><text x="269" y="54" text-anchor="middle">X</text>
+  <rect class="pc-fwd" x="288" y="36" width="34" height="26"/><text class="ac" x="305" y="54" text-anchor="middle">M</text>
+  <rect class="pc" x="324" y="36" width="34" height="26"/><text x="341" y="54" text-anchor="middle">W</text>
+
+  <text x="174" y="92" text-anchor="end">addi x7, x4, 0</text>
+  <rect class="pc" x="216" y="74" width="34" height="26"/><text x="233" y="92" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="252" y="74" width="34" height="26"/><text class="sq" x="269" y="92" text-anchor="middle">D</text>
+  <rect class="pc-fwd" x="288" y="74" width="34" height="26"/><text class="ac" x="305" y="92" text-anchor="middle">D</text>
+  <rect class="pc" x="324" y="74" width="34" height="26"/><text x="341" y="92" text-anchor="middle">X</text>
+  <rect class="pc" x="360" y="74" width="34" height="26"/><text x="377" y="92" text-anchor="middle">M</text>
+  <rect class="pc" x="396" y="74" width="34" height="26"/><text x="413" y="92" text-anchor="middle">W</text>
+  <path class="a" d="M305 62V74" marker-end="url(#ah)"/>
+  <text class="zh s sq" x="240" y="122">第 3 拍：停</text>
+  <text class="zh s ac" x="330" y="122">第 4 拍：從 M 前饋，恢復流動</text>
+  <text class="zh s mut" x="20" y="148">整段只損失 1 拍——比 riscvstall 的 3 拍好很多，但不是 0。</text>
+</svg>
+</div>
+<figcaption><b>Load-use hazard 恰好停一拍。</b>停的目的不是等寫回，而是等生產者「走到有資料的那一級」。</figcaption>
+</figure>
+</div>
+
+<h3>做一個 <code>is_load</code> 出來</h3>
+<p>要寫 load-use 的 stall 條件，你得知道「現在 X 級裡那條指令是不是 load」。控制表裡已經有這個資訊，在 MEM_REQ 欄：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 335–337、517–519 行</div>
+<pre><code class="language-verilog">  localparam nr = 2'b0; // No request
+  localparam ld = 2'd1; // Load
+  localparam st = 2'd2; // Store
+  ...
+  wire       dmemreq_msg_rw_Dhl  = ( cs[`RISCV_INST_MSG_MEM_REQ] == st );
+  wire [1:0] dmemreq_msg_len_Dhl = cs[`RISCV_INST_MSG_MEM_LEN];
+  wire       dmemreq_val_Dhl     = ( cs[`RISCV_INST_MSG_MEM_REQ] != nr );</code></pre>
+<p>已經有 <code>== st</code> 了，照樣造一個 <code>== ld</code>，再照著別的控制位元一樣往下游打一級即可：</p>
+</div>
+
+<div class="ex">
+<div class="src mine">示意範例</div>
+<pre><code class="language-verilog">wire is_load_Dhl = ( cs[`RISCV_INST_MSG_MEM_REQ] == ld );
+...
+// 放進既有的 X &lt;- D always 區塊，跟 dmemreq_msg_rw_Xhl 並排
+      is_load_Xhl &lt;= is_load_Dhl;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 278" role="img" aria-label="is_load 的產生與管線化：casez 解出的 cs 束裡的 MEM_REQ 欄位在 D 級比對 ld 得到 is_load_Dhl，經過 X 小於 D 的管線暫存器變成 is_load_Xhl，再和 D 級的位址比較結果一起決定 stall_load_use_Dhl。">
+  <rect class="k" x="20" y="54" width="120" height="60"/><text class="zh" x="80" y="78" text-anchor="middle">casez (ir_Dhl)</text><text class="s" x="80" y="98" text-anchor="middle">cs 束</text>
+  <path class="w" d="M140 84H230" marker-end="url(#ah)"/><text class="s" x="146" y="78">MEM_REQ</text>
+  <rect class="k" x="230" y="64" width="70" height="40"/><text x="265" y="88" text-anchor="middle">== ld</text>
+  <path class="w" d="M300 84H400" marker-end="url(#ah)"/><text class="s" x="306" y="78">is_load_Dhl</text>
+  <rect class="r" x="400" y="54" width="16" height="60"/><path class="rl" d="M400 92l7 6l-7 6"/>
+  <text class="s mut" x="408" y="132" text-anchor="middle">!stall_Xhl</text>
+  <path class="w" d="M416 84H500" marker-end="url(#ah)"/><text class="sq s" x="422" y="78">is_load_Xhl</text>
+
+  <rect class="af" x="500" y="58" width="150" height="52"/>
+  <text class="zh s" x="575" y="80" text-anchor="middle">AND：X 是 load</text>
+  <text class="zh s" x="575" y="98" text-anchor="middle">且 D 要用它的 rd</text>
+  <path class="c" d="M650 84H674" marker-end="url(#ahc)"/>
+  <text class="cb s" x="560" y="176" text-anchor="end">stall_load_use_Dhl</text>
+
+  <path class="c" d="M575 202V112" marker-end="url(#ahc)"/>
+  <text class="cb s" x="430" y="220">rs1_X_byp_Dhl || rs2_X_byp_Dhl</text>
+  <text class="zh s mut" x="20" y="180">D 級那邊已經算好的「vs X」比較結果，直接拿來用。</text>
+  <text class="zh s mut" x="20" y="244">換句話說：原本會從 X 前饋的情況，如果生產者是 load，就改成 stall 一拍；</text>
+  <text class="zh s mut" x="20" y="264">其他所有情況都不再 stall。stall_hazard_Dhl 整個可以被它取代。</text>
+</svg>
+</div>
+<figcaption><b><code>is_load</code> 只是另一個被管線化的控制位元。</b>做法跟 <code>rf_wen_Dhl → rf_wen_Xhl</code> 一模一樣：宣告 <code>reg</code>、在 <code>X &lt;- D</code> 的 <code>always</code> 裡加一行。</figcaption>
+</figure>
+</div>
+
+<div class="quiz"><b>想一想</b><p>mul／div 的結果也是「X 級才算完」，而且是慢慢算的。它需要像 load 一樣特別處理嗎？</p><details><summary>看答案</summary><p>不需要額外的 stall。iterative muldiv 在結果還沒好的時候，X 級自己就被 <code>!muldivresp_val</code> 卡住了（見<a href="#ch10">第 10 章</a>的 stall 鏈），所以只要 X 沒有 stall，<code>execute_mux_out_Xhl</code> 上就是有效的結果——它已經通過 <code>execute_mux_sel_Xhl</code> 選到 muldiv 那一邊。X 一 stall，D 也跟著 stall（<code>stall_Dhl</code> 含 <code>stall_Xhl</code>），前饋自然不會在錯的週期發生。Objective 4 換成管線式 muldiv 之後才需要重新思考這件事。</p></details></div>
+
+<h3>W 級那條線真的需要嗎？</h3>
+<p>有些教科書的 regfile 有「write-through」：同一個週期寫進去的值，讀出來就是新值。那樣的話 W→D 的前饋就不必要。lab1 的 regfile <b>沒有</b>：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpathRegfile.v · 第 24–32 行</div>
+<pre><code class="language-verilog">  // Combinational read ports
+  assign rdata0 = ( raddr0 == 0 ) ? 32'b0 : registers[raddr0];
+  assign rdata1 = ( raddr1 == 0 ) ? 32'b0 : registers[raddr1];
+
+  // Write port is active only when wen is asserted
+  always @( posedge clk )
+  begin
+    if ( wen_p &amp;&amp; (waddr_p != 5'b0) )
+      registers[waddr_p] &lt;= wdata_p;
+  end</code></pre>
+<p>讀是純組合、直接讀 <code>registers[]</code> 陣列；寫是 <code>&lt;=</code>，要到<b>下一個</b>週期才看得到。所以「生產者在 W、消費者在 D」的同一個週期裡，regfile 讀出來的還是舊值——<code>wb_mux_out_Whl</code> 那條線非有不可。</p>
+</div>
+
+<h3>總表：什麼時候前饋、什麼時候還是得停</h3>
+<div class="tbl"><table>
+<thead><tr><th>生產者所在級</th><th>ALU 類（add、addi、lui…）</th><th>load（lw、lb、lh…）</th><th>muldiv（mul、div、rem…）</th></tr></thead>
+<tbody>
+<tr class="hi"><td>X</td><td>前饋 <code>execute_mux_out_Xhl</code></td><td><b>stall 一拍</b>（資料還沒回來）</td><td>前饋 <code>execute_mux_out_Xhl</code>（X 未 stall 即代表結果有效）</td></tr>
+<tr><td>M</td><td>前饋 <code>wb_mux_out_Mhl</code></td><td>前饋 <code>wb_mux_out_Mhl</code></td><td>前饋 <code>wb_mux_out_Mhl</code></td></tr>
+<tr><td>W</td><td>前饋 <code>wb_mux_out_Whl</code></td><td>前饋 <code>wb_mux_out_Whl</code></td><td>前饋 <code>wb_mux_out_Whl</code></td></tr>
+<tr><td>已離開 W</td><td colspan="3">直接讀 regfile</td></tr>
+</tbody>
+</table></div>
+
+<div class="trap"><b>常見錯誤</b>
+<p><b>忘了 <code>inst_val_*</code> 就前饋 bubble。</b>bubble 是「空的一格」，它的 <code>rf_waddr_Xhl</code> 是上一條指令留下的垃圾。沒有 <code>inst_val_Xhl</code> 把關，你會前饋一個不存在的指令的結果。</p>
+<p><b>忘了 <code>rf_wen_*</code>。</b><code>sw</code>、branch 這些指令不寫暫存器，<code>rf_waddr</code> 欄位是 <code>rx</code>（don't care），不能拿來比。</p>
+<p><b>忘了 <code>!= 5'd0</code>。</b>x0 永遠是 0。如果後面有一條指令「寫 x0」（例如 <code>addi x0, x0, 5</code>，合法但沒效果），你把它的結果前饋出去，讀 x0 就會拿到 5。</p>
+<p><b>op0 用 <code>am_pc</code> 的那幾列不該 bypass。</b><code>jal</code>、<code>auipc</code>、<code>lui</code> 的 <code>rs1_en</code> 是 <code>n</code>；靠 <code>rs1_en_Dhl</code> 把關就對了。</p>
+<p><b>bypass 加了，但 <code>stall_hazard_Dhl</code> 忘了拿掉。</b>模擬會全部通過（stall 本來就給得出正確答案），但 IPC 一點都沒進步。用 <code>+stats=1</code> 比一下 <code>num_cycles</code> 就會發現。</p>
+</div>
+</section>
+
+<!-- ============================================================ ch16 -->
+<section class="ch" id="ch16" data-part="Bypassing" data-nav="用測試巨集驗證 bypass">
+<p class="eyebrow">第 16 章 · Bypassing</p>
+<h2>用測試巨集驗證 bypass</h2>
+
+<p><code>tests/riscv/riscv-macros.h</code> 裡所有名字帶 <code>_BYP</code> 的巨集，都是為了這個 Objective 存在的。它們的手法一模一樣：<b>在生產者和消費者之間插入 <code>nops_</code> 個 <code>nop</code></b>，用這個距離去指定要測哪一條 bypass 路徑。</p>
+
+<div class="ex">
+<div class="src">tests/riscv/riscv-macros.h · 第 120–131 行</div>
+<pre><code>#define TEST_IMM_DEST_BYP( nops_, inst_, src0_, imm_, result_ )         \
+    li    x2, src0_;                                                    \
+    inst_ x4, x2, imm_;                                                 \
+    TEST_INSERT_NOPS( nops_ );                                          \
+    addi  x7, x4, 0;                                                    \
+    TEST_CHECK_EQ( x7, result_ );                                       \
+
+#define TEST_IMM_SRC0_BYP( nops_, inst_, src0_, imm_, result_ )         \
+    li    x2, src0_;                                                    \
+    TEST_INSERT_NOPS( nops_ );                                          \
+    inst_ x4, x2, imm_;                                                 \
+    TEST_CHECK_EQ( x4, result_ );                                       \</code></pre>
+<p>差別只在測哪一端：<code>DEST_BYP</code> 把 <code>inst_</code> 當<b>生產者</b>（測它的結果能不能被前饋出去），<code>SRC0_BYP</code> 把 <code>inst_</code> 當<b>消費者</b>（測它的 rs1 能不能收到前饋值）。</p>
+</div>
+
+<h3>nops 的數字直接對應到哪一條 bypass 路徑</h3>
+<p>生產者在第 <var>c</var> 個週期進 D，那它 <var>c</var>+1 在 X、<var>c</var>+2 在 M、<var>c</var>+3 在 W。插 <var>N</var> 個 nop 的話，消費者在第 <var>c</var>+<var>N</var>+1 個週期進 D：</p>
+
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 440" role="img" aria-label="三張時空圖，分別對應 nops 等於 0、1、2。nops 為 0 時消費者進 D 時生產者在 X；nops 為 1 時生產者在 M；nops 為 2 時生產者在 W。">
+  <text class="hd" x="20" y="16">nops_ = 0 → 測 X 級 bypass</text>
+  <text class="s mut" x="157" y="32" text-anchor="middle">1</text><text class="s mut" x="193" y="32" text-anchor="middle">2</text><text class="s mut" x="229" y="32" text-anchor="middle">3</text><text class="s mut" x="265" y="32" text-anchor="middle">4</text><text class="s mut" x="301" y="32" text-anchor="middle">5</text><text class="s mut" x="337" y="32" text-anchor="middle">6</text><text class="s mut" x="373" y="32" text-anchor="middle">7</text><text class="s mut" x="409" y="32" text-anchor="middle">8</text>
+  <text x="134" y="56" text-anchor="end">addi x4, x2, imm</text>
+  <rect class="pc" x="140" y="38" width="34" height="26"/><text x="157" y="56" text-anchor="middle">F</text>
+  <rect class="pc" x="176" y="38" width="34" height="26"/><text x="193" y="56" text-anchor="middle">D</text>
+  <rect class="pc-fwd" x="212" y="38" width="34" height="26"/><text class="ac" x="229" y="56" text-anchor="middle">X</text>
+  <rect class="pc" x="248" y="38" width="34" height="26"/><text x="265" y="56" text-anchor="middle">M</text>
+  <rect class="pc" x="284" y="38" width="34" height="26"/><text x="301" y="56" text-anchor="middle">W</text>
+  <text x="134" y="86" text-anchor="end">addi x7, x4, 0</text>
+  <rect class="pc" x="176" y="68" width="34" height="26"/><text x="193" y="86" text-anchor="middle">F</text>
+  <rect class="pc-fwd" x="212" y="68" width="34" height="26"/><text class="ac" x="229" y="86" text-anchor="middle">D</text>
+  <rect class="pc" x="248" y="68" width="34" height="26"/><text x="265" y="86" text-anchor="middle">X</text>
+  <rect class="pc" x="284" y="68" width="34" height="26"/><text x="301" y="86" text-anchor="middle">M</text>
+  <rect class="pc" x="320" y="68" width="34" height="26"/><text x="337" y="86" text-anchor="middle">W</text>
+  <rect class="grp" x="208" y="34" width="42" height="64"/>
+
+  <text class="hd" x="20" y="126">nops_ = 1 → 測 M 級 bypass</text>
+  <text class="s mut" x="157" y="142" text-anchor="middle">1</text><text class="s mut" x="193" y="142" text-anchor="middle">2</text><text class="s mut" x="229" y="142" text-anchor="middle">3</text><text class="s mut" x="265" y="142" text-anchor="middle">4</text><text class="s mut" x="301" y="142" text-anchor="middle">5</text><text class="s mut" x="337" y="142" text-anchor="middle">6</text><text class="s mut" x="373" y="142" text-anchor="middle">7</text><text class="s mut" x="409" y="142" text-anchor="middle">8</text>
+  <text x="134" y="166" text-anchor="end">addi x4, x2, imm</text>
+  <rect class="pc" x="140" y="148" width="34" height="26"/><text x="157" y="166" text-anchor="middle">F</text>
+  <rect class="pc" x="176" y="148" width="34" height="26"/><text x="193" y="166" text-anchor="middle">D</text>
+  <rect class="pc" x="212" y="148" width="34" height="26"/><text x="229" y="166" text-anchor="middle">X</text>
+  <rect class="pc-fwd" x="248" y="148" width="34" height="26"/><text class="ac" x="265" y="166" text-anchor="middle">M</text>
+  <rect class="pc" x="284" y="148" width="34" height="26"/><text x="301" y="166" text-anchor="middle">W</text>
+  <text class="mut" x="134" y="196" text-anchor="end">nop</text>
+  <rect class="pc" x="176" y="178" width="34" height="26"/><text x="193" y="196" text-anchor="middle">F</text>
+  <rect class="pc" x="212" y="178" width="34" height="26"/><text x="229" y="196" text-anchor="middle">D</text>
+  <rect class="pc" x="248" y="178" width="34" height="26"/><text x="265" y="196" text-anchor="middle">X</text>
+  <rect class="pc" x="284" y="178" width="34" height="26"/><text x="301" y="196" text-anchor="middle">M</text>
+  <rect class="pc" x="320" y="178" width="34" height="26"/><text x="337" y="196" text-anchor="middle">W</text>
+  <text x="134" y="226" text-anchor="end">addi x7, x4, 0</text>
+  <rect class="pc" x="212" y="208" width="34" height="26"/><text x="229" y="226" text-anchor="middle">F</text>
+  <rect class="pc-fwd" x="248" y="208" width="34" height="26"/><text class="ac" x="265" y="226" text-anchor="middle">D</text>
+  <rect class="pc" x="284" y="208" width="34" height="26"/><text x="301" y="226" text-anchor="middle">X</text>
+  <rect class="pc" x="320" y="208" width="34" height="26"/><text x="337" y="226" text-anchor="middle">M</text>
+  <rect class="pc" x="356" y="208" width="34" height="26"/><text x="373" y="226" text-anchor="middle">W</text>
+  <rect class="grp" x="244" y="144" width="42" height="94"/>
+
+  <text class="hd" x="20" y="266">nops_ = 2 → 測 W 級 bypass</text>
+  <text class="s mut" x="157" y="282" text-anchor="middle">1</text><text class="s mut" x="193" y="282" text-anchor="middle">2</text><text class="s mut" x="229" y="282" text-anchor="middle">3</text><text class="s mut" x="265" y="282" text-anchor="middle">4</text><text class="s mut" x="301" y="282" text-anchor="middle">5</text><text class="s mut" x="337" y="282" text-anchor="middle">6</text><text class="s mut" x="373" y="282" text-anchor="middle">7</text><text class="s mut" x="409" y="282" text-anchor="middle">8</text>
+  <text x="134" y="306" text-anchor="end">addi x4, x2, imm</text>
+  <rect class="pc" x="140" y="288" width="34" height="26"/><text x="157" y="306" text-anchor="middle">F</text>
+  <rect class="pc" x="176" y="288" width="34" height="26"/><text x="193" y="306" text-anchor="middle">D</text>
+  <rect class="pc" x="212" y="288" width="34" height="26"/><text x="229" y="306" text-anchor="middle">X</text>
+  <rect class="pc" x="248" y="288" width="34" height="26"/><text x="265" y="306" text-anchor="middle">M</text>
+  <rect class="pc-fwd" x="284" y="288" width="34" height="26"/><text class="ac" x="301" y="306" text-anchor="middle">W</text>
+  <text class="mut" x="134" y="336" text-anchor="end">nop</text>
+  <rect class="pc" x="176" y="318" width="34" height="26"/><text x="193" y="336" text-anchor="middle">F</text>
+  <rect class="pc" x="212" y="318" width="34" height="26"/><text x="229" y="336" text-anchor="middle">D</text>
+  <rect class="pc" x="248" y="318" width="34" height="26"/><text x="265" y="336" text-anchor="middle">X</text>
+  <rect class="pc" x="284" y="318" width="34" height="26"/><text x="301" y="336" text-anchor="middle">M</text>
+  <rect class="pc" x="320" y="318" width="34" height="26"/><text x="337" y="336" text-anchor="middle">W</text>
+  <text class="mut" x="134" y="366" text-anchor="end">nop</text>
+  <rect class="pc" x="212" y="348" width="34" height="26"/><text x="229" y="366" text-anchor="middle">F</text>
+  <rect class="pc" x="248" y="348" width="34" height="26"/><text x="265" y="366" text-anchor="middle">D</text>
+  <rect class="pc" x="284" y="348" width="34" height="26"/><text x="301" y="366" text-anchor="middle">X</text>
+  <rect class="pc" x="320" y="348" width="34" height="26"/><text x="337" y="366" text-anchor="middle">M</text>
+  <rect class="pc" x="356" y="348" width="34" height="26"/><text x="373" y="366" text-anchor="middle">W</text>
+  <text x="134" y="396" text-anchor="end">addi x7, x4, 0</text>
+  <rect class="pc" x="248" y="378" width="34" height="26"/><text x="265" y="396" text-anchor="middle">F</text>
+  <rect class="pc-fwd" x="284" y="378" width="34" height="26"/><text class="ac" x="301" y="396" text-anchor="middle">D</text>
+  <rect class="pc" x="320" y="378" width="34" height="26"/><text x="337" y="396" text-anchor="middle">X</text>
+  <rect class="pc" x="356" y="378" width="34" height="26"/><text x="373" y="396" text-anchor="middle">M</text>
+  <rect class="pc" x="392" y="378" width="34" height="26"/><text x="409" y="396" text-anchor="middle">W</text>
+  <rect class="grp" x="280" y="284" width="42" height="124"/>
+  <text class="zh s mut" x="440" y="372">nops_ = 3 以上</text>
+  <text class="zh s mut" x="440" y="390">生產者已經寫回</text>
+  <text class="zh s mut" x="440" y="408">regfile，不用 bypass</text>
+  <text class="zh s ac" x="20" y="418">虛線框 = 同一個週期</text>
+</svg>
+</div>
+<figcaption><b>nops_ = 0／1／2 恰好對應 X／M／W 三條 bypass 路徑。</b>這就是為什麼 <code>riscv-add.S</code> 裡 <code>TEST_RR_DEST_BYP</code> 寫了 0、1、2 三次——三條路徑各測一次。</figcaption>
+</figure>
+</div>
+
+<div class="ex">
+<div class="src">tests/riscv/riscv-add.S · 第 45–61 行</div>
+<pre><code>        TEST_RR_DEST_BYP( 0, add, 13, 11, 24 )
+        TEST_RR_DEST_BYP( 1, add, 14, 11, 25 )
+        TEST_RR_DEST_BYP( 2, add, 15, 11, 26 )
+
+        TEST_RR_SRC01_BYP( 0, 0, add, 13, 11, 24 )
+        TEST_RR_SRC01_BYP( 0, 1, add, 14, 11, 25 )
+        ...
+        TEST_RR_SRC10_BYP( 2, 0, add, 15, 11, 26 )</code></pre>
+<p><code>SRC01</code> 與 <code>SRC10</code> 的差別是<b>兩個來源誰先產生</b>——它們用兩個獨立的 nops 參數，把 rs1 和 rs2 兩邊的 bypass mux 分開測，還順便測了「兩條 bypass 同時發生」。</p>
+</div>
+
+<div class="trap"><b>常見錯誤</b><p><code>li x2, src0_</code> <b>不一定是一條指令</b>。組譯器看立即值決定：塞得進 12-bit 有號數就是一條 <code>addi</code>，塞不進就是 <code>lui</code> + <code>addi</code> 兩條。<code>la x2, label</code>（<code>TEST_LD_*</code>、<code>TEST_JALR_SRC0_BYP</code> 用的）更是固定展開成 <code>auipc</code> + <code>addi</code> 兩條。所以圖上的「距離」要以<b>真正寫入目標暫存器的那一條</b>為準——對 <code>DEST_BYP</code> 沒影響（生產者就是 <code>inst_</code> 本身），但對 <code>SRC0_BYP</code> 系列，<code>nops_ = 0</code> 時生產者到消費者之間可能還隔著另一個 <code>li</code> 展開的指令。想確認就 <code>+vcd=1</code> 拉波形看。</p></div>
+
+<h3>Branch 與 jalr 的 bypass 要另外測</h3>
+<p>這兩類指令的消費點不是 ALU operand，所以特別容易漏：</p>
+<div class="ex">
+<div class="src">tests/riscv/riscv-macros.h · 第 236–246、271–277 行</div>
+<pre><code>#define TEST_BR2_SRC01_BYP( src0_nops_, src1_nops_,                     \
+                            inst_, src0_, src1_ )                       \
+    li    x2, src0_;                                                    \
+    TEST_INSERT_NOPS( src0_nops_ );                                     \
+    li    x3, src1_;                                                    \
+    TEST_INSERT_NOPS( src1_nops_ );                                     \
+    inst_ x2, x3, 1f;                                                   \
+    li    x4, 1;                                                        \
+    bne   x0, x4, 2f;                                                   \
+1:  TEST_CHECK_FAIL;                                                    \
+2:                                                                      \
+
+#define TEST_JALR_SRC0_BYP( nops_, inst_ )                              \
+    la x2, 1f;                                                          \
+    TEST_INSERT_NOPS( nops_ );                                          \
+    inst_ x3, x2;                                                       \
+    TEST_CHECK_FAIL;                                                    \
+1:                                                                      \</code></pre>
+<p><code>TEST_BR2_*</code> 測的是「前饋值有沒有正確地經過 op0／op1 mux 進到 X 級的比較邏輯」；<code>TEST_JALR_SRC0_BYP</code> 測的正是<a href="#ch14">第 14 章</a>提過那條最常被漏掉的路徑——<code>jumpreg_targ_Dhl</code>。它如果讀到舊值，就會跳到不存在的位址，測試直接掛掉而不是回報行號。</p>
+</div>
+
+<h3>Load 的 bypass：<code>TEST_LD_DEST_BYP(0, …)</code> 就是 load-use</h3>
+<div class="ex">
+<div class="src">tests/riscv/riscv-lw.S · 第 40–44 行</div>
+<pre><code>        TEST_LD_DEST_BYP( 0, lw, 0, tdata_0, 0x000000ff )
+        TEST_LD_DEST_BYP( 1, lw, 4, tdata_0, 0x00007f00 )
+        TEST_LD_DEST_BYP( 2, lw, 0, tdata_1, 0x00007f00 )
+        TEST_LD_DEST_BYP( 3, lw, 4, tdata_1, 0x00000ff0 )
+        TEST_LD_DEST_BYP( 4, lw, 0, tdata_3, 0x0000700f )</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 600 196" role="img" aria-label="TEST_LD_DEST_BYP 的 nops 等於 0 時就是 load-use：消費者在 D 停一拍，第二拍才從 M 前饋；nops 等於 1 時不需要停，直接從 M 前饋。">
+  <text class="hd" x="20" y="16">nops_ = 0：要停一拍（load-use）</text>
+  <text class="s mut" x="197" y="32" text-anchor="middle">1</text><text class="s mut" x="233" y="32" text-anchor="middle">2</text><text class="s mut" x="269" y="32" text-anchor="middle">3</text><text class="s mut" x="305" y="32" text-anchor="middle">4</text><text class="s mut" x="341" y="32" text-anchor="middle">5</text><text class="s mut" x="377" y="32" text-anchor="middle">6</text><text class="s mut" x="413" y="32" text-anchor="middle">7</text>
+  <text x="174" y="56" text-anchor="end">lw   x4, 0(x2)</text>
+  <rect class="pc" x="180" y="38" width="34" height="26"/><text x="197" y="56" text-anchor="middle">F</text>
+  <rect class="pc" x="216" y="38" width="34" height="26"/><text x="233" y="56" text-anchor="middle">D</text>
+  <rect class="pc" x="252" y="38" width="34" height="26"/><text x="269" y="56" text-anchor="middle">X</text>
+  <rect class="pc-fwd" x="288" y="38" width="34" height="26"/><text class="ac" x="305" y="56" text-anchor="middle">M</text>
+  <rect class="pc" x="324" y="38" width="34" height="26"/><text x="341" y="56" text-anchor="middle">W</text>
+  <text x="174" y="86" text-anchor="end">addi x7, x4, 0</text>
+  <rect class="pc" x="216" y="68" width="34" height="26"/><text x="233" y="86" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="252" y="68" width="34" height="26"/><text class="sq" x="269" y="86" text-anchor="middle">D</text>
+  <rect class="pc-fwd" x="288" y="68" width="34" height="26"/><text class="ac" x="305" y="86" text-anchor="middle">D</text>
+  <rect class="pc" x="324" y="68" width="34" height="26"/><text x="341" y="86" text-anchor="middle">X</text>
+  <rect class="pc" x="360" y="68" width="34" height="26"/><text x="377" y="86" text-anchor="middle">M</text>
+  <rect class="pc" x="396" y="68" width="34" height="26"/><text x="413" y="86" text-anchor="middle">W</text>
+  <path class="a" d="M305 64V68" marker-end="url(#ah)"/>
+
+  <text class="hd" x="20" y="126">nops_ = 1：不用停，直接從 M 前饋</text>
+  <text x="174" y="166" text-anchor="end">lw → nop → addi</text>
+  <rect class="pc" x="180" y="148" width="34" height="26"/><text x="197" y="166" text-anchor="middle">F</text>
+  <rect class="pc" x="216" y="148" width="34" height="26"/><text x="233" y="166" text-anchor="middle">D</text>
+  <rect class="pc" x="252" y="148" width="34" height="26"/><text x="269" y="166" text-anchor="middle">X</text>
+  <rect class="pc-fwd" x="288" y="148" width="34" height="26"/><text class="ac" x="305" y="166" text-anchor="middle">M</text>
+  <rect class="pc" x="324" y="148" width="34" height="26"/><text x="341" y="166" text-anchor="middle">W</text>
+  <text class="zh s ac" x="370" y="166">消費者此時正在 D</text>
+  <text class="zh s mut" x="20" y="190">nops_ = 3、4 兩列測的是「已經寫回 regfile」的正常路徑，順便確認你沒有誤前饋。</text>
+</svg>
+</div>
+<figcaption><b>同一組巨集，<code>nops_</code> 從 0 掃到 4，把 stall 一拍、M 前饋、W 前饋、regfile 讀取四種情況全掃過一遍。</b>load 沒有 X 級 bypass，所以 <code>nops_ = 0</code> 這列在正確的實作上一定會停一拍。</figcaption>
+</figure>
+</div>
+
+<h3>測試過了不代表 bypass 有做</h3>
+<p>這是這個 Objective 最陰險的地方：<b>riscvstall 也會通過全部的 <code>_BYP</code> 測試</b>。stall 給出的答案是正確的，只是慢。所以「<code>make check-asm-riscvbyp</code> 全綠」<u>完全不能</u>證明你的 bypass 在動——它只能證明你沒有把東西弄壞。</p>
+<p>要證明 bypass 有效，唯一的辦法是比<b>週期數</b>：</p>
+<div class="ex">
+<div class="src">shell</div>
+<pre><code>cd $LAB1_ROOT/build
+./riscvstall-sim +exe=../tests/build/vmh/riscv-add.vmh +stats=1
+./riscvbyp-sim   +exe=../tests/build/vmh/riscv-add.vmh +stats=1</code></pre>
+<p>riscvstall 跑 <code>riscv-add</code> 的參考數字是 <code>num_cycles = 468</code>、<code>num_inst = 232</code>、<code>ipc = 0.4957</code>。加上 bypass 之後 <code>num_inst</code> 應該<b>完全一樣</b>（跑的是同一支程式），而 <code>num_cycles</code> 必須明顯下降、<code>ipc</code> 明顯上升。如果兩邊一模一樣，代表：</p>
+<ul>
+<li>bypass mux 接了，但 select 永遠是 0（控制訊號忘了接，或忘了在 <code>Core.v</code> 拉線）；或</li>
+<li><code>stall_hazard_Dhl</code> 還在，hazard 早就被 stall 擋掉，bypass 根本沒機會發生。</li>
+</ul>
+</div>
+
+<h3>自己寫一個測試</h3>
+<p>作業要求至少自己寫一個測試，針對你遇到的 bug 或你想驗證的 bypass 路徑。現成的 <code>_BYP</code> 巨集測不到的三個角落，都很適合拿來寫：</p>
+
+<div class="ex">
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 660 330" role="img" aria-label="三個自訂測試點子的示意圖：一、同一個暫存器連寫兩次驗證優先權；二、load 之後緊接 branch 驗證 load-use 遇上 X 級解析的分支；三、addi 之後緊接 sw 驗證 wdata_Dhl 的 bypass。">
+  <text class="hd" x="20" y="18">① 連續兩次寫同一個暫存器 → 測優先權</text>
+  <rect class="gh" x="20" y="26" width="300" height="76"/>
+  <text class="s" x="34" y="48">addi x1, x0, 1</text>
+  <text class="s" x="34" y="66">addi x1, x0, 2</text>
+  <text class="s" x="34" y="84">add  x3, x1, x0</text>
+  <text class="zh s ac" x="334" y="56">期望 x3 = 2。</text>
+  <text class="zh s ac" x="334" y="74">若優先權寫反，會拿到 1。</text>
+  <text class="zh s mut" x="334" y="92">TEST_CHECK_EQ( x3, 2 )</text>
+
+  <text class="hd" x="20" y="132">② load 之後緊接 branch → load-use 撞上 X 級解析</text>
+  <rect class="gh" x="20" y="140" width="300" height="76"/>
+  <text class="s" x="34" y="162">lw   x1, 0(x2)</text>
+  <text class="s" x="34" y="180">bne  x1, x0, 1f</text>
+  <text class="s mut" x="34" y="198">（分支條件在 X 級才算）</text>
+  <text class="zh s ac" x="334" y="170">D 停一拍，從 M 前饋，</text>
+  <text class="zh s ac" x="334" y="188">再進 X 判斷是否 taken。</text>
+  <text class="zh s mut" x="334" y="206">stall 與 squash 同時發生時最容易壞</text>
+
+  <text class="hd" x="20" y="246">③ 算完馬上 store → 測 wdata_Dhl 的 bypass</text>
+  <rect class="gh" x="20" y="254" width="300" height="60"/>
+  <text class="s" x="34" y="276">addi x1, x0, 7</text>
+  <text class="s" x="34" y="294">sw   x1, 0(x2)</text>
+  <text class="zh s ac" x="334" y="276">存進去的必須是 7。</text>
+  <text class="zh s ac" x="334" y="294">只接 operand mux 的人會存到舊值。</text>
+  <text class="zh s mut" x="334" y="312">再用 lw 讀回來 TEST_CHECK_EQ</text>
+</svg>
+</div>
+<figcaption><b>三個現成巨集掃不到的角落。</b>寫法可以直接用 <code>TEST_CHECK_EQ</code> 湊原始組語，不一定要用巨集。寫完記得加進 <code>tests/riscv/riscv.mk</code> 與 <code>build/Makefile</code> 的 <code>tests</code> 變數，再重新 <code>make</code>。</figcaption>
+</figure>
+</div>
+
+<h3>Objective 3 完成檢查表</h3>
+<div class="tbl"><table>
+<thead><tr><th>#</th><th>項目</th><th>怎麼確認</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td><code>riscvbyp/</code> 跑過 <code>setup.sh</code>，檔名與 <code>`include</code> 都是 riscvbyp</td><td><code>ls riscvbyp</code>、<code>grep -r riscvstall riscvbyp</code> 應為空</td></tr>
+<tr><td class="num">2</td><td><code>build/Makefile</code> 的 5 行 riscvbyp 已取消註解</td><td><code>make</code> 之後有 <code>riscvbyp-sim</code></td></tr>
+<tr><td class="num">3</td><td>Dpath 新增 rs1／rs2 各一顆四選一 bypass mux</td><td>輸入是 regfile／<code>execute_mux_out_Xhl</code>／<code>wb_mux_out_Mhl</code>／<code>wb_mux_out_Whl</code></td></tr>
+<tr><td class="num">4</td><td>bypass 輸出取代了 <code>rf_rdata0/1_Dhl</code> 的<b>所有</b>使用點</td><td><code>grep rf_rdata0_Dhl</code>：只剩 mux 輸入那一處</td></tr>
+<tr><td class="num">5</td><td>Ctrl 新增兩條 select，且三個檔案都接好</td><td>CoreCtrl output、Core wire + 兩個實例、CoreDpath input</td></tr>
+<tr><td class="num">6</td><td>條件有 <code>inst_val_*</code>、<code>rf_wen_*</code>、<code>!= 5'd0</code>、<code>rs1_en/rs2_en</code> 把關</td><td>逐項對照 <code>stall_hazard_Dhl</code> 的六項</td></tr>
+<tr><td class="num">7</td><td>優先權是 X &gt; M &gt; W &gt; regfile</td><td>自己寫的雙寫測試（點子 ①）</td></tr>
+<tr><td class="num">8</td><td><code>is_load_Xhl</code> 存在，load-use 只停一拍</td><td><code>TEST_LD_DEST_BYP(0, …)</code> 通過</td></tr>
+<tr><td class="num">9</td><td><code>stall_hazard_Dhl</code> 已被 load-use 條件取代</td><td>原本那六項不再出現在 <code>stall_Dhl</code> 裡</td></tr>
+<tr class="hi"><td class="num">10</td><td><b>週期數真的變少了</b></td><td><code>+stats=1</code> 比較 riscvstall 與 riscvbyp 的 <code>num_cycles</code></td></tr>
+<tr><td class="num">11</td><td><code>-rand-</code> 版本也通過</td><td><code>make check-asm-rand-riscvbyp</code></td></tr>
+<tr><td class="num">12</td><td>至少一個自訂測試，已加入 <code>riscv.mk</code> 與 Makefile</td><td><code>make check-asm-riscvbyp</code> 跑得到它</td></tr>
+</tbody>
+</table></div>
+
+<p>做完 Objective 3，這顆 CPU 只剩下三種會停的理由：load-use、muldiv 還在算、以及分支猜錯帶來的 squash。<a href="#ch17">下一部分</a>要處理的就是其中的 muldiv。</p>
+</section>
