@@ -182,6 +182,31 @@ tr.hi td{background:var(--accent-soft)}
 .quiz summary{cursor:pointer;color:var(--accent);font-size:14px}
 .quiz p:last-child{margin-bottom:0}
 
+/* ---- appendix / quick reference ---- */
+pre.ref{font-size:12.5px;line-height:1.55;max-height:none}
+pre.ref .hljs-comment{font-style:normal}
+pre.ref .hljs-comment[id],pre.ref .hljs-comment[data-ref]{color:var(--ctl);font-style:normal;font-weight:600;scroll-margin-top:70px}
+.reftbl{font-size:13.5px;min-width:760px}
+.reftbl td{padding:4px 10px;line-height:1.5}
+.reftbl td.mac{white-space:nowrap}
+.reftbl .bitr{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.reftbl td.stg{font-family:var(--mono);font-weight:600;color:var(--seq);text-align:center}
+.reftbl td:last-child{white-space:nowrap}
+.refhint{font-size:13.5px;color:var(--muted);max-width:none}
+kbd{font:12px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface)}
+h3[id],h4[id]{scroll-margin-top:16px}
+.qr-btn{position:fixed;right:20px;bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);z-index:30;font:600 13.5px var(--sans);padding:9px 14px;border-radius:999px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.qr-btn:hover{filter:brightness(1.08)}
+.qr{position:fixed;top:0;right:0;bottom:0;z-index:40;width:min(880px,100vw);background:var(--bg);border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.22);display:flex;flex-direction:column}
+.qr[hidden]{display:none}
+.qr-head{display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface);flex-wrap:wrap}
+.qr-head b{margin-right:auto;font-size:14.5px}
+.qr-head button,.qr-head a{font:13px var(--sans);padding:5px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);cursor:pointer;text-decoration:none}
+.qr-head button:hover,.qr-head a:hover{background:var(--accent-soft)}
+.qr-body{overflow:auto;padding:4px 20px 40px;-webkit-overflow-scrolling:touch}
+.qr-body h2,.qr-body .eyebrow,.qr-body>p:not(.refhint){display:none}
+.qr-body h3{margin-top:22px}
+
 @media (max-width: 900px){
   .shell{grid-template-columns:minmax(0,1fr);gap:16px;padding-inline:16px;padding-block:16px 72px}
   .side{position:static;max-height:none;border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:0}
@@ -222,7 +247,7 @@ tr.hi td{background:var(--accent-soft)}
 <header class="hero">
   <h1>從一道 RISC-V 指令，到一顆會跑 C 程式的管線 CPU</h1>
   <p>這是<a href="../verilog-course/index.html">《Verilog 電路圖解課》</a>的進階篇。基礎篇教你「一行 Verilog 是什麼電路」；這一篇回答另一個問題：<b>這些電路為什麼要這樣接？</b>我們從 RISC-V 指令集開始，跟著指令走過 <code>lab1</code> 的五級管線，看懂 stall、squash、bypass，最後接上管線式乘除法器——正好對應作業的四個 Objective。</p>
-  <p>範例一律取自 <code>lab1/lab1</code> 的原始碼並附檔名與行號；標示 <code>示意範例</code> 的是為了說明另外寫的。想查某條線實際接到哪裡，可以搭配<a href="../riscvstall-datapath/riscvstall-datapath.html">管線接線圖</a>與<a href="../symbol-lookup/index.html">符號查詢</a>一起看。</p>
+  <p>範例一律取自 <code>lab1/lab1</code> 的原始碼並附檔名與行號；標示 <code>示意範例</code> 的是為了說明另外寫的。行號以發下來的原始檔為準——你自己改過檔案之後，後面的行號會跟著往下移。想查某條線實際接到哪裡，可以搭配<a href="../riscvstall-datapath/riscvstall-datapath.html">管線接線圖</a>與<a href="../symbol-lookup/index.html">符號查詢</a>一起看。</p>
   <ul class="legend" aria-label="圖例">
     <li><svg viewBox="0 0 38 16"><path class="w" d="M0 8H38"/></svg>資料線</li>
     <li><svg viewBox="0 0 38 16"><path class="c" d="M0 8H38"/></svg>控制訊號</li>

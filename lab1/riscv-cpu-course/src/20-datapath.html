@@ -409,6 +409,7 @@ end</code></pre>
 <p>所有值都定義在 <code>riscvstall-CoreCtrl.v</code> 第 249–359 行的 <code>localparam</code> 區；<code>casez</code> 表頭的欄位名稱（<code>val</code>、<code>j taken</code>…）對應到 <code>InstMsg.v</code> 第 167–187 行的巨集（<code>INST_VAL</code>、<code>J_EN</code>…）。下面把 20 個欄位分成五組，每一組先看<b>它控制的那塊硬體</b>，再逐值說明。表格裡「編碼」是 <code>localparam</code> 的實際數值——也就是 mux 的第幾個輸入，在波形上看到的就是這個數字。</p>
 <div class="note"><b>怎麼用這一節</b><p>填新的一列時，由左到右一欄一欄問自己表格最右邊那個問題（「什麼時候填它」）。每一欄都只是一個選擇題，沒有一欄需要發明新東西。</p></div>
 
+<div class="note"><b>只是要查值？</b><p>這一節是「為什麼」。填表時要快速查「這一欄有哪些值可以填」，用<a href="#chA">附錄 A：控制表速查</a>——或按右下角的 <b>控制表速查</b>（鍵盤 <kbd>?</kbd>），它會蓋在目前的頁面上，不用滑來滑去。</p></div>
 <h4>速覽：20 欄 → 5 組</h4>
 <div class="tbl"><table>
 <thead><tr><th>組</th><th>欄位（casez 表頭的寫法）</th><th>一句話</th></tr></thead>
@@ -419,7 +420,7 @@ end</code></pre>
 <tr><td>④ 記憶體</td><td class="num"><code>mem rq</code> <code>mem len</code> <code>memresp muxsel</code></td><td>要不要存取記憶體？幾個 byte？讀回來怎麼延伸？</td></tr>
 <tr><td>⑤ 寫回</td><td class="num"><code>wb muxsel</code> <code>rf wen</code> <code>wa</code> <code>csr wen</code></td><td>最後的值從哪來？寫到哪個暫存器？</td></tr>
 </tbody></table></div>
-<h4>① 轉向：<code>val</code>、<code>j taken</code>、<code>br type</code>、<code>pc muxsel</code></h4>
+<h4 id="fld1">① 轉向：<code>val</code>、<code>j taken</code>、<code>br type</code>、<code>pc muxsel</code></h4>
 <figure>
 <div class="fig-scroll">
 <svg viewBox="0 0 760 280" role="img" aria-label="PC 多工器有四個輸入，編號 0 到 3 分別是 pm_p 的 pc 加 4、pm_b 的分支目標、pm_j 的 jal 目標、pm_r 的 jalr 目標；選擇線 pc_mux_sel_Phl 由一段優先權邏輯產生：X 級分支成立時強制選 pm_b，否則 D 級有跳躍時採用控制表的 PC_SEL 欄，其餘情況選 pm_p。">
@@ -488,7 +489,7 @@ end</code></pre>
 <tr><td><code>pm_r</code></td><td class="num">2'd3</td><td>下一個 PC = <code>jumpreg_targ_Dhl</code> = <code>(rs1 + imm_i)</code> 最低位清 0</td><td><code>jalr</code></td></tr>
 <tr><td><code>pm_x</code></td><td class="num">2'bx</td><td>don't care</td><td><code>j taken = n</code> 的列理論上可以，但現有程式碼一律寫 <code>pm_p</code>，照做就好</td></tr>
 </tbody></table></div>
-<h4>② 運算元：<code>op0 muxsel</code>、<code>rs1 en</code>、<code>op1 muxsel</code>、<code>rs2 en</code></h4>
+<h4 id="fld2">② 運算元：<code>op0 muxsel</code>、<code>rs1 en</code>、<code>op1 muxsel</code>、<code>rs2 en</code></h4>
 <figure>
 <div class="fig-scroll">
 <svg viewBox="0 0 760 330" role="img" aria-label="運算元多工器：op0 多工器有四個輸入，編號 0 到 3 為 am_rdat 的 rs1 值、am_pc、am_pc4、am_0；op1 多工器有七個輸入，編號 0 到 6 為 bm_rdat 的 rs2 值、bm_shamt、bm_imm_u、bm_imm_sb、bm_imm_i、bm_imm_s、bm_0。兩個輸出存進 X 級暫存器後送到 ALU 與乘除法器。RS1_EN 與 RS2_EN 不接到多工器，而是送到冒險偵測邏輯。">
@@ -568,7 +569,7 @@ end</code></pre>
 <tr><td><code>n</code></td><td class="num">1'd0</td><td>不比對。<code>inst[19:15]</code>／<code>inst[24:20]</code> 那幾個位元對這道指令來說是立即數的一部分或沒意義</td><td><code>lui</code>／<code>auipc</code>／<code>jal</code> 兩個都是 <code>n</code>；I-type（<code>addi</code>、load）的 <code>rs2 en = n</code></td></tr>
 </tbody></table></div>
 <div class="trap"><b><code>en</code> 和 <code>muxsel</code> 不一定同進退</b><p>直覺是「<code>op0 = am_rdat</code> ⇔ <code>rs1 en = y</code>」，但有兩個反例。<b>store</b>：<code>op1 = bm_imm_s</code>，但 <code>rs2 en = y</code>，因為 rs2 的值走 <code>wdata</code> 那條路進記憶體。<b><code>jalr</code></b>：<code>op0 = am_pc4</code>，但它用 rs1 算跳躍目標（<code>jumpreg_targ_Dhl</code> 直接讀 <code>rf_rdata0_Dhl</code>），所以 <code>rs1 en</code> 必須是 <code>y</code>。填錯成 <code>n</code> 的後果：前一道指令剛好寫同一個暫存器時，讀到舊值——而且只有在指令「靠得夠近」時才錯，很難重現。填錯成 <code>y</code> 的後果比較輕：結果正確，只是偶爾多 stall。</p></div>
-<h4>③ 執行：<code>alu fn</code>、<code>md fn</code>、<code>md en</code>、<code>md muxsel</code>、<code>ex muxsel</code></h4>
+<h4 id="fld3">③ 執行：<code>alu fn</code>、<code>md fn</code>、<code>md en</code>、<code>md muxsel</code>、<code>ex muxsel</code></h4>
 <figure>
 <div class="fig-scroll">
 <svg viewBox="0 0 760 284" role="img" aria-label="X 級的五個控制欄位：ALU_FN 選 ALU 的運算；MULDIV_FN 與 MULDIV_EN 送進迭代式乘除法器；乘除法器的 64 位元結果經 MULDIV_SEL 控制的二選一多工器取低 32 位元或高 32 位元；最後 EX_SEL 控制的 execute 多工器在 ALU 輸出與乘除法輸出之間二選一，結果存進 M 級暫存器。">
@@ -663,7 +664,7 @@ end</code></pre>
 <tr><td><code>em_md</code></td><td class="num">1'd1</td><td>取 <code>muldiv_mux_out_Xhl</code></td><td>M 指令</td></tr>
 <tr><td><code>em_x</code></td><td class="num">1'bx</td><td>don't care</td><td>X 級的結果沒有人要：load（寫回的是記憶體回應）、store 和分支（根本不寫回）。注意這不影響記憶體位址——位址是直接從 <code>alu_out_Xhl</code> 拉的，不經過這顆 mux</td></tr>
 </tbody></table></div>
-<h4>④ 記憶體：<code>mem rq</code>、<code>mem len</code>、<code>memresp muxsel</code></h4>
+<h4 id="fld4">④ 記憶體：<code>mem rq</code>、<code>mem len</code>、<code>memresp muxsel</code></h4>
 <figure>
 <div class="fig-scroll">
 <svg viewBox="0 0 780 250" role="img" aria-label="記憶體相關的三個控制欄位：MEM_REQ 同時產生請求有效訊號 dmemreq_val 與讀寫旗標 dmemreq_msg_rw，MEM_LEN 成為請求長度 dmemreq_msg_len，位址來自 ALU 輸出、寫入資料來自 wdata_Xhl；記憶體的回應分成五條支線，由 MEM_SEL 控制的五選一多工器挑出整字、有號位元組、無號位元組、有號半字或無號半字。">
@@ -733,7 +734,7 @@ end</code></pre>
 <tr><td><code>dmm_hu</code></td><td class="num">3'd4</td><td>取 <code>[15:0]</code>，高 16 位元補 0</td><td><code>lhu</code></td></tr>
 <tr><td><code>dmm_x</code></td><td class="num">3'bx</td><td>don't care</td><td>不是 load 的列。（現成的 <code>sw</code> 那列寫的是 <code>dmm_w</code>，也沒錯——store 不寫回，這顆 mux 的輸出沒人看）</td></tr>
 </tbody></table></div>
-<h4>⑤ 寫回：<code>wb muxsel</code>、<code>rf wen</code>、<code>wa</code>、<code>csr wen</code></h4>
+<h4 id="fld5">⑤ 寫回：<code>wb muxsel</code>、<code>rf wen</code>、<code>wa</code>、<code>csr wen</code></h4>
 <figure>
 <div class="fig-scroll">
 <svg viewBox="0 0 760 250" role="img" aria-label="寫回相關的四個控制欄位：WB_SEL 控制寫回多工器在 X 級結果與記憶體回應之間二選一，輸出存進 W 級暫存器成為 wb_mux_out_Whl；它同時是暫存器檔的寫入資料與 CSR 的寫入資料。RF_WEN 與 RF_WADDR 經過三級控制管線暫存器成為暫存器檔的寫入致能與寫入位址；CSR_WEN 同樣管線化到 W 級，控制 csr_status 是否更新。">
@@ -1645,6 +1646,7 @@ assign branch_cond_geu_Xhl   = diffSigns_Xhl ? op0_mux_out_Xhl[31] : ~alu_out_Xh
 <figcaption><b>一次一道，加完就測。</b>把二十道指令一口氣寫完再測，你會拿到一堆同時失敗的測試而分不出誰是誰。<code>+vcd=1</code> 產生的波形檔在 <code>tests/build/vmh/</code>，用 <code>gtkwave</code> 打開，先看 <code>cs</code> 和你那道指令在 X 級的 <code>alu_out_Xhl</code>。</figcaption>
 </figure>
 
+<p>填表時把<a href="#chA">附錄 A：控制表速查</a>開在旁邊（右下角按鈕或鍵盤 <kbd>?</kbd>）：欄位順序、每一欄可填的值、現成的列都在那一頁。</p>
 <h3>範例：把 lh 加進去（講義 3.2 節）</h3>
 <p>照流程走一遍。<b>①</b> 最像的是 <code>lw</code>：同樣是 load、同樣用 I 型立即值、同樣把 <code>rs1 + imm_i</code> 當位址。<b>②</b> 差異只有兩點：讀的是<b>半字</b>（2 bytes）而不是整字；讀回來要<b>符號延伸</b>成 32 位元。<b>③</b> 這兩點各對到一欄：<code>mem len</code> 從 <code>ml_w</code> 改成 <code>ml_h</code>；<code>memresp muxsel</code> 從 <code>dmm_w</code> 改成 <code>dmm_h</code>。其他十八欄原封不動。</p>
 <div class="ex">

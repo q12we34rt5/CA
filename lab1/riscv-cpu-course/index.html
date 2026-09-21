@@ -189,6 +189,31 @@ tr.hi td{background:var(--accent-soft)}
 .quiz summary{cursor:pointer;color:var(--accent);font-size:14px}
 .quiz p:last-child{margin-bottom:0}
 
+/* ---- appendix / quick reference ---- */
+pre.ref{font-size:12.5px;line-height:1.55;max-height:none}
+pre.ref .hljs-comment{font-style:normal}
+pre.ref .hljs-comment[id],pre.ref .hljs-comment[data-ref]{color:var(--ctl);font-style:normal;font-weight:600;scroll-margin-top:70px}
+.reftbl{font-size:13.5px;min-width:760px}
+.reftbl td{padding:4px 10px;line-height:1.5}
+.reftbl td.mac{white-space:nowrap}
+.reftbl .bitr{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.reftbl td.stg{font-family:var(--mono);font-weight:600;color:var(--seq);text-align:center}
+.reftbl td:last-child{white-space:nowrap}
+.refhint{font-size:13.5px;color:var(--muted);max-width:none}
+kbd{font:12px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--surface)}
+h3[id],h4[id]{scroll-margin-top:16px}
+.qr-btn{position:fixed;right:20px;bottom:calc(env(safe-area-inset-bottom, 0px) + 20px);z-index:30;font:600 13.5px var(--sans);padding:9px 14px;border-radius:999px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+.qr-btn:hover{filter:brightness(1.08)}
+.qr{position:fixed;top:0;right:0;bottom:0;z-index:40;width:min(880px,100vw);background:var(--bg);border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.22);display:flex;flex-direction:column}
+.qr[hidden]{display:none}
+.qr-head{display:flex;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface);flex-wrap:wrap}
+.qr-head b{margin-right:auto;font-size:14.5px}
+.qr-head button,.qr-head a{font:13px var(--sans);padding:5px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);cursor:pointer;text-decoration:none}
+.qr-head button:hover,.qr-head a:hover{background:var(--accent-soft)}
+.qr-body{overflow:auto;padding:4px 20px 40px;-webkit-overflow-scrolling:touch}
+.qr-body h2,.qr-body .eyebrow,.qr-body>p:not(.refhint){display:none}
+.qr-body h3{margin-top:22px}
+
 @media (max-width: 900px){
   .shell{grid-template-columns:minmax(0,1fr);gap:16px;padding-inline:16px;padding-block:16px 72px}
   .side{position:static;max-height:none;border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:0}
@@ -229,7 +254,7 @@ tr.hi td{background:var(--accent-soft)}
 <header class="hero">
   <h1>從一道 RISC-V 指令，到一顆會跑 C 程式的管線 CPU</h1>
   <p>這是<a href="../verilog-course/index.html">《Verilog 電路圖解課》</a>的進階篇。基礎篇教你「一行 Verilog 是什麼電路」；這一篇回答另一個問題：<b>這些電路為什麼要這樣接？</b>我們從 RISC-V 指令集開始，跟著指令走過 <code>lab1</code> 的五級管線，看懂 stall、squash、bypass，最後接上管線式乘除法器——正好對應作業的四個 Objective。</p>
-  <p>範例一律取自 <code>lab1/lab1</code> 的原始碼並附檔名與行號；標示 <code>示意範例</code> 的是為了說明另外寫的。想查某條線實際接到哪裡，可以搭配<a href="../riscvstall-datapath/riscvstall-datapath.html">管線接線圖</a>與<a href="../symbol-lookup/index.html">符號查詢</a>一起看。</p>
+  <p>範例一律取自 <code>lab1/lab1</code> 的原始碼並附檔名與行號；標示 <code>示意範例</code> 的是為了說明另外寫的。行號以發下來的原始檔為準——你自己改過檔案之後，後面的行號會跟著往下移。想查某條線實際接到哪裡，可以搭配<a href="../riscvstall-datapath/riscvstall-datapath.html">管線接線圖</a>與<a href="../symbol-lookup/index.html">符號查詢</a>一起看。</p>
   <ul class="legend" aria-label="圖例">
     <li><svg viewBox="0 0 38 16"><path class="w" d="M0 8H38"/></svg>資料線</li>
     <li><svg viewBox="0 0 38 16"><path class="c" d="M0 8H38"/></svg>控制訊號</li>
@@ -1854,6 +1879,7 @@ end</code></pre>
 <p>所有值都定義在 <code>riscvstall-CoreCtrl.v</code> 第 249–359 行的 <code>localparam</code> 區；<code>casez</code> 表頭的欄位名稱（<code>val</code>、<code>j taken</code>…）對應到 <code>InstMsg.v</code> 第 167–187 行的巨集（<code>INST_VAL</code>、<code>J_EN</code>…）。下面把 20 個欄位分成五組，每一組先看<b>它控制的那塊硬體</b>，再逐值說明。表格裡「編碼」是 <code>localparam</code> 的實際數值——也就是 mux 的第幾個輸入，在波形上看到的就是這個數字。</p>
 <div class="note"><b>怎麼用這一節</b><p>填新的一列時，由左到右一欄一欄問自己表格最右邊那個問題（「什麼時候填它」）。每一欄都只是一個選擇題，沒有一欄需要發明新東西。</p></div>
 
+<div class="note"><b>只是要查值？</b><p>這一節是「為什麼」。填表時要快速查「這一欄有哪些值可以填」，用<a href="#chA">附錄 A：控制表速查</a>——或按右下角的 <b>控制表速查</b>（鍵盤 <kbd>?</kbd>），它會蓋在目前的頁面上，不用滑來滑去。</p></div>
 <h4>速覽：20 欄 → 5 組</h4>
 <div class="tbl"><table>
 <thead><tr><th>組</th><th>欄位（casez 表頭的寫法）</th><th>一句話</th></tr></thead>
@@ -1864,7 +1890,7 @@ end</code></pre>
 <tr><td>④ 記憶體</td><td class="num"><code>mem rq</code> <code>mem len</code> <code>memresp muxsel</code></td><td>要不要存取記憶體？幾個 byte？讀回來怎麼延伸？</td></tr>
 <tr><td>⑤ 寫回</td><td class="num"><code>wb muxsel</code> <code>rf wen</code> <code>wa</code> <code>csr wen</code></td><td>最後的值從哪來？寫到哪個暫存器？</td></tr>
 </tbody></table></div>
-<h4>① 轉向：<code>val</code>、<code>j taken</code>、<code>br type</code>、<code>pc muxsel</code></h4>
+<h4 id="fld1">① 轉向：<code>val</code>、<code>j taken</code>、<code>br type</code>、<code>pc muxsel</code></h4>
 <figure>
 <div class="fig-scroll">
 <svg viewBox="0 0 760 280" role="img" style="max-width:874px" aria-label="PC 多工器有四個輸入，編號 0 到 3 分別是 pm_p 的 pc 加 4、pm_b 的分支目標、pm_j 的 jal 目標、pm_r 的 jalr 目標；選擇線 pc_mux_sel_Phl 由一段優先權邏輯產生：X 級分支成立時強制選 pm_b，否則 D 級有跳躍時採用控制表的 PC_SEL 欄，其餘情況選 pm_p。">
@@ -1933,7 +1959,7 @@ end</code></pre>
 <tr><td><code>pm_r</code></td><td class="num">2'd3</td><td>下一個 PC = <code>jumpreg_targ_Dhl</code> = <code>(rs1 + imm_i)</code> 最低位清 0</td><td><code>jalr</code></td></tr>
 <tr><td><code>pm_x</code></td><td class="num">2'bx</td><td>don't care</td><td><code>j taken = n</code> 的列理論上可以，但現有程式碼一律寫 <code>pm_p</code>，照做就好</td></tr>
 </tbody></table></div>
-<h4>② 運算元：<code>op0 muxsel</code>、<code>rs1 en</code>、<code>op1 muxsel</code>、<code>rs2 en</code></h4>
+<h4 id="fld2">② 運算元：<code>op0 muxsel</code>、<code>rs1 en</code>、<code>op1 muxsel</code>、<code>rs2 en</code></h4>
 <figure>
 <div class="fig-scroll">
 <svg viewBox="0 0 760 330" role="img" style="max-width:874px" aria-label="運算元多工器：op0 多工器有四個輸入，編號 0 到 3 為 am_rdat 的 rs1 值、am_pc、am_pc4、am_0；op1 多工器有七個輸入，編號 0 到 6 為 bm_rdat 的 rs2 值、bm_shamt、bm_imm_u、bm_imm_sb、bm_imm_i、bm_imm_s、bm_0。兩個輸出存進 X 級暫存器後送到 ALU 與乘除法器。RS1_EN 與 RS2_EN 不接到多工器，而是送到冒險偵測邏輯。">
@@ -2013,7 +2039,7 @@ end</code></pre>
 <tr><td><code>n</code></td><td class="num">1'd0</td><td>不比對。<code>inst[19:15]</code>／<code>inst[24:20]</code> 那幾個位元對這道指令來說是立即數的一部分或沒意義</td><td><code>lui</code>／<code>auipc</code>／<code>jal</code> 兩個都是 <code>n</code>；I-type（<code>addi</code>、load）的 <code>rs2 en = n</code></td></tr>
 </tbody></table></div>
 <div class="trap"><b><code>en</code> 和 <code>muxsel</code> 不一定同進退</b><p>直覺是「<code>op0 = am_rdat</code> ⇔ <code>rs1 en = y</code>」，但有兩個反例。<b>store</b>：<code>op1 = bm_imm_s</code>，但 <code>rs2 en = y</code>，因為 rs2 的值走 <code>wdata</code> 那條路進記憶體。<b><code>jalr</code></b>：<code>op0 = am_pc4</code>，但它用 rs1 算跳躍目標（<code>jumpreg_targ_Dhl</code> 直接讀 <code>rf_rdata0_Dhl</code>），所以 <code>rs1 en</code> 必須是 <code>y</code>。填錯成 <code>n</code> 的後果：前一道指令剛好寫同一個暫存器時，讀到舊值——而且只有在指令「靠得夠近」時才錯，很難重現。填錯成 <code>y</code> 的後果比較輕：結果正確，只是偶爾多 stall。</p></div>
-<h4>③ 執行：<code>alu fn</code>、<code>md fn</code>、<code>md en</code>、<code>md muxsel</code>、<code>ex muxsel</code></h4>
+<h4 id="fld3">③ 執行：<code>alu fn</code>、<code>md fn</code>、<code>md en</code>、<code>md muxsel</code>、<code>ex muxsel</code></h4>
 <figure>
 <div class="fig-scroll">
 <svg viewBox="0 0 760 284" role="img" style="max-width:874px" aria-label="X 級的五個控制欄位：ALU_FN 選 ALU 的運算；MULDIV_FN 與 MULDIV_EN 送進迭代式乘除法器；乘除法器的 64 位元結果經 MULDIV_SEL 控制的二選一多工器取低 32 位元或高 32 位元；最後 EX_SEL 控制的 execute 多工器在 ALU 輸出與乘除法輸出之間二選一，結果存進 M 級暫存器。">
@@ -2108,7 +2134,7 @@ end</code></pre>
 <tr><td><code>em_md</code></td><td class="num">1'd1</td><td>取 <code>muldiv_mux_out_Xhl</code></td><td>M 指令</td></tr>
 <tr><td><code>em_x</code></td><td class="num">1'bx</td><td>don't care</td><td>X 級的結果沒有人要：load（寫回的是記憶體回應）、store 和分支（根本不寫回）。注意這不影響記憶體位址——位址是直接從 <code>alu_out_Xhl</code> 拉的，不經過這顆 mux</td></tr>
 </tbody></table></div>
-<h4>④ 記憶體：<code>mem rq</code>、<code>mem len</code>、<code>memresp muxsel</code></h4>
+<h4 id="fld4">④ 記憶體：<code>mem rq</code>、<code>mem len</code>、<code>memresp muxsel</code></h4>
 <figure>
 <div class="fig-scroll">
 <svg viewBox="0 0 780 250" role="img" style="max-width:897px" aria-label="記憶體相關的三個控制欄位：MEM_REQ 同時產生請求有效訊號 dmemreq_val 與讀寫旗標 dmemreq_msg_rw，MEM_LEN 成為請求長度 dmemreq_msg_len，位址來自 ALU 輸出、寫入資料來自 wdata_Xhl；記憶體的回應分成五條支線，由 MEM_SEL 控制的五選一多工器挑出整字、有號位元組、無號位元組、有號半字或無號半字。">
@@ -2178,7 +2204,7 @@ end</code></pre>
 <tr><td><code>dmm_hu</code></td><td class="num">3'd4</td><td>取 <code>[15:0]</code>，高 16 位元補 0</td><td><code>lhu</code></td></tr>
 <tr><td><code>dmm_x</code></td><td class="num">3'bx</td><td>don't care</td><td>不是 load 的列。（現成的 <code>sw</code> 那列寫的是 <code>dmm_w</code>，也沒錯——store 不寫回，這顆 mux 的輸出沒人看）</td></tr>
 </tbody></table></div>
-<h4>⑤ 寫回：<code>wb muxsel</code>、<code>rf wen</code>、<code>wa</code>、<code>csr wen</code></h4>
+<h4 id="fld5">⑤ 寫回：<code>wb muxsel</code>、<code>rf wen</code>、<code>wa</code>、<code>csr wen</code></h4>
 <figure>
 <div class="fig-scroll">
 <svg viewBox="0 0 760 250" role="img" style="max-width:874px" aria-label="寫回相關的四個控制欄位：WB_SEL 控制寫回多工器在 X 級結果與記憶體回應之間二選一，輸出存進 W 級暫存器成為 wb_mux_out_Whl；它同時是暫存器檔的寫入資料與 CSR 的寫入資料。RF_WEN 與 RF_WADDR 經過三級控制管線暫存器成為暫存器檔的寫入致能與寫入位址；CSR_WEN 同樣管線化到 W 級，控制 csr_status 是否更新。">
@@ -3090,6 +3116,7 @@ assign branch_cond_geu_Xhl   = diffSigns_Xhl ? op0_mux_out_Xhl[31] : ~alu_out_Xh
 <figcaption><b>一次一道，加完就測。</b>把二十道指令一口氣寫完再測，你會拿到一堆同時失敗的測試而分不出誰是誰。<code>+vcd=1</code> 產生的波形檔在 <code>tests/build/vmh/</code>，用 <code>gtkwave</code> 打開，先看 <code>cs</code> 和你那道指令在 X 級的 <code>alu_out_Xhl</code>。</figcaption>
 </figure>
 
+<p>填表時把<a href="#chA">附錄 A：控制表速查</a>開在旁邊（右下角按鈕或鍵盤 <kbd>?</kbd>）：欄位順序、每一欄可填的值、現成的列都在那一頁。</p>
 <h3>範例：把 lh 加進去（講義 3.2 節）</h3>
 <p>照流程走一遍。<b>①</b> 最像的是 <code>lw</code>：同樣是 load、同樣用 I 型立即值、同樣把 <code>rs1 + imm_i</code> 當位址。<b>②</b> 差異只有兩點：讀的是<b>半字</b>（2 bytes）而不是整字；讀回來要<b>符號延伸</b>成 32 位元。<b>③</b> 這兩點各對到一欄：<code>mem len</code> 從 <code>ml_w</code> 改成 <code>ml_h</code>；<code>memresp muxsel</code> 從 <code>dmm_w</code> 改成 <code>dmm_h</code>。其他十八欄原封不動。</p>
 <div class="ex">
@@ -7303,31 +7330,7 @@ else
 <h3>全課速查表</h3>
 
 <h4>控制表欄位與合法值</h4>
-<div class="tbl"><table>
-<thead><tr><th>欄位</th><th>合法值</th><th>用在哪一階段</th></tr></thead>
-<tbody>
-<tr><td><code>inst_val</code></td><td><code>y</code> / <code>n</code></td><td>D（<code>n</code> 會觸發 illegal assertion）</td></tr>
-<tr><td><code>j_en</code></td><td><code>y</code> / <code>n</code></td><td>D（jal/jalr 在 D 就重導 PC）</td></tr>
-<tr><td><code>br_sel</code></td><td><code>br_none</code> <code>br_beq</code> <code>br_bne</code> <code>br_blt</code> <code>br_bltu</code> <code>br_bge</code> <code>br_bgeu</code> <code>br_x</code></td><td>X</td></tr>
-<tr><td><code>pc_sel</code></td><td><code>pm_p</code>(pc+4) <code>pm_b</code>(branch) <code>pm_j</code>(jump) <code>pm_r</code>(jr) <code>pm_x</code></td><td>P</td></tr>
-<tr><td><code>op0_sel</code></td><td><code>am_rdat</code> <code>am_pc</code> <code>am_pc4</code> <code>am_0</code> <code>am_x</code></td><td>D→X</td></tr>
-<tr><td><code>rs1_en</code></td><td><code>y</code> / <code>n</code></td><td>D（冒險偵測用）</td></tr>
-<tr><td><code>op1_sel</code></td><td><code>bm_rdat</code> <code>bm_shamt</code> <code>bm_imm_u</code> <code>bm_imm_sb</code> <code>bm_imm_i</code> <code>bm_imm_s</code> <code>bm_0</code> <code>bm_x</code></td><td>D→X</td></tr>
-<tr><td><code>rs2_en</code></td><td><code>y</code> / <code>n</code></td><td>D（冒險偵測用）</td></tr>
-<tr><td><code>alu_fn</code></td><td><code>alu_add</code> <code>alu_sub</code> <code>alu_sll</code> <code>alu_or</code> <code>alu_lt</code> <code>alu_ltu</code> <code>alu_and</code> <code>alu_xor</code> <code>alu_nor</code> <code>alu_srl</code> <code>alu_sra</code> <code>alu_x</code></td><td>X</td></tr>
-<tr><td><code>muldiv_fn</code></td><td><code>md_mul</code> <code>md_div</code> <code>md_divu</code> <code>md_rem</code> <code>md_remu</code> <code>md_x</code></td><td>X</td></tr>
-<tr><td><code>muldiv_en</code></td><td><code>y</code> / <code>n</code></td><td>D→X</td></tr>
-<tr><td><code>muldiv_sel</code></td><td><code>mdm_l</code>(低 32) <code>mdm_u</code>(高 32) <code>mdm_x</code></td><td>X</td></tr>
-<tr><td><code>ex_sel</code></td><td><code>em_alu</code> <code>em_md</code> <code>em_x</code></td><td>X</td></tr>
-<tr><td><code>mem_req</code></td><td><code>nr</code> <code>ld</code> <code>st</code></td><td>X</td></tr>
-<tr><td><code>mem_len</code></td><td><code>ml_w</code> <code>ml_b</code> <code>ml_h</code> <code>ml_x</code></td><td>X</td></tr>
-<tr><td><code>memresp_sel</code></td><td><code>dmm_w</code> <code>dmm_b</code> <code>dmm_bu</code> <code>dmm_h</code> <code>dmm_hu</code> <code>dmm_x</code></td><td>M</td></tr>
-<tr><td><code>wb_sel</code></td><td><code>wm_alu</code> <code>wm_mem</code> <code>wm_x</code></td><td>M→W</td></tr>
-<tr><td><code>rf_wen</code></td><td><code>y</code> / <code>n</code></td><td>W</td></tr>
-<tr><td><code>rf_waddr</code></td><td><code>rd</code> <code>r0</code> <code>rx</code></td><td>W（冒險偵測也會讀）</td></tr>
-<tr><td><code>csr_wen</code></td><td><code>y</code> / <code>n</code></td><td>W</td></tr>
-</tbody>
-</table></div>
+<p>獨立成一頁了：<a href="#chA">附錄 A：控制表速查</a>（20 個欄位的用途、每一欄可填的值、現成的列）。在任何地方按右下角的 <b>控制表速查</b> 或鍵盤 <kbd>?</kbd> 都能叫出來。</p>
 <p>位元切法在 <code>riscvstall-InstMsg.v</code> 第 160–180 行，總寬度 39 位元（<code>INST_VAL</code> 在最高位 38，<code>CSR_WEN</code> 在最低位 0）。</p>
 
 <h4>後綴與階段對照</h4>
@@ -7403,6 +7406,158 @@ else
 
 <div class="note"><b>三個姊妹頁</b>
 <p>語法卡住了就回<a href="../verilog-course/index.html">《Verilog 電路圖解課》</a>；想知道某條線實際接到哪個 mux，看<a href="../riscvstall-datapath/riscvstall-datapath.html">管線接線圖</a>；忘了某個 <code>localparam</code> 或訊號定義在哪個檔案的第幾行，查<a href="../symbol-lookup/index.html">符號查詢</a>。</p></div>
+</section>
+<!-- GENERATED by tools/gen-appendix.py from riscvstall/riscvstall-CoreCtrl.v — do not edit by hand -->
+<!-- ============================================================ chA -->
+<section class="ch" id="chA" data-part="附錄" data-nav="控制表速查">
+<p class="eyebrow">附錄 A · 速查</p>
+<h2>控制表速查：20 個欄位、所有可填的值</h2>
+<p>填控制表時只需要這一頁。上半是<b>欄位表</b>（每一欄是什麼、接到哪條訊號、在哪一級被用到）；下半是<b>值的清單</b>，照 <code>riscvstall/riscvstall-CoreCtrl.v</code> 的 <code>localparam</code> 原樣條列，每一段開頭的註解標明「這些值是給哪一欄用的」。想知道為什麼，點「詳解」回到<a href="#ch5">第 5 章</a>對應的那一組。</p>
+<p class="refhint">在任何章節都可以按右下角的 <b>控制表速查</b> 按鈕（或鍵盤 <kbd>?</kbd>）把這一頁叫出來，不用離開正在讀的地方。</p>
+
+<h3 id="ref-fields">欄位表（由左到右 = 大括號裡的順序 = cs[38] → cs[0]）</h3>
+<div class="tbl"><table class="reftbl">
+<thead><tr><th>#</th><th>表頭</th><th>巨集 · 位元</th><th>這一欄在決定什麼</th><th>變成哪條訊號</th><th>級</th><th>查</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td><code>val</code></td><td class="mac"><code>INST_VAL</code> <span class="bitr">cs[38]</span></td><td>這一列是合法指令。每一列都填 <code>y</code></td><td>只給結尾的 assertion 讀</td><td class="stg">D</td><td><a href="#ref-yn">值</a> · <a href="#fld1">詳解</a></td></tr>
+<tr><td class="num">2</td><td><code>j taken</code></td><td class="mac"><code>J_EN</code> <span class="bitr">cs[37]</span></td><td>D 級就確定要跳的無條件跳躍（<code>jal</code>／<code>jalr</code>）</td><td><code>brj_taken_Dhl</code></td><td class="stg">D</td><td><a href="#ref-yn">值</a> · <a href="#fld1">詳解</a></td></tr>
+<tr><td class="num">3</td><td><code>br type</code></td><td class="mac"><code>BR_SEL</code> <span class="bitr">cs[36:34]</span></td><td>條件分支的種類；X 級用它挑 <code>branch_cond_*_Xhl</code></td><td><code>br_sel_Xhl</code></td><td class="stg">X</td><td><a href="#ref-br">值</a> · <a href="#fld1">詳解</a></td></tr>
+<tr><td class="num">4</td><td><code>pc muxsel</code></td><td class="mac"><code>PC_SEL</code> <span class="bitr">cs[33:32]</span></td><td>PC mux 選誰——只有 <code>j taken = y</code> 時才被採用</td><td><code>pc_mux_sel_Dhl</code> → <code>pc_mux_sel_Phl</code></td><td class="stg">P</td><td><a href="#ref-pm">值</a> · <a href="#fld1">詳解</a></td></tr>
+<tr><td class="num">5</td><td><code>op0 muxsel</code></td><td class="mac"><code>OP0_SEL</code> <span class="bitr">cs[31:30]</span></td><td>ALU <code>in0</code>（乘除法器 <code>a</code>）的來源</td><td><code>op0_mux_sel_Dhl</code></td><td class="stg">D</td><td><a href="#ref-am">值</a> · <a href="#fld2">詳解</a></td></tr>
+<tr><td class="num">6</td><td><code>rs1 en</code></td><td class="mac"><code>RS1_EN</code> <span class="bitr">cs[29]</span></td><td>指令真的會讀 rs1 嗎（冒險偵測／bypass 用，不碰 mux）</td><td><code>rs1_en_Dhl</code></td><td class="stg">D</td><td><a href="#ref-yn">值</a> · <a href="#fld2">詳解</a></td></tr>
+<tr><td class="num">7</td><td><code>op1 muxsel</code></td><td class="mac"><code>OP1_SEL</code> <span class="bitr">cs[28:26]</span></td><td>ALU <code>in1</code>（乘除法器 <code>b</code>）的來源</td><td><code>op1_mux_sel_Dhl</code></td><td class="stg">D</td><td><a href="#ref-bm">值</a> · <a href="#fld2">詳解</a></td></tr>
+<tr><td class="num">8</td><td><code>rs2 en</code></td><td class="mac"><code>RS2_EN</code> <span class="bitr">cs[25]</span></td><td>指令真的會讀 rs2 嗎（store 也算）</td><td><code>rs2_en_Dhl</code></td><td class="stg">D</td><td><a href="#ref-yn">值</a> · <a href="#fld2">詳解</a></td></tr>
+<tr><td class="num">9</td><td><code>alu fn</code></td><td class="mac"><code>ALU_FN</code> <span class="bitr">cs[24:21]</span></td><td>ALU 做哪一種運算</td><td><code>alu_fn_Xhl</code></td><td class="stg">X</td><td><a href="#ref-alu">值</a> · <a href="#fld3">詳解</a></td></tr>
+<tr><td class="num">10</td><td><code>md fn</code></td><td class="mac"><code>MULDIV_FN</code> <span class="bitr">cs[20:18]</span></td><td>乘除法器做哪一種運算</td><td><code>muldivreq_msg_fn_Xhl</code></td><td class="stg">X</td><td><a href="#ref-md">值</a> · <a href="#fld3">詳解</a></td></tr>
+<tr><td class="num">11</td><td><code>md en</code></td><td class="mac"><code>MULDIV_EN</code> <span class="bitr">cs[17]</span></td><td>要不要啟動乘除法器（啟動後管線會等它）</td><td><code>muldivreq_val</code></td><td class="stg">X</td><td><a href="#ref-yn">值</a> · <a href="#fld3">詳解</a></td></tr>
+<tr><td class="num">12</td><td><code>md muxsel</code></td><td class="mac"><code>MULDIV_SEL</code> <span class="bitr">cs[16]</span></td><td>64 位元結果取低半還是高半</td><td><code>muldiv_mux_sel_Xhl</code></td><td class="stg">X</td><td><a href="#ref-mdm">值</a> · <a href="#fld3">詳解</a></td></tr>
+<tr><td class="num">13</td><td><code>ex muxsel</code></td><td class="mac"><code>EX_SEL</code> <span class="bitr">cs[15]</span></td><td>X 級的結果取 ALU 還是乘除法器</td><td><code>execute_mux_sel_Xhl</code></td><td class="stg">X</td><td><a href="#ref-em">值</a> · <a href="#fld3">詳解</a></td></tr>
+<tr><td class="num">14</td><td><code>mem rq</code></td><td class="mac"><code>MEM_REQ</code> <span class="bitr">cs[14:13]</span></td><td>要不要存取資料記憶體、讀還是寫</td><td><code>dmemreq_val</code>、<code>dmemreq_msg_rw</code></td><td class="stg">X</td><td><a href="#ref-mrq">值</a> · <a href="#fld4">詳解</a></td></tr>
+<tr><td class="num">15</td><td><code>mem len</code></td><td class="mac"><code>MEM_LEN</code> <span class="bitr">cs[12:11]</span></td><td>存取幾個 byte</td><td><code>dmemreq_msg_len</code></td><td class="stg">X</td><td><a href="#ref-ml">值</a> · <a href="#fld4">詳解</a></td></tr>
+<tr><td class="num">16</td><td><code>memresp muxsel</code></td><td class="mac"><code>MEM_SEL</code> <span class="bitr">cs[10:8]</span></td><td>load 讀回來的資料怎麼延伸成 32 位元</td><td><code>dmemresp_mux_sel_Mhl</code></td><td class="stg">M</td><td><a href="#ref-dmm">值</a> · <a href="#fld4">詳解</a></td></tr>
+<tr><td class="num">17</td><td><code>wb muxsel</code></td><td class="mac"><code>WB_SEL</code> <span class="bitr">cs[7]</span></td><td>寫回的值取 X 級結果還是記憶體回應</td><td><code>wb_mux_sel_Mhl</code></td><td class="stg">M</td><td><a href="#ref-wm">值</a> · <a href="#fld5">詳解</a></td></tr>
+<tr><td class="num">18</td><td><code>rf wen</code></td><td class="mac"><code>RF_WEN</code> <span class="bitr">cs[6]</span></td><td>要不要寫 regfile</td><td><code>rf_wen_out_Whl</code>（中途的 <code>rf_wen_Xhl/_Mhl/_Whl</code> 給冒險比對）</td><td class="stg">W</td><td><a href="#ref-yn">值</a> · <a href="#fld5">詳解</a></td></tr>
+<tr><td class="num">19</td><td><code>wa</code></td><td class="mac"><code>RF_WADDR</code> <span class="bitr">cs[5:1]</span></td><td>寫到哪個暫存器</td><td><code>rf_waddr_Whl</code>（中途的值同樣給冒險比對）</td><td class="stg">W</td><td><a href="#ref-reg">值</a> · <a href="#fld5">詳解</a></td></tr>
+<tr><td class="num">20</td><td><code>csr wen</code></td><td class="mac"><code>CSR_WEN</code> <span class="bitr">cs[0]</span></td><td>要不要寫 CSR（只有 <code>csrw</code>）</td><td><code>csr_wen_Whl</code></td><td class="stg">W</td><td><a href="#ref-yn">值</a> · <a href="#fld5">詳解</a></td></tr>
+</tbody></table></div>
+<p class="refhint">「級」是這個欄位<b>真正被用掉</b>的那一級：所有欄位都在 D 級由 <code>casez</code> 產生，再跟著指令經過管線暫存器走到那裡（<code>alu_fn_Dhl → alu_fn_Xhl</code>）。</p>
+
+<h3 id="ref-values">可填的值（riscvstall/riscvstall-CoreCtrl.v 第 249–359 行）</h3>
+<p>編碼就是 mux 的第幾個輸入，也是你在波形上會看到的數字。註解是中文說明；<code>*_x</code> 一律是 don't care。</p>
+<pre class="ref"><code><span class="hljs-comment" id="ref-yn">// ── val · j taken · rs1 en · rs2 en · md en · rf wen · csr wen（是／否；不可填 x） ── 第 249–252 行</span>
+<span class="hljs-keyword">localparam</span> n = <span class="hljs-number">1'd0</span>;  <span class="hljs-comment">// 否</span>
+<span class="hljs-keyword">localparam</span> y = <span class="hljs-number">1'd1</span>;  <span class="hljs-comment">// 是</span>
+
+<span class="hljs-comment" id="ref-reg">// ── wa（RF_WADDR） ── 第 254–257 行</span>
+<span class="hljs-keyword">localparam</span> rx = <span class="hljs-number">5'bx</span>;  <span class="hljs-comment">// don't care：rf wen = n 的列填它</span>
+<span class="hljs-keyword">localparam</span> r0 = <span class="hljs-number">5'd0</span>;  <span class="hljs-comment">// 寫到 x0（會被 regfile 忽略；用不到）</span>
+<span class="hljs-keyword">wire</span> [4:0] rd = inst_rd_Dhl; <span class="hljs-comment">// 不是常數：指令的 rd 欄位 inst[11:7]。rf wen = y 的列都填它</span>
+
+<span class="hljs-comment" id="ref-br">// ── br type（BR_SEL） ── 第 259–268 行</span>
+<span class="hljs-keyword">localparam</span> br_x    = <span class="hljs-number">3'bx</span>;  <span class="hljs-comment">// 不要用：x 會流進 brj_taken_Xhl</span>
+<span class="hljs-keyword">localparam</span> br_none = <span class="hljs-number">3'd0</span>;  <span class="hljs-comment">// 不是分支（所有非分支指令）</span>
+<span class="hljs-keyword">localparam</span> br_beq  = <span class="hljs-number">3'd1</span>;  <span class="hljs-comment">// beq　看 branch_cond_eq_Xhl</span>
+<span class="hljs-keyword">localparam</span> br_bne  = <span class="hljs-number">3'd2</span>;  <span class="hljs-comment">// bne　看 branch_cond_ne_Xhl（已接好）</span>
+<span class="hljs-keyword">localparam</span> br_blt  = <span class="hljs-number">3'd3</span>;  <span class="hljs-comment">// blt　看 branch_cond_lt_Xhl（已接好）</span>
+<span class="hljs-keyword">localparam</span> br_bltu = <span class="hljs-number">3'd4</span>;  <span class="hljs-comment">// bltu　看 branch_cond_ltu_Xhl</span>
+<span class="hljs-keyword">localparam</span> br_bge  = <span class="hljs-number">3'd5</span>;  <span class="hljs-comment">// bge　看 branch_cond_ge_Xhl</span>
+<span class="hljs-keyword">localparam</span> br_bgeu = <span class="hljs-number">3'd6</span>;  <span class="hljs-comment">// bgeu　看 branch_cond_geu_Xhl</span>
+
+<span class="hljs-comment" id="ref-pm">// ── pc muxsel（PC_SEL） ── 第 270–276 行</span>
+<span class="hljs-keyword">localparam</span> pm_x = <span class="hljs-number">2'bx</span>;  <span class="hljs-comment">// don't care</span>
+<span class="hljs-keyword">localparam</span> pm_p = <span class="hljs-number">2'd0</span>;  <span class="hljs-comment">// pc + 4（所有不轉向的指令）</span>
+<span class="hljs-keyword">localparam</span> pm_b = <span class="hljs-number">2'd1</span>;  <span class="hljs-comment">// branch_targ_Xhl（分支；實際由 X 級硬選）</span>
+<span class="hljs-keyword">localparam</span> pm_j = <span class="hljs-number">2'd2</span>;  <span class="hljs-comment">// jump_targ_Dhl = pc + imm_uj（jal）</span>
+<span class="hljs-keyword">localparam</span> pm_r = <span class="hljs-number">2'd3</span>;  <span class="hljs-comment">// jumpreg_targ_Dhl = (rs1 + imm_i) &amp; ~1（jalr）</span>
+
+<span class="hljs-comment" id="ref-am">// ── op0 muxsel（OP0_SEL） ── 第 278–284 行</span>
+<span class="hljs-keyword">localparam</span> am_x    = <span class="hljs-number">2'bx</span>;  <span class="hljs-comment">// don't care（這個 lab 用不到）</span>
+<span class="hljs-keyword">localparam</span> am_rdat = <span class="hljs-number">2'd0</span>;  <span class="hljs-comment">// rs1 的值（幾乎所有指令）</span>
+<span class="hljs-keyword">localparam</span> am_pc   = <span class="hljs-number">2'd1</span>;  <span class="hljs-comment">// pc_Dhl（auipc）</span>
+<span class="hljs-keyword">localparam</span> am_pc4  = <span class="hljs-number">2'd2</span>;  <span class="hljs-comment">// pc + 4，返回位址（jal／jalr）</span>
+<span class="hljs-keyword">localparam</span> am_0    = <span class="hljs-number">2'd3</span>;  <span class="hljs-comment">// 常數 0（lui）</span>
+
+<span class="hljs-comment" id="ref-bm">// ── op1 muxsel（OP1_SEL） ── 第 286–295 行</span>
+<span class="hljs-keyword">localparam</span> bm_x      = <span class="hljs-number">3'bx</span>;  <span class="hljs-comment">// don't care（這個 lab 用不到）</span>
+<span class="hljs-keyword">localparam</span> bm_rdat   = <span class="hljs-number">3'd0</span>;  <span class="hljs-comment">// rs2 的值（R-type、分支、M 指令）</span>
+<span class="hljs-keyword">localparam</span> bm_shamt  = <span class="hljs-number">3'd1</span>;  <span class="hljs-comment">// inst[24:20] 補 0（slli／srli／srai）</span>
+<span class="hljs-keyword">localparam</span> bm_imm_u  = <span class="hljs-number">3'd2</span>;  <span class="hljs-comment">// {inst[31:12], 12'b0}（lui、auipc）</span>
+<span class="hljs-keyword">localparam</span> bm_imm_sb = <span class="hljs-number">3'd3</span>;  <span class="hljs-comment">// 分支位移——目前沒有任何一列用它</span>
+<span class="hljs-keyword">localparam</span> bm_imm_i  = <span class="hljs-number">3'd4</span>;  <span class="hljs-comment">// I 型立即數（addi 一族、所有 load）</span>
+<span class="hljs-keyword">localparam</span> bm_imm_s  = <span class="hljs-number">3'd5</span>;  <span class="hljs-comment">// S 型立即數（所有 store）</span>
+<span class="hljs-keyword">localparam</span> bm_0      = <span class="hljs-number">3'd6</span>;  <span class="hljs-comment">// 常數 0（jal、csrw：讓 ALU 原樣通過 op0）</span>
+
+<span class="hljs-comment" id="ref-alu">// ── alu fn（ALU_FN） ── 第 297–310 行</span>
+<span class="hljs-keyword">localparam</span> alu_x   = <span class="hljs-number">4'bx</span>;   <span class="hljs-comment">// don't care：只有 M 指令能填</span>
+<span class="hljs-keyword">localparam</span> alu_add = <span class="hljs-number">4'd0</span>;   <span class="hljs-comment">// in0 + in1（加法、所有位址計算、借 ALU 搬值）</span>
+<span class="hljs-keyword">localparam</span> alu_sub = <span class="hljs-number">4'd1</span>;   <span class="hljs-comment">// in0 − in1（sub；要比大小的分支）</span>
+<span class="hljs-keyword">localparam</span> alu_sll = <span class="hljs-number">4'd2</span>;   <span class="hljs-comment">// in0 &lt;&lt; in1[4:0]</span>
+<span class="hljs-keyword">localparam</span> alu_or  = <span class="hljs-number">4'd3</span>;   <span class="hljs-comment">// in0 | in1</span>
+<span class="hljs-keyword">localparam</span> alu_lt  = <span class="hljs-number">4'd4</span>;   <span class="hljs-comment">// 有號 in0 &lt; in1 ? 1 : 0（slt／slti）</span>
+<span class="hljs-keyword">localparam</span> alu_ltu = <span class="hljs-number">4'd5</span>;   <span class="hljs-comment">// 無號 in0 &lt; in1 ? 1 : 0（sltu／sltiu）</span>
+<span class="hljs-keyword">localparam</span> alu_and = <span class="hljs-number">4'd6</span>;   <span class="hljs-comment">// in0 &amp; in1</span>
+<span class="hljs-keyword">localparam</span> alu_xor = <span class="hljs-number">4'd7</span>;   <span class="hljs-comment">// in0 ^ in1（xor；只比「相不相等」的分支）</span>
+<span class="hljs-keyword">localparam</span> alu_nor = <span class="hljs-number">4'd8</span>;   <span class="hljs-comment">// ~(in0 | in1)（MIPS 留下來的，用不到）</span>
+<span class="hljs-keyword">localparam</span> alu_srl = <span class="hljs-number">4'd9</span>;   <span class="hljs-comment">// in0 &gt;&gt; in1[4:0]，補 0</span>
+<span class="hljs-keyword">localparam</span> alu_sra = <span class="hljs-number">4'd10</span>;  <span class="hljs-comment">// in0 &gt;&gt;&gt; in1[4:0]，補符號位元</span>
+
+<span class="hljs-comment" id="ref-md">// ── md fn（MULDIV_FN） ── 第 312–319 行</span>
+<span class="hljs-keyword">localparam</span> md_x    = <span class="hljs-number">3'bx</span>;  <span class="hljs-comment">// don't care：md en = n 的列</span>
+<span class="hljs-keyword">localparam</span> md_mul  = <span class="hljs-number">3'd0</span>;  <span class="hljs-comment">// 有號乘法，64 位元乘積</span>
+<span class="hljs-keyword">localparam</span> md_div  = <span class="hljs-number">3'd1</span>;  <span class="hljs-comment">// 有號除法 → {餘數, 商}</span>
+<span class="hljs-keyword">localparam</span> md_divu = <span class="hljs-number">3'd2</span>;  <span class="hljs-comment">// 無號除法 → {餘數, 商}</span>
+<span class="hljs-keyword">localparam</span> md_rem  = <span class="hljs-number">3'd3</span>;  <span class="hljs-comment">// 同 md_div（差別在 md muxsel 取高半）</span>
+<span class="hljs-keyword">localparam</span> md_remu = <span class="hljs-number">3'd4</span>;  <span class="hljs-comment">// 同 md_divu</span>
+
+<span class="hljs-comment" id="ref-mdm">// ── md muxsel（MULDIV_SEL） ── 第 321–325 行</span>
+<span class="hljs-keyword">localparam</span> mdm_x = <span class="hljs-number">1'bx</span>;  <span class="hljs-comment">// don't care：md en = n 的列</span>
+<span class="hljs-keyword">localparam</span> mdm_l = <span class="hljs-number">1'd0</span>;  <span class="hljs-comment">// [31:0]：乘積低半／商（mul、div、divu）</span>
+<span class="hljs-keyword">localparam</span> mdm_u = <span class="hljs-number">1'd1</span>;  <span class="hljs-comment">// [63:32]：乘積高半／餘數（rem、remu、mulh 家族）</span>
+
+<span class="hljs-comment" id="ref-em">// ── ex muxsel（EX_SEL） ── 第 327–331 行</span>
+<span class="hljs-keyword">localparam</span> em_x   = <span class="hljs-number">1'bx</span>;  <span class="hljs-comment">// don't care：X 級結果沒人要（load、store、分支）</span>
+<span class="hljs-keyword">localparam</span> em_alu = <span class="hljs-number">1'd0</span>;  <span class="hljs-comment">// ALU 輸出</span>
+<span class="hljs-keyword">localparam</span> em_md  = <span class="hljs-number">1'd1</span>;  <span class="hljs-comment">// 乘除法器輸出（M 指令）</span>
+
+<span class="hljs-comment" id="ref-mrq">// ── mem rq（MEM_REQ） ── 第 333–337 行</span>
+<span class="hljs-keyword">localparam</span> nr = <span class="hljs-number">2'b0</span>;  <span class="hljs-comment">// 不存取記憶體</span>
+<span class="hljs-keyword">localparam</span> ld = <span class="hljs-number">2'd1</span>;  <span class="hljs-comment">// load：dmemreq_val = 1, rw = 0</span>
+<span class="hljs-keyword">localparam</span> st = <span class="hljs-number">2'd2</span>;  <span class="hljs-comment">// store：dmemreq_val = 1, rw = 1</span>
+
+<span class="hljs-comment" id="ref-ml">// ── mem len（MEM_LEN） ── 第 339–344 行</span>
+<span class="hljs-keyword">localparam</span> ml_x = <span class="hljs-number">2'bx</span>;  <span class="hljs-comment">// don't care：mem rq = nr 的列</span>
+<span class="hljs-keyword">localparam</span> ml_w = <span class="hljs-number">2'd0</span>;  <span class="hljs-comment">// 4 bytes（lw、sw）——注意編碼是 0</span>
+<span class="hljs-keyword">localparam</span> ml_b = <span class="hljs-number">2'd1</span>;  <span class="hljs-comment">// 1 byte（lb、lbu、sb）</span>
+<span class="hljs-keyword">localparam</span> ml_h = <span class="hljs-number">2'd2</span>;  <span class="hljs-comment">// 2 bytes（lh、lhu、sh）</span>
+
+<span class="hljs-comment" id="ref-dmm">// ── memresp muxsel（MEM_SEL） ── 第 346–353 行</span>
+<span class="hljs-keyword">localparam</span> dmm_x  = <span class="hljs-number">3'bx</span>;  <span class="hljs-comment">// don't care：不是 load 的列</span>
+<span class="hljs-keyword">localparam</span> dmm_w  = <span class="hljs-number">3'd0</span>;  <span class="hljs-comment">// 原樣（lw）</span>
+<span class="hljs-keyword">localparam</span> dmm_b  = <span class="hljs-number">3'd1</span>;  <span class="hljs-comment">// [7:0] 符號延伸（lb）</span>
+<span class="hljs-keyword">localparam</span> dmm_bu = <span class="hljs-number">3'd2</span>;  <span class="hljs-comment">// [7:0] 補 0（lbu）</span>
+<span class="hljs-keyword">localparam</span> dmm_h  = <span class="hljs-number">3'd3</span>;  <span class="hljs-comment">// [15:0] 符號延伸（lh）</span>
+<span class="hljs-keyword">localparam</span> dmm_hu = <span class="hljs-number">3'd4</span>;  <span class="hljs-comment">// [15:0] 補 0（lhu）</span>
+
+<span class="hljs-comment" id="ref-wm">// ── wb muxsel（WB_SEL） ── 第 355–359 行</span>
+<span class="hljs-keyword">localparam</span> wm_x   = <span class="hljs-number">1'bx</span>;  <span class="hljs-comment">// don't care：不寫回的列（分支、store）</span>
+<span class="hljs-keyword">localparam</span> wm_alu = <span class="hljs-number">1'd0</span>;  <span class="hljs-comment">// X 級的結果（ALU 或乘除法器）</span>
+<span class="hljs-keyword">localparam</span> wm_mem = <span class="hljs-number">1'd1</span>;  <span class="hljs-comment">// 記憶體回應（所有 load）</span></code></pre>
+
+<h3 id="ref-rows">lab 一開始就寫好的 11 列（可以直接拿來對照）</h3>
+<p>其餘的列在原始檔裡是 <code>// `RISCV_INST_MSG_XXX :cs={};</code> 的空殼，等你填。你自己加的列不會出現在這裡。</p>
+<pre><code class="language-verilog">//                                j     br       pc      op0      rs1 op1       rs2 alu       md       md md     ex      mem  mem   memresp wb      rf      csr
+//                            val taken type     muxsel  muxsel   en  muxsel    en  fn        fn       en muxsel muxsel  rq   len   muxsel  muxsel  wen wa  wen
+`RISCV_INST_MSG_LUI     :cs={ y,  n,    br_none, pm_p,   am_0,    n,  bm_imm_u, n,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };
+`RISCV_INST_MSG_AUIPC   :cs={ y,  n,    br_none, pm_p,   am_pc,   n,  bm_imm_u, n,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };
+`RISCV_INST_MSG_ADDI    :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_i, n,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };
+`RISCV_INST_MSG_ORI     :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_i, n,  alu_or,   md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };
+`RISCV_INST_MSG_ADD     :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_rdat,  y,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };
+`RISCV_INST_MSG_LW      :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_i, n,  alu_add,  md_x,    n, mdm_x, em_x,   ld,  ml_w, dmm_w,  wm_mem, y,  rd, n   };
+`RISCV_INST_MSG_SW      :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_s, y,  alu_add,  md_x,    n, mdm_x, em_x,   st,  ml_w, dmm_w,  wm_mem, n,  rx, n   };
+`RISCV_INST_MSG_JAL     :cs={ y,  y,    br_none, pm_j,   am_pc4,  n,  bm_0,     n,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, y,  rd, n   };
+`RISCV_INST_MSG_BNE     :cs={ y,  n,    br_bne,  pm_b,   am_rdat, y,  bm_rdat,  y,  alu_xor,  md_x,    n, mdm_x, em_x,   nr,  ml_x, dmm_x,  wm_x,   n,  rx, n   };
+`RISCV_INST_MSG_BLT     :cs={ y,  n,    br_blt,  pm_b,   am_rdat, y,  bm_rdat,  y,  alu_sub,  md_x,    n, mdm_x, em_x,   nr,  ml_x, dmm_x,  wm_x,   n,  rx, n   };
+`RISCV_INST_MSG_CSRW    :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_0,     y,  alu_add,  md_x,    n, mdm_x, em_alu, nr,  ml_x, dmm_x,  wm_alu, n,  rx, y   };</code></pre>
 </section>
 <!-- ============================================================ interactive widgets
      Mount points live inside the chapters: #w-decoder (ch1) and #w-pipe (ch9). -->
@@ -7776,6 +7931,52 @@ else
     ta.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(render, 250); });
     render();
   }
+
+
+  // =====================================================================
+  // Quick reference drawer: shows appendix A (#chA) over whatever you are reading
+  // =====================================================================
+  (function () {
+    var src = document.getElementById('chA');
+    if (!src) return;
+    var btn = h('button', 'qr-btn', '控制表速查'); btn.type = 'button'; btn.setAttribute('aria-haspopup', 'dialog');
+    var panel = h('aside', 'qr'); panel.hidden = true; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', '控制表速查');
+    var head = h('div', 'qr-head'), body = h('div', 'qr-body');
+    head.appendChild(h('b', '', '控制表速查'));
+    [['欄位表', 'ref-fields'], ['可填的值', 'ref-values'], ['現成的列', 'ref-rows']].forEach(function (t) {
+      var b = h('button', '', t[0]); b.type = 'button';
+      b.addEventListener('click', function () { var el = body.querySelector('[data-ref="' + t[1] + '"]'); if (el) el.scrollIntoView({ block: 'start' }); });
+      head.appendChild(b);
+    });
+    var close = h('button', '', '關閉 (Esc)'); close.type = 'button'; head.appendChild(close);
+    panel.appendChild(head); panel.appendChild(body);
+    document.body.appendChild(btn); document.body.appendChild(panel);
+
+    var filled = false, last = null;
+    function fill() {
+      if (filled) return; filled = true;
+      var c = src.cloneNode(true);
+      // ids must stay unique in the document: move them to data-ref and retarget the in-panel links
+      c.querySelectorAll('[id]').forEach(function (e) { e.setAttribute('data-ref', e.id); e.removeAttribute('id'); });
+      while (c.firstChild) body.appendChild(c.firstChild);
+      body.addEventListener('click', function (ev) {
+        var a = ev.target.closest && ev.target.closest('a[href^="#"]'); if (!a) return;
+        var t = body.querySelector('[data-ref="' + a.getAttribute('href').slice(1) + '"]');
+        if (t) { ev.preventDefault(); t.scrollIntoView({ block: 'start' }); } else { show(false); }
+      });
+    }
+    function show(on) {
+      if (on) { fill(); last = document.activeElement; panel.hidden = false; close.focus(); }
+      else { panel.hidden = true; if (last && last.focus) last.focus(); }
+    }
+    btn.addEventListener('click', function () { show(panel.hidden); });
+    close.addEventListener('click', function () { show(false); });
+    document.addEventListener('keydown', function (ev) {
+      var tag = (ev.target.tagName || '').toLowerCase();
+      if (ev.key === 'Escape' && !panel.hidden) { show(false); return; }
+      if (ev.key === '?' && tag !== 'input' && tag !== 'textarea' && tag !== 'select') { ev.preventDefault(); show(panel.hidden); }
+    });
+  })();
 
   var d = document.getElementById('w-decoder'); if (d) mountDecoder(d);
   var p = document.getElementById('w-pipe'); if (p) mountPipe(p);

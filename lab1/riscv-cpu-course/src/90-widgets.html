@@ -371,6 +371,52 @@
     render();
   }
 
+
+  // =====================================================================
+  // Quick reference drawer: shows appendix A (#chA) over whatever you are reading
+  // =====================================================================
+  (function () {
+    var src = document.getElementById('chA');
+    if (!src) return;
+    var btn = h('button', 'qr-btn', '控制表速查'); btn.type = 'button'; btn.setAttribute('aria-haspopup', 'dialog');
+    var panel = h('aside', 'qr'); panel.hidden = true; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', '控制表速查');
+    var head = h('div', 'qr-head'), body = h('div', 'qr-body');
+    head.appendChild(h('b', '', '控制表速查'));
+    [['欄位表', 'ref-fields'], ['可填的值', 'ref-values'], ['現成的列', 'ref-rows']].forEach(function (t) {
+      var b = h('button', '', t[0]); b.type = 'button';
+      b.addEventListener('click', function () { var el = body.querySelector('[data-ref="' + t[1] + '"]'); if (el) el.scrollIntoView({ block: 'start' }); });
+      head.appendChild(b);
+    });
+    var close = h('button', '', '關閉 (Esc)'); close.type = 'button'; head.appendChild(close);
+    panel.appendChild(head); panel.appendChild(body);
+    document.body.appendChild(btn); document.body.appendChild(panel);
+
+    var filled = false, last = null;
+    function fill() {
+      if (filled) return; filled = true;
+      var c = src.cloneNode(true);
+      // ids must stay unique in the document: move them to data-ref and retarget the in-panel links
+      c.querySelectorAll('[id]').forEach(function (e) { e.setAttribute('data-ref', e.id); e.removeAttribute('id'); });
+      while (c.firstChild) body.appendChild(c.firstChild);
+      body.addEventListener('click', function (ev) {
+        var a = ev.target.closest && ev.target.closest('a[href^="#"]'); if (!a) return;
+        var t = body.querySelector('[data-ref="' + a.getAttribute('href').slice(1) + '"]');
+        if (t) { ev.preventDefault(); t.scrollIntoView({ block: 'start' }); } else { show(false); }
+      });
+    }
+    function show(on) {
+      if (on) { fill(); last = document.activeElement; panel.hidden = false; close.focus(); }
+      else { panel.hidden = true; if (last && last.focus) last.focus(); }
+    }
+    btn.addEventListener('click', function () { show(panel.hidden); });
+    close.addEventListener('click', function () { show(false); });
+    document.addEventListener('keydown', function (ev) {
+      var tag = (ev.target.tagName || '').toLowerCase();
+      if (ev.key === 'Escape' && !panel.hidden) { show(false); return; }
+      if (ev.key === '?' && tag !== 'input' && tag !== 'textarea' && tag !== 'select') { ev.preventDefault(); show(panel.hidden); }
+    });
+  })();
+
   var d = document.getElementById('w-decoder'); if (d) mountDecoder(d);
   var p = document.getElementById('w-pipe'); if (p) mountPipe(p);
 })();

@@ -702,31 +702,7 @@ else
 <h3>全課速查表</h3>
 
 <h4>控制表欄位與合法值</h4>
-<div class="tbl"><table>
-<thead><tr><th>欄位</th><th>合法值</th><th>用在哪一階段</th></tr></thead>
-<tbody>
-<tr><td><code>inst_val</code></td><td><code>y</code> / <code>n</code></td><td>D（<code>n</code> 會觸發 illegal assertion）</td></tr>
-<tr><td><code>j_en</code></td><td><code>y</code> / <code>n</code></td><td>D（jal/jalr 在 D 就重導 PC）</td></tr>
-<tr><td><code>br_sel</code></td><td><code>br_none</code> <code>br_beq</code> <code>br_bne</code> <code>br_blt</code> <code>br_bltu</code> <code>br_bge</code> <code>br_bgeu</code> <code>br_x</code></td><td>X</td></tr>
-<tr><td><code>pc_sel</code></td><td><code>pm_p</code>(pc+4) <code>pm_b</code>(branch) <code>pm_j</code>(jump) <code>pm_r</code>(jr) <code>pm_x</code></td><td>P</td></tr>
-<tr><td><code>op0_sel</code></td><td><code>am_rdat</code> <code>am_pc</code> <code>am_pc4</code> <code>am_0</code> <code>am_x</code></td><td>D→X</td></tr>
-<tr><td><code>rs1_en</code></td><td><code>y</code> / <code>n</code></td><td>D（冒險偵測用）</td></tr>
-<tr><td><code>op1_sel</code></td><td><code>bm_rdat</code> <code>bm_shamt</code> <code>bm_imm_u</code> <code>bm_imm_sb</code> <code>bm_imm_i</code> <code>bm_imm_s</code> <code>bm_0</code> <code>bm_x</code></td><td>D→X</td></tr>
-<tr><td><code>rs2_en</code></td><td><code>y</code> / <code>n</code></td><td>D（冒險偵測用）</td></tr>
-<tr><td><code>alu_fn</code></td><td><code>alu_add</code> <code>alu_sub</code> <code>alu_sll</code> <code>alu_or</code> <code>alu_lt</code> <code>alu_ltu</code> <code>alu_and</code> <code>alu_xor</code> <code>alu_nor</code> <code>alu_srl</code> <code>alu_sra</code> <code>alu_x</code></td><td>X</td></tr>
-<tr><td><code>muldiv_fn</code></td><td><code>md_mul</code> <code>md_div</code> <code>md_divu</code> <code>md_rem</code> <code>md_remu</code> <code>md_x</code></td><td>X</td></tr>
-<tr><td><code>muldiv_en</code></td><td><code>y</code> / <code>n</code></td><td>D→X</td></tr>
-<tr><td><code>muldiv_sel</code></td><td><code>mdm_l</code>(低 32) <code>mdm_u</code>(高 32) <code>mdm_x</code></td><td>X</td></tr>
-<tr><td><code>ex_sel</code></td><td><code>em_alu</code> <code>em_md</code> <code>em_x</code></td><td>X</td></tr>
-<tr><td><code>mem_req</code></td><td><code>nr</code> <code>ld</code> <code>st</code></td><td>X</td></tr>
-<tr><td><code>mem_len</code></td><td><code>ml_w</code> <code>ml_b</code> <code>ml_h</code> <code>ml_x</code></td><td>X</td></tr>
-<tr><td><code>memresp_sel</code></td><td><code>dmm_w</code> <code>dmm_b</code> <code>dmm_bu</code> <code>dmm_h</code> <code>dmm_hu</code> <code>dmm_x</code></td><td>M</td></tr>
-<tr><td><code>wb_sel</code></td><td><code>wm_alu</code> <code>wm_mem</code> <code>wm_x</code></td><td>M→W</td></tr>
-<tr><td><code>rf_wen</code></td><td><code>y</code> / <code>n</code></td><td>W</td></tr>
-<tr><td><code>rf_waddr</code></td><td><code>rd</code> <code>r0</code> <code>rx</code></td><td>W（冒險偵測也會讀）</td></tr>
-<tr><td><code>csr_wen</code></td><td><code>y</code> / <code>n</code></td><td>W</td></tr>
-</tbody>
-</table></div>
+<p>獨立成一頁了：<a href="#chA">附錄 A：控制表速查</a>（20 個欄位的用途、每一欄可填的值、現成的列）。在任何地方按右下角的 <b>控制表速查</b> 或鍵盤 <kbd>?</kbd> 都能叫出來。</p>
 <p>位元切法在 <code>riscvstall-InstMsg.v</code> 第 160–180 行，總寬度 39 位元（<code>INST_VAL</code> 在最高位 38，<code>CSR_WEN</code> 在最低位 0）。</p>
 
 <h4>後綴與階段對照</h4>
