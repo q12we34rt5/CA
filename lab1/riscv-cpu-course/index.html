@@ -64,6 +64,7 @@ main{min-width:0}
 .eyebrow{font-family:var(--mono);font-size:12.5px;color:var(--accent);letter-spacing:.06em;margin:0 0 6px}
 h2{font-size:27px;line-height:1.3;margin:0 0 16px;text-wrap:balance}
 h3{font-size:18.5px;line-height:1.4;margin:40px 0 10px;text-wrap:balance}
+h4{font-size:16px;line-height:1.45;margin:30px 0 8px;text-wrap:balance}
 p,ul,ol{max-width:42em}
 p{margin:0 0 14px}
 ul,ol{padding-left:1.3em;margin:0 0 14px}
@@ -1849,34 +1850,394 @@ end</code></pre>
 </figure>
 </div>
 
-<h3>每一欄的合法值</h3>
-<p>所有值都在 <code>riscvstall-CoreCtrl.v</code> 第 249–359 行的 <code>localparam</code> 區。填表之前先把這一段讀熟，你會發現大部分「難題」其實只是挑一個常數。</p>
-<div class="tbl">
-<table>
-<thead><tr><th>欄</th><th>意思</th><th>合法值（localparam）</th></tr></thead>
+<h3>每一欄詳解：它接到哪裡、每個值是什麼意思</h3>
+<p>所有值都定義在 <code>riscvstall-CoreCtrl.v</code> 第 249–359 行的 <code>localparam</code> 區；<code>casez</code> 表頭的欄位名稱（<code>val</code>、<code>j taken</code>…）對應到 <code>InstMsg.v</code> 第 167–187 行的巨集（<code>INST_VAL</code>、<code>J_EN</code>…）。下面把 20 個欄位分成五組，每一組先看<b>它控制的那塊硬體</b>，再逐值說明。表格裡「編碼」是 <code>localparam</code> 的實際數值——也就是 mux 的第幾個輸入，在波形上看到的就是這個數字。</p>
+<div class="note"><b>怎麼用這一節</b><p>填新的一列時，由左到右一欄一欄問自己表格最右邊那個問題（「什麼時候填它」）。每一欄都只是一個選擇題，沒有一欄需要發明新東西。</p></div>
+
+<h4>速覽：20 欄 → 5 組</h4>
+<div class="tbl"><table>
+<thead><tr><th>組</th><th>欄位（casez 表頭的寫法）</th><th>一句話</th></tr></thead>
 <tbody>
-<tr><td><code>val</code></td><td>是合法指令嗎（只給 assertion 用，沒對到的指令會印 Illegal instruction）</td><td><code>y</code> / <code>n</code></td></tr>
-<tr><td><code>j taken</code></td><td><code>J_EN</code>：在 D 級就能決定的跳躍（<code>jal</code>、<code>jalr</code>）</td><td><code>y</code> / <code>n</code></td></tr>
-<tr><td><code>br type</code></td><td>分支種類，X 級用它挑要看哪個條件</td><td><code>br_none</code> <code>br_beq</code> <code>br_bne</code> <code>br_blt</code> <code>br_bltu</code> <code>br_bge</code> <code>br_bgeu</code> <code>br_x</code></td></tr>
-<tr><td><code>pc muxsel</code></td><td>PC mux</td><td><code>pm_p</code>(+4) <code>pm_b</code>(分支) <code>pm_j</code>(jal) <code>pm_r</code>(jalr) <code>pm_x</code></td></tr>
-<tr><td><code>op0 muxsel</code></td><td>運算元 0</td><td><code>am_rdat</code>(rs1) <code>am_pc</code> <code>am_pc4</code> <code>am_0</code> <code>am_x</code></td></tr>
-<tr><td><code>rs1 en</code></td><td>op0 真的來自 regfile 嗎（冒險偵測／bypass 用）</td><td><code>y</code> / <code>n</code></td></tr>
-<tr><td><code>op1 muxsel</code></td><td>運算元 1</td><td><code>bm_rdat</code>(rs2) <code>bm_shamt</code> <code>bm_imm_u</code> <code>bm_imm_sb</code> <code>bm_imm_i</code> <code>bm_imm_s</code> <code>bm_0</code> <code>bm_x</code></td></tr>
-<tr><td><code>rs2 en</code></td><td>op1 真的來自 regfile 嗎</td><td><code>y</code> / <code>n</code></td></tr>
-<tr><td><code>alu fn</code></td><td>ALU 功能（<a href="#ch7">第 7 章</a>）</td><td><code>alu_add</code> <code>alu_sub</code> <code>alu_sll</code> <code>alu_or</code> <code>alu_lt</code> <code>alu_ltu</code> <code>alu_and</code> <code>alu_xor</code> <code>alu_nor</code> <code>alu_srl</code> <code>alu_sra</code> <code>alu_x</code></td></tr>
-<tr><td><code>md fn</code></td><td>乘除法器功能</td><td><code>md_mul</code> <code>md_div</code> <code>md_divu</code> <code>md_rem</code> <code>md_remu</code> <code>md_x</code></td></tr>
-<tr><td><code>md en</code></td><td>要不要發乘除法請求</td><td><code>y</code> / <code>n</code></td></tr>
-<tr><td><code>md muxsel</code></td><td>64 位元結果取低半還高半</td><td><code>mdm_l</code>(mul/div) <code>mdm_u</code>(rem) <code>mdm_x</code></td></tr>
-<tr><td><code>ex muxsel</code></td><td>X 級輸出取 ALU 還是 muldiv</td><td><code>em_alu</code> <code>em_md</code> <code>em_x</code></td></tr>
-<tr><td><code>mem rq</code></td><td>記憶體請求種類</td><td><code>nr</code>(無) <code>ld</code> <code>st</code></td></tr>
-<tr><td><code>mem len</code></td><td>存取長度</td><td><code>ml_w</code>(0=word) <code>ml_b</code>(1=byte) <code>ml_h</code>(2=half) <code>ml_x</code></td></tr>
-<tr><td><code>memresp muxsel</code></td><td>回應的 subword 調整</td><td><code>dmm_w</code> <code>dmm_b</code> <code>dmm_bu</code> <code>dmm_h</code> <code>dmm_hu</code> <code>dmm_x</code></td></tr>
-<tr><td><code>wb muxsel</code></td><td>寫回的值取 X 級輸出還是記憶體回應</td><td><code>wm_alu</code> <code>wm_mem</code> <code>wm_x</code></td></tr>
-<tr><td><code>rf wen</code> / <code>wa</code></td><td>要不要寫 regfile、寫到哪個暫存器</td><td><code>y</code>/<code>n</code>；<code>rd</code> / <code>r0</code> / <code>rx</code></td></tr>
-<tr><td><code>csr wen</code></td><td>寫 CSR（只有 <code>csrw</code> 是 <code>y</code>）</td><td><code>y</code> / <code>n</code></td></tr>
-</tbody>
-</table>
+<tr><td>① 轉向</td><td class="num"><code>val</code> <code>j taken</code> <code>br type</code> <code>pc muxsel</code></td><td>這道指令會不會改變「下一個 PC」？怎麼改？</td></tr>
+<tr><td>② 運算元</td><td class="num"><code>op0 muxsel</code> <code>rs1 en</code> <code>op1 muxsel</code> <code>rs2 en</code></td><td>ALU 的兩個輸入各是什麼？真的有讀 regfile 嗎？</td></tr>
+<tr><td>③ 執行</td><td class="num"><code>alu fn</code> <code>md fn</code> <code>md en</code> <code>md muxsel</code> <code>ex muxsel</code></td><td>X 級要算什麼？結果取 ALU 還是乘除法器？</td></tr>
+<tr><td>④ 記憶體</td><td class="num"><code>mem rq</code> <code>mem len</code> <code>memresp muxsel</code></td><td>要不要存取記憶體？幾個 byte？讀回來怎麼延伸？</td></tr>
+<tr><td>⑤ 寫回</td><td class="num"><code>wb muxsel</code> <code>rf wen</code> <code>wa</code> <code>csr wen</code></td><td>最後的值從哪來？寫到哪個暫存器？</td></tr>
+</tbody></table></div>
+<h4>① 轉向：<code>val</code>、<code>j taken</code>、<code>br type</code>、<code>pc muxsel</code></h4>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 280" role="img" style="max-width:874px" aria-label="PC 多工器有四個輸入，編號 0 到 3 分別是 pm_p 的 pc 加 4、pm_b 的分支目標、pm_j 的 jal 目標、pm_r 的 jalr 目標；選擇線 pc_mux_sel_Phl 由一段優先權邏輯產生：X 級分支成立時強制選 pm_b，否則 D 級有跳躍時採用控制表的 PC_SEL 欄，其餘情況選 pm_p。">
+<path class="k" d="M560 24L586 34V154L560 164Z"/>
+<path class="w" d="M20 44H560"/>
+<text class="zh s" x="24" y="38">0 = pm_p　pc_plus4_Phl（來自 F 級的 pc_Fhl + 4）</text>
+<path class="w" d="M20 76H560"/>
+<text class="zh s" x="24" y="70">1 = pm_b　branch_targ_Phl（來自 X 級）</text>
+<path class="w" d="M20 108H560"/>
+<text class="zh s" x="24" y="102">2 = pm_j　jump_targ_Phl（來自 D 級：pc_Dhl + imm_uj）</text>
+<path class="w" d="M20 140H560"/>
+<text class="zh s" x="24" y="134">3 = pm_r　jumpreg_targ_Phl（來自 D 級：rs1 + imm_i）</text>
+<path class="w" d="M586 94H700" marker-end="url(#ah)"/>
+<text class="s" x="592" y="86">pc_mux_out_Phl</text>
+<text class="zh s mut" x="592" y="112">→ 下一個要抓的位址</text>
+<path class="c" d="M573 190V160" marker-end="url(#ahc)"/>
+<text class="s cb" x="582" y="182">pc_mux_sel_Phl</text>
+<rect class="k" x="20" y="190" width="720" height="78"/>
+<text x="32" y="210" xml:space="preserve">pc_mux_sel_Phl = brj_taken_Xhl ? pm_b</text>
+<text class="zh s cb" x="400" y="210">← BR_SEL 欄 ≠ br_none 且條件成立（X 級才知道）</text>
+<text x="32" y="232" xml:space="preserve">               : brj_taken_Dhl ? pc_mux_sel_Dhl</text>
+<text class="zh s cb" x="400" y="232">← J_EN 欄 = y（D 級）；這時才去看 PC_SEL 欄</text>
+<text x="32" y="254" xml:space="preserve">               :                 pm_p ;</text>
+<text class="zh s cb" x="400" y="254">← 其他所有情況：往下抓 pc + 4</text>
+</svg>
 </div>
+<figcaption><b>PC_SEL 欄只有在 <code>J_EN = y</code> 的那一列才真的被看。</b>分支列雖然也寫 <code>pm_b</code>，但選 <code>pm_b</code> 的其實是 X 級的 <code>brj_taken_Xhl</code>（CoreCtrl 第 81–84 行）——那一欄對分支來說只是註記。</figcaption>
+</figure>
+
+<p><b><code>val</code>（<code>INST_VAL</code>，cs[38]）</b>——這一列是不是一道合法指令。它<b>不接到 datapath 的任何東西</b>，只被檔案結尾的 assertion 讀（第 876 行）。每一列都填 <code>y</code>。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>y</code></td><td class="num">1'd1</td><td>沒有任何效果</td><td>所有你實作的指令</td></tr>
+<tr><td><code>n</code></td><td class="num">1'd0</td><td>assertion 印 <code>RTL-ERROR : Illegal instruction!</code>，連續兩次就 <code>$finish</code></td><td>想明確標示「看得懂但不支援」的指令時；這個 lab 用不到</td></tr>
+</tbody></table></div>
+<div class="trap"><b>沒有那一列 ≠ <code>val = n</code></b><p>如果 <code>casez</code> 沒有任何一列命中，<code>cs</code> 會停在預設值「全部 <code>x</code>」，<code>val</code> 也是 <code>x</code>。<code>if ( !x )</code> 在模擬裡不成立，所以<b>不會</b>印 Illegal instruction；你看到的會是測試記憶體洗版的 <code>x assertion failed : memreq0_val</code>，最後 timeout（<a href="#ch21">第 21 章</a>有實測輸出）。</p></div>
+<p><b><code>j taken</code>（<code>J_EN</code>，cs[37]）</b>——這道指令是不是「在 D 級就確定要跳」的無條件跳躍。接到 <code>brj_taken_Dhl = inst_val_Dhl &amp;&amp; !stall_Dhl &amp;&amp; cs[J_EN]</code>（第 475 行），成立時 squash F 級那一道、PC mux 改用 <code>pc muxsel</code> 欄的值。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>n</code></td><td class="num">1'd0</td><td>D 級不轉向</td><td>除了無條件跳躍以外的所有指令——<b>包含條件分支</b>（它們在 X 級才決定）</td></tr>
+<tr><td><code>y</code></td><td class="num">1'd1</td><td>D 級立刻轉向，F 級那道指令作廢（浪費 1 格）</td><td><code>jal</code>；你要加的 <code>jalr</code></td></tr>
+</tbody></table></div>
+<p><b><code>br type</code>（<code>BR_SEL</code>，cs[36:34]）</b>——條件分支的種類。它被管線化成 <code>br_sel_Xhl</code>，在 X 級和 datapath 送上來的 <code>branch_cond_*_Xhl</code> 配對（第 659–666 行）。它只是一個「標籤」：真正比大小的是 ALU，所以每種分支還要配對的 <code>alu fn</code>（<a href="#ch7">第 7 章</a>）。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>br_none</code></td><td class="num">3'd0</td><td>不是分支；<code>any_br_taken_Xhl</code> 永遠是 0</td><td>所有非分支指令（<b>不要</b>填 <code>br_x</code>）</td></tr>
+<tr><td><code>br_beq</code></td><td class="num">3'd1</td><td>看 <code>branch_cond_eq_Xhl</code></td><td><code>beq</code></td></tr>
+<tr><td><code>br_bne</code></td><td class="num">3'd2</td><td>看 <code>branch_cond_ne_Xhl</code>（<code>bne_taken_Xhl</code> 已經寫好）</td><td><code>bne</code></td></tr>
+<tr><td><code>br_blt</code></td><td class="num">3'd3</td><td>看 <code>branch_cond_lt_Xhl</code>（<code>blt_taken_Xhl</code> 已經寫好）</td><td><code>blt</code></td></tr>
+<tr><td><code>br_bltu</code></td><td class="num">3'd4</td><td>看 <code>branch_cond_ltu_Xhl</code></td><td><code>bltu</code></td></tr>
+<tr><td><code>br_bge</code></td><td class="num">3'd5</td><td>看 <code>branch_cond_ge_Xhl</code></td><td><code>bge</code></td></tr>
+<tr><td><code>br_bgeu</code></td><td class="num">3'd6</td><td>看 <code>branch_cond_geu_Xhl</code></td><td><code>bgeu</code></td></tr>
+<tr><td><code>br_x</code></td><td class="num">3'bx</td><td>don't care</td><td>不要用：<code>x</code> 會讓 <code>brj_taken_Xhl</code> 變成 <code>x</code>，PC 跟著壞掉</td></tr>
+</tbody></table></div>
+<p>注意 <code>beq</code>／<code>bltu</code>／<code>bge</code>／<code>bgeu</code> 四個值<b>已經定義好但還沒有人用</b>：起始程式碼只有 <code>bne_taken_Xhl</code> 和 <code>blt_taken_Xhl</code> 兩條線，其他四種要你照樣補上並 OR 進 <code>any_br_taken_Xhl</code>（<a href="#ch8">第 8 章</a>）。</p>
+<p><b><code>pc muxsel</code>（<code>PC_SEL</code>，cs[33:32]）</b>——PC mux 的選擇值，但<b>只在 <code>j taken = y</code> 時才被採用</b>（見上圖的優先權邏輯）。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>pm_p</code></td><td class="num">2'd0</td><td>下一個 PC = <code>pc + 4</code></td><td>所有不轉向的指令</td></tr>
+<tr><td><code>pm_b</code></td><td class="num">2'd1</td><td>下一個 PC = <code>branch_targ_Xhl</code>（= 分支指令自己的 <code>pc_Dhl + imm_sb</code>，存到 X 級）</td><td>條件分支。實際上是 X 級硬選 <code>pm_b</code>，這一欄寫 <code>pm_b</code> 只是讓表格讀起來一致</td></tr>
+<tr><td><code>pm_j</code></td><td class="num">2'd2</td><td>下一個 PC = <code>jump_targ_Dhl</code> = <code>pc_Dhl + imm_uj</code></td><td><code>jal</code></td></tr>
+<tr><td><code>pm_r</code></td><td class="num">2'd3</td><td>下一個 PC = <code>jumpreg_targ_Dhl</code> = <code>(rs1 + imm_i)</code> 最低位清 0</td><td><code>jalr</code></td></tr>
+<tr><td><code>pm_x</code></td><td class="num">2'bx</td><td>don't care</td><td><code>j taken = n</code> 的列理論上可以，但現有程式碼一律寫 <code>pm_p</code>，照做就好</td></tr>
+</tbody></table></div>
+<h4>② 運算元：<code>op0 muxsel</code>、<code>rs1 en</code>、<code>op1 muxsel</code>、<code>rs2 en</code></h4>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 330" role="img" style="max-width:874px" aria-label="運算元多工器：op0 多工器有四個輸入，編號 0 到 3 為 am_rdat 的 rs1 值、am_pc、am_pc4、am_0；op1 多工器有七個輸入，編號 0 到 6 為 bm_rdat 的 rs2 值、bm_shamt、bm_imm_u、bm_imm_sb、bm_imm_i、bm_imm_s、bm_0。兩個輸出存進 X 級暫存器後送到 ALU 與乘除法器。RS1_EN 與 RS2_EN 不接到多工器，而是送到冒險偵測邏輯。">
+<path class="k" d="M330 30L356 40V124L330 134Z"/>
+<path class="w" d="M20 48H330"/>
+<text class="zh s" x="24" y="43">0 = am_rdat　rf_rdata0_Dhl（rs1 的值）</text>
+<path class="w" d="M20 72H330"/>
+<text class="zh s" x="24" y="67">1 = am_pc　pc_Dhl</text>
+<path class="w" d="M20 96H330"/>
+<text class="zh s" x="24" y="91">2 = am_pc4　pc_plus4_Dhl</text>
+<path class="w" d="M20 120H330"/>
+<text class="zh s" x="24" y="115">3 = am_0　32'd0</text>
+<path class="k" d="M330 160L356 170V290L330 300Z"/>
+<path class="w" d="M20 176H330"/>
+<text class="zh s" x="24" y="172">0 = bm_rdat　rf_rdata1_Dhl（rs2 的值）</text>
+<path class="w" d="M20 194H330"/>
+<text class="zh s" x="24" y="190">1 = bm_shamt　{27'b0, inst[24:20]}</text>
+<path class="w" d="M20 212H330"/>
+<text class="zh s" x="24" y="208">2 = bm_imm_u　{inst[31:12], 12'b0}</text>
+<path class="w" d="M20 230H330"/>
+<text class="zh s" x="24" y="226">3 = bm_imm_sb　分支位移（×2，有號）</text>
+<path class="w" d="M20 248H330"/>
+<text class="zh s" x="24" y="244">4 = bm_imm_i　inst[31:20] 符號延伸</text>
+<path class="w" d="M20 266H330"/>
+<text class="zh s" x="24" y="262">5 = bm_imm_s　store 位移（符號延伸）</text>
+<path class="w" d="M20 284H330"/>
+<text class="zh s" x="24" y="280">6 = bm_0　32'd0</text>
+<path class="c" d="M343 35V16"/>
+<text class="s cb" x="350" y="16">OP0_SEL → op0_mux_sel_Dhl</text>
+<path class="c" d="M343 295V314"/>
+<text class="s cb" x="350" y="318">OP1_SEL → op1_mux_sel_Dhl</text>
+<path class="w" d="M356 82H420"/>
+<path class="w" d="M356 230H420"/>
+<rect class="r" x="420" y="40" width="16" height="250"/><path class="rl" d="M420 262l8 6l-8 6"/><text class="s sq" x="428" y="34" text-anchor="middle">X←D</text>
+<path class="w" d="M436 82H470" marker-end="url(#ah)"/>
+<text class="zh s" x="476" y="86">op0_mux_out_Xhl → ALU in0、muldiv a</text>
+<path class="w" d="M436 230H470" marker-end="url(#ah)"/>
+<text class="zh s" x="476" y="234">op1_mux_out_Xhl → ALU in1、muldiv b</text>
+<rect class="k" x="560" y="128" width="180" height="56"/><text class="s" x="650" y="151" text-anchor="middle">stall_hazard_Dhl</text><text class="zh s mut" x="650" y="169" text-anchor="middle">（之後還有 bypass 條件）</text>
+<path class="c" d="M476 142H560" marker-end="url(#ahc)"/>
+<text class="s cb" x="476" y="136">RS1_EN</text>
+<path class="c" d="M476 170H560" marker-end="url(#ahc)"/>
+<text class="s cb" x="476" y="164">RS2_EN</text>
+</svg>
+</div>
+<figcaption><b>四個欄位，兩種用途。</b><code>OP0_SEL</code>／<code>OP1_SEL</code> 決定「ALU 吃什麼」；<code>RS1_EN</code>／<code>RS2_EN</code> 完全不碰 mux，它們是告訴冒險偵測邏輯「這道指令真的會讀那個暫存器」。兩者要分開想。</figcaption>
+</figure>
+
+<p><b><code>op0 muxsel</code>（<code>OP0_SEL</code>，cs[31:30]）</b>——ALU 的 <code>in0</code>（也是乘除法器的 <code>a</code>）吃什麼。對應 CoreDpath 第 209–214 行的 mux。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>am_rdat</code></td><td class="num">2'd0</td><td><code>rf_rdata0_Dhl</code>：regfile 用 <code>inst[19:15]</code>（rs1）讀出來的值</td><td>幾乎所有指令：運算、load／store 的基底位址、分支的第一個比較數、<code>csrw</code> 要寫出去的值</td></tr>
+<tr><td><code>am_pc</code></td><td class="num">2'd1</td><td>這道指令自己的位址 <code>pc_Dhl</code></td><td><code>auipc</code>（<code>pc + imm_u</code>）</td></tr>
+<tr><td><code>am_pc4</code></td><td class="num">2'd2</td><td><code>pc_plus4_Dhl</code>，也就是「返回位址」</td><td><code>jal</code>／<code>jalr</code>：要把 <code>pc + 4</code> 寫進 <code>rd</code>，借 ALU 做 <code>pc4 + 0</code></td></tr>
+<tr><td><code>am_0</code></td><td class="num">2'd3</td><td>常數 0</td><td><code>lui</code>（<code>0 + imm_u</code>）</td></tr>
+<tr><td><code>am_x</code></td><td class="num">2'bx</td><td>don't care</td><td>沒有用到 ALU、乘除法器也沒用到 <code>a</code> 的指令才行；這個 lab 沒有這種指令</td></tr>
+</tbody></table></div>
+<p><b><code>op1 muxsel</code>（<code>OP1_SEL</code>，cs[28:26]）</b>——ALU 的 <code>in1</code>（乘除法器的 <code>b</code>）。對應 CoreDpath 第 218–226 行。五種立即數的組法在<a href="#ch2">第 2 章</a>。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>bm_rdat</code></td><td class="num">3'd0</td><td><code>rf_rdata1_Dhl</code>：regfile 用 <code>inst[24:20]</code>（rs2）讀出來的值</td><td>R-type 運算（<code>add</code>、<code>sub</code>、<code>sll</code>…、<code>mul</code>／<code>div</code>）、分支的第二個比較數</td></tr>
+<tr><td><code>bm_shamt</code></td><td class="num">3'd1</td><td><code>{27'b0, inst[24:20]}</code>：5 位元移位量補 0</td><td><code>slli</code>／<code>srli</code>／<code>srai</code></td></tr>
+<tr><td><code>bm_imm_u</code></td><td class="num">3'd2</td><td><code>{inst[31:12], 12'b0}</code></td><td><code>lui</code>、<code>auipc</code></td></tr>
+<tr><td><code>bm_imm_sb</code></td><td class="num">3'd3</td><td>分支位移</td><td>目前<b>沒有任何一列用它</b>：分支目標由 D 級專用的加法器算（<code>branch_targ_Dhl</code>），ALU 要留給「比較」用，所以分支列填的是 <code>bm_rdat</code></td></tr>
+<tr><td><code>bm_imm_i</code></td><td class="num">3'd4</td><td><code>inst[31:20]</code> 符號延伸</td><td><code>addi</code> 一族、所有 load（位址 = rs1 + imm_i）</td></tr>
+<tr><td><code>bm_imm_s</code></td><td class="num">3'd5</td><td><code>{inst[31:25], inst[11:7]}</code> 符號延伸</td><td>所有 store（位址 = rs1 + imm_s）。<b>填成 <code>bm_imm_i</code> 是 store 最常見的錯</b>：rd 欄位的位元會被當成位移</td></tr>
+<tr><td><code>bm_0</code></td><td class="num">3'd6</td><td>常數 0</td><td>想讓 ALU「原樣通過」op0：<code>jal</code>（<code>pc4 + 0</code>）、<code>csrw</code>（<code>rs1 + 0</code>）</td></tr>
+<tr><td><code>bm_x</code></td><td class="num">3'bx</td><td>don't care</td><td>同 <code>am_x</code>，這個 lab 用不到</td></tr>
+</tbody></table></div>
+<p><b><code>rs1 en</code>／<code>rs2 en</code>（<code>RS1_EN</code> cs[29]、<code>RS2_EN</code> cs[25]）</b>——「這道指令<b>在語意上</b>會讀 rs1／rs2 嗎？」它們接到 <code>stall_hazard_Dhl</code>（第 557–575 行）：只有 <code>en = y</code> 時，D 級才會拿 <code>inst[19:15]</code>／<code>inst[24:20]</code> 去和後面各級的寫入位址比對。做 bypass 時，同一個訊號決定要不要轉送。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>y</code></td><td class="num">1'd1</td><td>把這個暫存器編號納入冒險比對：撞到就 stall（之後是 bypass）</td><td>指令真的用到那個暫存器的值。<code>rs2 en = y</code>：R-type、分支、<b>所有 store</b>（要寫進記憶體的值來自 rs2，即使 <code>op1</code> 選的是立即數）</td></tr>
+<tr><td><code>n</code></td><td class="num">1'd0</td><td>不比對。<code>inst[19:15]</code>／<code>inst[24:20]</code> 那幾個位元對這道指令來說是立即數的一部分或沒意義</td><td><code>lui</code>／<code>auipc</code>／<code>jal</code> 兩個都是 <code>n</code>；I-type（<code>addi</code>、load）的 <code>rs2 en = n</code></td></tr>
+</tbody></table></div>
+<div class="trap"><b><code>en</code> 和 <code>muxsel</code> 不一定同進退</b><p>直覺是「<code>op0 = am_rdat</code> ⇔ <code>rs1 en = y</code>」，但有兩個反例。<b>store</b>：<code>op1 = bm_imm_s</code>，但 <code>rs2 en = y</code>，因為 rs2 的值走 <code>wdata</code> 那條路進記憶體。<b><code>jalr</code></b>：<code>op0 = am_pc4</code>，但它用 rs1 算跳躍目標（<code>jumpreg_targ_Dhl</code> 直接讀 <code>rf_rdata0_Dhl</code>），所以 <code>rs1 en</code> 必須是 <code>y</code>。填錯成 <code>n</code> 的後果：前一道指令剛好寫同一個暫存器時，讀到舊值——而且只有在指令「靠得夠近」時才錯，很難重現。填錯成 <code>y</code> 的後果比較輕：結果正確，只是偶爾多 stall。</p></div>
+<h4>③ 執行：<code>alu fn</code>、<code>md fn</code>、<code>md en</code>、<code>md muxsel</code>、<code>ex muxsel</code></h4>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 284" role="img" style="max-width:874px" aria-label="X 級的五個控制欄位：ALU_FN 選 ALU 的運算；MULDIV_FN 與 MULDIV_EN 送進迭代式乘除法器；乘除法器的 64 位元結果經 MULDIV_SEL 控制的二選一多工器取低 32 位元或高 32 位元；最後 EX_SEL 控制的 execute 多工器在 ALU 輸出與乘除法輸出之間二選一，結果存進 M 級暫存器。">
+<path class="w" d="M20 64H150"/>
+<text class="s" x="24" y="58">op0_mux_out_Xhl</text>
+<path class="w" d="M20 104H150"/>
+<text class="s" x="24" y="98">op1_mux_out_Xhl</text>
+<circle class="d" cx="130" cy="64" r="3"/><circle class="d" cx="112" cy="104" r="3"/>
+<path class="w" d="M130 64V176H150M112 104V212H150"/>
+<rect class="k" x="150" y="44" width="80" height="80"/><text x="190" y="89" text-anchor="middle">ALU</text><text class="s mut" x="155" y="68">in0</text><text class="s mut" x="155" y="108">in1</text>
+<rect class="k" x="150" y="156" width="80" height="76"/><text class="s" x="190" y="191" text-anchor="middle">imuldiv</text><text class="zh s mut" x="190" y="206" text-anchor="middle">（迭代式）</text>
+<path class="c" d="M190 44V24"/>
+<text class="s cb" x="198" y="24">ALU_FN → alu_fn_Xhl</text>
+<path class="c" d="M190 232V246"/>
+<text class="s cb" x="20" y="258">MULDIV_FN → muldivreq_msg_fn_Xhl</text>
+<text class="zh s cb" x="20" y="273">MULDIV_EN → muldivreq_val（發出請求、啟動 stall）</text>
+<path class="w" d="M230 194H300"/>
+<text class="zh s" x="236" y="188">64 位元</text>
+<circle class="d" cx="300" cy="194" r="3"/>
+<path class="w" d="M300 194V174H380M300 194V214H380"/>
+<text class="s" x="306" y="168">[31:0]</text>
+<text class="s" x="306" y="228">[63:32]</text>
+<path class="k" d="M380 154L406 164V224L380 234Z"/>
+<text class="s mut" x="384" y="178">0</text>
+<text class="s mut" x="384" y="218">1</text>
+<path class="c" d="M393 229V246"/>
+<text class="s cb" x="330" y="258">MULDIV_SEL → muldiv_mux_sel_Xhl</text>
+<text class="zh s cb" x="330" y="273">0 = mdm_l 低半　1 = mdm_u 高半</text>
+<path class="w" d="M230 84H520"/>
+<text class="zh s" x="236" y="78">alu_out_Xhl（也拿去當記憶體位址、算分支條件）</text>
+<path class="w" d="M406 194H520"/>
+<text class="s" x="412" y="188">muldiv_mux_out</text>
+<path class="k" d="M520 54L546 64V214L520 224Z"/>
+<text class="s mut" x="524" y="88">0</text>
+<text class="s mut" x="524" y="198">1</text>
+<path class="c" d="M533 59V24"/>
+<text class="s cb" x="540" y="24">EX_SEL → execute_mux_sel_Xhl</text>
+<text class="zh s cb" x="540" y="40">0 = em_alu　1 = em_md</text>
+<path class="w" d="M546 139H600"/>
+<rect class="r" x="600" y="64" width="16" height="150"/><path class="rl" d="M600 186l8 6l-8 6"/><text class="s sq" x="608" y="58" text-anchor="middle">M←X</text>
+<path class="w" d="M616 139H640" marker-end="url(#ah)"/>
+<text class="s" x="622" y="131">execute_mux_out_Mhl</text>
+</svg>
+</div>
+<figcaption><b>兩條平行的運算路徑，最後二選一。</b>ALU 每個週期都在算（組合邏輯，關不掉），所以 <code>ALU_FN</code> 對不用 ALU 的指令可以是 <code>alu_x</code>；乘除法器要 <code>MULDIV_EN = y</code> 才會啟動，啟動後整條管線會等它（<a href="#ch17">第 17 章</a>）。</figcaption>
+</figure>
+
+<p><b><code>alu fn</code>（<code>ALU_FN</code>，cs[24:21]）</b>——管線化成 <code>alu_fn_Xhl</code> 送進 ALU 的 <code>fn</code>。記得 <code>in0 = op0</code>、<code>in1 = op1</code>；ALU 內部結構在<a href="#ch7">第 7 章</a>。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>ALU 輸出</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>alu_add</code></td><td class="num">4'd0</td><td><code>in0 + in1</code></td><td>加法；<b>所有位址計算</b>（load／store）；<code>lui</code>／<code>auipc</code>／<code>jal</code>／<code>csrw</code> 這種「借 ALU 搬值」的指令</td></tr>
+<tr><td><code>alu_sub</code></td><td class="num">4'd1</td><td><code>in0 − in1</code></td><td><code>sub</code>；需要「比大小」的分支（<code>blt</code> 已經用它）</td></tr>
+<tr><td><code>alu_sll</code></td><td class="num">4'd2</td><td><code>in0 &lt;&lt; in1[4:0]</code></td><td><code>sll</code>／<code>slli</code></td></tr>
+<tr><td><code>alu_or</code></td><td class="num">4'd3</td><td><code>in0 | in1</code></td><td><code>or</code>／<code>ori</code></td></tr>
+<tr><td><code>alu_lt</code></td><td class="num">4'd4</td><td>有號比較，<code>in0 &lt; in1</code> 時輸出 1，否則 0</td><td><code>slt</code>／<code>slti</code></td></tr>
+<tr><td><code>alu_ltu</code></td><td class="num">4'd5</td><td>無號比較，同上</td><td><code>sltu</code>／<code>sltiu</code></td></tr>
+<tr><td><code>alu_and</code></td><td class="num">4'd6</td><td><code>in0 &amp; in1</code></td><td><code>and</code>／<code>andi</code></td></tr>
+<tr><td><code>alu_xor</code></td><td class="num">4'd7</td><td><code>in0 ^ in1</code></td><td><code>xor</code>／<code>xori</code>；只需要「相不相等」的分支（<code>bne</code> 已經用它：相等 ⇔ 結果為 0）</td></tr>
+<tr><td><code>alu_nor</code></td><td class="num">4'd8</td><td><code>~(in0 | in1)</code></td><td>RISC-V 沒有 nor 指令，這個值是從 MIPS 版本留下來的，用不到</td></tr>
+<tr><td><code>alu_srl</code></td><td class="num">4'd9</td><td><code>in0 &gt;&gt; in1[4:0]</code>，左邊補 0</td><td><code>srl</code>／<code>srli</code></td></tr>
+<tr><td><code>alu_sra</code></td><td class="num">4'd10</td><td><code>in0 &gt;&gt;&gt; in1[4:0]</code>，左邊補符號位元</td><td><code>sra</code>／<code>srai</code></td></tr>
+<tr><td><code>alu_x</code></td><td class="num">4'bx</td><td><code>x</code></td><td>結果完全沒人用的指令才行——但分支條件、記憶體位址都來自 <code>alu_out</code>，所以實務上只有乘除法指令能填</td></tr>
+</tbody></table></div>
+<p>ALU 的 <code>case</code> 其實還認得 <code>4'd11</code>–<code>4'd15</code>（用 <code>*</code>、<code>/</code>、<code>%</code> 寫的功能模型），但控制器沒有對應的 <code>localparam</code>，這顆 CPU 的乘除法一律走下面的 <code>imuldiv</code> 單元。</p>
+<p><b><code>md fn</code>／<code>md en</code>／<code>md muxsel</code>（<code>MULDIV_FN</code> cs[20:18]、<code>MULDIV_EN</code> cs[17]、<code>MULDIV_SEL</code> cs[16]）</b>——三個一起看。<code>md en = y</code> 才會在 X 級對乘除法器拉起 <code>muldivreq_val</code>；一旦拉起，D 級會因為 <code>!muldivreq_rdy</code>、X 級會因為 <code>!muldivresp_val</code> 而 stall，直到結果算完。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>md_mul</code></td><td class="num">3'd0</td><td>有號乘法，64 位元乘積</td><td><code>mul</code>（取低半）</td></tr>
+<tr><td><code>md_div</code></td><td class="num">3'd1</td><td>有號除法，結果是 <code>{餘數, 商}</code></td><td><code>div</code></td></tr>
+<tr><td><code>md_divu</code></td><td class="num">3'd2</td><td>無號除法，<code>{餘數, 商}</code></td><td><code>divu</code></td></tr>
+<tr><td><code>md_rem</code></td><td class="num">3'd3</td><td>和 <code>md_div</code> 算一樣的東西</td><td><code>rem</code>（差別只在 <code>md muxsel</code> 取高半）</td></tr>
+<tr><td><code>md_remu</code></td><td class="num">3'd4</td><td>和 <code>md_divu</code> 算一樣的東西</td><td><code>remu</code></td></tr>
+<tr><td><code>md_x</code></td><td class="num">3'bx</td><td>don't care</td><td>所有 <code>md en = n</code> 的列（現有的每一列都是）</td></tr>
+</tbody></table></div>
+<p>編碼 <code>3'd5</code>–<code>3'd7</code> 還空著——Objective 2 的 <code>mulh</code>／<code>mulhsu</code>／<code>mulhu</code> 要用的就是這三個空位（<a href="#ch18">第 18 章</a>）。這些數字必須和 <code>imuldiv-MulDivReqMsg.v</code> 第 30–34 行的 <code>`IMULDIV_MULDIVREQ_MSG_FUNC_*</code> 一致，因為這條線直接接到乘除法器的 <code>fn</code>。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>md en</code> = <code>n</code></td><td class="num">1'd0</td><td>不發請求，乘除法器閒置，不會 stall</td><td>所有非 M 指令。<b>不可以填 <code>x</code></b>：它是致能訊號</td></tr>
+<tr><td><code>md en</code> = <code>y</code></td><td class="num">1'd1</td><td>發請求，管線等它算完（約 34 個週期）</td><td><code>mul</code>／<code>div</code>／<code>divu</code>／<code>rem</code>／<code>remu</code>（以及 mulh 家族）</td></tr>
+<tr><td><code>mdm_l</code></td><td class="num">1'd0</td><td>取 64 位元結果的 <code>[31:0]</code>：乘積低半，或除法的<b>商</b></td><td><code>mul</code>、<code>div</code>、<code>divu</code></td></tr>
+<tr><td><code>mdm_u</code></td><td class="num">1'd1</td><td>取 <code>[63:32]</code>：乘積高半，或除法的<b>餘數</b></td><td><code>rem</code>、<code>remu</code>（以及 mulh 家族）</td></tr>
+<tr><td><code>mdm_x</code></td><td class="num">1'bx</td><td>don't care</td><td>所有 <code>md en = n</code> 的列</td></tr>
+</tbody></table></div>
+<p><b><code>ex muxsel</code>（<code>EX_SEL</code>，cs[15]）</b>——X 級最後的二選一，輸出會存成 <code>execute_mux_out_Mhl</code>，是 M 級以後「這道指令算出來的值」。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>em_alu</code></td><td class="num">1'd0</td><td>取 <code>alu_out_Xhl</code></td><td>結果來自 ALU 且要寫回 regfile／CSR 的指令</td></tr>
+<tr><td><code>em_md</code></td><td class="num">1'd1</td><td>取 <code>muldiv_mux_out_Xhl</code></td><td>M 指令</td></tr>
+<tr><td><code>em_x</code></td><td class="num">1'bx</td><td>don't care</td><td>X 級的結果沒有人要：load（寫回的是記憶體回應）、store 和分支（根本不寫回）。注意這不影響記憶體位址——位址是直接從 <code>alu_out_Xhl</code> 拉的，不經過這顆 mux</td></tr>
+</tbody></table></div>
+<h4>④ 記憶體：<code>mem rq</code>、<code>mem len</code>、<code>memresp muxsel</code></h4>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 780 250" role="img" style="max-width:897px" aria-label="記憶體相關的三個控制欄位：MEM_REQ 同時產生請求有效訊號 dmemreq_val 與讀寫旗標 dmemreq_msg_rw，MEM_LEN 成為請求長度 dmemreq_msg_len，位址來自 ALU 輸出、寫入資料來自 wdata_Xhl；記憶體的回應分成五條支線，由 MEM_SEL 控制的五選一多工器挑出整字、有號位元組、無號位元組、有號半字或無號半字。">
+<path class="c" d="M20 52H250" marker-end="url(#ahc)"/>
+<text class="s cb" x="24" y="47">MEM_REQ → dmemreq_val = (≠nr)</text>
+<path class="c" d="M20 80H250" marker-end="url(#ahc)"/>
+<text class="s cb" x="24" y="75">MEM_REQ → dmemreq_msg_rw = (==st)</text>
+<path class="c" d="M20 108H250" marker-end="url(#ahc)"/>
+<text class="s cb" x="24" y="103">MEM_LEN → dmemreq_msg_len</text>
+<path class="w" d="M20 150H250" marker-end="url(#ah)"/>
+<text class="s" x="24" y="145">alu_out_Xhl → dmemreq_msg_addr</text>
+<path class="w" d="M20 178H250" marker-end="url(#ah)"/>
+<text class="s" x="24" y="173">wdata_Xhl → dmemreq_msg_data</text>
+<rect class="k" x="250" y="30" width="100" height="170"/><text x="300" y="108" text-anchor="middle">data</text><text x="300" y="124" text-anchor="middle">memory</text>
+<text class="zh s mut" x="300" y="216" text-anchor="middle">X 級送請求</text>
+<text class="zh s mut" x="300" y="231" text-anchor="middle">M 級收回應</text>
+<path class="w" d="M350 120H380"/>
+<circle class="d" cx="380" cy="120" r="3"/>
+<path class="w" d="M380 50V190"/>
+<path class="w" d="M380 50H610"/>
+<text class="zh s" x="388" y="45">0 = dmm_w　dmemresp_msg_data 原樣</text>
+<path class="w" d="M380 85H610"/>
+<text class="zh s" x="388" y="80">1 = dmm_b　[7:0] 符號延伸</text>
+<path class="w" d="M380 120H610"/>
+<text class="zh s" x="388" y="115">2 = dmm_bu　[7:0] 補 0</text>
+<path class="w" d="M380 155H610"/>
+<text class="zh s" x="388" y="150">3 = dmm_h　[15:0] 符號延伸</text>
+<path class="w" d="M380 190H610"/>
+<text class="zh s" x="388" y="185">4 = dmm_hu　[15:0] 補 0</text>
+<path class="k" d="M610 32L636 42V198L610 208Z"/>
+<path class="w" d="M636 120H700" marker-end="url(#ah)"/>
+<text class="s" x="642" y="112">dmemresp_mux_out_Mhl</text>
+<path class="c" d="M623 203V226"/>
+<text class="s cb" x="770" y="240" text-anchor="end">MEM_SEL → dmemresp_mux_sel_Mhl</text>
+</svg>
+</div>
+<figcaption><b>一個 <code>MEM_REQ</code> 欄位拆成兩條線。</b><code>nr</code>／<code>ld</code>／<code>st</code> 不是直接送給記憶體，而是先變成「要不要發請求」和「讀還是寫」（CoreCtrl 第 517–519 行）。<code>MEM_LEN</code> 管「搬幾個 byte」，<code>MEM_SEL</code> 管「讀回來之後怎麼補滿 32 位元」——load 兩個都要對，store 只有 <code>MEM_LEN</code> 有意義。</figcaption>
+</figure>
+
+<p><b><code>mem rq</code>（<code>MEM_REQ</code>，cs[14:13]）</b>——要不要對資料記憶體發請求。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>nr</code></td><td class="num">2'd0</td><td><code>dmemreq_val = 0</code>：不發請求，M 級不用等回應</td><td>所有不碰記憶體的指令</td></tr>
+<tr><td><code>ld</code></td><td class="num">2'd1</td><td><code>dmemreq_val = 1</code>、<code>rw = 0</code>：讀。位址 = <code>alu_out_Xhl</code>，回應在 M 級回來</td><td><code>lw</code>／<code>lh</code>／<code>lhu</code>／<code>lb</code>／<code>lbu</code></td></tr>
+<tr><td><code>st</code></td><td class="num">2'd2</td><td><code>dmemreq_val = 1</code>、<code>rw = 1</code>：寫。資料 = <code>wdata_Xhl</code>（rs2 的值）</td><td><code>sw</code>／<code>sh</code>／<code>sb</code></td></tr>
+</tbody></table></div>
+<p>這一欄沒有 <code>x</code> 版本——它決定 <code>val</code>，是致能訊號。</p>
+<p><b><code>mem len</code>（<code>MEM_LEN</code>，cs[12:11]）</b>——這次存取幾個 byte，直接變成請求訊息裡的 <code>len</code> 欄。<b>編碼不是 byte 數</b>：word 是 0，因為 2 位元放不下 4。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>ml_w</code></td><td class="num">2'd0</td><td>4 bytes</td><td><code>lw</code>、<code>sw</code></td></tr>
+<tr><td><code>ml_b</code></td><td class="num">2'd1</td><td>1 byte</td><td><code>lb</code>、<code>lbu</code>、<code>sb</code></td></tr>
+<tr><td><code>ml_h</code></td><td class="num">2'd2</td><td>2 bytes</td><td><code>lh</code>、<code>lhu</code>、<code>sh</code></td></tr>
+<tr><td><code>ml_x</code></td><td class="num">2'bx</td><td>don't care</td><td><code>mem rq = nr</code> 的列</td></tr>
+</tbody></table></div>
+<p>對 <b>store</b> 來說這一欄特別重要：<code>sb</code> 填成 <code>ml_w</code> 會把旁邊 3 個 byte 一起蓋掉，而且測試要剛好去讀旁邊的位置才會發現。</p>
+<p><b><code>memresp muxsel</code>（<code>MEM_SEL</code>，cs[10:8]）</b>——記憶體回來的 32 位元怎麼處理。管線化到 M 級成為 <code>dmemresp_mux_sel_Mhl</code>（CoreDpath 第 313–333 行）。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>dmm_w</code></td><td class="num">3'd0</td><td>原樣通過</td><td><code>lw</code></td></tr>
+<tr><td><code>dmm_b</code></td><td class="num">3'd1</td><td>取 <code>[7:0]</code>，用 bit 7 填滿高 24 位元</td><td><code>lb</code>：<code>0x80</code> 讀回來是 <code>0xFFFFFF80</code>（−128）</td></tr>
+<tr><td><code>dmm_bu</code></td><td class="num">3'd2</td><td>取 <code>[7:0]</code>，高 24 位元補 0</td><td><code>lbu</code>：<code>0x80</code> 讀回來是 <code>0x00000080</code>（128）</td></tr>
+<tr><td><code>dmm_h</code></td><td class="num">3'd3</td><td>取 <code>[15:0]</code>，用 bit 15 填滿高 16 位元</td><td><code>lh</code></td></tr>
+<tr><td><code>dmm_hu</code></td><td class="num">3'd4</td><td>取 <code>[15:0]</code>，高 16 位元補 0</td><td><code>lhu</code></td></tr>
+<tr><td><code>dmm_x</code></td><td class="num">3'bx</td><td>don't care</td><td>不是 load 的列。（現成的 <code>sw</code> 那列寫的是 <code>dmm_w</code>，也沒錯——store 不寫回，這顆 mux 的輸出沒人看）</td></tr>
+</tbody></table></div>
+<h4>⑤ 寫回：<code>wb muxsel</code>、<code>rf wen</code>、<code>wa</code>、<code>csr wen</code></h4>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 250" role="img" style="max-width:874px" aria-label="寫回相關的四個控制欄位：WB_SEL 控制寫回多工器在 X 級結果與記憶體回應之間二選一，輸出存進 W 級暫存器成為 wb_mux_out_Whl；它同時是暫存器檔的寫入資料與 CSR 的寫入資料。RF_WEN 與 RF_WADDR 經過三級控制管線暫存器成為暫存器檔的寫入致能與寫入位址；CSR_WEN 同樣管線化到 W 級，控制 csr_status 是否更新。">
+<path class="w" d="M20 66H236"/>
+<text class="zh s" x="24" y="60">0 = wm_alu　execute_mux_out_Mhl</text>
+<path class="w" d="M20 116H236"/>
+<text class="zh s" x="24" y="110">1 = wm_mem　dmemresp_mux_out_Mhl</text>
+<path class="k" d="M236 40L262 50V132L236 142Z"/>
+<path class="c" d="M249 137V160"/>
+<text class="s cb" x="20" y="172">WB_SEL → wb_mux_sel_Mhl</text>
+<path class="w" d="M262 91H296"/>
+<rect class="r" x="296" y="56" width="16" height="70"/><path class="rl" d="M296 100l8 6l-8 6"/><text class="s sq" x="304" y="50" text-anchor="middle">W←M</text>
+<path class="w" d="M312 91H440" marker-end="url(#ah)"/>
+<text class="s" x="318" y="83">wb_mux_out_Whl</text>
+<circle class="d" cx="424" cy="91" r="3"/>
+<path class="w" d="M424 91V24H660V50" marker-end="url(#ah)"/>
+<text class="s" x="432" y="18">proc2csr_data_Whl</text>
+<rect class="k" x="440" y="60" width="120" height="176"/><text x="500" y="78" text-anchor="middle">regfile</text><text class="s mut" x="446" y="95">wdata_p</text><text class="s mut" x="446" y="199">wen_p</text><text class="s mut" x="446" y="227">waddr_p</text>
+<path class="c" d="M20 195H440" marker-end="url(#ahc)"/>
+<text class="zh s cb" x="24" y="189">RF_WEN → rf_wen_Dhl → _Xhl → _Mhl → _Whl，再 AND inst_val_Whl</text>
+<path class="c" d="M20 223H440" marker-end="url(#ahc)"/>
+<text class="s cb" x="24" y="217">RF_WADDR → rf_waddr_Dhl → _Xhl → _Mhl → _Whl</text>
+<rect class="r" x="580" y="50" width="160" height="50"/><text x="660" y="72" text-anchor="middle">csr_status</text><text class="zh s" x="660" y="89" text-anchor="middle">（CSR 位址 21）</text>
+<path class="c" d="M660 128V100" marker-end="url(#ahc)"/>
+<text class="s cb" x="660" y="142" text-anchor="middle">CSR_WEN → … → csr_wen_Whl</text>
+<text class="zh s mut" x="660" y="158" text-anchor="middle">位址 = inst[31:20]，只認 12'd21</text>
+</svg>
+</div>
+<figcaption><b>這一組是唯一會「留下痕跡」的欄位。</b>前面四組填錯，頂多算出錯的值；<code>RF_WEN</code>／<code>CSR_WEN</code> 填錯，錯的值就真的寫進去了。<code>rf_waddr_Xhl</code>／<code>_Mhl</code>／<code>_Whl</code> 還會被 D 級拿去比對（<a href="#ch11">第 11 章</a>），所以這兩欄也決定了後面的指令會不會被 stall。</figcaption>
+</figure>
+
+<p><b><code>wb muxsel</code>（<code>WB_SEL</code>，cs[7]）</b>——M 級的二選一：這道指令最後的「結果」是哪一個。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>wm_alu</code></td><td class="num">1'd0</td><td>取 <code>execute_mux_out_Mhl</code>。名字叫 alu，但其實是「X 級的結果」——<code>ex muxsel = em_md</code> 時它就是乘除法的結果</td><td>所有運算指令、<code>lui</code>／<code>auipc</code>／<code>jal</code>／<code>jalr</code>、M 指令、<code>csrw</code></td></tr>
+<tr><td><code>wm_mem</code></td><td class="num">1'd1</td><td>取 <code>dmemresp_mux_out_Mhl</code></td><td>所有 load</td></tr>
+<tr><td><code>wm_x</code></td><td class="num">1'bx</td><td>don't care</td><td>不寫回的指令（分支；store 也可以）</td></tr>
+</tbody></table></div>
+<p><b><code>rf wen</code>（<code>RF_WEN</code>，cs[6]）與 <code>wa</code>（<code>RF_WADDR</code>，cs[5:1]）</b>——要不要寫 regfile、寫到哪一個。兩者一路管線化到 W 級；<code>rf_wen_Whl</code> 還要再 AND 上 <code>inst_val_Whl</code>（第 798 行），bubble 才不會寫東西。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>rf wen</code> = <code>y</code></td><td class="num">1'd1</td><td>W 級的上升緣把 <code>wb_mux_out_Whl</code> 寫進 <code>registers[waddr]</code></td><td>所有有 <code>rd</code> 的指令</td></tr>
+<tr><td><code>rf wen</code> = <code>n</code></td><td class="num">1'd0</td><td>不寫</td><td>store、分支、<code>csrw</code>。<b>不可以填 <code>x</code></b></td></tr>
+<tr><td><code>rd</code></td><td class="num"><code>inst[11:7]</code></td><td>不是常數，而是一條線：<code>wire [4:0] rd = inst_rd_Dhl</code>（第 400 行），也就是指令裡的 rd 欄位</td><td><code>rf wen = y</code> 的列全部填它</td></tr>
+<tr><td><code>r0</code></td><td class="num">5'd0</td><td>寫到 x0——regfile 會忽略（<code>waddr_p != 0</code> 才寫）</td><td>這個 lab 用不到</td></tr>
+<tr><td><code>rx</code></td><td class="num">5'bx</td><td>don't care</td><td><code>rf wen = n</code> 的列。安全，因為冒險比對有 <code>rf_wen_Xhl &amp;&amp;</code> 擋在前面</td></tr>
+</tbody></table></div>
+<p>為什麼 store／分支<b>一定</b>要 <code>rf wen = n</code>？因為它們的 <code>inst[11:7]</code> 不是 rd，而是立即數的一部分。填成 <code>y, rd</code> 的話，CPU 會把垃圾寫進一個「看起來隨機」的暫存器。</p>
+<p><b><code>csr wen</code>（<code>CSR_WEN</code>，cs[0]）</b>——W 級要不要寫 CSR。CSR 位址不在控制表裡，而是直接取 <code>ir_Dhl[31:20]</code> 一路管線化下去；目前只認 <code>12'd21</code>，寫進去的值 <code>proc2csr_data_Whl</code> 就是 <code>wb_mux_out_Whl</code>。這解釋了 <code>csrw</code> 那一列為什麼長那樣：<code>am_rdat + bm_0 + alu_add + em_alu + wm_alu</code> 只是為了把 rs1 的值原封不動送到 W 級。</p>
+<div class="tbl"><table>
+<thead><tr><th>值</th><th>編碼</th><th>硬體上發生什麼事</th><th>什麼時候填它</th></tr></thead>
+<tbody>
+<tr><td><code>n</code></td><td class="num">1'd0</td><td>不寫 CSR</td><td>除了 <code>csrw</code> 以外全部</td></tr>
+<tr><td><code>y</code></td><td class="num">1'd1</td><td>W 級把值寫進 <code>csr_status</code>，測試平台看到非 0 就結束模擬（<a href="#ch20">第 20 章</a>）</td><td>只有 <code>csrw</code>（已經寫好）</td></tr>
+</tbody></table></div>
+<div class="quiz"><b>想一想</b><p>不看原始碼，試著只用上面的表格寫出 <code>sw</code> 那一列，再和 CoreCtrl 第 440 行對答案。哪幾欄你填的和它不一樣、但兩種寫法都正確？</p>
+<details><summary>看答案</summary><p>第 440 行是 <code>y, n, br_none, pm_p, am_rdat, y, bm_imm_s, y, alu_add, md_x, n, mdm_x, em_x, st, ml_w, dmm_w, wm_mem, n, rx, n</code>。其中 <code>dmm_w</code> 和 <code>wm_mem</code> 換成 <code>dmm_x</code>、<code>wm_x</code> 也正確：<code>rf wen = n</code>，writeback 那一段的輸出沒有人用。反過來，<code>rs2 en = y</code>、<code>bm_imm_s</code>、<code>st</code>、<code>ml_w</code>、<code>rf wen = n</code> 這五欄沒有第二種正確答案。</p></details></div>
 
 <div class="note"><b><code>x</code> 到底是什麼？</b>
 <p><code>am_x</code>、<code>alu_x</code>、<code>dmm_x</code> 這類值展開後是 <code>2'bx</code>、<code>4'bx</code>——<b>不在乎 (don't care)</b>。合成器可以自由選任何值來省邏輯；模擬時那條線會是 <code>x</code>。</p>
@@ -6689,9 +7050,9 @@ $ ./riscvstall-sim +exe=riscv-addi.vmh +max-cycles=2000   # 早點放棄，方�
   <path class="w" d="M89 50V342H200" marker-end="url(#ah)"/>
 
   <!-- case 1 -->
-  <rect class="k" x="202" y="54" width="210" height="38"/><text class="s wr" x="212" y="72">RTL-ERROR : Illegal</text><text class="s wr" x="212" y="87">instruction!</text>
+  <rect class="k" x="202" y="54" width="210" height="38"/><text class="s wr" x="212" y="72">RTL-ERROR … x assertion</text><text class="s wr" x="212" y="87">failed : memreq0_val（洗版）</text>
   <path class="w" d="M412 72H448" marker-end="url(#ah)"/>
-  <rect class="k" x="450" y="50" width="296" height="46"/><text class="zh s" x="462" y="68">控制表裡沒有這一列，或 casez 的位元樣式打錯</text><text class="zh s mut" x="462" y="85">→ 也可能是 InstMsg.v 的 `define 還被註解掉</text>
+  <rect class="k" x="450" y="50" width="296" height="46"/><text class="zh s" x="462" y="68">控制表沒有這一列（或 casez 樣式打錯）→ cs 全是 x</text><text class="zh s mut" x="462" y="85">→ 也可能是 InstMsg.v 的 `define 還被註解掉</text>
 
   <!-- case 2 -->
   <rect class="k" x="202" y="144" width="210" height="38"/><text class="s wr" x="212" y="162">FAILED (status = N)</text><text class="s mut" x="212" y="177">N &gt; 1</text>
@@ -6717,27 +7078,20 @@ $ ./riscvstall-sim +exe=riscv-addi.vmh +max-cycles=2000   # 早點放棄，方�
 
 <p>逐一展開：</p>
 
-<h4>① <code>RTL-ERROR : Illegal instruction!</code></h4>
-<p>這是 <code>CoreCtrl</code> 結尾的 assertion 印的。它的條件很直白：<code>cs</code> 的最高位（<code>INST_VAL</code>）不是 1。而 <code>cs</code> 在 <code>casez</code> 開頭被預設成全 <code>x</code>，所以「沒有任何一列命中」就會踩到它。連續兩次就 <code>$finish</code>。</p>
+<h4>① 滿畫面的 <code>x assertion failed</code>，最後 timeout</h4>
+<p>這是「控制表沒有這一列」的真實症狀（用 <code>riscv-lh.vmh</code> 在還沒加 <code>lh</code> 的 riscvstall 上實測）：</p>
 <div class="ex">
-<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 875–889 行</div>
-<pre><code class="language-verilog">reg overload = 1'b0;
-
-always @ ( posedge clk ) begin
-  if ( !cs[`RISCV_INST_MSG_INST_VAL] &amp;&amp; !reset ) begin
-    $display(" RTL-ERROR : %m : Illegal instruction!");
-
-    if ( overload == 1'b1 ) begin
-      $finish;
-    end
-
-    overload = 1'b1;
-  end
-  else begin
-    overload = 1'b0;
-  end
-end</code></pre>
+<div class="src mine">實測輸出：vvp ./riscvstall-sim +exe=riscv-lh.vmh</div>
+<pre><code> RTL-ERROR ( time = 125 ) Testbench.pattern.mem.mem : x assertion failed : memresp1_rdy
+ RTL-ERROR ( time = 125 ) Testbench.pattern.mem.mem : x assertion failed : memreq1_val
+ RTL-ERROR ( time = 125 ) Testbench.pattern.mem.mem : x assertion failed : memresp0_rdy
+ RTL-ERROR ( time = 125 ) Testbench.pattern.mem.mem : x assertion failed : memreq0_val
+ ...（同樣四行每個週期重複，約四十萬行）
+*** FAILED *** (timeout)</code></pre>
 </div>
+<p>原因：<code>casez</code> 開頭把 <code>cs</code> 預設成全 <code>x</code>，沒有任何一列命中時，這道指令的<b>每一個</b>控制欄位都是 <code>x</code>——包含 <code>MEM_REQ</code>、<code>MULDIV_EN</code>、<code>J_EN</code> 這些致能。<code>x</code> 流進 <code>stall_Dhl</code>、<code>dmemreq_val</code>、<code>imemreq_val</code>，測試記憶體發現它的 <code>val</code>／<code>rdy</code> 腳是 <code>x</code> 就開始報錯；管線的 stall 也變成 <code>x</code>，PC 不再前進，最後 timeout。<b>第一行錯誤的時間</b>就是那道指令進到 D 級的時間，在波形上看那一刻的 <code>ir_Dhl</code> 就知道是誰。</p>
+<div class="trap"><b>不要等 <code>Illegal instruction!</code></b>
+<p><code>CoreCtrl</code> 結尾（第 875–889 行）確實有一段 assertion 會印 <code>RTL-ERROR : Illegal instruction!</code>，條件是 <code>!cs[`RISCV_INST_MSG_INST_VAL]</code>。但沒命中時 <code>cs[38]</code> 是 <code>x</code>，<code>!x</code> 還是 <code>x</code>，而 <code>if (x)</code> 在模擬裡<b>不成立</b>——所以缺一列時這句話<b>不會</b>出現。只有當某一列明確把 <code>val</code> 欄填成 <code>n</code> 時它才會觸發。</p></div>
 <p>三個最常見的原因，照順序檢查：控制表那一列還被註解著；<code>InstMsg.v</code> 裡對應的 <code>`define</code> 還被註解著（Objective 2 的 <code>mulh</code> 系列就是這樣）；或者 <code>casez</code> 的樣式打錯，讓某個 <code>?</code> 變成 <code>0</code>。想確認是哪一條指令，在波形裡看那個週期的 <code>ir_Dhl</code>，對照 <code>riscv-isa.txt</code> 解碼。</p>
 
 <h4>② <code>FAILED (status = N)</code>：縮小到某個控制欄位</h4>

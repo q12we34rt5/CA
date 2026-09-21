@@ -449,9 +449,9 @@ $ ./riscvstall-sim +exe=riscv-addi.vmh +max-cycles=2000   # 早點放棄，方�
   <path class="w" d="M89 50V342H200" marker-end="url(#ah)"/>
 
   <!-- case 1 -->
-  <rect class="k" x="202" y="54" width="210" height="38"/><text class="s wr" x="212" y="72">RTL-ERROR : Illegal</text><text class="s wr" x="212" y="87">instruction!</text>
+  <rect class="k" x="202" y="54" width="210" height="38"/><text class="s wr" x="212" y="72">RTL-ERROR … x assertion</text><text class="s wr" x="212" y="87">failed : memreq0_val（洗版）</text>
   <path class="w" d="M412 72H448" marker-end="url(#ah)"/>
-  <rect class="k" x="450" y="50" width="296" height="46"/><text class="zh s" x="462" y="68">控制表裡沒有這一列，或 casez 的位元樣式打錯</text><text class="zh s mut" x="462" y="85">→ 也可能是 InstMsg.v 的 `define 還被註解掉</text>
+  <rect class="k" x="450" y="50" width="296" height="46"/><text class="zh s" x="462" y="68">控制表沒有這一列（或 casez 樣式打錯）→ cs 全是 x</text><text class="zh s mut" x="462" y="85">→ 也可能是 InstMsg.v 的 `define 還被註解掉</text>
 
   <!-- case 2 -->
   <rect class="k" x="202" y="144" width="210" height="38"/><text class="s wr" x="212" y="162">FAILED (status = N)</text><text class="s mut" x="212" y="177">N &gt; 1</text>
@@ -477,27 +477,20 @@ $ ./riscvstall-sim +exe=riscv-addi.vmh +max-cycles=2000   # 早點放棄，方�
 
 <p>逐一展開：</p>
 
-<h4>① <code>RTL-ERROR : Illegal instruction!</code></h4>
-<p>這是 <code>CoreCtrl</code> 結尾的 assertion 印的。它的條件很直白：<code>cs</code> 的最高位（<code>INST_VAL</code>）不是 1。而 <code>cs</code> 在 <code>casez</code> 開頭被預設成全 <code>x</code>，所以「沒有任何一列命中」就會踩到它。連續兩次就 <code>$finish</code>。</p>
+<h4>① 滿畫面的 <code>x assertion failed</code>，最後 timeout</h4>
+<p>這是「控制表沒有這一列」的真實症狀（用 <code>riscv-lh.vmh</code> 在還沒加 <code>lh</code> 的 riscvstall 上實測）：</p>
 <div class="ex">
-<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 875–889 行</div>
-<pre><code class="language-verilog">reg overload = 1'b0;
-
-always @ ( posedge clk ) begin
-  if ( !cs[`RISCV_INST_MSG_INST_VAL] &amp;&amp; !reset ) begin
-    $display(" RTL-ERROR : %m : Illegal instruction!");
-
-    if ( overload == 1'b1 ) begin
-      $finish;
-    end
-
-    overload = 1'b1;
-  end
-  else begin
-    overload = 1'b0;
-  end
-end</code></pre>
+<div class="src mine">實測輸出：vvp ./riscvstall-sim +exe=riscv-lh.vmh</div>
+<pre><code> RTL-ERROR ( time = 125 ) Testbench.pattern.mem.mem : x assertion failed : memresp1_rdy
+ RTL-ERROR ( time = 125 ) Testbench.pattern.mem.mem : x assertion failed : memreq1_val
+ RTL-ERROR ( time = 125 ) Testbench.pattern.mem.mem : x assertion failed : memresp0_rdy
+ RTL-ERROR ( time = 125 ) Testbench.pattern.mem.mem : x assertion failed : memreq0_val
+ ...（同樣四行每個週期重複，約四十萬行）
+*** FAILED *** (timeout)</code></pre>
 </div>
+<p>原因：<code>casez</code> 開頭把 <code>cs</code> 預設成全 <code>x</code>，沒有任何一列命中時，這道指令的<b>每一個</b>控制欄位都是 <code>x</code>——包含 <code>MEM_REQ</code>、<code>MULDIV_EN</code>、<code>J_EN</code> 這些致能。<code>x</code> 流進 <code>stall_Dhl</code>、<code>dmemreq_val</code>、<code>imemreq_val</code>，測試記憶體發現它的 <code>val</code>／<code>rdy</code> 腳是 <code>x</code> 就開始報錯；管線的 stall 也變成 <code>x</code>，PC 不再前進，最後 timeout。<b>第一行錯誤的時間</b>就是那道指令進到 D 級的時間，在波形上看那一刻的 <code>ir_Dhl</code> 就知道是誰。</p>
+<div class="trap"><b>不要等 <code>Illegal instruction!</code></b>
+<p><code>CoreCtrl</code> 結尾（第 875–889 行）確實有一段 assertion 會印 <code>RTL-ERROR : Illegal instruction!</code>，條件是 <code>!cs[`RISCV_INST_MSG_INST_VAL]</code>。但沒命中時 <code>cs[38]</code> 是 <code>x</code>，<code>!x</code> 還是 <code>x</code>，而 <code>if (x)</code> 在模擬裡<b>不成立</b>——所以缺一列時這句話<b>不會</b>出現。只有當某一列明確把 <code>val</code> 欄填成 <code>n</code> 時它才會觸發。</p></div>
 <p>三個最常見的原因，照順序檢查：控制表那一列還被註解著；<code>InstMsg.v</code> 裡對應的 <code>`define</code> 還被註解著（Objective 2 的 <code>mulh</code> 系列就是這樣）；或者 <code>casez</code> 的樣式打錯，讓某個 <code>?</code> 變成 <code>0</code>。想確認是哪一條指令，在波形裡看那個週期的 <code>ir_Dhl</code>，對照 <code>riscv-isa.txt</code> 解碼。</p>
 
 <h4>② <code>FAILED (status = N)</code>：縮小到某個控制欄位</h4>

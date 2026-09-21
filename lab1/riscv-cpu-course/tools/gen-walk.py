@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Regenerate the generated SVGs of src/20-datapath.html in place:
 
-  figure 0      block-level overview of the six stages (ch4)
-  figures 4-8   the same simplified D/X/M/W datapath, one per instruction, with the
+  overview      block-level overview of the six stages (ch4)
+  walkthroughs  the same simplified D/X/M/W datapath, one per instruction, with the
                 active path highlighted (ch6: addi, lw, sw, bne, jal)
 
 Only the <svg>…</svg> of those figures is replaced (aria-label and figcaption stay).
@@ -226,19 +226,24 @@ def overview_svg(aria):
 def main():
     s = open(SRC, encoding='utf-8').read()
     figs = list(re.finditer(r'<figure>.*?</figure>', s, re.S))
-    targets = {0: None, 4: 'addi', 5: 'lw', 6: 'sw', 7: 'bne', 8: 'jal'}
-    out, last = [], 0
-    for i, m in enumerate(figs):
-        if i not in targets:
-            continue
+    # figures are recognised by the start of their aria-label, so adding figures elsewhere is harmless
+    targets = {'lab1 五級管線 datapath': None, 'addi 在簡化': 'addi', 'lw 在簡化': 'lw', 'sw 在簡化': 'sw',
+               'bne 在簡化': 'bne', 'jal 在簡化': 'jal'}
+    out, last, done = [], 0, 0
+    for m in figs:
         f = m.group(0)
         sm = re.search(r'<svg\b.*?</svg>', f, re.S)
         aria = re.search(r'aria-label="([^"]*)"', sm.group(0)).group(1)
-        new = overview_svg(aria) if targets[i] is None else walk_svg(targets[i], aria)
+        key = next((k for k in targets if aria.startswith(k)), None)
+        if key is None:
+            continue
+        new = overview_svg(aria) if targets[key] is None else walk_svg(targets[key], aria)
         out.append(s[last:m.start() + sm.start()]); out.append(new); last = m.start() + sm.end()
+        done += 1
+    assert done == len(targets), 'expected %d generated figures, found %d' % (len(targets), done)
     out.append(s[last:])
     open(SRC, 'w', encoding='utf-8').write(''.join(out))
-    print('regenerated %d figures' % len(targets))
+    print('regenerated %d figures' % done)
 
 
 if __name__ == '__main__':
