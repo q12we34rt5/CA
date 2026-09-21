@@ -1,0 +1,992 @@
+<!-- ============================================================ ch6 -->
+<section class="ch" id="ch6" data-part="Objective 2 · M 擴充" data-nav="Obj 2：mulh / mulhu / mulhsu">
+<p class="eyebrow">第 6 站 · Objective 2（15%）</p>
+<h2>Objective 2：mulh / mulhu / mulhsu</h2>
+
+<p>這一站要在 <code>riscvstall</code> 上補完 RV32M 的三條「取乘積高半」指令。和 <a href="#ch5">第 5 站</a>不一樣的地方在於：前面那 32 條指令，硬體本來就做得到，你只是在控制表上填格子；這三條裡有兩條（<code>mulhu</code>、<code>mulhsu</code>）<b>現有的乘法器算不出來</b>，你得動到 <code>imuldiv/</code> 裡面。所以它只佔 15%，卻是整個 Lab 1 裡唯一一處要你改運算單元的地方。</p>
+
+<p>開工前先把<a href="../riscv-cpu-course/index.html#ch17">圖解課第 17 章</a>（乘除法器怎麼掛在管線上）和<a href="../riscv-cpu-course/index.html#ch18">第 18 章</a>（mulh 家族）看過——那兩章把「為什麼低半不分有號無號、高半要分」和「現有乘法器的符號包覆層」講完了。這一站只講你要動的檔案、動的順序、和怎麼確認動對了。</p>
+
+<h3>三條指令，兩種難度</h3>
+
+<p>先把工作量估對，才不會把三條指令當成一樣的事：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>指令</th><th>要動 <code>imuldiv/</code> 嗎</th><th>做什麼</th></tr></thead>
+<tbody>
+<tr class="hi"><td><code>mulh</code></td><td>不用</td><td>送給單元的仍是 <code>md_mul</code>，只是控制表的 <code>MULDIV_SEL</code> 欄填 <code>mdm_u</code>（取高半）。純粹是 InstMsg 一個 define ＋ CoreCtrl 一列。</td></tr>
+<tr><td><code>mulhu</code></td><td>要</td><td>兩個運算元都當無號：不取絕對值、結果不取二補數。</td></tr>
+<tr><td><code>mulhsu</code></td><td>要</td><td>a 有號、b 無號：只有 a 取絕對值，結果符號只看 <code>a[31]</code>。</td></tr>
+</tbody>
+</table></div>
+
+<div class="note"><b>順序建議</b><p>先只做 <code>mulh</code>，跑一次測試看到 PASSED，再回頭動乘法器。這樣「控制表填錯」和「乘法器改壞」這兩類錯誤不會混在一起——不然你看到 FAILED 會完全不知道要往哪邊查。</p></div>
+
+<h3>改動會穿過五個檔案</h3>
+
+<p>這三條指令的資訊會沿著一條線傳下去：指令位元 → 控制表解出 <code>muldivreq_msg_fn_Dhl</code> → 管線化成 <code>muldivreq_msg_fn_Xhl</code> → 進 <code>imuldiv_IntMulDivIterative</code> 分流 → 進乘法器決定符號怎麼處理。<b>這條線上每一段都要你補一塊</b>，少一塊，訊號就在那裡斷掉。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 476" role="img" aria-label="Objective 2 的五個檔案串成一條訊號鏈：riscvstall-InstMsg.v 取消三個指令編碼與反組譯的註解，riscvstall-CoreCtrl.v 新增 md localparam 並補三列控制表產生 muldivreq_msg_fn，imuldiv-MulDivReqMsg.v 新增兩個 FUNC 編碼且數值必須與 md 一致，imuldiv-IntMulDivIterative.v 把新的 fn 分流到乘法器並把 fn 轉送進去，最後 imuldiv-IntMulIterative.v 依 fn 決定每個運算元是否視為有號。">
+  <text class="hd" x="16" y="24">muldivreq_msg_fn 一路從控制表送到乘法器</text>
+
+  <rect class="af" x="60" y="40" width="580" height="52"/>
+  <text x="76" y="62">riscvstall-InstMsg.v</text>
+  <text class="zh s mut" x="76" y="82">第 147–149 行取消 define 註解；400–402、467–469 行的反組譯也一起</text>
+
+  <path class="w" d="M350 92V132" marker-end="url(#ah)"/>
+  <text class="s mut" x="360" y="118">casez 比對得到 cs</text>
+
+  <rect class="af" x="60" y="132" width="580" height="52"/>
+  <text x="76" y="154">riscvstall-CoreCtrl.v</text>
+  <text class="zh s mut" x="76" y="174">314–319 行加 md_mulhu／md_mulhsu；460–462 行補三列控制表</text>
+
+  <path class="a" d="M350 184V224" marker-end="url(#aha)"/>
+  <text class="ac s" x="360" y="210">muldivreq_msg_fn_Dhl → _Xhl</text>
+
+  <rect class="af" x="60" y="224" width="580" height="52"/>
+  <text x="76" y="246">imuldiv-MulDivReqMsg.v</text>
+  <text class="zh s mut" x="76" y="266">第 30–34 行加兩個 FUNC 編碼（3'd5、3'd6）；129 行附近的反組譯 case</text>
+
+  <path class="w" d="M350 276V316" marker-end="url(#ah)"/>
+  <text class="s mut" x="360" y="302">3 bit fn</text>
+
+  <rect class="af" x="60" y="316" width="580" height="52"/>
+  <text x="76" y="338">imuldiv-IntMulDivIterative.v</text>
+  <text class="zh s mut" x="76" y="358">第 32–39 行：新 fn 也要走乘法器；並把 fn 接到 imul 新的埠</text>
+
+  <path class="a" d="M350 368V408" marker-end="url(#aha)"/>
+  <text class="ac s" x="360" y="394">新增的 fn 輸入埠</text>
+
+  <rect class="af" x="60" y="408" width="580" height="52"/>
+  <text x="76" y="430">imuldiv-IntMulIterative.v</text>
+  <text class="zh s mut" x="76" y="450">依 fn 決定 a、b 各自是否取絕對值、結果是否取二補數</text>
+
+  <path class="x" d="M54 160H42V250H54"/>
+  <text class="wr zh s" x="4" y="196">數值</text>
+  <text class="wr zh s" x="4" y="212">必須</text>
+  <text class="wr zh s" x="4" y="228">一致</text>
+</svg>
+</div>
+<figcaption><b>五個檔案是一條鏈，不是五件獨立的事。</b>最常見的「改完沒反應」是鏈斷在第三段：<code>md_mulhu</code>（CoreCtrl 的 localparam）和 <code>IMULDIV_MULDIVREQ_MSG_FUNC_MULHU</code>（MulDivReqMsg 的 define）是兩個檔案裡的兩個常數，<b>數值必須相同</b>，沒有任何機制會幫你檢查。</figcaption>
+</figure>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-InstMsg.v · 第 146–149 行</div>
+<pre><code class="language-verilog">`define RISCV_INST_MSG_MUL      32'b0000001_?????_?????_000_?????_0110011
+// `define RISCV_INST_MSG_MULH     32'b0000001_?????_?????_001_?????_0110011  // not supported.
+// `define RISCV_INST_MSG_MULHSU   32'b0000001_?????_?????_010_?????_0110011  // not supported.
+// `define RISCV_INST_MSG_MULHU    32'b0000001_?????_?????_011_?????_0110011  // not supported.</code></pre>
+<p>編碼已經寫好了，你只要把 <code>// </code> 拿掉。<b>注意順序</b>：funct3 是 <code>001</code>=mulh、<code>010</code>=mulhsu、<code>011</code>=mulhu——mulhsu 排在 mulhu 前面，抄的時候很容易把兩個對調。</p>
+</div>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 314–325 行</div>
+<pre><code class="language-verilog">  localparam md_x    = 3'bx;
+  localparam md_mul  = 3'd0;
+  localparam md_div  = 3'd1;
+  localparam md_divu = 3'd2;
+  localparam md_rem  = 3'd3;
+  localparam md_remu = 3'd4;
+
+  // MulDiv Mux Select
+
+  localparam mdm_x = 1'bx; // Don't Care
+  localparam mdm_l = 1'd0; // Take lower half of 64-bit result, mul/div/divu
+  localparam mdm_u = 1'd1; // Take upper half of 64-bit result, rem/remu</code></pre>
+</div>
+
+<h3>「高半」到底是哪一半</h3>
+
+<p>乘除法單元永遠回一個 64 位元的 <code>muldivresp_msg_result</code>，控制表的 <code>MULDIV_SEL</code> 欄（<code>mdm_l</code>／<code>mdm_u</code>）決定把哪 32 位寫進 <code>rd</code>。這條取高半的路<b>本來就存在</b>，因為 <code>rem</code>／<code>remu</code> 要用它——所以 <code>mulh</code> 家族在資料路徑上什麼都不用加。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 250" role="img" aria-label="64 位元乘積由 muldiv 多工器切成兩半：第 63 到 32 位是高半，由 MULDIV_SEL 等於 mdm_u 選出，給 mulh、mulhu、mulhsu 以及既有的 rem 與 remu 使用；第 31 到 0 位是低半，由 mdm_l 選出，給 mul、div、divu 使用。">
+  <text class="hd" x="16" y="24">muldivresp_msg_result（64 bit）</text>
+
+  <rect class="f-imm" x="60" y="44" width="290" height="38"/>
+  <rect class="f-rd" x="350" y="44" width="290" height="38"/>
+  <text x="205" y="68" text-anchor="middle">[63:32]　高半</text>
+  <text x="495" y="68" text-anchor="middle">[31:0]　低半</text>
+  <text class="s mut" x="62" y="38">63</text>
+  <text class="s mut" x="332" y="38">32</text>
+  <text class="s mut" x="352" y="38">31</text>
+  <text class="s mut" x="630" y="38">0</text>
+
+  <path class="a" d="M205 82V116" marker-end="url(#aha)"/>
+  <path class="w" d="M495 82V116" marker-end="url(#ah)"/>
+
+  <path class="k" d="M150 116L260 138V172L150 194Z" style="fill:var(--accent-soft);stroke:var(--accent)"/>
+  <text class="s ac" x="205" y="160" text-anchor="middle">mdm_u</text>
+  <path class="k" d="M440 116L550 138V172L440 194Z"/>
+  <text class="s" x="495" y="160" text-anchor="middle">mdm_l</text>
+
+  <text class="cb s" x="16" y="160">MULDIV_SEL</text>
+  <path class="c" d="M100 156H148" marker-end="url(#ahc)"/>
+  <path class="c" d="M596 156H552" marker-end="url(#ahc)"/>
+
+  <path class="a" d="M205 194V216" marker-end="url(#aha)"/>
+  <path class="w" d="M495 194V216" marker-end="url(#ah)"/>
+  <text class="ac" x="205" y="232" text-anchor="middle">mulh · mulhu · mulhsu</text>
+  <text class="ac s mut" x="205" y="248" text-anchor="middle">（rem / remu 已經在用這條）</text>
+  <text x="495" y="232" text-anchor="middle">mul · div · divu</text>
+  <text class="s mut" x="495" y="248" text-anchor="middle">（沿用既有的列）</text>
+</svg>
+</div>
+<figcaption><b>取高半的線路不用新增，只要在控制表把 <code>MULDIV_SEL</code> 填成 <code>mdm_u</code>。</b>localparam 的註解寫「rem/remu」只是因為原本只有它們用——這一欄就是一個 1 bit 的多工器 select，誰都能用。</figcaption>
+</figure>
+
+<h3>同樣的位元，三種高半</h3>
+
+<p>用 8 位元乘 8 位元（結果 16 位元）就能把三條指令的差別看完。取 <code>a = 0xF1</code>、<code>b = 0x90</code>，兩個位元樣式都固定不動，只改「怎麼解讀」：</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 290" role="img" aria-label="8 位元的對照例：a 等於 0xF1、b 等於 0x90 固定不變。兩者都當有號時是負 15 乘負 112 等於 1680，乘積 0x0690，高半 0x06；兩者都當無號時是 241 乘 144 等於 34704，乘積 0x8790，高半 0x87；a 有號 b 無號時是負 15 乘 144 等於負 2160，乘積 0xF790，高半 0xF7。三種解讀的低半都是 0x90。">
+  <text class="hd" x="16" y="24">a = 0xF1，b = 0x90（位元一個都沒變）</text>
+
+  <text class="zh hd" x="16" y="62">解讀方式</text>
+  <text class="zh hd" x="200" y="62">實際算的是</text>
+  <text class="zh hd" x="386" y="62">16 位元乘積</text>
+  <text class="zh hd" x="520" y="62">高半</text>
+  <text class="zh hd" x="612" y="62">低半</text>
+  <path class="w" d="M16 70H684"/>
+
+  <text class="ac" x="16" y="104">mulh　s × s</text>
+  <text class="mut" x="200" y="104">(-15) × (-112) = 1680</text>
+  <text x="386" y="104">0x0690</text>
+  <rect class="f-imm" x="504" y="86" width="80" height="26"/>
+  <text x="544" y="104" text-anchor="middle">0x06</text>
+  <rect class="f-rd" x="596" y="86" width="80" height="26"/>
+  <text x="636" y="104" text-anchor="middle">0x90</text>
+  <path class="wm" d="M16 124H684"/>
+
+  <text class="ac" x="16" y="158">mulhu　u × u</text>
+  <text class="mut" x="200" y="158">241 × 144 = 34704</text>
+  <text x="386" y="158">0x8790</text>
+  <rect class="f-imm" x="504" y="140" width="80" height="26"/>
+  <text x="544" y="158" text-anchor="middle">0x87</text>
+  <rect class="f-rd" x="596" y="140" width="80" height="26"/>
+  <text x="636" y="158" text-anchor="middle">0x90</text>
+  <path class="wm" d="M16 178H684"/>
+
+  <text class="ac" x="16" y="212">mulhsu　s × u</text>
+  <text class="mut" x="200" y="212">(-15) × 144 = -2160</text>
+  <text x="386" y="212">0xF790</text>
+  <rect class="f-imm" x="504" y="194" width="80" height="26"/>
+  <text x="544" y="212" text-anchor="middle">0xF7</text>
+  <rect class="f-rd" x="596" y="194" width="80" height="26"/>
+  <text x="636" y="212" text-anchor="middle">0x90</text>
+
+  <path class="a" d="M500 82H588V232H500Z"/>
+  <text class="ac zh s" x="544" y="250" text-anchor="middle">三個都不一樣</text>
+  <path class="x" d="M592 82H680V232H592Z"/>
+  <text class="wr zh s" x="636" y="250" text-anchor="middle">三個完全一樣</text>
+
+  <text class="zh s mut" x="16" y="278">同一個道理搬到 32 位元就是你的測試向量：低半測不出 mulh 家族的任何 bug，只有高半會分勝負。</text>
+</svg>
+</div>
+<figcaption><b>挑向量的第一原則：a 和 b 在有號解讀下都要是負的。</b>只要有一個是正的，<code>s×u</code> 就會和 <code>s×s</code> 或 <code>u×u</code> 撞在一起，測不出差別。上面三個數都用 Python 的任意精度整數驗算過。</figcaption>
+</figure>
+
+<h3>乘法器現在怎麼處理正負號</h3>
+
+<p>迭代核心只會做<b>無號</b>乘法，有號是外面包一層：進去前取絕對值、出來後看符號決定要不要對整個 64 位元取二補數。你要改的就是這一層的兩個端點。</p>
+
+<div class="ex">
+<div class="src">imuldiv/imuldiv-IntMulIterative.v · 第 142–154、224–231 行（節錄）</div>
+<pre><code class="language-verilog">wire   sign_next = mulreq_msg_a[31] ^ mulreq_msg_b[31];
+
+wire [31:0] unsigned_a
+  = ( mulreq_msg_a[31] ) ? ~mulreq_msg_a + 1'b1
+  :                         mulreq_msg_a;
+
+wire [31:0] unsigned_b
+  = ( mulreq_msg_b[31] ) ? ~mulreq_msg_b + 1'b1
+  :                         mulreq_msg_b;
+
+...
+
+wire [63:0] signed_result_mux_out
+  = ( sign_mux_sel == sign_u ) ? result_reg
+  : ( sign_mux_sel == sign_s ) ? ~result_reg + 1'b1
+  :                              64'bx;
+
+assign mulresp_msg_result = signed_result_mux_out;</code></pre>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 780 300" role="img" aria-label="乘法器的符號處理方塊圖：運算元 a 與 b 各自經過取絕對值電路後進入無號迭代核心，核心結果存在 result_reg，最後由 sign_reg 決定是否取二補數。圖上用強調框標出兩個必須改成依指令決定的地方：取絕對值的條件，以及結果符號的算式。">
+  <text class="hd" x="16" y="24">現況：有號包覆層 ＋ 無號核心</text>
+
+  <text class="s" x="16" y="72">mulreq_msg_a</text>
+  <path class="w" d="M16 80H126" marker-end="url(#ah)"/>
+  <rect class="af" x="126" y="58" width="96" height="40"/>
+  <text class="s" x="174" y="76" text-anchor="middle">unsigned_a</text>
+  <text class="zh s" x="174" y="92" text-anchor="middle">取絕對值</text>
+
+  <text class="s" x="16" y="162">mulreq_msg_b</text>
+  <path class="w" d="M16 170H126" marker-end="url(#ah)"/>
+  <rect class="af" x="126" y="148" width="96" height="40"/>
+  <text class="s" x="174" y="166" text-anchor="middle">unsigned_b</text>
+  <text class="zh s" x="174" y="182" text-anchor="middle">取絕對值</text>
+
+  <path class="w" d="M222 78H282V110" marker-end="url(#ah)"/>
+  <path class="w" d="M222 168H282V140" marker-end="url(#ah)"/>
+  <rect class="k" x="282" y="110" width="150" height="70"/>
+  <text class="zh s" x="357" y="138" text-anchor="middle">無號迭代核心</text>
+  <text class="zh s mut" x="357" y="158" text-anchor="middle">移位＋累加 32 輪</text>
+
+  <path class="w" d="M432 145H484" marker-end="url(#ah)"/>
+  <rect class="r" x="484" y="118" width="88" height="54"/>
+  <text class="s sq" x="528" y="150" text-anchor="middle">result_reg</text>
+  <path class="rl" d="M484 155l8 5l-8 5"/>
+
+  <path class="w" d="M572 145H610" marker-end="url(#ah)"/>
+  <path class="k" d="M610 116L636 128V162L610 174Z"/>
+  <path class="w" d="M636 145H712" marker-end="url(#ah)"/>
+  <text class="s" x="624" y="108" text-anchor="middle">~x+1</text>
+  <text class="s mut" x="642" y="168">mulresp_msg_result</text>
+
+  <circle class="d" cx="112" cy="80" r="3"/>
+  <circle class="d" cx="112" cy="170" r="3"/>
+  <path class="c" d="M112 80V236H186" marker-end="url(#ahc)"/>
+  <path class="c" d="M112 170V258H186" marker-end="url(#ahc)"/>
+  <text class="cb s" x="118" y="232">a[31]</text>
+  <text class="cb s" x="118" y="274">b[31]</text>
+  <rect class="af" x="186" y="228" width="120" height="40"/>
+  <text class="s" x="246" y="246" text-anchor="middle">sign_next</text>
+  <text class="s" x="246" y="262" text-anchor="middle">a[31] ^ b[31]</text>
+  <path class="c" d="M306 248H360" marker-end="url(#ahc)"/>
+  <rect class="r" x="360" y="230" width="86" height="36"/>
+  <text class="s sq" x="403" y="252" text-anchor="middle">sign_reg</text>
+  <path class="rl" d="M360 248l8 5l-8 5"/>
+  <path class="c" d="M446 248H623V174" marker-end="url(#ahc)"/>
+  <text class="cb s" x="466" y="242">sign_mux_sel</text>
+
+  <text class="ac zh s" x="174" y="46" text-anchor="middle">你要改的地方 ①</text>
+  <text class="ac zh s" x="174" y="212" text-anchor="middle">你要改的地方 ②</text>
+  <text class="ac zh s" x="246" y="288" text-anchor="middle">你要改的地方 ③</text>
+</svg>
+</div>
+<figcaption><b>三個框，三個獨立的問題：a 要不要取絕對值、b 要不要取絕對值、結果符號怎麼算。</b>把這三個運算式各自加上「這條指令對這個運算元算不算有號」的條件，就一次涵蓋 <code>mul</code>／<code>mulh</code>／<code>mulhu</code>／<code>mulhsu</code> 四種組合。圖上沒有給你條件式長什麼樣子——那是你要寫的。</figcaption>
+</figure>
+</div>
+
+<div class="trap"><b>fn 要鎖進暫存器</b><p><code>sign_reg</code> 是在請求被接受的那一拍鎖進去的，但結果要到 32 拍之後才用得到符號規則——那時 <code>muldivreq_msg_fn</code> 早就變成別的指令的值了。新增的 fn 輸入也要照樣鎖住。現成的範本就在隔壁：<code>imuldiv-IntDivIterative.v</code> 的控制器有一個 <code>fn_reg</code>，在 IDLE 時由 <code>fn_en</code> 鎖起來，後面一律用 <code>fn_reg</code>。</p></div>
+
+<div class="trap"><b>先取負、再切高半，順序不能換</b><p><code>~result_reg + 1'b1</code> 是對<b>完整 64 位元</b>取二補數。如果你先切出 <code>result_reg[63:32]</code> 再取負，低半有借位時會差 1。<code>mulh(-1, 3)</code> 的正解是 <code>0xFFFFFFFF</code>；|−1|×3 = 3 的高半是 <code>0x00000000</code>，取負還是 <code>0x00000000</code>——錯得很安靜。</p></div>
+
+<div class="trap"><b>新 fn 會被送進除法器</b><p><code>imuldiv-IntMulDivIterative.v</code> 第 32–39 行的分流寫的是「等於 <code>FUNC_MUL</code> 才給乘法器、<b>否則一律給除法器</b>」。你新加的 <code>MULHU</code>／<code>MULHSU</code> 不等於 <code>MUL</code>，預設就會跑進除法器，回來一個商或餘數。這兩個條件都要改，並把 <code>muldivreq_msg_fn</code> 接到 <code>imul</code> 新增的埠上。</p></div>
+
+<h3>加上自己的測試</h3>
+
+<p><code>tests/riscv/riscv-mulh.S</code>、<code>-mulhu.S</code>、<code>-mulhsu.S</code> 三個檔案已經在了，但裡面只有一行 <code># TODO</code>：</p>
+
+<div class="ex">
+<div class="src">tests/riscv/riscv-mulh.S</div>
+<pre><code>#include "riscv-macros.h"
+
+        TEST_RISCV_BEGIN
+
+        # TODO
+
+        TEST_RISCV_END</code></pre>
+</div>
+
+<p>寫完內容之後還要讓建置系統看得到它。<a href="#ch1">第 1 站</a>講過這個 repo 有兩條路：<code>build/Makefile</code> 自己會把 <code>tests/riscv/%.S</code> 編成 <code>.vmh</code>，所以<b>最短路徑只要改 <code>build/Makefile</code></b>；走講義那條 <code>tests/</code> configure → make → <code>../convert</code> 的流程時才需要動 <code>riscv.mk</code>。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 264" role="img" aria-label="加入自己測試的四個步驟：先把 tests 斜線 riscv 斜線 riscv-mulh.S 的 TODO 換成測試向量，接著在 tests 斜線 riscv 斜線 riscv.mk 取消對應那行的註解（只有走 tests 流程時才需要），再把 riscv-mulh.vmh 加進 build 斜線 Makefile 的 tests 變數，最後在 build 目錄執行 make check-asm-riscvstall。">
+  <text class="hd" x="16" y="24">四步，缺一步你就會以為自己「過了」</text>
+
+  <rect class="af" x="30" y="44" width="150" height="66"/>
+  <text class="s" x="105" y="66" text-anchor="middle">① 填 .S</text>
+  <text class="s mut" x="105" y="84" text-anchor="middle">riscv-mulh.S</text>
+  <text class="zh s mut" x="105" y="100" text-anchor="middle">把 # TODO 換成向量</text>
+
+  <path class="w" d="M180 77H216" marker-end="url(#ah)"/>
+
+  <rect class="gh" x="216" y="44" width="160" height="66"/>
+  <text class="s" x="296" y="66" text-anchor="middle">② riscv.mk</text>
+  <text class="s mut" x="296" y="84" text-anchor="middle">第 50–52 行</text>
+  <text class="zh s mut" x="296" y="100" text-anchor="middle">只有 tests/ 流程要</text>
+
+  <path class="wm" d="M376 77H412"/>
+
+  <rect class="af" x="412" y="44" width="160" height="66"/>
+  <text class="s" x="492" y="66" text-anchor="middle">③ build/Makefile</text>
+  <text class="s mut" x="492" y="84" text-anchor="middle">tests = 第 41–52 行</text>
+  <text class="zh s mut" x="492" y="100" text-anchor="middle">加 riscv-mulh.vmh</text>
+
+  <path class="a" d="M105 110V150H492V110" marker-end="url(#aha)"/>
+  <text class="ac zh s" x="290" y="144" text-anchor="middle">只走 build/ 流程時，① 之後直接跳到 ③</text>
+
+  <path class="w" d="M492 110V178" marker-end="url(#ah)"/>
+  <rect class="k" x="330" y="178" width="324" height="54"/>
+  <text class="s" x="492" y="200" text-anchor="middle">④ % make check-asm-riscvstall</text>
+  <text class="zh s mut" x="492" y="220" text-anchor="middle">看到 [ PASSED ] riscv-mulh-stall.out 才算數</text>
+
+  <text class="wr zh s" x="16" y="200">漏掉 ③：</text>
+  <text class="wr zh s" x="16" y="220">測試根本不會被跑到，</text>
+  <text class="wr zh s" x="16" y="240">畫面上一片 PASSED。</text>
+</svg>
+</div>
+<figcaption><b>最容易踩的是第 ③ 步。</b><code>make check-asm-riscvstall</code> 只跑 <code>tests =</code> 變數裡列到的項目；沒登記的測試寫得再好也不會執行，而輸出看起來和「全過」一模一樣。跑完先數一下 PASSED 的行數對不對。</figcaption>
+</figure>
+
+<h4>預期值怎麼算才可信</h4>
+
+<p>不要用心算。三條指令的高半靠的是三種不同的解讀，心算 32 位元二補數出錯的機率接近 100%。用 Python 現算，它的整數是任意精度的，不會偷偷截斷：</p>
+
+<pre><code>% python3 -c 'a=0xFFFFFFFF; b=0x00000003; s=lambda x:x-(1&lt;&lt;32) if x&gt;&gt;31 else x; \
+print("mul   %#010x"%((s(a)*s(b))&amp;0xFFFFFFFF), \
+      "mulh  %#010x"%(((s(a)*s(b))&gt;&gt;32)&amp;0xFFFFFFFF), \
+      "mulhu %#010x"%(((a*b)&gt;&gt;32)&amp;0xFFFFFFFF), \
+      "mulhsu %#010x"%(((s(a)*b)&gt;&gt;32)&amp;0xFFFFFFFF))'</code></pre>
+
+<p>把 <code>a</code>、<code>b</code> 換掉就能量產。注意 <code>&gt;&gt;32</code> 對負數在 Python 是算術右移，正好就是「取 64 位元二補數的高 32 位」的定義。</p>
+
+<h4>哪些向量值得放</h4>
+
+<p>原則是「你改過的每一個條件分支，都要有一個向量會走到它」。對應到前面那三個「你要改的地方」：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>類別</th><th>代表值</th><th>它打到什麼</th></tr></thead>
+<tbody>
+<tr><td>零</td><td class="num">0</td><td>任何符號邏輯的短路；<code>0 × 負數</code> 不該跑出 <code>0xFFFFFFFF</code></td></tr>
+<tr><td>一</td><td class="num">1</td><td>最小的非零，抓「高半永遠算成 0」這類偷懶實作</td></tr>
+<tr><td>全一</td><td class="num">-1 / 0xFFFFFFFF</td><td>有號 −1 與無號 4294967295 的差距最大，三條指令答案全不同</td></tr>
+<tr><td>最小負數</td><td class="num">0x80000000</td><td><code>~x+1</code> 對它等於自己——取絕對值電路的死角</td></tr>
+<tr><td>最大正數</td><td class="num">0x7FFFFFFF</td><td>有號無號解讀相同，用來確認你沒有把正數也弄壞</td></tr>
+<tr><td>混合符號</td><td class="num">兩個都是負的</td><td><b>唯一</b>能讓 <code>s×s</code>／<code>u×u</code>／<code>s×u</code> 三者都不同的組合</td></tr>
+</tbody>
+</table></div>
+
+<p>巨集用哪一個：<code>riscv-mul.S</code> 已經示範了全部四種。基本正確性用 <code>TEST_RR_OP( inst, src0, src1, result )</code>；<code>TEST_RR_SRC0_EQ_DEST</code> 一類測來源等於目的；<code>TEST_RR_DEST_BYP</code>／<code>TEST_RR_SRC01_BYP</code> 是給 <a href="#ch8">第 8 站</a>的 bypass 用的，這一站先放著也無妨（riscvstall 有 stall，一樣會過）。</p>
+
+<div class="note"><b>預期值請寫 16 進位</b><p><code>li</code> 對 <code>-1</code> 和 <code>0xFFFFFFFF</code> 產生的位元完全一樣，來源寫哪一種都行；但<b>預期值一律寫 16 進位</b>，免得你在腦中做 32 位元截斷時出錯，結果花半小時debug 一個根本沒錯的硬體。</p></div>
+
+<div class="note"><b>riscvlong 還會再要一次</b><p><a href="#ch9">第 9 站</a>（Objective 4）用的是管線化的 <code>riscvlong-CoreDpathPipeMulDiv.v</code>，它是<b>另一份</b>乘除法實作，目前 <code>result0</code>（第 139–145 行）只認得 MUL／DIV／DIVU／REM／REMU。你在這一站加的三條指令，到那裡要再加一次。現在改 <code>imuldiv/</code> 時，順手把你的符號規則寫成一兩句註解，第 9 站會省很多時間。</p></div>
+
+<ul class="todo" data-title="Objective 2 完成檢查表">
+  <li><label><input type="checkbox" data-k="ch6-instmsg"><span><code>InstMsg.v</code> 147–149、400–402、467–469 三處註解都取消，mulhsu / mulhu 的 funct3 沒對調</span></label></li>
+  <li><label><input type="checkbox" data-k="ch6-mulh-only"><span>只做 <code>mulh</code>（控制表 <code>MULDIV_SEL</code> = <code>mdm_u</code>）就先跑過一次測試</span></label></li>
+  <li><label><input type="checkbox" data-k="ch6-func"><span><code>MulDivReqMsg.v</code> 新增的 FUNC 編碼數值和 CoreCtrl 的 <code>md_*</code> localparam 一致</span></label></li>
+  <li><label><input type="checkbox" data-k="ch6-route"><span><code>IntMulDivIterative.v</code> 的分流條件改好，新 fn 走乘法器而不是除法器</span></label></li>
+  <li><label><input type="checkbox" data-k="ch6-fnreg"><span>乘法器的 fn 有鎖進暫存器（照 <code>IntDivIterative</code> 的 <code>fn_reg</code>）</span></label></li>
+  <li><label><input type="checkbox" data-k="ch6-sign3"><span>取絕對值（a、b 各一）與結果取負，三個條件都改成依 fn 決定</span></label></li>
+  <li><label><input type="checkbox" data-k="ch6-vectors"><span>三個 <code>.S</code> 都有向量，涵蓋 0 / 1 / -1 / 0x80000000 / 0x7FFFFFFF / 兩負數混合</span></label></li>
+  <li><label><input type="checkbox" data-k="ch6-registered"><span>三個 <code>riscv-mulh*.vmh</code> 都加進 <code>build/Makefile</code> 的 <code>tests =</code>，PASSED 行數對得上</span></label></li>
+  <li><label><input type="checkbox" data-k="ch6-rand"><span><code>make check-asm-rand-riscvstall</code> 也全過（隨機延遲下 val/rdy 交握沒壞）</span></label></li>
+</ul>
+
+<div class="more"><b>想深入</b>
+<p><a href="../riscv-cpu-course/index.html#ch17">圖解課第 17 章</a>：乘除法器怎麼掛在管線上——val/rdy 交握、兩個 stall（<code>stall_muldiv_Dhl</code> 與 X 級等 <code>muldivresp_val</code>）分別卡在哪裡、控制表的四個相關欄位。</p>
+<p><a href="../riscv-cpu-course/index.html#ch18">圖解課第 18 章</a>：mulh 家族的數學根據（為什麼低半不分有號無號）、四條指令的三面向對照表、更多已驗算的預期值。</p>
+</div>
+</section>
+
+<!-- ============================================================ ch7 -->
+<section class="ch" id="ch7" data-part="Objective 3 · Bypassing" data-nav="Obj 3 開工：setup.sh 與 Makefile">
+<p class="eyebrow">第 7 站 · Objective 3（20%）</p>
+<h2>Objective 3 開工：setup.sh 與 Makefile</h2>
+
+<p>Objective 3 要做的是 bypass（旁路／前饋），工作目錄是 <code>riscvbyp/</code>。打開來看，裡面<b>只有一個 <code>setup.sh</code></b>：</p>
+
+<pre><code>% ls riscvbyp
+setup.sh</code></pre>
+
+<p>這個腳本不會幫你寫任何 bypass 邏輯，它只做一件事：把你在 Objective 1、2 改好的 <code>riscvstall/</code> 整個複製過來、改名。所以<b>跑它的時間點非常重要</b>——跑早了，你會在一份不完整的處理器上做 bypass。</p>
+
+<h3>跑 setup.sh 之前必須成立的前提</h3>
+
+<ul class="todo" data-title="前置條件（全部打勾才動手）">
+  <li><label><input type="checkbox" data-k="ch7-pre-obj1"><span>Objective 1 的 32 條指令測試在 <code>make check-asm-riscvstall</code> 全 PASSED</span></label></li>
+  <li><label><input type="checkbox" data-k="ch7-pre-obj2"><span>Objective 2 的 <code>mulh</code> / <code>mulhu</code> / <code>mulhsu</code> 測試也全 PASSED</span></label></li>
+  <li><label><input type="checkbox" data-k="ch7-pre-rand"><span><code>make check-asm-rand-riscvstall</code>（隨機記憶體延遲）同樣全 PASSED</span></label></li>
+  <li><label><input type="checkbox" data-k="ch7-pre-bmark"><span>四個 benchmark 在 riscvstall 上跑得出來，cycle 數已記錄</span></label></li>
+</ul>
+
+<div class="trap"><b>為什麼要這麼嚴</b><p><code>setup.sh</code> 是單向的：它只會從 riscvstall 複製到 riscvbyp，<b>不會再同步一次</b>。如果你之後才發現 Objective 1 有一條指令的控制列填錯，你得在 riscvstall 和 riscvbyp <b>兩邊各修一次</b>（到了 Objective 4 還有第三份 riscvlong）。而重跑 <code>setup.sh</code> 想「順便同步」的下場是：你已經寫好的 bypass 全部被覆蓋掉，無法復原。</p></div>
+
+<h3>setup.sh 做了什麼</h3>
+
+<div class="ex">
+<div class="src">riscvbyp/setup.sh</div>
+<pre><code>rsync -av --exclude=setup.sh ../riscvstall/ .
+
+for file in *; do
+  if [[ "$file" == *riscvstall* ]]; then
+    mv "$file" "${file/riscvstall/riscvbyp}"
+  fi
+done
+
+# 接著對每個檔案（setup.sh 除外）做 sed 's/riscvstall/riscvbyp/g'</code></pre>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 310" role="img" aria-label="setup.sh 執行前後的目錄樹對照：執行前 riscvbyp 目錄裡只有 setup.sh，riscvstall 目錄裡有 Core、CoreCtrl、CoreDpath、CoreDpathAlu、CoreDpathPipeMulDiv、CoreDpathRegfile、InstMsg 等檔案與 riscvstall.mk；執行後 riscvbyp 裡出現同樣一組檔案，檔名與檔案內容裡的 riscvstall 字串都換成 riscvbyp。右側警告重跑會覆蓋，且之後在 riscvstall 的修正不會自動同步。">
+  <text class="hd" x="16" y="24">執行前</text>
+  <text class="hd" x="396" y="24">執行後</text>
+
+  <rect class="gh" x="16" y="36" width="168" height="200"/>
+  <text class="hd" x="100" y="58" text-anchor="middle">riscvstall/</text>
+  <text class="s" x="28" y="82">riscvstall-Core.v</text>
+  <text class="s" x="28" y="102">riscvstall-CoreCtrl.v</text>
+  <text class="s" x="28" y="122">riscvstall-CoreDpath.v</text>
+  <text class="s" x="28" y="142">…-CoreDpathAlu.v</text>
+  <text class="s" x="28" y="162">riscvstall-InstMsg.v</text>
+  <text class="s mut" x="28" y="182">... 共 10 個檔</text>
+  <text class="s" x="28" y="202">riscvstall.mk</text>
+  <text class="ac zh s" x="100" y="226" text-anchor="middle">你的 Obj 1／2 成果</text>
+
+  <rect class="gh" x="196" y="36" width="140" height="70"/>
+  <text class="hd" x="266" y="58" text-anchor="middle">riscvbyp/</text>
+  <text class="s" x="208" y="82">setup.sh</text>
+  <text class="zh s mut" x="266" y="98" text-anchor="middle">就這一個檔</text>
+
+  <path class="a" d="M100 236V268H336" marker-end="url(#aha)"/>
+  <text class="ac s" x="112" y="262">① rsync -av --exclude=setup.sh</text>
+  <text class="ac s" x="112" y="288">② mv：檔名 riscvstall → riscvbyp</text>
+  <text class="ac s" x="112" y="304">③ sed：檔案內容裡的字串也換（module 名、`include）</text>
+
+  <rect class="af" x="396" y="36" width="180" height="200"/>
+  <text class="hd" x="486" y="58" text-anchor="middle">riscvbyp/</text>
+  <text class="s" x="408" y="82">riscvbyp-Core.v</text>
+  <text class="s" x="408" y="102">riscvbyp-CoreCtrl.v</text>
+  <text class="s" x="408" y="122">riscvbyp-CoreDpath.v</text>
+  <text class="s" x="408" y="142">riscvbyp-CoreDpathAlu.v</text>
+  <text class="s" x="408" y="162">riscvbyp-InstMsg.v</text>
+  <text class="s mut" x="408" y="182">...</text>
+  <text class="s" x="408" y="202">riscvbyp.mk</text>
+  <text class="ac zh s" x="486" y="226" text-anchor="middle">在這裡加 bypass</text>
+  <path class="w" d="M336 136H396" marker-end="url(#ah)"/>
+
+  <rect class="gh" x="592" y="60" width="136" height="120" style="stroke:var(--warn)"/>
+  <text class="wr zh s" x="660" y="84" text-anchor="middle">重跑一次 =</text>
+  <text class="wr zh s" x="660" y="102" text-anchor="middle">riscvbyp 的成果</text>
+  <text class="wr zh s" x="660" y="120" text-anchor="middle">全部被覆蓋</text>
+  <path class="wm" d="M660 132H600"/>
+  <text class="wr zh s" x="660" y="152" text-anchor="middle">之後 riscvstall 的</text>
+  <text class="wr zh s" x="660" y="170" text-anchor="middle">修正要手動搬過來</text>
+  <path class="x" d="M578 100H592"/>
+</svg>
+</div>
+<figcaption><b>純粹的複製改名，一次性。</b>跑完馬上驗收兩件事：<code>ls riscvbyp</code> 看檔名全是 <code>riscvbyp-*</code>，以及 <code>grep -rn riscvstall riscvbyp</code> 應該完全沒有輸出（<code>setup.sh</code> 自己除外，它被排除在 sed 之外）。</figcaption>
+</figure>
+</div>
+
+<ol class="steps">
+  <li><b>跑腳本</b><p>一定要 <code>cd</code> 進 <code>riscvbyp/</code> 再跑——腳本裡的 <code>../riscvstall/</code> 和 <code>for file in *</code> 都是相對路徑，在別的目錄跑會把東西灑到錯的地方。</p><pre><code>% cd riscvbyp
+% ./setup.sh</code></pre></li>
+  <li><b>驗收改名</b><p>兩個指令，第二個應該沒有任何輸出。</p><pre><code>% ls
+% grep -rn riscvstall . --exclude=setup.sh</code></pre></li>
+</ol>
+
+<h3>build/Makefile 的五個開關</h3>
+
+<p>檔案複製好了，建置系統還不知道有這個處理器。<code>build/Makefile</code> 裡有<b>五處</b>被註解掉的 riscvbyp 條目，每一處上面都掛著同一句註解 <code># Enable these after running their setup.sh scripts.</code>——把 riscvbyp 那一行的 <code># </code> 拿掉，riscvlong 那一行留著（那是 <a href="#ch9">第 9 站</a>的事）。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 430" role="img" aria-label="build 斜線 Makefile 的五處開關，以一條垂直的檔案條帶表示：第 72 行 subpkgs 加 riscvbyp、第 117 行 sim_incs 加 include 路徑、第 178 行 proc_template、第 217 行 asm_template、第 260 行 bmark_template；每一處下方都有一行對應的 riscvlong，保持註解留給 Objective 4。">
+  <text class="hd" x="16" y="24">build/Makefile — 五處，每處兩行，只動上面那行</text>
+
+  <rect class="gh" x="60" y="36" width="600" height="376"/>
+
+  <text class="s mut" x="72" y="62">71</text>
+  <text class="s mut" x="104" y="62"># Enable these after running their setup.sh scripts.</text>
+  <rect class="af" x="96" y="70" width="450" height="22"/>
+  <text class="s mut" x="72" y="86">72</text>
+  <text class="s" x="104" y="86"># subpkgs += riscvbyp</text>
+  <text class="s mut" x="72" y="108">73</text>
+  <text class="s mut" x="104" y="108"># subpkgs += riscvlong</text>
+  <text class="ac zh s" x="560" y="86">把這一行的 # 拿掉</text>
+  <text class="mut zh s" x="560" y="108">留給 Obj 4</text>
+
+  <path class="wm" d="M72 124H648"/>
+
+  <text class="s mut" x="72" y="150">116</text>
+  <text class="s mut" x="112" y="150"># Enable these after running their setup.sh scripts.</text>
+  <rect class="af" x="104" y="158" width="450" height="22"/>
+  <text class="s mut" x="72" y="174">117</text>
+  <text class="s" x="112" y="174"># sim_incs += -I $(topdir)/riscvbyp</text>
+  <text class="s mut" x="72" y="196">118</text>
+  <text class="s mut" x="112" y="196"># sim_incs += -I $(topdir)/riscvlong</text>
+
+  <path class="wm" d="M72 212H648"/>
+
+  <text class="s mut" x="72" y="238">177</text>
+  <text class="s mut" x="112" y="238"># Enable these after running their setup.sh scripts.</text>
+  <rect class="af" x="104" y="246" width="450" height="22"/>
+  <text class="s mut" x="72" y="262">178</text>
+  <text class="s" x="112" y="262"># $(eval $(call proc_template,riscvbyp,RISCVBYP,byp))</text>
+  <text class="s mut" x="72" y="284">179</text>
+  <text class="s mut" x="112" y="284"># $(eval $(call proc_template,riscvlong,RISCVLONG,long))</text>
+
+  <path class="wm" d="M72 300H648"/>
+
+  <text class="s mut" x="72" y="326">216</text>
+  <text class="s mut" x="112" y="326"># Enable these after running their setup.sh scripts.</text>
+  <rect class="af" x="104" y="334" width="450" height="22"/>
+  <text class="s mut" x="72" y="350">217</text>
+  <text class="s" x="112" y="350"># $(eval $(call asm_template,riscvbyp,RISCVBYP,byp))</text>
+  <text class="s mut" x="72" y="372">218</text>
+  <text class="s mut" x="112" y="372"># $(eval $(call asm_template,riscvlong,RISCVLONG,long))</text>
+
+  <path class="wm" d="M72 388H648"/>
+
+  <text class="s mut" x="72" y="406">260</text>
+  <rect class="af" x="104" y="392" width="450" height="20"/>
+  <text class="s" x="112" y="406"># $(eval $(call bmark_template,riscvbyp,RISCVBYP,byp))</text>
+</svg>
+</div>
+<figcaption><b>第 72、117、178、217、260 行。</b>行號是在使用者這份工作目錄上用 <code>grep -n 'Enable these after' -A3 build/Makefile</code> 查出來的；你動過 Makefile（例如 <a href="#ch4">第 4 站</a>加過 <code>riscv-lh.vmh</code>）之後行號會位移，所以請用 grep 而不是背數字。</figcaption>
+</figure>
+
+<h3>你會得到哪些新目標</h3>
+
+<p>那三個 <code>*_template</code> 是 Makefile 的函式，展開之後會長出一整組以 <code>byp</code> 為後綴的規則。知道它們叫什麼，除錯時才找得到檔案：</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 260" role="img" aria-label="三個 Makefile 樣板展開後產生的目標：proc_template 產生 riscvbyp-sim 與 riscvbyp-randdelay-sim 兩個模擬器執行檔，asm_template 產生 check-asm-riscvbyp 與 check-asm-rand-riscvbyp 兩個測試目標以及每個測試的 dash byp dot out 輸出檔，bmark_template 產生 benchmark 的對應規則。">
+  <text class="hd" x="16" y="24">展開之後多出來的東西</text>
+
+  <rect class="k" x="16" y="40" width="186" height="46"/>
+  <text class="s" x="109" y="60" text-anchor="middle">proc_template</text>
+  <text class="s mut" x="109" y="78" text-anchor="middle">第 178 行</text>
+  <path class="w" d="M202 63H262" marker-end="url(#ah)"/>
+  <rect class="af" x="262" y="34" width="290" height="58"/>
+  <text class="s" x="276" y="56">riscvbyp-sim</text>
+  <text class="s" x="276" y="78">riscvbyp-randdelay-sim</text>
+  <text class="zh s mut" x="562" y="56">一般模擬器</text>
+  <text class="zh s mut" x="562" y="78">隨機延遲版</text>
+
+  <rect class="k" x="16" y="110" width="186" height="46"/>
+  <text class="s" x="109" y="130" text-anchor="middle">asm_template</text>
+  <text class="s mut" x="109" y="148" text-anchor="middle">第 217 行</text>
+  <path class="w" d="M202 133H262" marker-end="url(#ah)"/>
+  <rect class="af" x="262" y="104" width="290" height="80"/>
+  <text class="s" x="276" y="126">make check-asm-riscvbyp</text>
+  <text class="s" x="276" y="148">make check-asm-rand-riscvbyp</text>
+  <text class="s mut" x="276" y="170">riscv-add-byp.out ...</text>
+  <text class="zh s mut" x="562" y="126">＝ check-asm-byp</text>
+  <text class="zh s mut" x="562" y="148">＝ check-asm-rand-byp</text>
+  <text class="zh s mut" x="562" y="170">每個測試一個輸出檔</text>
+
+  <rect class="k" x="16" y="202" width="186" height="46"/>
+  <text class="s" x="109" y="222" text-anchor="middle">bmark_template</text>
+  <text class="s mut" x="109" y="240" text-anchor="middle">第 260 行</text>
+  <path class="w" d="M202 225H262" marker-end="url(#ah)"/>
+  <rect class="af" x="262" y="204" width="290" height="42"/>
+  <text class="s" x="276" y="230">make run-bmark-riscvbyp</text>
+  <text class="zh s mut" x="562" y="230">benchmark（第 10 站）</text>
+</svg>
+</div>
+<figcaption><b>檔名的後綴就是比較的依據。</b>同一個 <code>riscv-add.vmh</code> 跑兩個處理器會產生 <code>riscv-add-stall.out</code> 和 <code>riscv-add-byp.out</code> 兩個檔——<a href="#ch8">第 8 站</a>判斷「bypass 到底有沒有生效」靠的就是打開這兩個檔比 <code>num_cycles</code>。</figcaption>
+</figure>
+
+<h3>先建立基準線，再開始改</h3>
+
+<p>剛跑完 <code>setup.sh</code> 的 <code>riscvbyp</code> 在行為上<b>和 riscvstall 一模一樣</b>（它就是同一份程式碼換個名字）。這是一個很有價值的狀態：它讓你確認「複製＋Makefile 開關」這一步沒出錯，也給你一組之後拿來比較的數字。一個字都還沒改之前，先做這兩件事：</p>
+
+<ol class="steps">
+  <li><b>確認 riscvbyp 的結果和 riscvstall 完全相同</b><p>兩邊的 PASSED 清單應該逐行對得上。有任何一條只在 byp 掛掉，那是 <code>setup.sh</code> 或 Makefile 的問題，不是 bypass 的問題——現在解決比之後混在一起解決容易十倍。</p><pre><code>% cd build
+% make check-asm-riscvstall
+% make check-asm-riscvbyp</code></pre></li>
+  <li><b>把基準 cycle 數抄下來</b><p><code>riscvstall</code> 上的 <code>riscv-add</code> 是 468 cycles、232 inst、ipc 0.4957（<code>build/riscv-add-stall.out</code>）。剛複製好的 <code>riscvbyp</code> 應該一模一樣。這個 468 就是你之後要打敗的數字。</p><pre><code>% cat riscv-add-stall.out
+% cat riscv-add-byp.out</code></pre></li>
+  <li><b>benchmark 的基準也記一份</b><p>四個 benchmark 的 cycle 數／IPC 抄進一張表（<a href="#ch10">第 10 站</a>要用）。benchmark 在這個 repo 裡沒有自動建置規則，要先走 <code>ubmark/</code> 的 configure → make → <code>../convert</code>；細節在 <a href="#ch1">第 1 站</a>。</p></li>
+</ol>
+
+<div class="note"><b>這時候 commit 一次</b><p>如果你有用 git（沒有的話，至少 <code>cp -r riscvbyp riscvbyp.baseline</code>），「setup.sh 跑完、Makefile 開好、測試和 riscvstall 一致」是一個非常好的回頭點。之後 bypass 改到一半整個爛掉，你可以退回這裡，而不是重跑 <code>setup.sh</code>（那會連 Makefile 之外的東西也一起清掉）。</p></div>
+
+<ul class="todo" data-title="第 7 站完成檢查表">
+  <li><label><input type="checkbox" data-k="ch7-gate"><span>四項前置條件全部成立才跑 <code>setup.sh</code></span></label></li>
+  <li><label><input type="checkbox" data-k="ch7-run"><span>在 <code>riscvbyp/</code> 目錄裡執行 <code>./setup.sh</code></span></label></li>
+  <li><label><input type="checkbox" data-k="ch7-grep"><span><code>grep -rn riscvstall riscvbyp --exclude=setup.sh</code> 沒有任何輸出</span></label></li>
+  <li><label><input type="checkbox" data-k="ch7-mk"><span><code>build/Makefile</code> 五處 riscvbyp 註解都取消，riscvlong 五行仍是註解</span></label></li>
+  <li><label><input type="checkbox" data-k="ch7-build"><span><code>make riscvbyp-sim</code> 編得過，沒有 include 找不到的錯誤</span></label></li>
+  <li><label><input type="checkbox" data-k="ch7-baseline"><span><code>make check-asm-riscvbyp</code> 的結果和 <code>check-asm-riscvstall</code> 逐行相同</span></label></li>
+  <li><label><input type="checkbox" data-k="ch7-cycles"><span>基準 cycle 數已記錄（<code>riscv-add</code> = 468 cycles）</span></label></li>
+  <li><label><input type="checkbox" data-k="ch7-snapshot"><span>已經 commit 或另外備份一份乾淨的 riscvbyp</span></label></li>
+</ul>
+
+<div class="more"><b>想深入</b>
+<p><a href="../riscv-cpu-course/index.html#ch14">圖解課第 14 章</a>「開工：setup.sh 與 Makefile」一節：同一件事的原理版，另外說明 bypass 為什麼接在 D 級而不是 X 級。</p>
+</div>
+</section>
+
+<!-- ============================================================ ch8 -->
+<section class="ch" id="ch8" data-part="Objective 3 · Bypassing" data-nav="Obj 3：bypass 實作路線">
+<p class="eyebrow">第 8 站 · Objective 3</p>
+<h2>Objective 3：bypass 實作路線</h2>
+
+<p>這一站不是「照著填格子」，是一個小型的電路設計。所以它要分成可以<b>各自測試</b>的里程碑：每做完一個就編譯一次、跑一次測試，確認沒有把原本會過的東西弄壞。一次改完五件事再編譯，你會拿到一堆互相糾纏的錯誤。</p>
+
+<p>原理都在<a href="../riscv-cpu-course/index.html#ch14">圖解課第 14</a>–<a href="../riscv-cpu-course/index.html#ch16">16 章</a>；<a href="../riscv-cpu-course/index.html#ch11">第 11 章</a>是 data hazard 的基礎。這裡給的是順序、每一步改哪個檔、做完怎麼驗。</p>
+
+<h3>五個里程碑</h3>
+
+<div class="tbl"><table>
+<thead><tr><th>里程碑</th><th>改哪裡</th><th>做完怎麼驗</th></tr></thead>
+<tbody>
+<tr><td><b>M1</b> 資料路徑：兩顆 bypass mux</td><td><code>riscvbyp-CoreDpath.v</code></td><td>select 先固定接 regfile 那一路 → 行為不變，測試照樣全過</td></tr>
+<tr><td><b>M2</b> 控制訊號接通三個檔</td><td><code>-CoreCtrl.v</code> → <code>-Core.v</code> → <code>-CoreDpath.v</code></td><td>編譯過、沒有 <code>z</code> 或未接埠的警告；select 仍固定 → 測試全過</td></tr>
+<tr><td><b>M3</b> 算出 select（X &gt; M &gt; W）</td><td><code>riscvbyp-CoreCtrl.v</code></td><td>測試全過（此時 stall 還在，bypass 只是「順便」正確）</td></tr>
+<tr><td><b>M4</b> 拆掉泛用 stall，只留 load-use</td><td><code>riscvbyp-CoreCtrl.v</code></td><td>測試全過 <b>且</b> cycle 數明顯下降</td></tr>
+<tr><td><b>M5</b> 用 <code>*_BYP</code> 巨集補測 ＋ 量 IPC</td><td><code>tests/</code>、比對 <code>.out</code></td><td><code>riscv-add-byp.out</code> 的 <code>num_cycles</code> 遠小於 468</td></tr>
+</tbody>
+</table></div>
+
+<div class="note"><b>M1–M3 的共同特徵：不該改變任何行為</b><p>前三步都只是「多接一條路、多算一個訊號」，stall 邏輯原封不動，所以測試結果和 cycle 數應該<b>一模一樣</b>。這是很強的檢查點——任何一步做完測試就掛了，問題百分之百在你剛剛那一步。真正會改變行為的只有 M4。</p></div>
+
+<h3>M1：兩顆 bypass mux 要插在哪裡</h3>
+
+<p>插的位置是「所有讀 <code>rf_rdata0_Dhl</code> / <code>rf_rdata1_Dhl</code> 的地方之前」。這句話的重點是<b>所有</b>——在真實的 <code>riscvstall-CoreDpath.v</code> 裡，這兩條線各有不只一個下游：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 196–230 行（節錄）</div>
+<pre><code class="language-verilog">  wire [31:0] jumpreg_targ_pretruncate_Dhl = rf_rdata0_Dhl + imm_i_Dhl;
+  assign jumpreg_targ_Dhl  = {jumpreg_targ_pretruncate_Dhl[31:1], 1'b0};
+
+  ...
+
+  wire [31:0] op0_mux_out_Dhl
+    = ( op0_mux_sel_Dhl == 2'd0 ) ? rf_rdata0_Dhl
+  ...
+  wire [31:0] op1_mux_out_Dhl
+    = ( op1_mux_sel_Dhl == 3'd0 ) ? rf_rdata1_Dhl
+  ...
+  // wdata with bypassing
+  wire [31:0] wdata_Dhl = rf_rdata1_Dhl;</code></pre>
+<p><code>rf_rdata0_Dhl</code> 有兩個下游（<code>op0_mux_out_Dhl</code>、<code>jumpreg_targ_pretruncate_Dhl</code>），<code>rf_rdata1_Dhl</code> 也有兩個（<code>op1_mux_out_Dhl</code>、<code>wdata_Dhl</code>）。第 229 行那句 <code>// wdata with bypassing</code> 註解就是留給你的記號。</p>
+</div>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 350" role="img" aria-label="D 級資料路徑的改動前後對照。改動前 regfile 的 rf_rdata0_Dhl 直接進 op0 多工器並同時餵給 jalr 的位址加法器，rf_rdata1_Dhl 直接進 op1 多工器並同時餵給 wdata_Dhl。改動後在 regfile 與這些下游之間插入一顆四輸入的 bypass 多工器，四個輸入分別是 regfile 輸出、X 級的 execute_mux_out_Xhl、M 級的 wb_mux_out_Mhl、W 級的 wb_mux_out_Whl。">
+  <text class="hd" x="16" y="24">改動前</text>
+  <rect class="k" x="16" y="38" width="92" height="56"/>
+  <text class="s" x="62" y="62" text-anchor="middle">regfile</text>
+  <text class="s mut" x="62" y="80" text-anchor="middle">rdata0/1</text>
+  <path class="w" d="M108 56H240" marker-end="url(#ah)"/>
+  <text class="s mut" x="120" y="50">rf_rdata0_Dhl</text>
+  <circle class="d" cx="200" cy="56" r="3"/>
+  <path class="k" d="M240 38L264 48V76L240 86Z"/>
+  <text class="s mut" x="270" y="66">op0</text>
+  <path class="w" d="M200 56V104H240" marker-end="url(#ah)"/>
+  <text class="s mut" x="246" y="108">jumpreg_targ</text>
+  <path class="w" d="M108 82H180V136H240" marker-end="url(#ah)"/>
+  <text class="s mut" x="120" y="150">rf_rdata1_Dhl</text>
+  <circle class="d" cx="210" cy="136" r="3"/>
+  <path class="k" d="M240 120L264 130V156L240 166Z"/>
+  <text class="s mut" x="270" y="146">op1</text>
+  <path class="w" d="M210 136V180H240" marker-end="url(#ah)"/>
+  <text class="s mut" x="246" y="184">wdata_Dhl</text>
+
+  <path class="wm" d="M330 30V330"/>
+
+  <text class="hd" x="360" y="24">改動後</text>
+  <rect class="k" x="360" y="38" width="88" height="46"/>
+  <text class="s" x="404" y="66" text-anchor="middle">regfile</text>
+  <path class="w" d="M448 61H520" marker-end="url(#ah)"/>
+
+  <text class="ac s" x="360" y="118">execute_mux_out_Xhl</text>
+  <path class="a" d="M500 110H520" marker-end="url(#aha)"/>
+  <text class="ac s" x="360" y="152">wb_mux_out_Mhl</text>
+  <path class="a" d="M478 144H520" marker-end="url(#aha)"/>
+  <text class="ac s" x="360" y="186">wb_mux_out_Whl</text>
+  <path class="a" d="M470 178H520" marker-end="url(#aha)"/>
+
+  <path class="af" d="M520 40L556 66V182L520 208Z"/>
+  <text class="ac s" x="538" y="118" text-anchor="middle">byp</text>
+  <text class="ac zh s" x="538" y="138" text-anchor="middle">新增</text>
+  <path class="c" d="M538 264V210" marker-end="url(#ahc)"/>
+  <text class="cb s" x="482" y="280">rs1_byp_mux_sel_Dhl</text>
+
+  <path class="a" d="M556 124H660" marker-end="url(#aha)"/>
+  <circle class="da" cx="612" cy="124" r="3"/>
+  <path class="k" d="M660 100L684 112V144L660 156Z"/>
+  <text class="s mut" x="690" y="130">op0</text>
+  <path class="a" d="M612 124V310H660" marker-end="url(#aha)"/>
+  <text class="s mut" x="736" y="314" text-anchor="end">jumpreg_targ</text>
+
+  <text class="zh s mut" x="360" y="326">rs2 那一顆長得一模一樣，下游換成 op1 mux 與 wdata_Dhl。</text>
+</svg>
+</div>
+<figcaption><b>四個輸入、四個下游。</b>三條 bypass 來源線都已經存在於 <code>riscvstall-CoreDpath.v</code>：<code>execute_mux_out_Xhl</code>（第 288 行）、<code>wb_mux_out_Mhl</code>（第 340 行）、<code>wb_mux_out_Whl</code>（第 350 行，也就是第 411 行接到 regfile <code>.wdata_p</code> 的那個值）。只要把 bypass mux 的輸出取代掉 <code>rf_rdata0_Dhl</code>／<code>rf_rdata1_Dhl</code> 的<b>每一個</b>使用點，四個下游就自動都涵蓋到。</figcaption>
+</figure>
+
+<div class="trap"><b>漏掉 <code>jumpreg_targ</code> 的症狀</b><p><code>jalr</code> 會跳到舊的位址。這件事不會讓 <code>riscv-add</code> 掛掉，只有 <code>riscv-jalr.S</code> 和 <code>TEST_JALR_SRC0_BYP</code> 會抓到；如果你 Objective 1 的 <code>jalr</code> 測試沒加進 <code>tests =</code>，這個 bug 會一路躲到 Objective 4。</p></div>
+
+<h3>M2：每個新訊號都要穿過三個檔案</h3>
+
+<p>Bypass mux 的 select 是控制訊號，所以它<b>誕生在 CoreCtrl、使用在 CoreDpath</b>，而這兩個模組之間沒有直接連線——中間隔著 <code>riscvbyp-Core.v</code>。少寫任一處，Verilog 不會報錯，只會給你一條永遠沒有驅動的線。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 236" role="img" aria-label="一個新的 bypass select 控制訊號必須寫在三個檔案：riscvbyp-CoreCtrl.v 加 output 埠與 assign，riscvbyp-Core.v 宣告 wire 並在 CoreCtrl 與 CoreDpath 兩個實例各接一次，riscvbyp-CoreDpath.v 加 input 埠並接到多工器的 select。">
+  <text class="hd" x="16" y="24">一條新訊號 = 四個位置（Core.v 佔兩個）</text>
+
+  <rect class="k" x="16" y="48" width="192" height="94"/>
+  <text class="hd" x="112" y="70" text-anchor="middle">riscvbyp-CoreCtrl.v</text>
+  <text class="s" x="28" y="94">output [1:0]</text>
+  <text class="s" x="28" y="110">  rs1_byp_mux_sel_Dhl,</text>
+  <text class="ac zh s" x="28" y="132">① output 埠 ＋ assign</text>
+
+  <rect class="k" x="254" y="34" width="192" height="122"/>
+  <text class="hd" x="350" y="56" text-anchor="middle">riscvbyp-Core.v</text>
+  <text class="s" x="266" y="80">wire [1:0]</text>
+  <text class="s" x="266" y="96">  rs1_byp_mux_sel_Dhl;</text>
+  <text class="s mut" x="266" y="116">.rs1_byp_mux_sel_Dhl(…)  ×2</text>
+  <text class="ac zh s" x="266" y="140">② wire ＋ 兩個實例各接一次</text>
+
+  <rect class="k" x="492" y="48" width="192" height="94"/>
+  <text class="hd" x="588" y="70" text-anchor="middle">riscvbyp-CoreDpath.v</text>
+  <text class="s" x="504" y="94">input [1:0]</text>
+  <text class="s" x="504" y="110">  rs1_byp_mux_sel_Dhl,</text>
+  <text class="ac zh s" x="504" y="132">③ input 埠 ＋ 接上 mux</text>
+
+  <path class="c" d="M208 96H254" marker-end="url(#ahc)"/>
+  <path class="c" d="M446 96H492" marker-end="url(#ahc)"/>
+
+  <text class="zh s mut" x="350" y="188" text-anchor="middle">照抄既有的 op0_mux_sel_Dhl 走一遍，位置完全相同</text>
+  <text class="wr zh s" x="350" y="212" text-anchor="middle">rs1、rs2 各一條，兩條都要走完這三步</text>
+</svg>
+</div>
+<figcaption><b>找不到「為什麼 mux 沒反應」時，先數這三個地方。</b>Icarus Verilog 對沒接到的埠只給 warning（甚至沉默），模擬時你看到的是 <code>x</code> 在管線裡擴散。</figcaption>
+</figure>
+
+<h3>M3：select 怎麼算，優先權為什麼是 X &gt; M &gt; W</h3>
+
+<p>對每個來源級各做一個「這一級有沒有在寫我要讀的暫存器」的布林訊號，講義建議的命名是 <code>rs1_X_byp_Dhl</code> 這種形式。條件不是自己想的——<b>直接抄現有 stall 邏輯的每一項</b>：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 558–566 行（前兩項）</div>
+<pre><code class="language-verilog">  wire stall_hazard_Dhl   = inst_val_Dhl && (
+                            ( rs1_en_Dhl && inst_val_Xhl && rf_wen_Xhl
+                              && ( rs1_addr_Dhl == rf_waddr_Xhl )
+                              && ( rf_waddr_Xhl != 5'd0 ) )
+                         || ( rs1_en_Dhl && inst_val_Mhl && rf_wen_Mhl
+                              && ( rs1_addr_Dhl == rf_waddr_Mhl )
+                              && ( rf_waddr_Mhl != 5'd0 ) )
+                         ...</code></pre>
+<p>括號裡那一組四個條件，就是 <code>rs1_X_byp_Dhl</code> 該有的內容。<code>inst_val_*</code>（那一級不是泡泡）、<code>rf_wen_*</code>（那一級真的會寫）、<code>rs1_en_Dhl</code>（我真的要讀 rs1）、<code>!= 5'd0</code>（x0 永遠是 0，不能被前饋）——四個缺一不可。</p>
+</div>
+
+<div class="ex">
+<div class="src mine">示意範例</div>
+<pre><code class="language-verilog">wire rs1_X_byp_Dhl = inst_val_Dhl &amp;&amp; rs1_en_Dhl &amp;&amp; ... ;
+wire rs1_M_byp_Dhl = ... ;
+wire rs1_W_byp_Dhl = ... ;
+
+assign rs1_byp_mux_sel_Dhl
+  = rs1_X_byp_Dhl ? 2'd1        // execute_mux_out_Xhl
+  : ...                          // M、W，最後才是 regfile</code></pre>
+<p>三元運算子的鏈是<b>由上往下</b>評估的，所以把 X 寫在最前面，優先權就自動成立。</p>
+</div>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 270" role="img" aria-label="優先權圖：兩條指令都寫同一個暫存器 x5，較早的那條已經走到 M 級，較晚的那條在 X 級，而 D 級的指令要讀 x5。此時 X 級的值才是最新的，M 級的是舊值，所以 bypass 必須選 X。">
+  <text class="hd" x="16" y="24">兩個人都在寫 x5，要聽誰的？</text>
+
+  <text class="s" x="16" y="70">addi x5, x0, 1</text>
+  <text class="s mut" x="16" y="86">（較早）</text>
+  <text class="s" x="16" y="134">addi x5, x0, 2</text>
+  <text class="s mut" x="16" y="150">（較晚）</text>
+  <text class="s" x="16" y="198">add  x7, x5, x0</text>
+  <text class="s mut" x="16" y="214">（現在在 D，要讀 x5）</text>
+
+  <rect class="pc" x="180" y="50" width="70" height="30"/><text x="215" y="70" text-anchor="middle">M</text>
+  <rect class="pc" x="180" y="114" width="70" height="30"/><text x="215" y="134" text-anchor="middle">X</text>
+  <rect class="pc" x="180" y="178" width="70" height="30"/><text x="215" y="198" text-anchor="middle">D</text>
+
+  <text class="mut s" x="264" y="70">rf_waddr_Mhl = 5</text>
+  <text class="mut s" x="264" y="134">rf_waddr_Xhl = 5</text>
+  <text class="mut s" x="264" y="222">rs1_addr_Dhl = 5</text>
+
+  <path class="wm" d="M430 64H500V198H254" marker-end="url(#ah)"/>
+  <text class="s mut" x="392" y="58">x5 = 1（舊）</text>
+  <path class="a" d="M430 128H470V190H254" marker-end="url(#aha)"/>
+  <text class="ac s" x="392" y="122">x5 = 2（新）</text>
+
+  <path class="x" d="M486 96l14 14M500 96l-14 14"/>
+  <text class="wr zh s" x="516" y="110">M 那條不能選</text>
+
+  <text class="ac zh s" x="16" y="248">規則：rs1_X_byp_Dhl 先判斷，再輪到 M，最後才是 W——年輕的贏。</text>
+  <text class="zh s mut" x="16" y="266">若把 M 寫在前面，這段程式會讀到 1 而不是 2，而且只有這種「連續兩次寫同一個暫存器」的測試抓得到。</text>
+</svg>
+</div>
+<figcaption><b>管線裡越靠近 D 的級，值越新。</b><code>TEST_RR_DEST_BYP(0, …)</code> 到 <code>(4, …)</code> 這一串巨集就是在用不同數量的 <code>nop</code> 把寫入者放到 X、M、W 各個位置，順便撞出優先權錯誤。</figcaption>
+</figure>
+
+<h3>M4：只剩 load-use 需要 stall</h3>
+
+<p>這是唯一會改變行為的一步：把 <code>stall_hazard_Dhl</code>（第 558 行那一大坨）換成一個只針對 load 的停頓。為什麼只有 load 特殊，看時空圖最快：</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 430" role="img" aria-label="三張管線時空圖的比較。第一張 riscvstall：addi 之後相依的 add 在 D 級停了三拍才前進。第二張加上 bypass 之後：add 不必停，X 級的結果直接前饋回 D。第三張 load-use：lw 的資料要到 M 級才從記憶體回來，所以相依的 add 仍必須停一拍，之後從 M 級前饋。">
+  <text class="hd" x="16" y="22">① riscvstall：相依就停到寫回為止</text>
+  <text class="s mut" x="150" y="46">1</text><text class="s mut" x="186" y="46">2</text><text class="s mut" x="222" y="46">3</text><text class="s mut" x="258" y="46">4</text><text class="s mut" x="294" y="46">5</text><text class="s mut" x="330" y="46">6</text><text class="s mut" x="366" y="46">7</text><text class="s mut" x="402" y="46">8</text>
+  <text class="s" x="16" y="72">addi x5,x0,1</text>
+  <rect class="pc" x="136" y="54" width="34" height="26"/><text class="s" x="153" y="72" text-anchor="middle">D</text>
+  <rect class="pc" x="172" y="54" width="34" height="26"/><text class="s" x="189" y="72" text-anchor="middle">X</text>
+  <rect class="pc" x="208" y="54" width="34" height="26"/><text class="s" x="225" y="72" text-anchor="middle">M</text>
+  <rect class="pc" x="244" y="54" width="34" height="26"/><text class="s" x="261" y="72" text-anchor="middle">W</text>
+  <text class="s" x="16" y="106">add  x7,x5,x0</text>
+  <rect class="pc-hold" x="172" y="88" width="34" height="26"/><text class="s sq" x="189" y="106" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="208" y="88" width="34" height="26"/><text class="s sq" x="225" y="106" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="244" y="88" width="34" height="26"/><text class="s sq" x="261" y="106" text-anchor="middle">D</text>
+  <rect class="pc" x="280" y="88" width="34" height="26"/><text class="s" x="297" y="106" text-anchor="middle">D</text>
+  <rect class="pc" x="316" y="88" width="34" height="26"/><text class="s" x="333" y="106" text-anchor="middle">X</text>
+  <rect class="pc" x="352" y="88" width="34" height="26"/><text class="s" x="369" y="106" text-anchor="middle">M</text>
+  <rect class="pc" x="388" y="88" width="34" height="26"/><text class="s" x="405" y="106" text-anchor="middle">W</text>
+  <text class="wr zh s" x="440" y="106">停 3 拍</text>
+
+  <path class="wm" d="M16 130H724"/>
+
+  <text class="hd" x="16" y="160">② 加上 bypass：X → D 直接前饋</text>
+  <text class="s" x="16" y="196">addi x5,x0,1</text>
+  <rect class="pc" x="136" y="178" width="34" height="26"/><text class="s" x="153" y="196" text-anchor="middle">D</text>
+  <rect class="pc-fwd" x="172" y="178" width="34" height="26"/><text class="s" x="189" y="196" text-anchor="middle">X</text>
+  <rect class="pc" x="208" y="178" width="34" height="26"/><text class="s" x="225" y="196" text-anchor="middle">M</text>
+  <rect class="pc" x="244" y="178" width="34" height="26"/><text class="s" x="261" y="196" text-anchor="middle">W</text>
+  <text class="s" x="16" y="230">add  x7,x5,x0</text>
+  <rect class="pc-fwd" x="172" y="212" width="34" height="26"/><text class="s" x="189" y="230" text-anchor="middle">D</text>
+  <rect class="pc" x="208" y="212" width="34" height="26"/><text class="s" x="225" y="230" text-anchor="middle">X</text>
+  <rect class="pc" x="244" y="212" width="34" height="26"/><text class="s" x="261" y="230" text-anchor="middle">M</text>
+  <rect class="pc" x="280" y="212" width="34" height="26"/><text class="s" x="297" y="230" text-anchor="middle">W</text>
+  <path class="a" d="M189 204V212" marker-end="url(#aha)"/>
+  <text class="ac zh s" x="330" y="230">0 拍，execute_mux_out_Xhl 前饋</text>
+
+  <path class="wm" d="M16 254H724"/>
+
+  <text class="hd" x="16" y="284">③ load-use：只有這一種還是要停，而且只停 1 拍</text>
+  <text class="s" x="16" y="320">lw   x5,0(x1)</text>
+  <rect class="pc" x="136" y="302" width="34" height="26"/><text class="s" x="153" y="320" text-anchor="middle">D</text>
+  <rect class="pc" x="172" y="302" width="34" height="26"/><text class="s" x="189" y="320" text-anchor="middle">X</text>
+  <rect class="pc-fwd" x="208" y="302" width="34" height="26"/><text class="s" x="225" y="320" text-anchor="middle">M</text>
+  <rect class="pc" x="244" y="302" width="34" height="26"/><text class="s" x="261" y="320" text-anchor="middle">W</text>
+  <text class="s wr" x="440" y="320">X 級時資料還在記憶體裡</text>
+  <text class="s" x="16" y="354">add  x7,x5,x0</text>
+  <rect class="pc-hold" x="172" y="336" width="34" height="26"/><text class="s sq" x="189" y="354" text-anchor="middle">D</text>
+  <rect class="pc-fwd" x="208" y="336" width="34" height="26"/><text class="s" x="225" y="354" text-anchor="middle">D</text>
+  <rect class="pc" x="244" y="336" width="34" height="26"/><text class="s" x="261" y="354" text-anchor="middle">X</text>
+  <rect class="pc" x="280" y="336" width="34" height="26"/><text class="s" x="297" y="354" text-anchor="middle">M</text>
+  <rect class="pc" x="316" y="336" width="34" height="26"/><text class="s" x="333" y="354" text-anchor="middle">W</text>
+  <path class="a" d="M225 328V336" marker-end="url(#aha)"/>
+  <text class="ac zh s" x="440" y="354">停 1 拍後從 wb_mux_out_Mhl 前饋</text>
+
+  <text class="zh s mut" x="16" y="394">dmem 的請求在 X 送出、回應在 M 收到（wb_mux_out_Mhl 才含得到 load 的資料）。</text>
+  <text class="zh s mut" x="16" y="414">所以「X 級的那條指令是不是 load」決定了 D 要不要停——這就是 is_load_Xhl 的用途。</text>
+</svg>
+</div>
+<figcaption><b>橘色格子＝那一拍停著，綠框格子＝送出或收到前饋值。</b>①→② 省下的三拍乘以整支程式的相依次數，就是 Objective 3 的全部分數來源。③ 是唯一無法用電路消掉的，因為資料在物理上還沒從記憶體回來。</figcaption>
+</figure>
+
+<p>做法：把「這條指令是 load」做成一個 1 bit 控制訊號，像 <code>rf_wen_Dhl → rf_wen_Xhl</code> 那樣管線化一級，然後用它去 gate 原本 X 那三項條件。現成的材料 CoreCtrl 裡都有：第 336 行的 <code>localparam ld</code>、第 520 行 <code>cs[`RISCV_INST_MSG_MEM_REQ]</code> 的用法、第 621–624 行那一串 <code>X &lt;- D</code> 的管線化賦值。</p>
+
+<div class="ex">
+<div class="src mine">示意範例</div>
+<pre><code class="language-verilog">wire is_load_Dhl = ( cs[`RISCV_INST_MSG_MEM_REQ] == ld );
+...
+    is_load_Xhl &lt;= is_load_Dhl;        // 放進既有的 X &lt;- D always 區塊
+...
+wire stall_load_use_Dhl = ... is_load_Xhl ... ;   // 只看 X 級
+
+assign stall_Dhl = ( stall_Xhl || stall_muldiv_Dhl || ... );</code></pre>
+</div>
+
+<div class="note"><b>muldiv 的結果在 X 級也不一定能前饋</b><p><code>execute_mux_out_Xhl</code> 在 X 級要等 <code>muldivresp_val</code> 才是正確值。好消息是你<b>不用另外處理</b>：既有的 <code>stall_muldiv_Dhl</code>（第 553 行）以及 X 級等待回應的 stall 已經讓 mul 在算完之前不會離開 X，D 也走不了。前提是你 <b>M4 只拿掉 <code>stall_hazard_Dhl</code></b>，不要順手把 <code>stall_Dhl</code> 裡的其他項也刪掉。</p></div>
+
+<h3>M5：怎麼知道 bypass 真的在做事</h3>
+
+<p>這是最容易自我欺騙的一步：<b>測試全過不代表 bypass 有生效</b>。因為「一直 stall」本身就是正確行為，你即使 M4 完全沒做，所有測試（含 <code>*_BYP</code> 巨集）還是會 PASSED。唯一的證據是 cycle 數。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 280" role="img" aria-label="判斷 bypass 是否生效的兩條路徑：只看 PASSED 無法分辨有沒有做 bypass，因為停頓本身就是正確的；必須打開 riscv-add-stall.out 與 riscv-add-byp.out 比較 num_cycles，數字要明顯下降、num_inst 要完全相同。">
+  <text class="hd" x="16" y="24">兩份 .out，只比兩個數字</text>
+
+  <rect class="k" x="16" y="42" width="300" height="130"/>
+  <text class="hd" x="166" y="64" text-anchor="middle">build/riscv-add-stall.out</text>
+  <text class="s" x="32" y="90">*** PASSED ***</text>
+  <text class="s" x="32" y="112">status     =          1</text>
+  <text class="s" x="32" y="134">num_cycles =        468</text>
+  <text class="s" x="32" y="156">num_inst   =        232</text>
+
+  <rect class="af" x="384" y="42" width="300" height="130"/>
+  <text class="hd" x="534" y="64" text-anchor="middle">build/riscv-add-byp.out</text>
+  <text class="s" x="400" y="90">*** PASSED ***</text>
+  <text class="s" x="400" y="112">status     =          1</text>
+  <text class="ac s" x="400" y="134">num_cycles =        ???</text>
+  <text class="s" x="400" y="156">num_inst   =        232</text>
+
+  <path class="a" d="M316 134H384" marker-end="url(#aha)"/>
+  <text class="ac zh s" x="350" y="126" text-anchor="middle">要明顯變小</text>
+  <path class="wm" d="M316 156H384"/>
+  <text class="wr zh s" x="350" y="178" text-anchor="middle">必須一模一樣</text>
+
+  <rect class="gh" x="16" y="196" width="668" height="70"/>
+  <text class="wr zh s" x="32" y="220">num_inst 變了 → 你改壞了程式的執行路徑（可能是 branch／jalr 的 bypass 接錯），不是變快。</text>
+  <text class="wr zh s" x="32" y="240">num_cycles 沒變 → M4 沒生效：stall_hazard_Dhl 還在，或你的 stall_load_use_Dhl 條件太寬。</text>
+  <text class="ac zh s" x="32" y="260">兩者都符合 → 再跑 check-asm-rand-riscvbyp，確認隨機延遲下也對。</text>
+</svg>
+</div>
+<figcaption><b>基準是 468 cycles / 232 inst（<code>riscvstall</code> 的 <code>riscv-add</code>，直接讀 <code>build/riscv-add-stall.out</code> 可以自己確認）。</b>不要憑感覺說「好像快了」，把兩個檔案的四行 STATS 並排貼進你的報告裡——<a href="#ch10">第 10 站</a>的 benchmark 評估也是用同一套做法。</figcaption>
+</figure>
+
+<p>補測的部分，<code>riscv-macros.h</code> 已經備好整組 <code>*_BYP</code> 巨集，數字參數就是「相依距離」：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>巨集</th><th>測什麼</th></tr></thead>
+<tbody>
+<tr><td><code>TEST_RR_DEST_BYP( n, … )</code></td><td>n = 0/1/2 分別打到 X／M／W 三條路徑</td></tr>
+<tr><td><code>TEST_RR_SRC01_BYP</code> / <code>SRC10_BYP</code></td><td>rs1 和 rs2 兩顆 mux 都要獨立測到</td></tr>
+<tr><td><code>TEST_LD_DEST_BYP( 0, … )</code></td><td>就是 load-use：這一條逼出 M4 的 1 拍 bubble</td></tr>
+<tr><td><code>TEST_BR2_SRC01_BYP</code></td><td>branch 的兩個來源（branch 在 X 解，但運算元仍在 D 讀）</td></tr>
+<tr><td><code>TEST_JALR_SRC0_BYP</code></td><td><code>jalr</code> 的 rs1 → <code>jumpreg_targ_Dhl</code> 那條路</td></tr>
+</tbody>
+</table></div>
+
+<h3>陷阱清單</h3>
+
+<div class="trap"><b>這六個佔了絕大多數的 debug 時間</b>
+<ul>
+<li><b>gating 抄漏</b>：<code>inst_val_*</code>、<code>rf_wen_*</code>、<code>!= 5'd0</code> 三個條件只要漏一個，就會從一個泡泡、一個不寫暫存器的指令、或 x0 前饋出垃圾。原文在 CoreCtrl 第 558–576 行，逐項對照著抄。</li>
+<li><b>忘了 <code>rs1_en</code> / <code>rs2_en</code></b>：<code>lui</code>、<code>jal</code> 這類指令的 rs1／rs2 欄位根本不是暫存器編號，但仍會湊巧等於某個 <code>rf_waddr</code>。少了這個 gate，一接到 <code>jumpreg_targ</code> 就出事，而且會造成假相依白白吃掉 IPC。</li>
+<li><b>忘了 <code>jalr</code> 的 rs1</b>：<code>jumpreg_targ_pretruncate_Dhl</code>（CoreDpath 第 196 行）還接著 <code>rf_rdata0_Dhl</code>。</li>
+<li><b>從 X 級的 load 前饋</b>：那時資料還沒從記憶體回來，你會拿到 ALU 算出來的<b>位址</b>。這正是 <code>is_load_Xhl</code> 存在的理由。</li>
+<li><b>x0</b>：<code>rf_waddr == 0</code> 的寫入必須被排除，否則 <code>add x0, ...</code> 之後讀 x0 會讀到非零值。</li>
+<li><b>只改了 rs1 忘了 rs2</b>：兩顆 mux、兩條 select、兩組 <code>*_byp_Dhl</code> 訊號，全部成對出現。<code>TEST_RR_SRC10_BYP</code> 專門抓這個。</li>
+</ul>
+</div>
+
+<ul class="todo" data-title="Objective 3 完成檢查表">
+  <li><label><input type="checkbox" data-k="ch8-m1"><span>M1：rs1／rs2 兩顆 4 輸入 bypass mux 加進 <code>riscvbyp-CoreDpath.v</code>，select 先固定 → 測試不變</span></label></li>
+  <li><label><input type="checkbox" data-k="ch8-consumers"><span><code>rf_rdata0/1_Dhl</code> 的<b>每一個</b>使用點都換成 bypass mux 輸出（op0／op1 mux、<code>wdata_Dhl</code>、<code>jumpreg_targ</code>）</span></label></li>
+  <li><label><input type="checkbox" data-k="ch8-m2"><span>M2：新 select 在 CoreCtrl／Core／CoreDpath 三個檔都接好，編譯無未接埠</span></label></li>
+  <li><label><input type="checkbox" data-k="ch8-m3"><span>M3：<code>rs{1,2}_{X,M,W}_byp_Dhl</code> 六個訊號算出來，優先權 X &gt; M &gt; W</span></label></li>
+  <li><label><input type="checkbox" data-k="ch8-gates"><span>每個條件都含 <code>inst_val_*</code>、<code>rf_wen_*</code>、<code>rs{1,2}_en_Dhl</code>、<code>rf_waddr != 5'd0</code></span></label></li>
+  <li><label><input type="checkbox" data-k="ch8-m4"><span>M4：<code>stall_hazard_Dhl</code> 換成只看 <code>is_load_Xhl</code> 的 load-use stall，<code>stall_muldiv_Dhl</code> 保留</span></label></li>
+  <li><label><input type="checkbox" data-k="ch8-asm"><span><code>make check-asm-riscvbyp</code> 與 <code>check-asm-rand-riscvbyp</code> 全 PASSED</span></label></li>
+  <li><label><input type="checkbox" data-k="ch8-cycles"><span><code>riscv-add-byp.out</code> 的 <code>num_cycles</code> 明顯小於 468，<code>num_inst</code> 仍是 232</span></label></li>
+  <li><label><input type="checkbox" data-k="ch8-bypmacro"><span><code>TEST_LD_DEST_BYP(0, …)</code>、<code>TEST_JALR_SRC0_BYP</code>、<code>TEST_BR2_SRC01_BYP</code> 都測過</span></label></li>
+  <li><label><input type="checkbox" data-k="ch8-bmark"><span>四個 benchmark 的 cycle／IPC 記錄下來，和第 7 站的基準並排</span></label></li>
+</ul>
+
+<div class="more"><b>想深入</b>
+<p><a href="../riscv-cpu-course/index.html#ch11">圖解課第 11 章</a>：data hazard 的三種形態，以及 riscvstall 用 stall 解決它的完整邏輯。</p>
+<p><a href="../riscv-cpu-course/index.html#ch14">圖解課第 14 章</a>：bypass 為什麼接在 D 級、三條來源線各從哪裡接出來、D 級的四個下游。</p>
+<p><a href="../riscv-cpu-course/index.html#ch15">圖解課第 15 章</a>：select 的優先權推導、load-use 的完整分析、W 級那條線到底需不需要。</p>
+<p><a href="../riscv-cpu-course/index.html#ch16">圖解課第 16 章</a>：<code>*_BYP</code> 巨集裡 <code>nops</code> 的數字對應哪一條 bypass 路徑，以及「測試過了不代表 bypass 有做」的完整說明。</p>
+</div>
+</section>

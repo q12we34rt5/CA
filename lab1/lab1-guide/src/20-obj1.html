@@ -1,0 +1,1250 @@
+<!-- ============================================================ ch3 -->
+<section class="ch" id="ch3" data-part="Objective 1 · 擴充控制單元" data-nav="Obj 1 總覽與開工">
+<p class="eyebrow">第 3 站 · Objective 1（35%）</p>
+<h2>Objective 1 是什麼：把控制表補滿</h2>
+
+<p>Objective 1 佔 35%，是四個 Objective 裡最大的一塊，也是最不需要「設計」的一塊。它的全部內容是：<b>在 <code>riscvstall/riscvstall-CoreCtrl.v</code> 的 <code>casez ( ir_Dhl )</code> 裡，把 32 道還沒填的指令各補上一列</b>，另外把對應的測試加進 <code>build/Makefile</code> 的 <code>tests</code> 變數。</p>
+
+<p>講義第 3 節開宗明義：<i>「Since the datapath already supports all rv32im instructions, only the control unit needs changes.」</i> 這句話要當真。你<b>不需要</b>改 <code>riscvstall-CoreDpath.v</code>、<b>不需要</b>改 ALU、<b>不需要</b>改記憶體介面。ALU 的 11 種功能、op1 mux 的 7 個輸入、subword 記憶體回應的 5 條支線、乘除法器、6 個 <code>branch_cond_*_Xhl</code>——全部已經接好躺在那裡，只是沒有任何一列控制表去「指名」它們。唯一的例外是分支：新的分支型別需要在控制器裡多接幾條線（下面第一張圖會標出來）。</p>
+
+<h3>這份工作長什麼樣子</h3>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 420" role="img" aria-label="控制表的全貌：六個指令分類各畫成一排格子，實線格子是隨作業附的 11 列，灰色虛線格子是被註解掉、等你補的空列；暫存器－立即值 7 道、暫存器－暫存器 9 道、記憶體 6 道、jalr 1 道、分支 4 道、乘除法 5 道，其中只有分支那一排額外標註還要在控制器裡新增 taken 訊號。">
+  <text class="zh hd" x="16" y="20">riscvstall-CoreCtrl.v · casez ( ir_Dhl )：第 411–470 行</text>
+  <text class="zh s mut" x="470" y="20">實線＝已附　虛線＝待補</text>
+
+  <!-- band 1: R-I -->
+  <text class="zh" x="16" y="56">暫存器－立即值</text>
+  <text class="zh s mut" x="16" y="72">待補 7 道</text>
+  <rect class="k" x="150" y="42" width="46" height="24"/><text class="s" x="173" y="58" text-anchor="middle">lui</text>
+  <rect class="k" x="200" y="42" width="46" height="24"/><text class="s" x="223" y="58" text-anchor="middle">auipc</text>
+  <rect class="k" x="250" y="42" width="46" height="24"/><text class="s" x="273" y="58" text-anchor="middle">addi</text>
+  <rect class="k" x="300" y="42" width="46" height="24"/><text class="s" x="323" y="58" text-anchor="middle">ori</text>
+  <rect class="gh" x="350" y="42" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="373" y="58" text-anchor="middle">andi</text>
+  <rect class="gh" x="400" y="42" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="423" y="58" text-anchor="middle">xori</text>
+  <rect class="gh" x="450" y="42" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="473" y="58" text-anchor="middle">slti</text>
+  <rect class="gh" x="500" y="42" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="523" y="58" text-anchor="middle">sltiu</text>
+  <rect class="gh" x="550" y="42" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="573" y="58" text-anchor="middle">slli</text>
+  <rect class="gh" x="600" y="42" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="623" y="58" text-anchor="middle">srli</text>
+  <rect class="gh" x="650" y="42" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="673" y="58" text-anchor="middle">srai</text>
+
+  <!-- band 2: R-R -->
+  <text class="zh" x="16" y="106">暫存器－暫存器</text>
+  <text class="zh s mut" x="16" y="122">待補 9 道</text>
+  <rect class="k" x="150" y="92" width="46" height="24"/><text class="s" x="173" y="108" text-anchor="middle">add</text>
+  <rect class="gh" x="200" y="92" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="223" y="108" text-anchor="middle">sub</text>
+  <rect class="gh" x="250" y="92" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="273" y="108" text-anchor="middle">sll</text>
+  <rect class="gh" x="300" y="92" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="323" y="108" text-anchor="middle">slt</text>
+  <rect class="gh" x="350" y="92" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="373" y="108" text-anchor="middle">sltu</text>
+  <rect class="gh" x="400" y="92" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="423" y="108" text-anchor="middle">xor</text>
+  <rect class="gh" x="450" y="92" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="473" y="108" text-anchor="middle">srl</text>
+  <rect class="gh" x="500" y="92" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="523" y="108" text-anchor="middle">sra</text>
+  <rect class="gh" x="550" y="92" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="573" y="108" text-anchor="middle">or</text>
+  <rect class="gh" x="600" y="92" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="623" y="108" text-anchor="middle">and</text>
+
+  <!-- band 3: memory -->
+  <text class="zh" x="16" y="156">記憶體</text>
+  <text class="zh s mut" x="16" y="172">待補 6 道（含 lh）</text>
+  <rect class="k" x="150" y="142" width="46" height="24"/><text class="s" x="173" y="158" text-anchor="middle">lw</text>
+  <rect class="k" x="200" y="142" width="46" height="24"/><text class="s" x="223" y="158" text-anchor="middle">sw</text>
+  <rect class="af" x="250" y="142" width="46" height="24"/><text class="s ac" x="273" y="158" text-anchor="middle">lh</text>
+  <rect class="gh" x="300" y="142" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="323" y="158" text-anchor="middle">lb</text>
+  <rect class="gh" x="350" y="142" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="373" y="158" text-anchor="middle">lbu</text>
+  <rect class="gh" x="400" y="142" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="423" y="158" text-anchor="middle">lhu</text>
+  <rect class="gh" x="450" y="142" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="473" y="158" text-anchor="middle">sb</text>
+  <rect class="gh" x="500" y="142" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="523" y="158" text-anchor="middle">sh</text>
+  <text class="zh s ac" x="556" y="158">lh 講義已經示範過（<tspan class="ac">第 4 站</tspan>）</text>
+
+  <!-- band 4: jump -->
+  <text class="zh" x="16" y="206">跳躍</text>
+  <text class="zh s mut" x="16" y="222">待補 1 道</text>
+  <rect class="k" x="150" y="192" width="46" height="24"/><text class="s" x="173" y="208" text-anchor="middle">jal</text>
+  <rect class="gh" x="200" y="192" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="223" y="208" text-anchor="middle">jalr</text>
+  <text class="zh s mut" x="256" y="208">目標位址走 pm_r 那條路，datapath 已備妥</text>
+
+  <!-- band 5: branch -->
+  <text class="zh" x="16" y="256">分支</text>
+  <text class="zh s mut" x="16" y="272">待補 4 道</text>
+  <rect class="k" x="150" y="242" width="46" height="24"/><text class="s" x="173" y="258" text-anchor="middle">bne</text>
+  <rect class="k" x="200" y="242" width="46" height="24"/><text class="s" x="223" y="258" text-anchor="middle">blt</text>
+  <rect class="gh" x="250" y="242" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="273" y="258" text-anchor="middle">beq</text>
+  <rect class="gh" x="300" y="242" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="323" y="258" text-anchor="middle">bltu</text>
+  <rect class="gh" x="350" y="242" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="373" y="258" text-anchor="middle">bge</text>
+  <rect class="gh" x="400" y="242" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="423" y="258" text-anchor="middle">bgeu</text>
+  <rect class="x" x="452" y="240" width="286" height="28" style="fill:none"/>
+  <text class="zh s wr" x="462" y="258">唯一還要改控制表以外的程式碼：*_taken_Xhl</text>
+
+  <!-- band 6: muldiv -->
+  <text class="zh" x="16" y="306">乘除法</text>
+  <text class="zh s mut" x="16" y="322">待補 5 道</text>
+  <rect class="gh" x="150" y="292" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="173" y="308" text-anchor="middle">mul</text>
+  <rect class="gh" x="200" y="292" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="223" y="308" text-anchor="middle">div</text>
+  <rect class="gh" x="250" y="292" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="273" y="308" text-anchor="middle">divu</text>
+  <rect class="gh" x="300" y="292" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="323" y="308" text-anchor="middle">rem</text>
+  <rect class="gh" x="350" y="292" width="46" height="24" style="stroke-dasharray:4 3"/><text class="s mut" x="373" y="308" text-anchor="middle">remu</text>
+  <text class="zh s mut" x="406" y="308">mulh / mulhu / mulhsu 屬於 Objective 2</text>
+
+  <!-- band 7: csrw -->
+  <text class="zh" x="16" y="356">診斷</text>
+  <rect class="k" x="150" y="342" width="46" height="24"/><text class="s" x="173" y="358" text-anchor="middle">csrw</text>
+  <text class="zh s mut" x="206" y="358">每個測試的收尾都靠它，不要動它</text>
+
+  <path class="wm" d="M16 378H744" style="stroke-dasharray:none;stroke-width:1"/>
+  <text class="zh" x="16" y="398">合計 <tspan class="ac">7 + 9 + 6 + 1 + 4 + 5 = 32 列</tspan>，其中 lh 由講義示範、31 列由你填。</text>
+  <text class="zh s mut" x="16" y="414">空列以 <tspan class="mut">// `RISCV_INST_MSG_XXX :cs={};</tspan> 的形式留在原地——把註解拆掉、把大括號填滿就是了。</text>
+</svg>
+</div>
+<figcaption><b>這 32 列就是 35 分。</b>五類只需要「加一列」，只有分支那一類額外需要在 <code>CoreCtrl.v</code> 第 658–667 行多接幾條 <code>*_taken_Xhl</code>。講義自己也這樣講：<i>「additional helper signals... are typically only necessary for branch instructions」</i>。</figcaption>
+</figure>
+
+<div class="note"><b>一列到底有多長</b><p>39 個位元、20 個欄位，欄位定義在 <code>riscvstall-InstMsg.v</code> 第 167–187 行。<code>casez</code> 上方第 413–414 行有一列註解當表頭，把 20 個欄名對齊印出來——填表時把游標對著那一行數欄位，比什麼都可靠。</p></div>
+
+<h3>20 個欄位，各自在哪一級被消費</h3>
+
+<p>控制表是在 <b>D 級</b>一次決定 20 個欄位的值，然後每一欄各自搭管線暫存器走到真正用到它的那一級。這件事對填表的影響很實際：<b>一欄如果在某一級根本沒人讀，填什麼都不會錯</b>（可以填 <code>x</code>）；反過來，你以為「不重要」的欄位如果有人讀，填 <code>x</code> 就會讓整條路變成 <code>x</code>。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 260" role="img" aria-label="控制表 20 個欄位依消費級分成五組：P 級只有 pc muxsel，D 級有 val、j taken、op0 muxsel、rs1 en、op1 muxsel、rs2 en 六欄，X 級有 br type、alu fn、md fn、md en、md muxsel、ex muxsel、mem rq、mem len 八欄，M 級有 memresp muxsel 與 wb muxsel 兩欄，W 級有 rf wen、wa、csr wen 三欄。">
+  <text class="zh hd" x="16" y="20">一列 20 欄 → 在 D 級全部決定 → 各自搭管線到消費它的那一級</text>
+
+  <rect class="k" x="14" y="36" width="126" height="46"/>
+  <text class="hd" x="77" y="56" text-anchor="middle">P</text>
+  <text class="zh s mut" x="77" y="72" text-anchor="middle">下一個 PC</text>
+  <text class="s" x="24" y="102">pc muxsel</text>
+  <text class="zh s mut" x="24" y="126">往回送給 P 級</text>
+  <text class="zh s mut" x="24" y="142">的 PC mux</text>
+
+  <rect class="k" x="152" y="36" width="126" height="46"/>
+  <text class="hd" x="215" y="56" text-anchor="middle">D</text>
+  <text class="zh s mut" x="215" y="72" text-anchor="middle">解碼／讀暫存器</text>
+  <text class="s" x="162" y="102">val</text>
+  <text class="s" x="162" y="119">j taken</text>
+  <text class="s" x="162" y="136">op0 muxsel</text>
+  <text class="s ac" x="162" y="153">rs1 en</text>
+  <text class="s" x="162" y="170">op1 muxsel</text>
+  <text class="s ac" x="162" y="187">rs2 en</text>
+  <text class="zh s mut" x="162" y="211">rs1/rs2 en 只餵</text>
+  <text class="zh s mut" x="162" y="227">冒險偵測，不動</text>
+  <text class="zh s mut" x="162" y="243">資料路徑</text>
+
+  <rect class="k" x="290" y="36" width="126" height="46"/>
+  <text class="hd" x="353" y="56" text-anchor="middle">X</text>
+  <text class="zh s mut" x="353" y="72" text-anchor="middle">運算／發記憶體請求</text>
+  <text class="s" x="300" y="102">br type</text>
+  <text class="s" x="300" y="119">alu fn</text>
+  <text class="s" x="300" y="136">md fn</text>
+  <text class="s" x="300" y="153">md en</text>
+  <text class="s" x="300" y="170">md muxsel</text>
+  <text class="s" x="300" y="187">ex muxsel</text>
+  <text class="s" x="300" y="204">mem rq</text>
+  <text class="s" x="300" y="221">mem len</text>
+  <text class="zh s mut" x="300" y="245">最擁擠的一級</text>
+
+  <rect class="k" x="428" y="36" width="126" height="46"/>
+  <text class="hd" x="491" y="56" text-anchor="middle">M</text>
+  <text class="zh s mut" x="491" y="72" text-anchor="middle">收記憶體回應</text>
+  <text class="s" x="438" y="102">memresp muxsel</text>
+  <text class="s" x="438" y="119">wb muxsel</text>
+  <text class="zh s mut" x="438" y="143">load 家族的</text>
+  <text class="zh s mut" x="438" y="159">符號／零延伸</text>
+  <text class="zh s mut" x="438" y="175">在這裡決定</text>
+
+  <rect class="k" x="566" y="36" width="160" height="46"/>
+  <text class="hd" x="646" y="56" text-anchor="middle">W</text>
+  <text class="zh s mut" x="646" y="72" text-anchor="middle">寫回暫存器檔</text>
+  <text class="s" x="576" y="102">rf wen</text>
+  <text class="s" x="576" y="119">wa</text>
+  <text class="s" x="576" y="136">csr wen</text>
+  <text class="zh s mut" x="576" y="160">rf wen 同時被</text>
+  <text class="zh s mut" x="576" y="176">X / M / W 三級的</text>
+  <text class="zh s mut" x="576" y="192">冒險偵測讀到</text>
+
+  <path class="c" d="M215 82V92" marker-end="url(#ahc)"/>
+  <path class="c" d="M353 82V92" marker-end="url(#ahc)"/>
+  <path class="c" d="M491 82V92" marker-end="url(#ahc)"/>
+  <path class="c" d="M646 82V92" marker-end="url(#ahc)"/>
+  <path class="c" d="M77 82V92" marker-end="url(#ahc)"/>
+</svg>
+</div>
+<figcaption><b>填一欄之前先問：它在哪一級被誰讀？</b>完整的一欄一欄詳解（每個值的意義、接到哪顆 mux 的第幾個輸入）在<a href="../riscv-cpu-course/index.html#ch5">圖解課第 5 章「每一欄詳解」</a>；只要快速查值就用<a href="../riscv-cpu-course/index.html#chA">附錄 A 控制表速查</a>。</figcaption>
+</figure>
+
+<h3>填表的方法：找最近的鄰居，抄下來，只改不一樣的欄</h3>
+
+<p>這 32 列沒有一列需要你發明東西。每一道指令在 datapath 上都有一個「幾乎一模一樣」的鄰居已經填好了，差別通常只有一到三欄。方法固定成四步：</p>
+
+<ol class="steps">
+<li><b>找最像的現有列</b><p>同一族、同一種立即值、同一條資料路徑。<code>andi</code> 的鄰居是 <code>ori</code>（第 419 行），<code>sub</code> 的鄰居是 <code>add</code>（第 428 行），<code>lbu</code> 的鄰居是 <code>lw</code>（第 439 行），<code>sh</code> 的鄰居是 <code>sw</code>（第 440 行），<code>bgeu</code> 的鄰居是 <code>blt</code>（第 453 行）。整列複製貼上，先讓它跟鄰居一模一樣。</p></li>
+<li><b>沿 datapath 走一遍，列出「哪裡不一樣」</b><p>照 P → D → X → M → W 的順序問五個問題：下一個 PC 怎麼算？ALU 的兩個輸入各是什麼？X 級要算什麼、結果取誰？要不要動記憶體、幾個 byte？最後寫什麼、寫去哪？<b>用中文寫下差異，先不要想欄位名稱。</b></p></li>
+<li><b>把每個差異翻成一欄</b><p>這一步才打開<a href="../riscv-cpu-course/index.html#chA">控制表速查</a>，逐一把「讀的是半字」翻成 <code>mem len = ml_h</code>。一個差異對一欄；如果你發現某個差異翻不成任何一欄，代表第 2 步判斷錯了，回去重走。</p></li>
+<li><b>改掉那幾欄，其餘一字不動，然後立刻測</b><p>把測試 <code>.vmh</code> 加進 <code>build/Makefile</code> 的 <code>tests</code>，跑一次。</p><pre><code>% cd $LAB1_ROOT/build
+% make check-asm-riscvstall</code></pre></li>
+</ol>
+
+<div class="trap"><b>一次只加一道</b><p>把 32 列一口氣寫完再測，你會拿到十幾個同時失敗的測試，而且彼此互相汙染（測試巨集本身會用到 <code>li</code>、<code>bne</code>、<code>addi</code>）。一次一道、加完就測，錯了你百分之百知道是誰錯。</p></div>
+
+<h3>建議的攻略順序</h3>
+
+<p>順序不是隨便排的。越前面的類別「跟現有列的差異越小」，而且後面的類別會用到前面的成果——最明顯的是 <code>riscv-sb.S</code> / <code>riscv-sh.S</code> 裡的 <code>TEST_ST_OP</code> 巨集會用 <code>and</code> 把位址對齊，所以<b>暫存器－暫存器的 <code>and</code> 沒做好，sb/sh 的測試根本跑不起來</b>。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 430" role="img" aria-label="Objective 1 的六站攻略路線：依序是暫存器－立即值、暫存器－暫存器、記憶體、分支、jalr、乘除法；每一站標出要當範本的現有控制表列、要動的欄數，以及對應的測試檔名。">
+  <text class="zh hd" x="16" y="20">由易到難的六站，每一站都有現成的範本列可抄</text>
+  <path class="a" d="M34 40V404" style="stroke-dasharray:4 4"/>
+
+  <circle class="da" cx="34" cy="62" r="11"/><text class="s" x="34" y="66" text-anchor="middle" style="fill:var(--bg)">1</text>
+  <rect class="k" x="56" y="40" width="668" height="52"/>
+  <text class="zh" x="70" y="60">暫存器－立即值　7 道</text>
+  <text class="zh s mut" x="70" y="78">只動 1–2 欄，最快拿到手感</text>
+  <text class="s ac" x="280" y="60">範本：ori（419）/ addi（418）</text>
+  <text class="zh s mut" x="280" y="78">移位三道另外看 op1 欄</text>
+  <text class="s mut" x="486" y="60">riscv-andi / xori / slti /</text>
+  <text class="s mut" x="486" y="78">sltiu / slli / srli / srai</text>
+
+  <circle class="da" cx="34" cy="128" r="11"/><text class="s" x="34" y="132" text-anchor="middle" style="fill:var(--bg)">2</text>
+  <rect class="k" x="56" y="106" width="668" height="52"/>
+  <text class="zh" x="70" y="126">暫存器－暫存器　9 道</text>
+  <text class="zh s mut" x="70" y="144">比上一站多 1 欄結構差異</text>
+  <text class="s ac" x="280" y="126">範本：add（428）</text>
+  <text class="zh s wr" x="280" y="144">and 要先做，第 3 站會用到</text>
+  <text class="s mut" x="486" y="126">riscv-sub / sll / slt / sltu /</text>
+  <text class="s mut" x="486" y="144">xor / srl / sra / or / and</text>
+
+  <circle class="da" cx="34" cy="194" r="11"/><text class="s" x="34" y="198" text-anchor="middle" style="fill:var(--bg)">3</text>
+  <rect class="k" x="56" y="172" width="668" height="52"/>
+  <text class="zh" x="70" y="192">記憶體　5 道（lh 已完成）</text>
+  <text class="zh s mut" x="70" y="210">load 成對改兩欄、store 改立即值型別</text>
+  <text class="s ac" x="280" y="192">範本：lw（439）/ sw（440）/ lh（443）</text>
+  <text class="zh s mut" x="280" y="210">lh 那一列就是講義的示範</text>
+  <text class="s mut" x="520" y="192">riscv-lb / lbu /</text>
+  <text class="s mut" x="520" y="210">lhu / sb / sh</text>
+
+  <circle class="da" cx="34" cy="260" r="11"/><text class="s" x="34" y="264" text-anchor="middle" style="fill:var(--bg)">4</text>
+  <rect class="k" x="56" y="238" width="668" height="52"/>
+  <text class="zh" x="70" y="258">分支　4 道</text>
+  <text class="zh s wr" x="70" y="276">唯一要加控制表以外的線</text>
+  <text class="s ac" x="280" y="258">範本：bne（452）/ blt（453）</text>
+  <text class="zh s mut" x="280" y="276">外加 *_taken_Xhl（658–667）</text>
+  <text class="s mut" x="520" y="258">riscv-beq / bltu /</text>
+  <text class="s mut" x="520" y="276">bge / bgeu</text>
+
+  <circle class="da" cx="34" cy="326" r="11"/><text class="s" x="34" y="330" text-anchor="middle" style="fill:var(--bg)">5</text>
+  <rect class="k" x="56" y="304" width="668" height="52"/>
+  <text class="zh" x="70" y="324">jalr　1 道</text>
+  <text class="zh s mut" x="70" y="342">在 D 級轉向，跟分支不同級</text>
+  <text class="s ac" x="280" y="324">範本：jal（449）</text>
+  <text class="zh s mut" x="280" y="342">PC mux 換一個輸入</text>
+  <text class="s mut" x="520" y="324">riscv-jalr / jr</text>
+  <text class="s mut" x="520" y="342">（riscv-j 只需要 jal）</text>
+
+  <circle class="da" cx="34" cy="392" r="11"/><text class="s" x="34" y="396" text-anchor="middle" style="fill:var(--bg)">6</text>
+  <rect class="k" x="56" y="370" width="668" height="52"/>
+  <text class="zh" x="70" y="390">乘除法　5 道</text>
+  <text class="zh s mut" x="70" y="408">不走 ALU，放最後才不會混淆</text>
+  <text class="s ac" x="280" y="390">範本：無——從 add 起手改 5 欄</text>
+  <text class="zh s mut" x="280" y="408">會引進多週期 stall</text>
+  <text class="s mut" x="520" y="390">riscv-mul / div /</text>
+  <text class="s mut" x="520" y="408">divu / rem / remu</text>
+</svg>
+</div>
+<figcaption><b>第 1、2 站幾乎是抄寫，第 4、6 站才需要思考。</b>括號裡是 <code>riscvstall-CoreCtrl.v</code> 的行號。測試檔都在 <code>tests/riscv/</code>，檔名與指令同名，加進 <code>build/Makefile</code> 時寫成 <code>riscv-andi.vmh</code>（<code>.vmh</code> 由 Makefile 自己從 <code>.S</code> 編出來，不用先跑 <code>tests/</code> 的 configure）。</figcaption>
+</figure>
+
+<div class="note"><b>為什麼所有測試都跑得起來</b><p><code>tests/riscv/riscv-macros.h</code> 裡每個測試巨集只用到 <code>li</code>、<code>la</code>、<code>addi</code>、<code>lw</code>、<code>bne</code>、<code>and</code>、<code>nop</code>、<code>csrw</code>；<code>li</code> 會展成 <code>lui</code>＋<code>addi</code>、<code>la</code> 會展成 <code>auipc</code>＋<code>addi</code>。這些除了 <code>and</code> 之外全部隨作業附好了——所以除了 <code>sb</code>/<code>sh</code> 之外，任何一道指令只要自己那一列填對，它的測試就能獨立通過。</p></div>
+
+<ul class="todo" data-title="第 3 站完成檢查表">
+  <li><label><input type="checkbox" data-k="ch3-readctrl"><span>打開 <code>riscvstall/riscvstall-CoreCtrl.v</code>，找到第 411–470 行的 <code>casez</code> 與第 413–414 行的欄位表頭註解</span></label></li>
+  <li><label><input type="checkbox" data-k="ch3-localparam"><span>掃過第 251–359 行的 <code>localparam</code> 區，確認 <code>br_*</code>／<code>pm_*</code>／<code>am_*</code>／<code>bm_*</code>／<code>alu_*</code>／<code>md_*</code>／<code>ml_*</code>／<code>dmm_*</code> 全都已經定義好</span></label></li>
+  <li><label><input type="checkbox" data-k="ch3-count"><span>數出 32 個被註解掉的空列（7＋9＋6＋1＋4＋5），確認 <code>lh</code> 那一列已經有了</span></label></li>
+  <li><label><input type="checkbox" data-k="ch3-stage"><span>說得出 20 欄各在哪一級被消費，尤其是 <code>rs1 en</code>／<code>rs2 en</code> 只餵冒險偵測</span></label></li>
+  <li><label><input type="checkbox" data-k="ch3-method"><span>能複述四步法：找鄰居 → 列差異 → 翻成欄 → 改完立刻測</span></label></li>
+  <li><label><input type="checkbox" data-k="ch3-tests"><span>知道測試檔在 <code>tests/riscv/*.S</code>，只要把 <code>riscv-xxx.vmh</code> 加進 <code>build/Makefile</code> 第 42–53 行的 <code>tests</code> 變數</span></label></li>
+  <li><label><input type="checkbox" data-k="ch3-order"><span>決定好攻略順序，並知道 <code>and</code> 要排在 <code>sb</code>／<code>sh</code> 之前</span></label></li>
+</ul>
+
+<div class="more"><b>想深入</b>
+<p><a href="../riscv-cpu-course/index.html#ch5">圖解課第 5 章</a>：控制表 39 個位元怎麼切、20 欄一欄一欄詳解。<br>
+<a href="../riscv-cpu-course/index.html#ch8">圖解課第 8 章</a>：加一道新指令的完整方法與各類提示。<br>
+<a href="../riscv-cpu-course/index.html#chA">附錄 A 控制表速查</a>：填表時開在旁邊（右下角按鈕或鍵盤 <kbd>?</kbd>）。</p></div>
+</section>
+
+
+<!-- ============================================================ ch4 -->
+<section class="ch" id="ch4" data-part="Objective 1 · 擴充控制單元" data-nav="範例：照講義加 lh">
+<p class="eyebrow">第 4 站 · Objective 1</p>
+<h2>範例：照講義把 <code>lh</code> 加進去</h2>
+
+<p>講義第 3.2 節示範了一道指令的完整流程，用的是 <code>lh</code>。<b>這一步你其實已經做完了</b>——你的 <code>riscvstall-CoreCtrl.v</code> 第 443 行就是那一列，<code>build/Makefile</code> 也已經有 <code>riscv-lh.vmh</code>。所以這一站不是叫你再做一次，而是把你已經做過的四個動作各自解釋清楚：<b>你剛剛到底改了什麼、為什麼是那兩欄、它們分別落在管線的哪一級</b>。這套解釋接下來 31 次都一樣。</p>
+
+<h3>第 1 步：找鄰居，並看出只有兩欄不同</h3>
+
+<p><code>lh</code> 的鄰居是 <code>lw</code>：一樣是 load、一樣用 I 型立即值、一樣拿 <code>rs1 + imm_i</code> 當位址、一樣在 X 發請求 M 收回應、一樣寫回 <code>rd</code>。差異只有兩句中文：<b>讀的是半字（2 bytes）不是整字</b>、<b>讀回來要符號延伸成 32 位元</b>。兩句話各對到一欄。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 439 行（原本就有）與第 443 行（你加的）</div>
+<pre><code class="language-verilog">`RISCV_INST_MSG_LW      :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_i, n,  alu_add,  md_x,    n, mdm_x, em_x,   ld,  ml_w, dmm_w,  wm_mem, y,  rd, n   };
+`RISCV_INST_MSG_LH      :cs={ y,  n,    br_none, pm_p,   am_rdat, y,  bm_imm_i, n,  alu_add,  md_x,    n, mdm_x, em_x,   ld,  ml_h, dmm_h,  wm_mem, y,  rd, n };</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 340" role="img" aria-label="lw 與 lh 兩列控制表逐欄對照：前十欄完全相同，後十欄之中只有第 15 欄 mem len 從 ml_w 變成 ml_h、第 16 欄 memresp muxsel 從 dmm_w 變成 dmm_h，其餘十八欄一字不差。">
+  <text class="zh hd" x="16" y="20">20 欄逐欄對照：只有第 15、16 欄不同</text>
+  <text class="s mut" x="16" y="52">欄 1–10</text>
+  <text class="s mut" x="82" y="66" text-anchor="middle">val</text>
+  <text class="s mut" x="150" y="66" text-anchor="middle">jtk</text>
+  <text class="s mut" x="218" y="66" text-anchor="middle">brty</text>
+  <text class="s mut" x="286" y="66" text-anchor="middle">pcsel</text>
+  <text class="s mut" x="354" y="66" text-anchor="middle">op0sel</text>
+  <text class="s mut" x="422" y="66" text-anchor="middle">rs1en</text>
+  <text class="s mut" x="490" y="66" text-anchor="middle">op1sel</text>
+  <text class="s mut" x="558" y="66" text-anchor="middle">rs2en</text>
+  <text class="s mut" x="626" y="66" text-anchor="middle">alufn</text>
+  <text class="s mut" x="694" y="66" text-anchor="middle">mdfn</text>
+  <text class="s" x="16" y="89">lw</text>
+  <rect class="k" x="48" y="72" width="68" height="24"/>
+  <text class="s" x="82" y="89" text-anchor="middle">y</text>
+  <rect class="k" x="116" y="72" width="68" height="24"/>
+  <text class="s" x="150" y="89" text-anchor="middle">n</text>
+  <rect class="k" x="184" y="72" width="68" height="24"/>
+  <text class="s" x="218" y="89" text-anchor="middle">br_none</text>
+  <rect class="k" x="252" y="72" width="68" height="24"/>
+  <text class="s" x="286" y="89" text-anchor="middle">pm_p</text>
+  <rect class="k" x="320" y="72" width="68" height="24"/>
+  <text class="s" x="354" y="89" text-anchor="middle">am_rdat</text>
+  <rect class="k" x="388" y="72" width="68" height="24"/>
+  <text class="s" x="422" y="89" text-anchor="middle">y</text>
+  <rect class="k" x="456" y="72" width="68" height="24"/>
+  <text class="s" x="490" y="89" text-anchor="middle">bm_imm_i</text>
+  <rect class="k" x="524" y="72" width="68" height="24"/>
+  <text class="s" x="558" y="89" text-anchor="middle">n</text>
+  <rect class="k" x="592" y="72" width="68" height="24"/>
+  <text class="s" x="626" y="89" text-anchor="middle">alu_add</text>
+  <rect class="k" x="660" y="72" width="68" height="24"/>
+  <text class="s" x="694" y="89" text-anchor="middle">md_x</text>
+  <text class="s ac" x="16" y="117">lh</text>
+  <rect class="k" x="48" y="100" width="68" height="24"/>
+  <text class="s" x="82" y="117" text-anchor="middle">y</text>
+  <rect class="k" x="116" y="100" width="68" height="24"/>
+  <text class="s" x="150" y="117" text-anchor="middle">n</text>
+  <rect class="k" x="184" y="100" width="68" height="24"/>
+  <text class="s" x="218" y="117" text-anchor="middle">br_none</text>
+  <rect class="k" x="252" y="100" width="68" height="24"/>
+  <text class="s" x="286" y="117" text-anchor="middle">pm_p</text>
+  <rect class="k" x="320" y="100" width="68" height="24"/>
+  <text class="s" x="354" y="117" text-anchor="middle">am_rdat</text>
+  <rect class="k" x="388" y="100" width="68" height="24"/>
+  <text class="s" x="422" y="117" text-anchor="middle">y</text>
+  <rect class="k" x="456" y="100" width="68" height="24"/>
+  <text class="s" x="490" y="117" text-anchor="middle">bm_imm_i</text>
+  <rect class="k" x="524" y="100" width="68" height="24"/>
+  <text class="s" x="558" y="117" text-anchor="middle">n</text>
+  <rect class="k" x="592" y="100" width="68" height="24"/>
+  <text class="s" x="626" y="117" text-anchor="middle">alu_add</text>
+  <rect class="k" x="660" y="100" width="68" height="24"/>
+  <text class="s" x="694" y="117" text-anchor="middle">md_x</text>
+  <text class="zh s mut" x="16" y="148">前十欄完全相同</text>
+  <text class="s mut" x="16" y="188">欄 11–20</text>
+  <text class="s mut" x="82" y="202" text-anchor="middle">mden</text>
+  <text class="s mut" x="150" y="202" text-anchor="middle">mdsel</text>
+  <text class="s mut" x="218" y="202" text-anchor="middle">exsel</text>
+  <text class="s mut" x="286" y="202" text-anchor="middle">memrq</text>
+  <text class="s ac" x="354" y="202" text-anchor="middle">memlen</text>
+  <text class="s ac" x="422" y="202" text-anchor="middle">memsel</text>
+  <text class="s mut" x="490" y="202" text-anchor="middle">wbsel</text>
+  <text class="s mut" x="558" y="202" text-anchor="middle">rfwen</text>
+  <text class="s mut" x="626" y="202" text-anchor="middle">wa</text>
+  <text class="s mut" x="694" y="202" text-anchor="middle">csrwen</text>
+  <text class="s" x="16" y="225">lw</text>
+  <rect class="k" x="48" y="208" width="68" height="24"/>
+  <text class="s" x="82" y="225" text-anchor="middle">n</text>
+  <rect class="k" x="116" y="208" width="68" height="24"/>
+  <text class="s" x="150" y="225" text-anchor="middle">mdm_x</text>
+  <rect class="k" x="184" y="208" width="68" height="24"/>
+  <text class="s" x="218" y="225" text-anchor="middle">em_x</text>
+  <rect class="k" x="252" y="208" width="68" height="24"/>
+  <text class="s" x="286" y="225" text-anchor="middle">ld</text>
+  <rect class="k" x="320" y="208" width="68" height="24" style="stroke:var(--warn)"/>
+  <text class="s wr" x="354" y="225" text-anchor="middle">ml_w</text>
+  <rect class="k" x="388" y="208" width="68" height="24" style="stroke:var(--warn)"/>
+  <text class="s wr" x="422" y="225" text-anchor="middle">dmm_w</text>
+  <rect class="k" x="456" y="208" width="68" height="24"/>
+  <text class="s" x="490" y="225" text-anchor="middle">wm_mem</text>
+  <rect class="k" x="524" y="208" width="68" height="24"/>
+  <text class="s" x="558" y="225" text-anchor="middle">y</text>
+  <rect class="k" x="592" y="208" width="68" height="24"/>
+  <text class="s" x="626" y="225" text-anchor="middle">rd</text>
+  <rect class="k" x="660" y="208" width="68" height="24"/>
+  <text class="s" x="694" y="225" text-anchor="middle">n</text>
+  <text class="s ac" x="16" y="253">lh</text>
+  <rect class="k" x="48" y="236" width="68" height="24"/>
+  <text class="s" x="82" y="253" text-anchor="middle">n</text>
+  <rect class="k" x="116" y="236" width="68" height="24"/>
+  <text class="s" x="150" y="253" text-anchor="middle">mdm_x</text>
+  <rect class="k" x="184" y="236" width="68" height="24"/>
+  <text class="s" x="218" y="253" text-anchor="middle">em_x</text>
+  <rect class="k" x="252" y="236" width="68" height="24"/>
+  <text class="s" x="286" y="253" text-anchor="middle">ld</text>
+  <rect class="af" x="320" y="236" width="68" height="24"/>
+  <text class="s ac" x="354" y="253" text-anchor="middle">ml_h</text>
+  <rect class="af" x="388" y="236" width="68" height="24"/>
+  <text class="s ac" x="422" y="253" text-anchor="middle">dmm_h</text>
+  <rect class="k" x="456" y="236" width="68" height="24"/>
+  <text class="s" x="490" y="253" text-anchor="middle">wm_mem</text>
+  <rect class="k" x="524" y="236" width="68" height="24"/>
+  <text class="s" x="558" y="253" text-anchor="middle">y</text>
+  <rect class="k" x="592" y="236" width="68" height="24"/>
+  <text class="s" x="626" y="253" text-anchor="middle">rd</text>
+  <rect class="k" x="660" y="236" width="68" height="24"/>
+  <text class="s" x="694" y="253" text-anchor="middle">n</text>
+  <path class="a" d="M354 260V278" marker-end="url(#ah)"/>
+  <path class="a" d="M422 260V278" marker-end="url(#ah)"/>
+  <text class="zh s ac" x="354" y="296" text-anchor="middle">「讀半字」</text>
+  <text class="zh s ac" x="422" y="296" text-anchor="middle">「符號延伸」</text>
+  <text class="zh s mut" x="16" y="320">欄名縮寫：memlen = mem len、memsel = memresp muxsel、wbsel = wb muxsel。</text>
+  <text class="zh s mut" x="16" y="336">其餘 18 欄一字不差地照抄 lw——這就是「找鄰居」的價值。</text>
+</svg>
+</div>
+<figcaption><b>兩句中文 → 兩欄。</b>第 2 步把差異寫成中文、第 3 步才翻成欄位名，這個順序不要顛倒；先想欄位名容易漏掉「其實還有一個差異」。</figcaption>
+</figure>
+</div>
+
+<div class="trap"><b>第 442 行那個註解還在</b><p>你的檔案裡第 442 行仍然是 <code>// `RISCV_INST_MSG_LH :cs={};</code>，第 443 行才是你填的真列。這不影響編譯（註解就是註解），但接下來填其他 31 列時，養成<b>把註解符號拆掉、直接在原位填</b>的習慣，表格才會保持對齊、也不會出現「一道指令兩列」的錯覺。</p></div>
+
+<h3>第 2 步：這兩欄分別落在管線的哪一級</h3>
+
+<p>兩欄都在 D 級被決定，但一個在 <b>X</b> 被消費、一個在 <b>M</b> 被消費——中間隔了一整級。這也解釋了為什麼是兩欄而不是一欄：<code>ml_h</code> 只負責「跟記憶體要幾個 byte」，回來之後「怎麼補滿 32 位元」是另一個人的工作。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 350" role="img" aria-label="lh 的兩個控制欄各自的去向：mem len 欄在 D 級決定後搭一級管線暫存器到 X，成為 dmemreq_msg_len 送進記憶體請求；memresp muxsel 欄搭兩級管線暫存器到 M，成為 dmemresp_mux_sel_Mhl，用來選 subword 調整多工器的第 3 號輸入 dmemresp_lh_Mhl。">
+  <text class="hd" x="80" y="20" text-anchor="middle">D</text>
+  <text class="hd" x="300" y="20" text-anchor="middle">X</text>
+  <text class="hd" x="560" y="20" text-anchor="middle">M</text>
+  <path class="wm" d="M180 28V336" style="stroke-dasharray:6 4"/>
+  <path class="wm" d="M430 28V336" style="stroke-dasharray:6 4"/>
+
+  <!-- mem len path -->
+  <rect class="af" x="14" y="44" width="150" height="34"/>
+  <text class="s ac" x="89" y="59" text-anchor="middle">cs[MEM_LEN]</text>
+  <text class="s ac" x="89" y="73" text-anchor="middle">= ml_h (2'd2)</text>
+  <path class="a" d="M164 61H196" marker-end="url(#ah)"/>
+  <rect class="r" x="196" y="44" width="16" height="34"/>
+  <path class="rl" d="M196 70L204 62L196 54"/>
+  <path class="a" d="M212 61H268" marker-end="url(#ah)"/>
+  <text class="s" x="218" y="55">dmemreq_msg_len_Xhl</text>
+  <rect class="k" x="268" y="44" width="150" height="34"/>
+  <text class="zh s" x="343" y="59" text-anchor="middle">資料記憶體請求</text>
+  <text class="s mut" x="343" y="73" text-anchor="middle">addr / len / rw</text>
+  <path class="w" d="M418 61H470V104" marker-end="url(#ah)"/>
+  <text class="zh s mut" x="440" y="55">len=2 → 只要半字</text>
+
+  <!-- memresp path -->
+  <rect class="af" x="14" y="140" width="150" height="34"/>
+  <text class="s ac" x="89" y="155" text-anchor="middle">cs[MEM_SEL]</text>
+  <text class="s ac" x="89" y="169" text-anchor="middle">= dmm_h (3'd3)</text>
+  <path class="a" d="M164 157H196" marker-end="url(#ah)"/>
+  <rect class="r" x="196" y="140" width="16" height="34"/>
+  <path class="rl" d="M196 166L204 158L196 150"/>
+  <path class="a" d="M212 157H386" marker-end="url(#ah)"/>
+  <text class="s" x="222" y="151">dmemresp_mux_sel_Xhl</text>
+  <rect class="r" x="386" y="140" width="16" height="34"/>
+  <path class="rl" d="M386 166L394 158L386 150"/>
+  <path class="a" d="M402 157H462V286H528" marker-end="url(#ah)"/>
+  <text class="s ac" x="408" y="151">dmemresp_mux_sel_Mhl</text>
+
+  <!-- subword mux in M -->
+  <text class="s" x="440" y="110">dmemresp_msg_data</text>
+  <path class="w" d="M470 122V262"/>
+  <circle class="d" cx="470" cy="134" r="3"/>
+  <circle class="d" cx="470" cy="166" r="3"/>
+  <circle class="d" cx="470" cy="198" r="3"/>
+  <circle class="d" cx="470" cy="230" r="3"/>
+  <circle class="d" cx="470" cy="262" r="3"/>
+  <path class="w" d="M470 134H540"/>
+  <text class="s mut" x="546" y="126">0 整字</text>
+  <path class="w" d="M470 166H540"/>
+  <text class="s mut" x="546" y="158">1 lb</text>
+  <path class="w" d="M470 198H540"/>
+  <text class="s mut" x="546" y="190">2 lbu</text>
+  <path class="a" d="M470 230H540"/>
+  <text class="s ac" x="546" y="222">3 lh 半字</text>
+  <path class="w" d="M470 262H540"/>
+  <text class="s mut" x="546" y="254">4 lhu</text>
+  <path class="k" d="M636 122L660 134V262L636 274Z"/>
+  <path class="w" d="M540 134H636"/><path class="w" d="M540 166H636"/>
+  <path class="w" d="M540 198H636"/><path class="a" d="M540 230H636"/>
+  <path class="w" d="M540 262H636"/>
+  <path class="c" d="M528 286H648V274" marker-end="url(#ahc)"/>
+  <path class="w" d="M660 210H716" marker-end="url(#ah)"/>
+  <text class="s" x="666" y="190">→ wb mux</text>
+
+  <text class="zh s mut" x="14" y="222">兩欄一起改，缺一不可：</text>
+  <text class="zh s mut" x="14" y="238">只改 ml_h → 記憶體給你半字，</text>
+  <text class="zh s mut" x="14" y="254">但 dmm_w 直接拿整字寫回。</text>
+  <text class="zh s mut" x="14" y="270">只改 dmm_h → 延伸對了，但</text>
+  <text class="zh s mut" x="14" y="286">要來的 byte 數不對。</text>
+  <text class="zh s mut" x="14" y="318">五條支線的算式全部同時在跑，</text>
+  <text class="zh s mut" x="14" y="334">控制表只是決定取哪一條。</text>
+</svg>
+</div>
+<figcaption><b>兩欄分別在 X 和 M 落地。</b>subword 調整多工器與五條支線在 <code>riscvstall-CoreDpath.v</code> 第 313–333 行；<code>dmemresp_lh_Mhl</code> 在第 321–322 行，正是 mux 的第 3 號輸入，對應 <code>dmm_h</code> 的編碼 <code>3'd3</code>。</figcaption>
+</figure>
+
+<h3>第 3 步：真的算一次，確認「符號延伸」是什麼意思</h3>
+
+<p><code>tests/riscv/riscv-lh.S</code> 的測試資料是三個 word。拿前三筆測項手算一次，你就會知道 <code>dmm_h</code> 和 <code>dmm_hu</code> 差在哪。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 330" role="img" aria-label="lh 的三個手算範例：記憶體 word 0xdeadbeef 的低半字 0xbeef 最高位元為 1，lh 會符號延伸成 0xffffbeef 而 lhu 會零延伸成 0x0000beef；高半字 0xdead 同樣延伸成 0xffffdead；下一個 word 0xff0000ff 的低半字 0x00ff 最高位元為 0，lh 與 lhu 都得到 0x000000ff。">
+  <text class="zh hd" x="16" y="20">tests/riscv/riscv-lh.S 的測試資料（little-endian）</text>
+
+  <text class="s mut" x="16" y="52">tdata_0:</text>
+  <text class="s mut" x="16" y="68">.word</text>
+  <rect class="f-rs2" x="86" y="40" width="96" height="32"/>
+  <text x="134" y="60" text-anchor="middle">0xdead</text>
+  <rect class="f-imm" x="182" y="40" width="96" height="32"/>
+  <text x="230" y="60" text-anchor="middle">0xbeef</text>
+  <text class="s mut" x="134" y="86" text-anchor="middle">位元組 2–3</text>
+  <text class="s mut" x="230" y="86" text-anchor="middle">位元組 0–1</text>
+
+  <text class="s mut" x="300" y="52">tdata_1:</text>
+  <rect class="f-rs2" x="370" y="40" width="96" height="32"/>
+  <text x="418" y="60" text-anchor="middle">0xff00</text>
+  <rect class="f-imm" x="466" y="40" width="96" height="32"/>
+  <text x="514" y="60" text-anchor="middle">0x00ff</text>
+  <text class="s mut" x="418" y="86" text-anchor="middle">位元組 6–7</text>
+  <text class="s mut" x="514" y="86" text-anchor="middle">位元組 4–5</text>
+
+  <path class="wm" d="M16 104H724" style="stroke-dasharray:none;stroke-width:1"/>
+
+  <!-- case 1 -->
+  <text class="s" x="16" y="130">lh  x4, 0(x2)</text>
+  <path class="w" d="M120 126H176" marker-end="url(#ah)"/>
+  <rect class="f-imm" x="176" y="114" width="80" height="26"/>
+  <text x="216" y="132" text-anchor="middle">0xbeef</text>
+  <text class="s wr" x="264" y="132">bit15 = 1</text>
+  <path class="a" d="M340 126H386" marker-end="url(#ah)"/>
+  <rect class="af" x="386" y="114" width="70" height="26"/>
+  <text class="s ac" x="421" y="132" text-anchor="middle">ffff</text>
+  <rect class="f-imm" x="456" y="114" width="80" height="26"/>
+  <text x="496" y="132" text-anchor="middle">beef</text>
+  <text class="s ac" x="548" y="132">lh → 0xffffbeef</text>
+  <rect class="gh" x="386" y="146" width="70" height="26"/>
+  <text class="s mut" x="421" y="164" text-anchor="middle">0000</text>
+  <rect class="f-imm" x="456" y="146" width="80" height="26"/>
+  <text class="s" x="496" y="164" text-anchor="middle">beef</text>
+  <text class="s mut" x="548" y="164">lhu → 0x0000beef</text>
+
+  <!-- case 2 -->
+  <text class="s" x="16" y="206">lh  x4, 2(x2)</text>
+  <path class="w" d="M120 202H176" marker-end="url(#ah)"/>
+  <rect class="f-rs2" x="176" y="190" width="80" height="26"/>
+  <text x="216" y="208" text-anchor="middle">0xdead</text>
+  <text class="s wr" x="264" y="208">bit15 = 1</text>
+  <path class="a" d="M340 202H386" marker-end="url(#ah)"/>
+  <rect class="af" x="386" y="190" width="70" height="26"/>
+  <text class="s ac" x="421" y="208" text-anchor="middle">ffff</text>
+  <rect class="f-rs2" x="456" y="190" width="80" height="26"/>
+  <text x="496" y="208" text-anchor="middle">dead</text>
+  <text class="s ac" x="548" y="208">lh → 0xffffdead</text>
+
+  <!-- case 3 -->
+  <text class="s" x="16" y="262">lh  x4, 4(x2)</text>
+  <path class="w" d="M120 258H176" marker-end="url(#ah)"/>
+  <rect class="f-imm" x="176" y="246" width="80" height="26"/>
+  <text x="216" y="264" text-anchor="middle">0x00ff</text>
+  <text class="s ac" x="264" y="264">bit15 = 0</text>
+  <path class="a" d="M340 258H386" marker-end="url(#ah)"/>
+  <rect class="af" x="386" y="246" width="70" height="26"/>
+  <text class="s ac" x="421" y="264" text-anchor="middle">0000</text>
+  <rect class="f-imm" x="456" y="246" width="80" height="26"/>
+  <text x="496" y="264" text-anchor="middle">00ff</text>
+  <text class="s ac" x="548" y="264">lh → 0x000000ff</text>
+  <text class="s mut" x="548" y="282">lhu 也是 0x000000ff</text>
+
+  <text class="zh s mut" x="16" y="308">複製 bit15 十六次，就是 dmemresp_lh_Mhl = { {16{data[15]}}, data[15:0] }。</text>
+  <text class="zh s mut" x="16" y="324">bit15 是 0 的時候 lh 與 lhu 結果相同——所以測 lh 一定要挑一筆負的資料，不然錯了也看不出來。</text>
+</svg>
+</div>
+<figcaption><b><code>lh</code> 與 <code>lhu</code> 只有在最高位元為 1 時才分得出來。</b>這也是為什麼 <code>riscv-lh.S</code> 的 <code>tdata_0</code> 特地選了 <code>0xdeadbeef</code>。等一下填 <code>lhu</code>、<code>lb</code>、<code>lbu</code> 時，複習這張圖比查表快。</figcaption>
+</figure>
+
+<h3>第 4 步：把測試掛進 Makefile，然後跑</h3>
+
+<p>控制表填好了，<code>make check-asm-riscvstall</code> 不會自動知道要跑 <code>riscv-lh</code>。測試清單是寫死的 <code>tests</code> 變數（<code>build/Makefile</code> 第 42–53 行）。你已經加了最後那一行。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 348" role="img" aria-label="左邊是 build/Makefile 的 tests 變數清單，最後多出 riscv-lh.vmh 一行並被標成重點；右邊是 make check-asm-riscvstall 的輸出，每個測試一行，全部顯示 PASSED，最下方是 riscv-lh-stall.out 的統計數字。">
+  <text class="zh hd" x="16" y="20">build/Makefile 第 42–53 行</text>
+  <rect class="k" x="14" y="32" width="250" height="264"/>
+  <text class="s mut" x="26" y="52">tests = \</text>
+  <text class="s mut" x="26" y="70">  riscv-add.vmh \</text>
+  <text class="s mut" x="26" y="88">  riscv-addi.vmh \</text>
+  <text class="s mut" x="26" y="106">  riscv-bne.vmh \</text>
+  <text class="s mut" x="26" y="124">  riscv-blt.vmh \</text>
+  <text class="s mut" x="26" y="142">  riscv-jal.vmh \</text>
+  <text class="s mut" x="26" y="160">  riscv-lui.vmh \</text>
+  <text class="s mut" x="26" y="178">  riscv-lw.vmh \</text>
+  <text class="s mut" x="26" y="196">  riscv-ori.vmh \</text>
+  <text class="s mut" x="26" y="214">  riscv-sw.vmh \</text>
+  <rect class="af" x="22" y="222" width="180" height="22"/>
+  <text class="s ac" x="26" y="238">  riscv-lh.vmh \</text>
+  <text class="zh s ac" x="208" y="238">你加的</text>
+  <text class="zh s mut" x="26" y="268">.vmh 由 Makefile 自己從</text>
+  <text class="zh s mut" x="26" y="286">tests/riscv/%.S 編出來</text>
+
+  <path class="a" d="M264 156H316" marker-end="url(#ah)"/>
+  <text class="s" x="272" y="150">make</text>
+
+  <text class="zh hd" x="330" y="20">% make check-asm-riscvstall</text>
+  <rect class="k" x="328" y="32" width="398" height="264"/>
+  <text class="s" x="340" y="52">  [ PASSED ] riscv-add-stall.out</text>
+  <text class="s" x="340" y="70">  [ PASSED ] riscv-addi-stall.out</text>
+  <text class="s" x="340" y="88">  [ PASSED ] riscv-bne-stall.out</text>
+  <text class="s" x="340" y="106">  [ PASSED ] riscv-blt-stall.out</text>
+  <text class="s" x="340" y="124">  [ PASSED ] riscv-jal-stall.out</text>
+  <text class="s" x="340" y="142">  [ PASSED ] riscv-lui-stall.out</text>
+  <text class="s" x="340" y="160">  [ PASSED ] riscv-lw-stall.out</text>
+  <text class="s" x="340" y="178">  [ PASSED ] riscv-ori-stall.out</text>
+  <text class="s" x="340" y="196">  [ PASSED ] riscv-sw-stall.out</text>
+  <rect class="af" x="336" y="204" width="288" height="22"/>
+  <text class="s ac" x="340" y="220">  [ PASSED ] riscv-lh-stall.out</text>
+  <text class="zh s mut" x="340" y="252">每個 .out 的第一行是 *** PASSED ***，</text>
+  <text class="zh s mut" x="340" y="272">Makefile 用 perl 把它抓出來印成這一行。</text>
+
+  <text class="zh hd" x="16" y="318">build/riscv-lh-stall.out</text>
+  <text class="s" x="200" y="318">*** PASSED ***　status = 1　num_cycles = 449　num_inst = 187　ipc = 0.416481</text>
+  <text class="zh s mut" x="16" y="340">沒把 .vmh 加進 tests 的話，make 不會抱怨，它只是安靜地沒跑你的新測試——最危險的一種「通過」。</text>
+</svg>
+</div>
+<figcaption><b>有 <code>[ PASSED ]</code> 那一行才算數。</b>判定機制：每個 <code>.S</code> 最後用 <code>csrw 21, x29</code> 把 1（通過）或失敗行號寫進 <code>csr_status</code>，模擬器據此印 <code>*** PASSED ***</code> 或 <code>*** FAILED ***</code>。跑完別忘了再跑一次隨機延遲版：<code>make check-asm-rand-riscvstall</code>。</figcaption>
+</figure>
+
+<div class="trap"><b>講義的「single line」是認真的</b><p>講義在那一列下面寫了 <i>「Ensure this appears on a single line in the source.」</i> 折行在 Verilog 語法上完全合法，編譯也會過——但欄位一旦不對齊，你就再也沒辦法用「跟上一列對齊著看」的方式檢查自己有沒有少填一欄。這個表是靠<b>位置</b>而不是靠名字對應欄位的，<code>cs = {a, b, c, ...}</code> 少一個元素，整個 39 位元的切法就全部平移，錯誤會出現在完全無關的欄位上，而且編譯器只會給你一個位寬警告（甚至不給）。</p></div>
+
+<div class="quiz"><b>想一想</b><p>如果你 <code>lh</code> 那一列只改了 <code>ml_h</code>、<code>memresp muxsel</code> 忘了改仍然是 <code>dmm_w</code>，<code>riscv-lh</code> 測試會怎麼失敗？</p>
+<details><summary>看答案</summary><p><code>dmm_w</code> 讓 mux 選第 0 號輸入 <code>dmemresp_msg_data</code>，也就是記憶體原封不動回來的整個 32 位元。但請求的 <code>len = 2</code>，記憶體只保證低 16 位元有效，高 16 位元是什麼要看記憶體模型。結果寫回 <code>rd</code> 的既不是 <code>0xffffbeef</code> 也不一定是 <code>0x0000beef</code>，第一筆 <code>TEST_LD_OP( lh, 0, tdata_0, 0xffffbeef )</code> 就會失敗，<code>.out</code> 裡印出的失敗行號（<code>status</code>）正是那一行的 <code>__LINE__</code>。</p></details></div>
+
+<ul class="todo" data-title="第 4 站完成檢查表">
+  <li><label><input type="checkbox" data-k="ch4-row"><span><code>CoreCtrl.v</code> 第 443 行有 <code>lh</code> 那一列，而且寫在同一行</span></label></li>
+  <li><label><input type="checkbox" data-k="ch4-diff"><span>說得出 <code>lh</code> 與 <code>lw</code> 只差 <code>mem len</code>、<code>memresp muxsel</code> 兩欄，以及兩欄各在哪一級被消費</span></label></li>
+  <li><label><input type="checkbox" data-k="ch4-mux"><span>在 <code>CoreDpath.v</code> 第 313–333 行找到 subword mux 與它的 5 個輸入，認得 <code>dmemresp_lh_Mhl</code> 是第 3 號</span></label></li>
+  <li><label><input type="checkbox" data-k="ch4-hand"><span>手算過一次 <code>0xdeadbeef</code> 的低半字在 <code>lh</code> 與 <code>lhu</code> 下的差別</span></label></li>
+  <li><label><input type="checkbox" data-k="ch4-mk"><span><code>build/Makefile</code> 的 <code>tests</code> 變數裡有 <code>riscv-lh.vmh</code></span></label></li>
+  <li><label><input type="checkbox" data-k="ch4-pass"><span><code>make check-asm-riscvstall</code> 印出 <code>[ PASSED ] riscv-lh-stall.out</code></span></label></li>
+  <li><label><input type="checkbox" data-k="ch4-rand"><span><code>make check-asm-rand-riscvstall</code> 也通過</span></label></li>
+</ul>
+
+<div class="more"><b>想深入</b>
+<p><a href="../riscv-cpu-course/index.html#ch8">圖解課第 8 章「範例：把 lh 加進去」</a>：同一個例子從電路角度再講一次，含 subword mux 的完整圖。<br>
+<a href="../riscv-cpu-course/index.html#ch5">圖解課第 5 章 ④ 記憶體那一組</a>：<code>mem rq</code>／<code>mem len</code>／<code>memresp muxsel</code> 三欄的所有可填值。<br>
+<a href="../riscv-cpu-course/index.html#ch20">圖解課第 20 章</a>：<code>.S</code> 怎麼變成 <code>.vmh</code>、<code>*** PASSED ***</code> 是誰印的。</p></div>
+</section>
+
+
+<!-- ============================================================ ch5 -->
+<section class="ch" id="ch5" data-part="Objective 1 · 擴充控制單元" data-nav="各類指令攻略">
+<p class="eyebrow">第 5 站 · Objective 1</p>
+<h2>各類指令攻略</h2>
+
+<p>以下六類，每一類給你四樣東西：<b>抄哪一列</b>、<b>要重新考慮哪幾欄</b>（欄位名稱，不是答案）、<b>這一類專屬的坑</b>、<b>要打開哪些測試</b>。答案請自己照第 4 站的四步法推出來，查值用<a href="../riscv-cpu-course/index.html#chA">附錄 A 控制表速查</a>。</p>
+
+<h3 id="ch5-ri">Register-Immediate：andi xori slti sltiu slli srli srai</h3>
+
+<p><b>範本列：</b><code>ori</code>（第 419 行）。<b>要重新考慮的欄：</b>邏輯與比較四道（<code>andi</code> <code>xori</code> <code>slti</code> <code>sltiu</code>）只有 <code>alu fn</code> 一欄；移位三道（<code>slli</code> <code>srli</code> <code>srai</code>）還要再考慮 <code>op1 muxsel</code>。</p>
+
+<p>為什麼移位不一樣？因為移位量不是 I 型立即值，而是指令裡獨立的 <code>shamt</code> 欄位。datapath 給了它專屬的一條線和 op1 mux 的一個輸入：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 201 行、第 218–226 行</div>
+<pre><code class="language-verilog">wire [31:0] shamt_Dhl = { 27'b0, inst_shamt_Dhl };
+...
+wire [31:0] op1_mux_out_Dhl
+  = ( op1_mux_sel_Dhl == 3'd0 ) ? rf_rdata1_Dhl
+  : ( op1_mux_sel_Dhl == 3'd1 ) ? shamt_Dhl
+  : ( op1_mux_sel_Dhl == 3'd2 ) ? imm_u_Dhl
+  : ( op1_mux_sel_Dhl == 3'd3 ) ? imm_sb_Dhl
+  : ( op1_mux_sel_Dhl == 3'd4 ) ? imm_i_Dhl
+  : ( op1_mux_sel_Dhl == 3'd5 ) ? imm_s_Dhl
+  : ( op1_mux_sel_Dhl == 3'd6 ) ? const0
+  :                               32'bx;</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 350" role="img" aria-label="op1 多工器的七個輸入與它們對應的 localparam 名稱，其中 bm_imm_i 與 bm_shamt 兩個輸入被標成重點；右邊畫出 ALU 內部移位器的接線是交叉的，模組的 alu_a 接到 in1 也就是移位量，alu_b 接到 in0 也就是被移位的值。">
+  <text class="zh hd" x="16" y="20">op1 mux 的七個輸入（CoreDpath 第 218–226 行）</text>
+  <text class="s mut" x="16" y="52">rf_rdata1_Dhl</text>
+  <path class="w" d="M128 48H196"/>
+  <text class="s mut" x="16" y="80">shamt_Dhl</text>
+  <path class="a" d="M128 76H196"/>
+  <text class="s mut" x="16" y="108">imm_u_Dhl</text>
+  <path class="w" d="M128 104H196"/>
+  <text class="s mut" x="16" y="136">imm_sb_Dhl</text>
+  <path class="w" d="M128 132H196"/>
+  <text class="s mut" x="16" y="164">imm_i_Dhl</text>
+  <path class="a" d="M128 160H196"/>
+  <text class="s mut" x="16" y="192">imm_s_Dhl</text>
+  <path class="w" d="M128 188H196"/>
+  <text class="s mut" x="16" y="220">const0</text>
+  <path class="w" d="M128 216H196"/>
+
+  <path class="k" d="M196 32L220 44V224L196 236Z"/>
+  <text class="s mut" x="200" y="52">0</text>
+  <text class="s ac" x="200" y="80">1</text>
+  <text class="s mut" x="200" y="108">2</text>
+  <text class="s mut" x="200" y="136">3</text>
+  <text class="s ac" x="200" y="164">4</text>
+  <text class="s mut" x="200" y="192">5</text>
+  <text class="s mut" x="200" y="220">6</text>
+  <path class="c" d="M208 236V258" marker-end="url(#ahc)"/>
+  <text class="cb s" x="208" y="274" text-anchor="middle">op1_mux_sel_Dhl</text>
+
+  <text class="s ac" x="232" y="80">bm_shamt</text>
+  <text class="zh s ac" x="232" y="96">移位三道用這個</text>
+  <text class="s ac" x="232" y="164">bm_imm_i</text>
+  <text class="zh s ac" x="232" y="180">其餘四道用這個</text>
+
+  <path class="w" d="M220 134H398" marker-end="url(#ah)"/>
+  <text class="s" x="300" y="128">op1 → ALU 的 in1</text>
+
+  <!-- shifter cross wiring -->
+  <path class="grp" d="M410 32H726V256H410Z"/>
+  <text class="zh hd" x="420" y="52">riscv_CoreDpathAlu 內部：移位器的兩個輸入是交叉的</text>
+  <text class="s" x="420" y="86">in0（op0＝被移位的值）</text>
+  <path class="a" d="M560 82H614"/>
+  <path class="a" d="M614 82V140H642" marker-end="url(#ah)"/>
+  <text class="s" x="420" y="118">in1（op1＝移位量）</text>
+  <path class="a" d="M560 114H596"/>
+  <path class="a" d="M596 114V110H642" marker-end="url(#ah)"/>
+  <rect class="k" x="642" y="96" width="72" height="62"/>
+  <text class="s" x="678" y="114" text-anchor="middle">alu_a</text>
+  <text class="s" x="678" y="144" text-anchor="middle">alu_b</text>
+  <text class="zh s" x="678" y="180" text-anchor="middle">shifter</text>
+  <text class="s mut" x="420" y="176">.alu_a (in1)  ← 移位量</text>
+  <text class="s mut" x="420" y="194">.alu_b (in0)  ← 被移的值</text>
+  <text class="s mut" x="420" y="210">riscvstall-CoreDpathAlu.v 第 242–248 行</text>
+  <text class="zh s wr" x="420" y="228">其他三個單元都是 alu_a=in0、alu_b=in1，</text>
+
+  <text class="zh s ac" x="420" y="246">只有 shifter 反過來。</text>
+  <text class="zh s mut" x="16" y="316">所以「誰被移、誰是移位量」在控制表這一層是固定的：op0 永遠是被移位的值，op1 永遠是移位量。</text>
+  <text class="zh s mut" x="16" y="334">你不需要因為這個交叉去調整任何一欄——但看波形時如果不知道，會以為 ALU 接錯了。</text>
+</svg>
+</div>
+<figcaption><b>移位器的接腳名字會騙人。</b><code>riscv_CoreDpathAluShifter</code> 的 port 註解寫得很清楚：<code>alu_a</code> 是 "Shift ammount"、<code>alu_b</code> 是 "Operand to shift"，實例化時 <code>.alu_a(in1)</code>、<code>.alu_b(in0)</code>。<code>srai</code> 走的是 <code>shift_fn = 2'b11</code> 那條 <code>&gt;&gt;&gt;</code> 的算術右移路徑。</figcaption>
+</figure>
+</div>
+
+<div class="trap"><b>比較指令別跟分支條件搞混</b><p><code>slti</code>／<code>sltiu</code> 的結果是寫進 <code>rd</code> 的 0 或 1，走的是 ALU 的 addsub 單元（<code>addsub_fn = 2'b10 / 2'b11</code>，<code>riscvstall-CoreDpathAlu.v</code> 第 28–80 行），跟 X 級那六個 <code>branch_cond_*_Xhl</code> 是兩套完全獨立的東西。寫回路徑照 <code>ori</code> 抄就對了。</p></div>
+
+<ul class="todo grid" data-title="Register-Immediate（7 道）">
+  <li><label><input type="checkbox" data-k="ch5-andi"><span>andi</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-xori"><span>xori</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-slti"><span>slti</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-sltiu"><span>sltiu</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-slli"><span>slli</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-srli"><span>srli</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-srai"><span>srai</span></label></li>
+</ul>
+
+<p><b>要打開的測試：</b><code>riscv-andi.vmh</code>、<code>riscv-xori.vmh</code>、<code>riscv-slti.vmh</code>、<code>riscv-sltiu.vmh</code>、<code>riscv-slli.vmh</code>、<code>riscv-srli.vmh</code>、<code>riscv-srai.vmh</code>。這七個測試用的是 <code>TEST_IMM_*</code> 巨集，只依賴 <code>li</code>、<code>bne</code>、<code>addi</code>，可以任意順序單獨測。</p>
+
+<h3 id="ch5-rr">Register-Register：sub sll slt sltu xor srl sra or and</h3>
+
+<p><b>範本列：</b><code>add</code>（第 428 行）。<b>要重新考慮的欄：</b><code>op1 muxsel</code>（來源從立即值換成 rs2）、<code>rs2 en</code>、<code>alu fn</code>。就這三欄，其餘十七欄照抄。</p>
+
+<p>這一族對 datapath 來說只有一個結構性差異：op1 mux 從立即值那一支改選 <code>rf_rdata1_Dhl</code>。但對<b>控制器</b>來說還有第二個差異，而且它不影響任何資料線——<code>rs2 en</code>。它唯一的讀者是 <code>stall_hazard_Dhl</code>（第 558–576 行）。</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 558–576 行（節錄）</div>
+<pre><code class="language-verilog">wire stall_hazard_Dhl   = inst_val_Dhl && (
+                          ( rs1_en_Dhl &amp;&amp; inst_val_Xhl &amp;&amp; rf_wen_Xhl
+                            &amp;&amp; ( rs1_addr_Dhl == rf_waddr_Xhl )
+                            &amp;&amp; ( rf_waddr_Xhl != 5'd0 ) )
+                       || ...
+                       || ( rs2_en_Dhl &amp;&amp; inst_val_Whl &amp;&amp; rf_wen_Whl
+                            &amp;&amp; ( rs2_addr_Dhl == rf_waddr_Whl )
+                            &amp;&amp; ( rf_waddr_Whl != 5'd0 ) ) );</code></pre>
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 380" role="img" aria-label="上半部畫出 register-register 指令與 register-immediate 指令唯一的結構差異：op1 多工器改選暫存器檔的第二個讀埠，同時 rs2 en 欄改成 y；rs2 en 這條線不進資料路徑，而是進冒險偵測邏輯。下半部是時空圖，示範 rs2 en 誤填 n 時，後面的 sub 指令在 D 級沒有被擋住，讀到了尚未寫回的舊值。">
+  <text class="zh hd" x="16" y="20">結構差異只有一處，控制差異有兩處</text>
+
+  <rect class="r" x="60" y="40" width="96" height="86"/>
+  <text class="zh s" x="108" y="66" text-anchor="middle">regfile</text>
+  <text class="s" x="108" y="88" text-anchor="middle">rdata0</text>
+  <text class="s ac" x="108" y="110" text-anchor="middle">rdata1</text>
+  <path class="w" d="M156 84H240"/>
+  <path class="a" d="M156 106H240"/>
+  <text class="zh s mut" x="176" y="44">立即值群</text>
+  <path class="wm" d="M200 54H240"/>
+  <path class="k" d="M240 44L262 56V120L240 132Z"/>
+  <text class="s mut" x="244" y="60">…</text>
+  <text class="s ac" x="244" y="110">0</text>
+  <path class="w" d="M262 88H320" marker-end="url(#ah)"/>
+  <text class="s" x="268" y="82">op1</text>
+  <path class="c" d="M251 132V152" marker-end="url(#ahc)"/>
+  <text class="cb s" x="251" y="168" text-anchor="middle">op1_mux_sel_Dhl = bm_rdat</text>
+
+  <rect class="af" x="400" y="44" width="150" height="32"/>
+  <text class="s ac" x="475" y="64" text-anchor="middle">cs[RS2_EN] = y</text>
+  <path class="c" d="M550 60H600" marker-end="url(#ahc)"/>
+  <rect class="k" x="600" y="40" width="126" height="90"/>
+  <text class="zh s" x="663" y="64" text-anchor="middle">stall_hazard_Dhl</text>
+  <text class="zh s mut" x="663" y="84" text-anchor="middle">比對 rs2_addr 與</text>
+  <text class="zh s mut" x="663" y="100" text-anchor="middle">X / M / W 的</text>
+  <text class="zh s mut" x="663" y="116" text-anchor="middle">rf_waddr</text>
+  <text class="zh s wr" x="400" y="96">這條線不碰資料路徑，</text>
+  <text class="zh s wr" x="400" y="112">只餵冒險偵測</text>
+  <text class="zh s wr" x="400" y="128">→ 填錯 riscvstall 上照樣過</text>
+
+  <path class="wm" d="M16 190H724" style="stroke-dasharray:none;stroke-width:1"/>
+  <text class="zh hd" x="16" y="214">rs2 en 誤填 n 會發生什麼事</text>
+  <text class="s mut" x="470" y="240">週期</text>
+  <text class="s mut" x="200" y="240" text-anchor="middle">1</text>
+  <text class="s mut" x="236" y="240" text-anchor="middle">2</text>
+  <text class="s mut" x="272" y="240" text-anchor="middle">3</text>
+  <text class="s mut" x="308" y="240" text-anchor="middle">4</text>
+  <text class="s mut" x="344" y="240" text-anchor="middle">5</text>
+  <text class="s mut" x="380" y="240" text-anchor="middle">6</text>
+
+  <text class="s" x="16" y="266">add  x5, x1, x2</text>
+  <rect class="pc" x="183" y="248" width="34" height="26"/><text class="s" x="200" y="266" text-anchor="middle">F</text>
+  <rect class="pc" x="219" y="248" width="34" height="26"/><text class="s" x="236" y="266" text-anchor="middle">D</text>
+  <rect class="pc" x="255" y="248" width="34" height="26"/><text class="s" x="272" y="266" text-anchor="middle">X</text>
+  <rect class="pc" x="291" y="248" width="34" height="26"/><text class="s" x="308" y="266" text-anchor="middle">M</text>
+  <rect class="pc-fwd" x="327" y="248" width="34" height="26"/><text class="s ac" x="344" y="266" text-anchor="middle">W</text>
+  <text class="zh s ac" x="372" y="266">x5 在這裡才寫進去</text>
+
+  <text class="s" x="16" y="302">sub  x6, x3, x5</text>
+  <text class="zh s wr" x="122" y="302">（rs2 = x5）</text>
+  <rect class="pc" x="219" y="284" width="34" height="26"/><text class="s" x="236" y="302" text-anchor="middle">F</text>
+  <rect class="pc-kill" x="255" y="284" width="34" height="26"/><text class="s wr" x="272" y="302" text-anchor="middle">D</text>
+  <rect class="pc-kill" x="291" y="284" width="34" height="26"/><text class="s wr" x="308" y="302" text-anchor="middle">X</text>
+  <rect class="pc-kill" x="327" y="284" width="34" height="26"/><text class="s wr" x="344" y="302" text-anchor="middle">M</text>
+  <rect class="pc-kill" x="363" y="284" width="34" height="26"/><text class="s wr" x="380" y="302" text-anchor="middle">W</text>
+  <text class="zh s wr" x="408" y="302">rs2_en = n → 沒人擋它 → 在週期 3 讀到舊的 x5</text>
+
+  <text class="s" x="16" y="338">sub  x6, x3, x5</text>
+  <text class="zh s ac" x="122" y="338">（正確）</text>
+  <rect class="pc" x="219" y="320" width="34" height="26"/><text class="s" x="236" y="338" text-anchor="middle">F</text>
+  <rect class="pc-hold" x="255" y="320" width="34" height="26"/><text class="s sq" x="272" y="338" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="291" y="320" width="34" height="26"/><text class="s sq" x="308" y="338" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="327" y="320" width="34" height="26"/><text class="s sq" x="344" y="338" text-anchor="middle">D</text>
+  <rect class="pc" x="363" y="320" width="34" height="26"/><text class="s" x="380" y="338" text-anchor="middle">X</text>
+  <text class="zh s ac" x="408" y="338">rs2_en = y → 在 D 卡到 x5 離開 W 才放行</text>
+
+  <text class="zh s mut" x="16" y="370">在 riscvstall 上你「有可能」還是看到 PASSED：只要測試剛好沒排出這種相依，錯誤就不會浮現——直到 Objective 3 加 bypass。</text>
+</svg>
+</div>
+<figcaption><b><code>rs2 en</code> 是這一族最容易漏、也最晚爆炸的一欄。</b>填它的時候老實問「這道指令真的有讀 rs2 嗎」，不要問「填了會不會怎樣」。同樣的道理適用於 <code>rs1 en</code>：<code>lui</code> 那一列填 <code>n</code> 不是隨便填的，因為 <code>lui</code> 的編碼裡根本沒有 rs1 欄位。</figcaption>
+</figure>
+</div>
+
+<ul class="todo grid" data-title="Register-Register（9 道）">
+  <li><label><input type="checkbox" data-k="ch5-sub"><span>sub</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-sll"><span>sll</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-slt"><span>slt</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-sltu"><span>sltu</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-xor"><span>xor</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-srl"><span>srl</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-sra"><span>sra</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-or"><span>or</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-and"><span>and</span></label></li>
+</ul>
+
+<p><b>要打開的測試：</b>九個同名 <code>riscv-*.vmh</code>。<b>先做 <code>and</code>：</b>下一節 <code>sb</code>／<code>sh</code> 的 <code>TEST_ST_OP</code> 巨集會用 <code>and</code> 把位址對齊到 word 邊界再用 <code>lw</code> 讀回來驗證。</p>
+
+<h3 id="ch5-mem">Memory：lb lbu lhu sb sh</h3>
+
+<p><b>範本列：</b>load 抄 <code>lw</code>（第 439 行）或你剛做好的 <code>lh</code>（第 443 行）；store 抄 <code>sw</code>（第 440 行）。<b>要重新考慮的欄：</b>load 是 <code>mem len</code> 與 <code>memresp muxsel</code>（成對改，第 4 站示範過）；store 是 <code>mem req</code>、<code>mem len</code>、<code>op1 muxsel</code>（立即值型別不同）、<code>rs2 en</code>、<code>rf wen</code>。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 350" role="img" aria-label="記憶體類指令的三個控制欄沿著 X 與 M 兩級的去向：mem rq 決定發不發請求以及讀或寫，mem len 決定幾個 byte，兩者都在 X 級生效；mem sel 在 M 級選 subword 調整多工器。下半部畫出 store 的資料路徑：rs2 的值走 wdata 線一路到 X 級成為 dmemreq_msg_data，而 rf wen 必須填 n。">
+  <text class="zh hd" x="16" y="20">MEM_REQ / MEM_LEN / MEM_SEL：三欄、兩級</text>
+  <text class="hd" x="300" y="44" text-anchor="middle">X</text>
+  <text class="hd" x="596" y="44" text-anchor="middle">M</text>
+  <path class="wm" d="M430 32V208" style="stroke-dasharray:6 4"/>
+
+  <rect class="af" x="14" y="56" width="132" height="28"/>
+  <text class="s ac" x="80" y="75" text-anchor="middle">mem rq</text>
+  <path class="a" d="M146 70H224" marker-end="url(#ah)"/>
+  <rect class="k" x="224" y="56" width="180" height="28"/>
+  <text class="s" x="314" y="75" text-anchor="middle">dmemreq_val / _rw</text>
+  <text class="zh s mut" x="152" y="102">nr → 不發請求；ld / st → 發請求，並決定是讀還是寫</text>
+
+  <rect class="af" x="14" y="116" width="132" height="28"/>
+  <text class="s ac" x="80" y="135" text-anchor="middle">mem len</text>
+  <path class="a" d="M146 130H224" marker-end="url(#ah)"/>
+  <rect class="k" x="224" y="116" width="180" height="28"/>
+  <text class="s" x="314" y="135" text-anchor="middle">dmemreq_msg_len</text>
+  <text class="zh s mut" x="152" y="160">0=word、1=byte、2=halfword</text>
+
+  <rect class="af" x="14" y="176" width="132" height="28"/>
+  <text class="s ac" x="80" y="195" text-anchor="middle">mem sel</text>
+  <path class="a" d="M146 190H520" marker-end="url(#ah)"/>
+  <rect class="k" x="520" y="176" width="200" height="28"/>
+  <text class="s" x="620" y="195" text-anchor="middle">dmemresp_mux_sel_Mhl</text>
+  <text class="zh s mut" x="440" y="170">store 用不到它——沒有回應要調整</text>
+
+  <path class="wm" d="M16 226H724" style="stroke-dasharray:none;stroke-width:1"/>
+  <text class="zh hd" x="16" y="250">store 專屬：wdata 是唯一不經過 ALU 的資料線</text>
+
+  <rect class="r" x="14" y="264" width="90" height="56"/>
+  <text class="s" x="59" y="288" text-anchor="middle">regfile</text>
+  <text class="s ac" x="59" y="308" text-anchor="middle">rdata1</text>
+  <path class="a" d="M104 300H180"/>
+  <text class="s ac" x="110" y="294">wdata_Dhl</text>
+  <rect class="r" x="180" y="264" width="16" height="56"/>
+  <path class="rl" d="M180 306L188 298L180 290"/>
+  <path class="a" d="M196 300H320" marker-end="url(#ah)"/>
+  <text class="s ac" x="204" y="294">wdata_Xhl</text>
+  <rect class="k" x="320" y="276" width="168" height="34"/>
+  <text class="s" x="404" y="297" text-anchor="middle">dmemreq_msg_data</text>
+  <text class="zh s mut" x="204" y="322">不經過 op1 mux、不經過 ALU</text>
+
+  <rect class="af" x="540" y="264" width="180" height="26"/>
+  <text class="s ac" x="630" y="282" text-anchor="middle">rf wen = n</text>
+  <text class="zh s wr" x="540" y="308">store 不寫回暫存器。填 y 的話</text>
+  <text class="zh s wr" x="540" y="324">會把垃圾寫進某個暫存器，而且</text>
+  <text class="zh s wr" x="540" y="340">冒險偵測會對它 stall。</text>
+</svg>
+</div>
+<figcaption><b>load 改兩欄、store 改的是「發什麼請求」。</b><code>wdata</code> 那條線在 <code>CoreDpath.v</code> 第 230 行接上 <code>rf_rdata1_Dhl</code>、第 248 行搭上管線暫存器、第 273 行成為 <code>dmemreq_msg_data</code>——它就是 <code>sw</code> 那一列 <code>rs2 en = y</code> 的原因。</figcaption>
+</figure>
+
+<div class="trap"><b>store 的立即值是 S 型</b><p><code>sw</code> 那一列用的是 <code>bm_imm_s</code> 而不是 <code>bm_imm_i</code>。S 型和 I 型在指令編碼裡的位元擺法不同（<a href="../riscv-cpu-course/index.html#ch2">圖解課第 2 章</a>），抄 <code>lw</code> 去做 <code>sb</code> 就會踩到；抄 <code>sw</code> 就不會。這也是「找最近的鄰居」為什麼重要。</p></div>
+
+<div class="note"><b>store 那兩欄填什麼都行</b><p><code>memresp muxsel</code> 與 <code>wb muxsel</code> 對 store 來說沒有讀者（<code>rf wen = n</code>，writeback mux 的輸出沒人取用）。shipped 的 <code>sw</code> 那一列寫的是 <code>dmm_w, wm_mem</code>，其實填 <code>dmm_x, wm_x</code> 也一樣跑。照抄 <code>sw</code> 最省事。</p></div>
+
+<ul class="todo grid" data-title="Memory（5 道，lh 已完成）">
+  <li><label><input type="checkbox" data-k="ch5-lb"><span>lb</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-lbu"><span>lbu</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-lhu"><span>lhu</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-sb"><span>sb</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-sh"><span>sh</span></label></li>
+</ul>
+
+<p><b>要打開的測試：</b><code>riscv-lb.vmh</code>、<code>riscv-lbu.vmh</code>、<code>riscv-lhu.vmh</code>、<code>riscv-sb.vmh</code>、<code>riscv-sh.vmh</code>。三個 load 測試只用 <code>TEST_LD_*</code>（依賴 <code>la</code>、<code>li</code>、<code>bne</code>）；<code>riscv-sb.S</code>／<code>riscv-sh.S</code> 用 <code>TEST_ST_OP</code>，裡面有 <code>and</code> 和 <code>lw</code>——<b><code>and</code> 沒做好這兩個測試會以莫名其妙的方式失敗</b>。</p>
+
+<h3 id="ch5-br">Branches：beq bltu bge bgeu</h3>
+
+<p><b>範本列：</b><code>bne</code>（第 452 行）或 <code>blt</code>（第 453 行）。<b>要重新考慮的欄：</b><code>br type</code> 與 <code>alu fn</code>。<b>但這一類不只是加一列</b>——控制表填對了，分支仍然永遠不會成立，因為沒有人去比對你填的 <code>br_sel</code>。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 392" role="img" aria-label="X 級的分支解析邏輯：br_sel_Xhl 與六種分支型別各自比較，結果與對應的 branch_cond 訊號做 AND 得出 taken 訊號，全部 OR 起來成為 any_br_taken_Xhl，再與 inst_val_Xhl 做 AND 得到 brj_taken_Xhl。圖中 bne 與 blt 兩條腿是實線，beq、bltu、bge、bgeu 四條腿畫成虛線的空框，標註為你要補的部分。">
+  <text class="zh hd" x="16" y="20">CoreCtrl.v 第 658–667 行：兩條腿是現成的，四條腿要你自己接</text>
+
+  <text class="s" x="16" y="52">br_sel_Xhl == br_bne</text>
+  <text class="s" x="16" y="70">branch_cond_ne_Xhl</text>
+  <path class="w" d="M166 48H200"/>
+  <path class="w" d="M166 66H200"/>
+  <use href="#g-and" x="200" y="42"/>
+  <path class="w" d="M235 57H460"/>
+  <text class="s" x="241" y="50">bne_taken_Xhl</text>
+
+  <text class="s" x="16" y="102">br_sel_Xhl == br_blt</text>
+  <text class="s" x="16" y="120">branch_cond_lt_Xhl</text>
+  <path class="w" d="M166 98H200"/>
+  <path class="w" d="M166 116H200"/>
+  <use href="#g-and" x="200" y="92"/>
+  <path class="w" d="M235 107H484"/>
+  <text class="s" x="241" y="100">blt_taken_Xhl</text>
+
+  <rect class="gh" x="12" y="138" width="444" height="114" style="stroke-dasharray:5 4"/>
+  <text class="s mut" x="20" y="162">br_sel_Xhl == br_beq</text>
+  <text class="s mut" x="20" y="180">branch_cond_eq_Xhl</text>
+  <path class="wm" d="M176 158H290"/>
+  <path class="wm" d="M176 176H290"/>
+  <rect class="gh" x="290" y="152" width="32" height="30" style="stroke-dasharray:4 3"/>
+  <text class="s mut" x="306" y="172" text-anchor="middle">&amp;</text>
+  <path class="wm" d="M322 167H468V112H484"/>
+  <text class="s mut" x="328" y="161">beq_taken_Xhl</text>
+
+  <text class="s mut" x="20" y="212">br_sel_Xhl == br_bltu / bge / bgeu</text>
+  <text class="s mut" x="20" y="230">branch_cond_ltu / ge / geu_Xhl</text>
+  <path class="wm" d="M276 208H290"/>
+  <path class="wm" d="M276 226H290"/>
+  <rect class="gh" x="290" y="202" width="32" height="30" style="stroke-dasharray:4 3"/>
+  <text class="s mut" x="306" y="222" text-anchor="middle">&amp;</text>
+  <path class="wm" d="M322 217H474V118H484"/>
+  <text class="s mut" x="328" y="211">（三條同型）</text>
+  <text class="zh s wr" x="20" y="248">這四條腿：你要補的（各一條 wire，再 OR 進去）</text>
+
+  <path class="w" d="M460 57V98H484"/>
+  <use href="#g-or" x="484" y="92"/>
+  <path class="w" d="M524 107H584"/>
+  <text class="s" x="500" y="84">any_br_taken_Xhl</text>
+
+  <use href="#g-and" x="584" y="92"/>
+  <path class="w" d="M600 168H570V116H584"/>
+  <text class="s" x="604" y="172">inst_val_Xhl</text>
+  <path class="a" d="M619 107H700" marker-end="url(#ah)"/>
+  <text class="s ac" x="624" y="100">brj_taken_Xhl</text>
+  <text class="zh s mut" x="560" y="196">→ squash F 與 D</text>
+  <text class="zh s mut" x="560" y="212">→ pc_mux_sel = pm_b</text>
+
+  <path class="wm" d="M16 278H724" style="stroke-dasharray:none;stroke-width:1"/>
+  <text class="zh hd" x="16" y="302">每加一種分支要做三件事</text>
+  <text class="zh" x="16" y="326">① 控制表加一列，<tspan class="ac">br type</tspan> 填對應的 br_*，<tspan class="ac">alu fn</tspan> 選一個能讓分支條件成立的運算</text>
+  <text class="zh" x="16" y="350">② 在第 658–667 行新增一條 <tspan class="ac">&lt;name&gt;_taken_Xhl</tspan>（形狀照 bne_taken_Xhl 抄）</text>
+  <text class="zh" x="16" y="374">③ 把它加進 <tspan class="ac">any_br_taken_Xhl</tspan> 的 OR 清單——<tspan class="wr">漏掉這一步 = 分支永遠不成立</tspan></text>
+</svg>
+</div>
+<figcaption><b>六個 <code>branch_cond_*_Xhl</code> 早就從 datapath 接進來了</b>（<code>CoreCtrl.v</code> 第 58–63 行是 input port，<code>CoreDpath.v</code> 第 263–268 行是它們的算式），只是現在只有兩個有人用。</figcaption>
+</figure>
+
+<p><b>怎麼挑 <code>alu fn</code>？</b>不要背，用推的。六個條件訊號都是從 <b>ALU 的輸出</b>反推出來的：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreDpath.v · 第 262–268 行</div>
+<pre><code class="language-verilog">wire   diffSigns_Xhl         = op0_mux_out_Xhl[31] ^ op1_mux_out_Xhl[31];
+assign branch_cond_eq_Xhl    = ( alu_out_Xhl == 32'd0 );
+assign branch_cond_ne_Xhl    = ~branch_cond_eq_Xhl;
+assign branch_cond_lt_Xhl    = diffSigns_Xhl ? op0_mux_out_Xhl[31] : alu_out_Xhl[31];
+assign branch_cond_ltu_Xhl   = diffSigns_Xhl ? op1_mux_out_Xhl[31] : alu_out_Xhl[31];
+assign branch_cond_ge_Xhl    = diffSigns_Xhl ? op1_mux_out_Xhl[31] : ~alu_out_Xhl[31];
+assign branch_cond_geu_Xhl   = diffSigns_Xhl ? op0_mux_out_Xhl[31] : ~alu_out_Xhl[31];</code></pre>
+<p>讀法：每一條的「else 分支」告訴你它需要 ALU 算出什麼。<code>eq</code>／<code>ne</code> 看的是「結果是不是 0」；<code>lt</code>／<code>ltu</code>／<code>ge</code>／<code>geu</code> 看的是「結果的第 31 位元」，也就是 <code>op0 - op1</code> 的正負號。反推回去：你要的 <code>alu fn</code> 是哪一個運算，能讓這條式子在你要的情況下成立？兩個現成的例子已經示範了兩種答案——<code>bne</code> 用 <code>alu_xor</code>、<code>blt</code> 用 <code>alu_sub</code>。剩下四道自己對號入座。<a href="../riscv-cpu-course/index.html#ch7">圖解課第 7 章</a>把這個推導完整走過一遍，包含「為什麼不能只看 <code>alu_out[31]</code>」。</p>
+</div>
+
+<ul class="todo grid" data-title="Branches（4 道）">
+  <li><label><input type="checkbox" data-k="ch5-beq"><span>beq</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-bltu"><span>bltu</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-bge"><span>bge</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-bgeu"><span>bgeu</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-brtaken"><span>四條 *_taken_Xhl 都加進 OR 了</span></label></li>
+</ul>
+
+<p><b>要打開的測試：</b><code>riscv-beq.vmh</code>、<code>riscv-bltu.vmh</code>、<code>riscv-bge.vmh</code>、<code>riscv-bgeu.vmh</code>。四個測試都用 <code>TEST_BR2_OP_TAKEN</code> 與 <code>TEST_BR2_OP_NOTTAKEN</code> 成對測，所以「分支永遠不成立」與「分支永遠成立」兩種錯都抓得到。</p>
+
+<h3 id="ch5-jalr">jalr</h3>
+
+<p><b>範本列：</b><code>jal</code>（第 449 行）。<b>要重新考慮的欄：</b><code>pc muxsel</code>、<code>op1 muxsel</code>、<code>rs1 en</code>。<code>j taken</code> 維持 <code>y</code>（跟 <code>jal</code> 一樣在 D 級就轉向），<code>br type</code> 維持 <code>br_none</code>（它不是分支，不走 X 級那套）。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 320" role="img" aria-label="jal 與 jalr 的目標位址算法對照：jal 用 pc 加上 uj 型立即值得到 jump_targ_Dhl 進入 PC 多工器的 j 輸入；jalr 用 rs1 的值加上 i 型立即值再把最低位元清零得到 jumpreg_targ_Dhl 進入 r 輸入。兩者都在 D 級轉向，差別在於 jalr 真的讀了暫存器檔。">
+  <text class="zh hd" x="16" y="20">兩者都在 D 級轉向，差別只在目標位址從哪來</text>
+
+  <!-- jal -->
+  <text class="s hd" x="16" y="56">jal</text>
+  <text class="s mut" x="16" y="84">pc_Dhl</text>
+  <path class="w" d="M92 80H150"/>
+  <text class="s mut" x="16" y="112">imm_uj_Dhl</text>
+  <path class="w" d="M92 108H150"/>
+  <rect class="k" x="150" y="66" width="48" height="56"/>
+  <text x="174" y="100" text-anchor="middle">＋</text>
+  <path class="w" d="M198 94H330" marker-end="url(#ah)"/>
+  <text class="s" x="206" y="88">jump_targ_Dhl</text>
+  <text class="s mut" x="206" y="112">CoreDpath 第 183 行</text>
+  <text class="zh s mut" x="16" y="140">不讀暫存器 → rs1 en = n</text>
+
+  <!-- jalr -->
+  <text class="s hd ac" x="16" y="190">jalr</text>
+  <text class="s ac" x="16" y="218">rf_rdata0_Dhl</text>
+  <path class="a" d="M116 214H150"/>
+  <text class="s mut" x="16" y="246">imm_i_Dhl</text>
+  <path class="a" d="M92 242H150"/>
+  <rect class="k" x="150" y="200" width="48" height="56"/>
+  <text x="174" y="234" text-anchor="middle">＋</text>
+  <path class="a" d="M198 228H236"/>
+  <rect class="af" x="236" y="212" width="92" height="32"/>
+  <text class="s ac" x="282" y="232" text-anchor="middle">[31:1], 1'b0</text>
+  <path class="a" d="M328 228H420" marker-end="url(#ah)"/>
+  <text class="s ac" x="336" y="220">jumpreg_targ_Dhl</text>
+  <text class="s mut" x="336" y="248">CoreDpath 194–197 行</text>
+  <text class="zh s wr" x="236" y="266">最低位元強制清 0（RISC-V 規定）</text>
+  <text class="zh s ac" x="16" y="290">真的讀了 rs1 → rs1 en 必須是 y</text>
+
+  <!-- PC mux -->
+  <path class="k" d="M470 60L494 74V244L470 258Z"/>
+  <path class="w" d="M330 94H470"/>
+  <path class="a" d="M420 228H470"/>
+  <text class="s mut" x="474" y="80">p</text>
+  <text class="s mut" x="474" y="110">b</text>
+  <text class="s mut" x="474" y="140">j</text>
+  <text class="s ac" x="474" y="236">r</text>
+  <path class="w" d="M330 140H470"/>
+  <text class="s mut" x="336" y="134">（jal 走這個輸入）</text>
+  <path class="w" d="M494 160H580" marker-end="url(#ah)"/>
+  <text class="s" x="500" y="154">next PC</text>
+  <path class="c" d="M482 258V280" marker-end="url(#ahc)"/>
+  <text class="cb s" x="482" y="296" text-anchor="middle">pc_mux_sel_Phl</text>
+  <text class="zh s mut" x="560" y="200">jal → pm_j</text>
+  <text class="zh s ac" x="560" y="220">jalr → pm_r</text>
+  <text class="zh s mut" x="560" y="250">回返位址（PC+4）兩者</text>
+  <text class="zh s mut" x="560" y="266">走同一條路寫進 rd</text>
+</svg>
+</div>
+<figcaption><b><code>jalr</code> 是唯一「在 D 級讀暫存器、又在 D 級轉向」的指令。</b>所以 <code>rs1 en</code> 這一欄在這裡是真的會影響行為的：D 級要先等 rs1 的正確值到手，才能算出跳的地方。到 Objective 3 加 bypass 時，<code>jalr</code> 的 rs1 也是要接 bypass mux 的對象之一。</figcaption>
+</figure>
+
+<div class="note"><b>三個測試，只有兩個需要 jalr</b><p><code>riscv-jalr.S</code> 用了 7 次 <code>jalr</code>；<code>riscv-jr.S</code> 用了 6 次 <code>jr</code>，而 <code>jr rs</code> 是 <code>jalr x0, 0(rs)</code> 的 pseudo-instruction，所以它也需要 <code>jalr</code>。<code>riscv-j.S</code> 只用 <code>j</code>（＝<code>jal x0, offset</code>）和 <code>addi</code>／<code>li</code>——<b>它現在就能通過</b>，可以先加進 <code>tests</code> 當暖身。</p></div>
+
+<ul class="todo grid" data-title="Jump（1 道）">
+  <li><label><input type="checkbox" data-k="ch5-jalr"><span>jalr</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-jtests"><span>riscv-j / jr / jalr 三個測試都加進 tests</span></label></li>
+</ul>
+
+<h3 id="ch5-md">Mul/Div：mul div divu rem remu</h3>
+
+<p><b>範本列：</b>沒有現成的乘除法列可抄，從 <code>add</code>（第 428 行）起手最省事——運算元來源跟 <code>add</code> 完全一樣（兩個暫存器），寫回目標也一樣。<b>要重新考慮的欄：</b><code>md fn</code>、<code>md en</code>、<code>md muxsel</code>、<code>ex muxsel</code>，以及 <code>alu fn</code>（這一族不走 ALU）。五欄。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 418" role="img" aria-label="X 級的乘除法路徑：md en 讓請求生效、md fn 決定運算種類、迭代式乘除法單元回傳 64 位元結果、md muxsel 選低半部或高半部、ex muxsel 在 ALU 輸出與乘除法輸出之間二選一。下半部的時空圖顯示 mul 指令在 X 級停留多個週期，後面的指令被擋在 D 級。">
+  <text class="zh hd" x="16" y="20">X 級：四欄把資料從 ALU 那條路改道到乘除法器</text>
+
+  <text class="s" x="16" y="60">op0_mux_out_Xhl</text>
+  <path class="w" d="M126 56H190"/>
+  <text class="s" x="16" y="88">op1_mux_out_Xhl</text>
+  <path class="w" d="M126 84H190"/>
+  <circle class="d" cx="150" cy="56" r="3"/>
+  <circle class="d" cx="150" cy="84" r="3"/>
+  <path class="w" d="M150 56V150H190"/>
+  <path class="w" d="M150 84V174H190"/>
+
+  <rect class="k" x="190" y="42" width="96" height="56"/>
+  <text class="s" x="238" y="66" text-anchor="middle">ALU</text>
+  <text class="s mut" x="238" y="84" text-anchor="middle">alu fn</text>
+  <path class="w" d="M286 70H420"/>
+
+  <rect class="af" x="190" y="134" width="150" height="56"/>
+  <text class="zh s ac" x="265" y="156" text-anchor="middle">迭代式乘除法器</text>
+  <text class="s ac" x="265" y="176" text-anchor="middle">imuldiv_IntMulDivIterative</text>
+  <rect class="af" x="14" y="212" width="132" height="26"/>
+  <text class="s ac" x="80" y="230" text-anchor="middle">md fn</text>
+  <path class="c" d="M146 225H265V190" marker-end="url(#ahc)"/>
+  <rect class="af" x="14" y="248" width="132" height="26"/>
+  <text class="s ac" x="80" y="266" text-anchor="middle">md en</text>
+  <path class="c" d="M146 261H230V190" marker-end="url(#ahc)"/>
+
+  <path class="a" d="M340 162H380"/>
+  <text class="s ac" x="344" y="150">64 bit</text>
+  <path class="a" d="M380 162V132H420"/>
+  <path class="a" d="M380 162V192H420"/>
+  <text class="s mut" x="426" y="128">[63:32] 高半部</text>
+  <text class="s mut" x="426" y="196">[31:0] 低半部</text>
+  <path class="k" d="M540 112L562 124V206L540 218Z"/>
+  <path class="a" d="M520 132H540"/>
+  <path class="a" d="M520 192H540"/>
+  <text class="s mut" x="544" y="140">u</text>
+  <text class="s mut" x="544" y="200">l</text>
+  <path class="c" d="M551 218V244" marker-end="url(#ahc)"/>
+  <text class="cb s" x="551" y="260" text-anchor="middle">md muxsel</text>
+  <path class="a" d="M562 166H600V96"/>
+
+  <path class="k" d="M600 40L622 52V112L600 124Z"/>
+  <path class="w" d="M420 70H600"/>
+  <text class="s mut" x="604" y="60">alu</text>
+  <text class="s ac" x="604" y="106">md</text>
+  <path class="w" d="M622 82H700" marker-end="url(#ah)"/>
+  <text class="s" x="630" y="76">execute_mux_out</text>
+  <path class="c" d="M611 124V150" marker-end="url(#ahc)"/>
+  <text class="cb s" x="632" y="170">ex muxsel = em_md</text>
+
+  <path class="wm" d="M16 286H724" style="stroke-dasharray:none;stroke-width:1"/>
+  <text class="zh hd" x="16" y="310">md en = y 的副作用：X 級會卡住好幾個週期</text>
+  <text class="s mut" x="200" y="332" text-anchor="middle">1</text>
+  <text class="s mut" x="236" y="332" text-anchor="middle">2</text>
+  <text class="s mut" x="272" y="332" text-anchor="middle">3</text>
+  <text class="s mut" x="308" y="332" text-anchor="middle">…</text>
+  <text class="s mut" x="344" y="332" text-anchor="middle">n</text>
+  <text class="s mut" x="380" y="332" text-anchor="middle">n+1</text>
+
+  <text class="s" x="16" y="358">mul  x5, x1, x2</text>
+  <rect class="pc" x="183" y="340" width="34" height="26"/><text class="s" x="200" y="358" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="219" y="340" width="34" height="26"/><text class="s sq" x="236" y="358" text-anchor="middle">X</text>
+  <rect class="pc-hold" x="255" y="340" width="34" height="26"/><text class="s sq" x="272" y="358" text-anchor="middle">X</text>
+  <rect class="pc-hold" x="291" y="340" width="34" height="26"/><text class="s sq" x="308" y="358" text-anchor="middle">X</text>
+  <rect class="pc" x="327" y="340" width="34" height="26"/><text class="s" x="344" y="358" text-anchor="middle">M</text>
+  <rect class="pc" x="363" y="340" width="34" height="26"/><text class="s" x="380" y="358" text-anchor="middle">W</text>
+  <text class="zh s sq" x="410" y="358">muldivresp_val 還沒來 → stall_muldiv_Xhl</text>
+
+  <text class="s" x="16" y="394">addi x6, x0, 1</text>
+  <rect class="pc-hold" x="219" y="376" width="34" height="26"/><text class="s sq" x="236" y="394" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="255" y="376" width="34" height="26"/><text class="s sq" x="272" y="394" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="291" y="376" width="34" height="26"/><text class="s sq" x="308" y="394" text-anchor="middle">D</text>
+  <rect class="pc" x="327" y="376" width="34" height="26"/><text class="s" x="344" y="394" text-anchor="middle">X</text>
+  <rect class="pc" x="363" y="376" width="34" height="26"/><text class="s" x="380" y="394" text-anchor="middle">M</text>
+  <text class="zh s mut" x="410" y="394">後面整條管線一起等（stall_Xhl → stall_Dhl）</text>
+</svg>
+</div>
+<figcaption><b>這是 riscvstall 上唯一的多週期操作。</b>兩個 stall 來源都在 <code>CoreCtrl.v</code>：D 級的 <code>stall_muldiv_Dhl</code>（第 553 行，請求還發不出去）與 X 級的 <code>stall_muldiv_Xhl</code>（第 675 行，回應還沒來）。加完 <code>mul</code> 後你會看到 IPC 明顯下降——那不是 bug。</figcaption>
+</figure>
+
+<div class="note"><b><code>md muxsel</code> 怎麼想</b><p>乘除法器回的是 64 位元。<code>localparam</code> 的註解（<code>CoreCtrl.v</code> 第 323–325 行）已經替你說明了：<code>mdm_l</code> 是 "Take lower half of 64-bit result, mul/div/divu"、<code>mdm_u</code> 是 "Take upper half of 64-bit result, rem/remu"。五道指令對號入座即可。Objective 2 的 <code>mulh</code> 家族要拿的是乘積的高 32 位元——那是<a href="#ch6">第 6 站</a>的事，現在先不管。</p></div>
+
+<ul class="todo grid" data-title="Mul/Div（5 道）">
+  <li><label><input type="checkbox" data-k="ch5-mul"><span>mul</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-div"><span>div</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-divu"><span>divu</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-rem"><span>rem</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-remu"><span>remu</span></label></li>
+</ul>
+
+<p><b>要打開的測試：</b><code>riscv-mul.vmh</code>、<code>riscv-div.vmh</code>、<code>riscv-divu.vmh</code>、<code>riscv-rem.vmh</code>、<code>riscv-remu.vmh</code>。全部用 <code>TEST_RR_OP</code>，只依賴 <code>li</code>、<code>bne</code>。</p>
+
+<h3 id="ch5-wrap">Objective 1 收尾</h3>
+
+<p>32 列都填完、32 個測試都個別過了之後，做三件事再往下走。</p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 260" role="img" aria-label="Objective 1 的收尾三步驟：先在一般模擬器上跑完整的測試清單，再在隨機延遲模擬器上跑一次，然後建 ubmark 並跑四個 benchmark，最後備份。">
+  <text class="zh hd" x="16" y="20">收尾：三個指令，一次備份</text>
+
+  <rect class="k" x="14" y="36" width="216" height="78"/>
+  <text class="zh" x="122" y="60" text-anchor="middle">① 完整組合語言測試</text>
+  <text class="s ac" x="122" y="82" text-anchor="middle">make check-asm-riscvstall</text>
+  <text class="zh s mut" x="122" y="102" text-anchor="middle">43 個 .vmh 全部 PASSED</text>
+  <path class="w" d="M230 75H262" marker-end="url(#ah)"/>
+
+  <rect class="k" x="262" y="36" width="216" height="78"/>
+  <text class="zh" x="370" y="60" text-anchor="middle">② 隨機延遲記憶體</text>
+  <text class="s ac" x="370" y="82" text-anchor="middle">make check-asm-rand-riscvstall</text>
+  <text class="zh s mut" x="370" y="102" text-anchor="middle">抓 val/rdy 握手寫錯的錯</text>
+  <path class="w" d="M478 75H510" marker-end="url(#ah)"/>
+
+  <rect class="k" x="510" y="36" width="216" height="78"/>
+  <text class="zh" x="618" y="60" text-anchor="middle">③ Benchmark</text>
+  <text class="s ac" x="618" y="82" text-anchor="middle">make check-bmark-riscvstall</text>
+  <text class="zh s wr" x="618" y="102" text-anchor="middle">要先建好 ubmark/</text>
+
+  <path class="w" d="M370 114V142" marker-end="url(#ah)"/>
+  <rect class="af" x="230" y="142" width="280" height="54"/>
+  <text class="zh" x="370" y="166" text-anchor="middle">④ 備份／commit 再往下走</text>
+  <text class="zh s" x="370" y="186" text-anchor="middle">riscvbyp 與 riscvlong 的 setup.sh 會整包覆蓋目標目錄</text>
+
+  <text class="zh s mut" x="16" y="226">benchmark 的 .vmh 沒有 build/Makefile 的編譯規則——它們必須由 ubmark/ 自己 configure + make + ../convert 產生。</text>
+  <text class="zh s mut" x="16" y="244">你的工作目錄裡 ubmark/build/ 還不存在，步驟看第 10 站。</text>
+</svg>
+</div>
+<figcaption><b>兩個模擬器都要跑。</b>一般版 <code>riscvstall-sim</code> 的記憶體永遠一拍回應；<code>riscvstall-randdelay-sim</code> 會隨機拖延，專門抓「我以為請求一定馬上被接受」這類錯。組合語言測試全過之後才有資格看 benchmark。</figcaption>
+</figure>
+
+<div class="trap"><b>往下走之前一定要備份</b><p><code>riscvbyp/setup.sh</code> 會用 <code>rsync</code> 把整個 <code>riscvstall/</code> 複製過去再改名；<code>riscvlong/setup.sh</code> 則從 <code>riscvbyp/</code> 複製。這代表兩件事：<b>（一）</b>你現在的控制表會被原封不動帶到後面兩個 Objective，所以現在填錯＝錯三次；<b>（二）</b>之後如果重跑 <code>setup.sh</code>，目標目錄裡已經做好的 bypass／riscvlong 工作會被整包蓋掉。先 <code>git commit</code> 或複製一份 tarball 再說。</p></div>
+
+<ul class="todo" data-title="Objective 1 最後檢查表">
+  <li><label><input type="checkbox" data-k="ch5-32rows"><span>32 列全部填完，每一列都寫在同一行，沒有殘留的 <code>// `RISCV_INST_MSG_XXX :cs={};</code> 未處理</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-taken"><span>四條新的 <code>*_taken_Xhl</code> 都已 OR 進 <code>any_br_taken_Xhl</code></span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-enfields"><span>逐列複查過 <code>rs1 en</code>／<code>rs2 en</code>：老實反映「有沒有真的讀這個暫存器」</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-mklist"><span><code>build/Makefile</code> 的 <code>tests</code> 裡有全部 43 個 <code>.vmh</code>（含 <code>riscv-j</code>／<code>riscv-jr</code>）</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-checkasm"><span><code>make check-asm-riscvstall</code> 全部 <code>[ PASSED ]</code></span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-checkrand"><span><code>make check-asm-rand-riscvstall</code> 全部 <code>[ PASSED ]</code></span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-bmark"><span>四個 benchmark 跑得出來（ubmark 建好之後，見<a href="#ch10">第 10 站</a>）</span></label></li>
+  <li><label><input type="checkbox" data-k="ch5-backup"><span>已備份／commit，再去碰 <code>riscvbyp/setup.sh</code></span></label></li>
+</ul>
+
+<div class="more"><b>想深入</b>
+<p><a href="../riscv-cpu-course/index.html#ch7">圖解課第 7 章</a>：ALU 四個單元、移位器的交叉接線、六個分支條件怎麼從 <code>alu_out</code> 推出來。<br>
+<a href="../riscv-cpu-course/index.html#ch8">圖解課第 8 章「各類指令的提示」</a>：同樣分類的提示與四道「想一想」。<br>
+<a href="../riscv-cpu-course/index.html#ch17">圖解課第 17 章</a>：迭代式乘除法器怎麼掛在 X 級、val/rdy 握手與 stall 的關係。<br>
+<a href="../riscv-cpu-course/index.html#ch11">圖解課第 11 章</a>：<code>stall_hazard_Dhl</code> 為什麼需要 <code>rs1_en</code>／<code>rs2_en</code>。</p></div>
+</section>

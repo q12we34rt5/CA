@@ -1,0 +1,821 @@
+<!-- ============================================================ ch0 -->
+<section class="ch" id="ch0" data-part="出發之前" data-nav="作業全貌與路線圖">
+<p class="eyebrow">第 0 站 · 出發之前</p>
+<h2>這個作業到底要你做什麼</h2>
+
+<p>解開 <code>lab1.tar</code> 之後你拿到的是<b>一顆已經會跑的五級管線 RISC-V 處理器</b>。它不是半成品：資料路徑（datapath）完整，ALU、暫存器檔、記憶體介面、iterative 乘除法器全都接好了，而且現在就能跑過十個組語測試。</p>
+
+<p>缺的只有一件事：<b>控制單元只認得 11 道指令</b>。<code>riscvstall-CoreCtrl.v</code> 裡有一張 <code>casez</code> 控制表，每一列對應一道指令、填 20 個控制欄位。發下來的版本只填了 11 列（<code>lui auipc addi ori add lw sw jal bne blt csrw</code>），其餘四十幾列都是被註解掉的空殼：</p>
+
+<div class="ex">
+<div class="src">riscvstall/riscvstall-CoreCtrl.v · 第 418–424 行</div>
+<pre><code>      // `RISCV_INST_MSG_ANDI    :cs={};
+      // `RISCV_INST_MSG_XORI    :cs={};
+      // `RISCV_INST_MSG_SLTI    :cs={};
+      // `RISCV_INST_MSG_SLTIU   :cs={};
+      // `RISCV_INST_MSG_SLLI    :cs={};
+      // `RISCV_INST_MSG_SRLI    :cs={};
+      // `RISCV_INST_MSG_SRAI    :cs={};</code></pre>
+</div>
+
+<p>整個作業分成四個 Objective，從「把這張表填滿」開始，一路做到「把一顆四級管線的乘除法器塞進管線」。四個 Objective 不是四份獨立作業，而是<b>同一份程式碼被複製三次、逐次加功能</b>——這件事決定了你該用什麼順序做，後面會專門畫一張圖講。</p>
+
+<h3>四站路線圖</h3>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 250" role="img" aria-label="Lab 1 四個 Objective 的路線圖：Objective 1 占 35% 在 riscvstall 目錄補控制表，Objective 2 占 15% 在 riscvstall 加上 imuldiv 目錄實作 mulh 家族，Objective 3 占 20% 在 riscvbyp 目錄加 bypass，Objective 4 占 30% 在 riscvlong 目錄整合管線化乘除法器，四站依序用箭頭相連。">
+  <rect class="k" x="12" y="54" width="170" height="160" rx="4"/>
+  <rect class="af" x="12" y="54" width="170" height="30" rx="4"/>
+  <text class="hd ac" x="97" y="74" text-anchor="middle">Objective 1 · 35%</text>
+  <text class="zh" x="97" y="108" text-anchor="middle">補齊控制表</text>
+  <text class="s sq" x="97" y="130" text-anchor="middle">riscvstall/</text>
+  <text class="s mut" x="97" y="156" text-anchor="middle">CoreCtrl.v 的 casez</text>
+  <text class="s mut" x="97" y="172" text-anchor="middle">從 11 列補到 43 列</text>
+  <text class="s mut" x="97" y="196" text-anchor="middle">32 道新指令全過測試</text>
+
+  <path class="w" d="M182 134H202" marker-end="url(#ah)"/>
+
+  <rect class="k" x="204" y="54" width="170" height="160" rx="4"/>
+  <rect class="af" x="204" y="54" width="170" height="30" rx="4"/>
+  <text class="hd ac" x="289" y="74" text-anchor="middle">Objective 2 · 15%</text>
+  <text class="zh" x="289" y="108" text-anchor="middle">mulh 家族</text>
+  <text class="s sq" x="289" y="130" text-anchor="middle">riscvstall/ + imuldiv/</text>
+  <text class="s mut" x="289" y="156" text-anchor="middle">乘法器回傳高 32 位元</text>
+  <text class="s mut" x="289" y="172" text-anchor="middle">mulh / mulhu / mulhsu</text>
+  <text class="s mut" x="289" y="196" text-anchor="middle">外加三個自寫測試</text>
+
+  <path class="w" d="M374 134H394" marker-end="url(#ah)"/>
+
+  <rect class="k" x="396" y="54" width="170" height="160" rx="4"/>
+  <rect class="af" x="396" y="54" width="170" height="30" rx="4"/>
+  <text class="hd ac" x="481" y="74" text-anchor="middle">Objective 3 · 20%</text>
+  <text class="zh" x="481" y="108" text-anchor="middle">加上 bypass</text>
+  <text class="s sq" x="481" y="130" text-anchor="middle">riscvbyp/</text>
+  <text class="s mut" x="481" y="156" text-anchor="middle">Dpath 加旁路 mux、</text>
+  <text class="s mut" x="481" y="172" text-anchor="middle">Ctrl 加選擇邏輯</text>
+  <text class="s mut" x="481" y="196" text-anchor="middle">只剩 load-use 會 stall</text>
+
+  <path class="w" d="M566 134H586" marker-end="url(#ah)"/>
+
+  <rect class="k" x="588" y="54" width="160" height="160" rx="4"/>
+  <rect class="af" x="588" y="54" width="160" height="30" rx="4"/>
+  <text class="hd ac" x="668" y="74" text-anchor="middle">Objective 4 · 30%</text>
+  <text class="zh" x="668" y="108" text-anchor="middle">管線化乘除法器</text>
+  <text class="s sq" x="668" y="130" text-anchor="middle">riscvlong/</text>
+  <text class="s mut" x="668" y="156" text-anchor="middle">換掉 iterative 單元、</text>
+  <text class="s mut" x="668" y="172" text-anchor="middle">管線延長兩級</text>
+  <text class="s mut" x="668" y="196" text-anchor="middle">重做 stall 與 bypass</text>
+
+  <text class="s mut" x="12" y="240">配分合計 100%，全部看程式碼；沒有書面報告</text>
+</svg>
+</div>
+<figcaption><b>四站，四個目錄，四種交付物。</b>注意 Objective 4 一個人就占 30%，而它要動的東西最多——把時間留給它，不要在 Objective 1 的最後三道指令上耗掉一個禮拜。</figcaption>
+</figure>
+
+<h3>它們其實是同一份程式碼的三份拷貝</h3>
+
+<p><code>riscvbyp/</code> 和 <code>riscvlong/</code> 現在各自只有一個檔案：<code>setup.sh</code>。執行它會把上一個目錄的全部內容 <code>rsync</code> 過來、把檔名裡的 <code>riscvstall</code> 換成 <code>riscvbyp</code>、再把每個檔案內部的字串一起換掉。</p>
+
+<div class="ex">
+<div class="src">riscvbyp/setup.sh · 第 4 行與第 13–20 行</div>
+<pre><code>rsync -av --exclude=setup.sh ../riscvstall/ .
+...
+for file in *; do
+  [ "$file" = "setup.sh" ] &amp;&amp; continue
+  if [ "$(uname)" = "Darwin" ]; then
+    sed -i '' 's/riscvstall/riscvbyp/g' "$file"
+  else
+    sed -i 's/riscvstall/riscvbyp/g' "$file"
+  fi
+done</code></pre>
+</div>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 300" role="img" aria-label="拷貝鏈示意圖：riscvstall 目錄經由 setup.sh 複製成 riscvbyp，riscvbyp 再經由 setup.sh 複製成 riscvlong；下半部說明若在 riscvstall 較晚才發現控制表的 bug，同一個錯誤會同時存在於三個目錄，必須分別修正三次。">
+  <rect class="k" x="26" y="42" width="170" height="70" rx="4"/>
+  <text class="hd" x="111" y="68" text-anchor="middle">riscvstall/</text>
+  <text class="s mut" x="111" y="90" text-anchor="middle">Obj 1 + Obj 2 在這裡做</text>
+  <text class="s mut" x="111" y="104" text-anchor="middle">7 個 .v + .mk</text>
+
+  <path class="w" d="M196 77H286" marker-end="url(#ah)"/>
+  <text class="s ac" x="241" y="64" text-anchor="middle">./setup.sh</text>
+  <text class="s mut" x="241" y="96" text-anchor="middle">rsync + 改名</text>
+
+  <rect class="k" x="288" y="42" width="170" height="70" rx="4"/>
+  <text class="hd" x="373" y="68" text-anchor="middle">riscvbyp/</text>
+  <text class="s mut" x="373" y="90" text-anchor="middle">Obj 3 在這裡做</text>
+  <text class="s mut" x="373" y="104" text-anchor="middle">內容 = riscvstall 的拷貝</text>
+
+  <path class="w" d="M458 77H548" marker-end="url(#ah)"/>
+  <text class="s ac" x="503" y="64" text-anchor="middle">./setup.sh</text>
+  <text class="s mut" x="503" y="96" text-anchor="middle">rsync + 改名</text>
+
+  <rect class="k" x="550" y="42" width="170" height="70" rx="4"/>
+  <text class="hd" x="635" y="68" text-anchor="middle">riscvlong/</text>
+  <text class="s mut" x="635" y="90" text-anchor="middle">Obj 4 在這裡做</text>
+  <text class="s mut" x="635" y="104" text-anchor="middle">內容 = riscvbyp 的拷貝</text>
+
+  <path class="grp" d="M14 140H726V288H14Z"/>
+  <text class="hd wr" x="26" y="162">複製之後才發現 Objective 1 有一列填錯，會怎樣？</text>
+
+  <rect class="k" x="26" y="180" width="150" height="46" rx="4"/>
+  <text class="s" x="101" y="199" text-anchor="middle">riscvstall-CoreCtrl.v</text>
+  <path class="x" d="M36 214L48 226M48 214L36 226"/>
+  <text class="s wr" x="58" y="223">錯的那一列</text>
+
+  <rect class="k" x="222" y="180" width="150" height="46" rx="4"/>
+  <text class="s" x="297" y="199" text-anchor="middle">riscvbyp-CoreCtrl.v</text>
+  <path class="x" d="M232 214L244 226M244 214L232 226"/>
+  <text class="s wr" x="254" y="223">同一列也錯</text>
+
+  <rect class="k" x="418" y="180" width="150" height="46" rx="4"/>
+  <text class="s" x="493" y="199" text-anchor="middle">riscvlong-CoreCtrl.v</text>
+  <path class="x" d="M428 214L440 226M440 214L428 226"/>
+  <text class="s wr" x="450" y="223">同一列也錯</text>
+
+  <text class="zh wr" x="596" y="200">要改三次</text>
+  <text class="s mut" x="596" y="216">而且不會自動同步</text>
+
+  <text class="zh" x="26" y="254">所以：Objective 1 與 2 必須「全部測試都過」才執行 riscvbyp/setup.sh；</text>
+  <text class="zh" x="26" y="274">Objective 3 全部測試都過，才執行 riscvlong/setup.sh。</text>
+</svg>
+</div>
+<figcaption><b>setup.sh 是單向的、而且會覆蓋。</b>它只會把「上一個目錄現在的樣子」抄過來；你在 <code>riscvbyp/</code> 做完 bypass 之後再回頭重跑一次 <code>riscvbyp/setup.sh</code>，bypass 的程式碼會被 <code>riscvstall</code> 的版本蓋掉。這條鏈只能往前走一次。</figcaption>
+</figure>
+
+<div class="trap"><b>常見錯誤</b>
+<p>「先把 bypass 做起來，控制表之後再補」——這是最貴的做法。bypass 的除錯要用到各種指令的測試，控制表沒填滿你根本跑不了那些測試；等填滿了再回頭同步，三個目錄都要手動貼一次。先把 <a href="#ch3">第 3 站</a> 到 <a href="#ch6">第 6 站</a> 做到 <code>make check-asm-riscvstall</code> 與 <code>make check-asm-rand-riscvstall</code> 全綠，再按 <a href="#ch7">第 7 站</a> 複製。</p></div>
+
+<h3>已經有的 vs. 你要加的</h3>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 300" role="img" aria-label="對照圖：左欄是發下來就完成的部分，包含完整資料路徑、控制表 43 列中的 11 列、沒有旁路只會 stall、iterative 乘除法器；右欄是你要加上去的部分，分別是不用動、補上 32 列、加入旁路 mux 與控制、換成四級管線乘除法器。">
+  <rect class="k" x="14" y="16" width="300" height="28" rx="3"/>
+  <text class="hd" x="164" y="36" text-anchor="middle">發下來就有的</text>
+  <rect class="af" x="426" y="16" width="300" height="28" rx="3"/>
+  <text class="hd ac" x="576" y="36" text-anchor="middle">你要加上去的</text>
+
+  <rect class="k" x="14" y="56" width="300" height="52" rx="3"/>
+  <text class="s" x="28" y="77">riscvstall-CoreDpath.v 資料路徑</text>
+  <text class="s mut" x="28" y="95">mux／ALU／regfile／記憶體介面全接好</text>
+  <path class="wm" d="M316 82H422" marker-end="url(#ah)"/>
+  <rect class="gh" x="426" y="56" width="300" height="52" rx="3"/>
+  <text class="s mut" x="440" y="77">完全不用動（Obj 1 只改控制單元）</text>
+  <text class="s mut" x="440" y="95">Obj 3、Obj 4 才會回來改這個檔</text>
+
+  <rect class="k" x="14" y="118" width="300" height="52" rx="3"/>
+  <text class="s" x="28" y="139">CoreCtrl.v 的 casez 控制表</text>
+  <text class="s mut" x="28" y="157">43 列裡只有 11 列有值，其餘被註解掉</text>
+  <path class="a" d="M316 144H422" marker-end="url(#aha)"/>
+  <rect class="af" x="426" y="118" width="300" height="52" rx="3"/>
+  <text class="s ac" x="440" y="139">補 32 列 + 分支用的 *_taken_Xhl 訊號</text>
+  <text class="s mut" x="440" y="157">Obj 1（35%）</text>
+
+  <rect class="k" x="14" y="180" width="300" height="52" rx="3"/>
+  <text class="s" x="28" y="201">沒有旁路：每個 data hazard 都 stall</text>
+  <text class="s mut" x="28" y="219">stall_hazard_Dhl 比對 X／M／W 的寫入位址</text>
+  <path class="a" d="M316 206H422" marker-end="url(#aha)"/>
+  <rect class="af" x="426" y="180" width="300" height="52" rx="3"/>
+  <text class="s ac" x="440" y="201">旁路 mux + 選擇邏輯，stall 只留 load-use</text>
+  <text class="s mut" x="440" y="219">Obj 3（20%）</text>
+
+  <rect class="k" x="14" y="242" width="300" height="52" rx="3"/>
+  <text class="s" x="28" y="263">iterative 乘除法器（X 階段原地等）</text>
+  <text class="s mut" x="28" y="281">只會 mul / div / divu / rem / remu</text>
+  <path class="a" d="M316 268H422" marker-end="url(#aha)"/>
+  <rect class="af" x="426" y="242" width="300" height="52" rx="3"/>
+  <text class="s ac" x="440" y="263">mulh 家族（Obj 2）→ 四級管線版（Obj 4）</text>
+  <text class="s mut" x="440" y="281">Obj 2（15%）＋ Obj 4（30%）</text>
+</svg>
+</div>
+<figcaption><b>「資料路徑已經完整」是這份作業最重要的一句話。</b>Objective 1 遇到任何問題，答案一定在控制表的某一欄，不會在資料路徑裡。等到 Objective 3 你才第一次真的動 <code>CoreDpath.v</code>。</figcaption>
+</figure>
+
+<h3>講義的哪一節對應這份指引的哪一站</h3>
+
+<div class="tbl"><table>
+<thead><tr><th>lab1.pdf 章節</th><th>內容</th><th>這份指引</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td>Reminder（期限、學術誠信）</td><td>本站</td></tr>
+<tr><td class="num">2.1 / 2.2</td><td>解壓縮、八個子目錄、第一次 build</td><td><a href="#ch1">第 1 站</a></td></tr>
+<tr><td class="num">3 / 3.1</td><td>Objective 1：擴充控制單元</td><td><a href="#ch3">第 3 站</a>、<a href="#ch5">第 5 站</a></td></tr>
+<tr class="hi"><td class="num">3.2</td><td>範例：加入 <code>lh</code> 指令</td><td><a href="#ch4">第 4 站</a></td></tr>
+<tr><td class="num">3.3</td><td>Objective 2：<code>mulh</code> / <code>mulhu</code> / <code>mulhsu</code></td><td><a href="#ch6">第 6 站</a></td></tr>
+<tr><td class="num">3.4</td><td>Objective 3：bypassing</td><td><a href="#ch7">第 7 站</a>、<a href="#ch8">第 8 站</a></td></tr>
+<tr><td class="num">3.5</td><td>bubble bit、val/rdy 補充說明</td><td><a href="../riscv-cpu-course/index.html#ch10">圖解課第 10 章</a>、<a href="../riscv-cpu-course/index.html#ch13">第 13 章</a></td></tr>
+<tr><td class="num">3.6</td><td>Objective 4：管線化 muldiv</td><td><a href="#ch9">第 9 站</a></td></tr>
+<tr><td class="num">4 / 4.1</td><td>測試方法、編譯新測試</td><td><a href="#ch2">第 2 站</a></td></tr>
+<tr><td class="num">5</td><td>Evaluation：四個 C benchmark</td><td><a href="#ch10">第 10 站</a></td></tr>
+<tr><td class="num">6</td><td>Submission：要改的檔、打包方式</td><td><a href="#ch11">第 11 站</a></td></tr>
+<tr><td class="num">7 / 8</td><td>Grading rubric、Tips</td><td>本站、<a href="#ch2">第 2 站</a>、<a href="#ch12">第 12 站</a></td></tr>
+</tbody>
+</table></div>
+
+<h3>規則，先講清楚</h3>
+
+<ul>
+<li><b>期限：9/28（一）23:59</b>，上傳到 e3，檔名 <code>學號-lab1.tar.gz</code>。打包方式與 <code>make clean</code> 的步驟在 <a href="#ch11">第 11 站</a>，那一步做錯會直接沒辦法評分。</li>
+<li><b>學術誠信</b>依 Lab 0 的規定辦理。控制表的每一列都是你自己從 <code>riscv-isa.txt</code> 與既有列推出來的，不是抄來的。</li>
+<li><b>不得分享或散布 lab 教材</b>：<code>lab1.tar</code>、講義、測試檔、你寫的答案都不要放上公開的 repo、群組或雲端連結。</li>
+</ul>
+
+<div class="note"><b>這份指引不會給你答案</b>
+<p>控制表的完整內容、bypass 的完整程式碼、改好的乘法器，這裡都不會出現。會出現的是：<b>改哪個檔的哪一段、這一列跟哪一列只差幾欄、那幾欄為什麼不一樣、怎麼跑測試確認、失敗長什麼樣子</b>。講義自己示範過的 <code>lh</code> 是唯一一個從頭到尾寫完的例子（<a href="#ch4">第 4 站</a>）。</p></div>
+
+<ul class="todo" data-title="出發前確認">
+  <li><label><input type="checkbox" data-k="ch0-weights"><span>知道四個 Objective 的配分是 35 / 15 / 20 / 30，以及各自在哪個目錄做</span></label></li>
+  <li><label><input type="checkbox" data-k="ch0-copychain"><span>知道 riscvbyp 與 riscvlong 是用 setup.sh 從上一個目錄複製出來的，晚發現的 bug 要改三次</span></label></li>
+  <li><label><input type="checkbox" data-k="ch0-order"><span>接受「Obj 1 + Obj 2 全綠才複製」這個順序，不打算跳著做</span></label></li>
+  <li><label><input type="checkbox" data-k="ch0-dpath"><span>知道資料路徑已經完整，Obj 1 只會動 riscvstall-CoreCtrl.v 一個檔</span></label></li>
+  <li><label><input type="checkbox" data-k="ch0-count"><span>知道要補的是 32 道指令（7 + 9 + 6 + 1 + 4 + 5），其中 lh 講義已經示範過</span></label></li>
+  <li><label><input type="checkbox" data-k="ch0-rules"><span>記下 9/28 23:59 的期限，並清楚教材與答案都不可外流</span></label></li>
+  <li><label><input type="checkbox" data-k="ch0-pdf"><span>已經自己翻過一次 lab1.pdf，知道哪一節講什麼</span></label></li>
+</ul>
+
+<div class="more"><b>想深入</b>
+<p><a href="../riscv-cpu-course/index.html#ch4">圖解課第 4 章</a>：五級管線總覽——先看懂 P/F/D/X/M/W 各做什麼，再回來看控制表會快很多。<br>
+<a href="../riscv-cpu-course/index.html#ch5">圖解課第 5 章</a>：控制表的 20 個欄位分別接到資料路徑的哪裡。<br>
+<a href="../riscv-cpu-course/index.html#chA">圖解課附錄 A</a>：控制表速查——填表時開著它。</p></div>
+</section>
+
+
+<!-- ============================================================ ch1 -->
+<section class="ch" id="ch1" data-part="出發之前" data-nav="環境、目錄與第一次 build">
+<p class="eyebrow">第 1 站 · 出發之前</p>
+<h2>環境、目錄與第一次 build</h2>
+
+<p>這一站的目標只有一個：<b>在還沒改任何一行程式碼的情況下，看到十個測試全部 PASSED</b>。做到這件事，你就有了一個可靠的基準線——之後任何一次失敗都是你自己剛剛改出來的，不是環境壞掉。</p>
+
+<h3>解壓縮與 <code>LAB1_ROOT</code></h3>
+
+<ol class="steps">
+<li><b>解開並記住根目錄</b>
+<p>講義的所有路徑都寫成 <code>$LAB1_ROOT/...</code>。<code>LAB1_ROOT</code> 不是什麼特殊變數，就是一個你自己設的 shell 變數，指向 <code>lab1/</code> 這個資料夾，好讓講義的指令可以直接複製貼上。</p>
+<pre><code>% tar -xf lab1.tar
+% cd lab1
+% export LAB1_ROOT=$PWD
+% echo $LAB1_ROOT</code></pre>
+<p><code>export</code> 只在<b>這個終端機視窗</b>有效。關掉再開一個新的，要重設一次；嫌麻煩就把 <code>export LAB1_ROOT=...</code>（寫絕對路徑）加進 <code>~/.zshrc</code>。</p></li>
+
+<li><b>確認三個工具在 PATH 裡</b>
+<p>三樣缺一不可：<code>iverilog</code>（編模擬器）、<code>riscv32-unknown-elf-gcc</code>（編測試）、<code>gtkwave</code>（看波形）。</p>
+<pre><code>% iverilog -V | head -1
+% riscv32-unknown-elf-gcc --version | head -1
+% which gtkwave</code></pre>
+<p><code>build/Makefile</code> 找不到 gcc 時會由 <code>check-riscv-tools</code> 這個目標擋下來，印出 <code>ERROR: cannot find RISCV_GCC</code> 並要你設 <code>RISCV_GCC=&lt;path&gt;</code>（Makefile 第 84–88 行）。裝好但沒進 PATH 的話，也可以直接 <code>make RISCV_GCC=/完整/路徑/riscv32-unknown-elf-gcc</code>。</p></li>
+</ol>
+
+<h3>八個子目錄各是什麼</h3>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 420" role="img" aria-label="lab1 根目錄的樹狀圖：八個子目錄 build、imuldiv、riscvstall、riscvbyp、riscvlong、tests、ubmark、vc，以及三個檔案 Testbench.v、Pattern.v、riscv-isa.txt，每一項右側註明用途；其中 build、imuldiv、riscvstall、riscvbyp、riscvlong、tests 六項以強調色標示，代表學生會動到的地方。">
+  <text class="hd" x="14" y="20">lab1/</text>
+  <path class="wm" d="M26 28V396"/>
+
+  <path class="wm" d="M26 46H44"/>
+  <rect class="af" x="46" y="32" width="140" height="26" rx="3"/>
+  <text class="s ac" x="56" y="49">build/</text>
+  <text class="s mut" x="200" y="43">Makefile、編好的模擬器、.vmh、.out</text>
+  <text class="s ac" x="200" y="56">你會改 Makefile 的 tests 清單與註解</text>
+
+  <path class="wm" d="M26 78H44"/>
+  <rect class="af" x="46" y="64" width="140" height="26" rx="3"/>
+  <text class="s ac" x="56" y="81">imuldiv/</text>
+  <text class="s mut" x="200" y="75">整數乘除法器（iterative，val/rdy 介面）</text>
+  <text class="s ac" x="200" y="88">Obj 2 要改 IntMulIterative / MulDivReqMsg</text>
+
+  <path class="wm" d="M26 110H44"/>
+  <rect class="af" x="46" y="96" width="140" height="26" rx="3"/>
+  <text class="s ac" x="56" y="113">riscvstall/</text>
+  <text class="s mut" x="200" y="107">stall 版處理器：Core / CoreDpath / CoreCtrl …</text>
+  <text class="s ac" x="200" y="120">Obj 1 + Obj 2 的主戰場</text>
+
+  <path class="wm" d="M26 142H44"/>
+  <rect class="af" x="46" y="128" width="140" height="26" rx="3"/>
+  <text class="s ac" x="56" y="145">riscvbyp/</text>
+  <text class="s mut" x="200" y="139">現在只有一個 setup.sh</text>
+  <text class="s ac" x="200" y="152">Obj 3：跑完 setup.sh 才會有內容</text>
+
+  <path class="wm" d="M26 174H44"/>
+  <rect class="af" x="46" y="160" width="140" height="26" rx="3"/>
+  <text class="s ac" x="56" y="177">riscvlong/</text>
+  <text class="s mut" x="200" y="171">現在只有一個 setup.sh</text>
+  <text class="s ac" x="200" y="184">Obj 4：從 riscvbyp 複製過來</text>
+
+  <path class="wm" d="M26 206H44"/>
+  <rect class="af" x="46" y="192" width="140" height="26" rx="3"/>
+  <text class="s ac" x="56" y="209">tests/</text>
+  <text class="s mut" x="200" y="203">riscv/*.S 組語測試 + 自己的 configure 建置系統</text>
+  <text class="s ac" x="200" y="216">Obj 2 要在 riscv/ 補三個 mulh 測試</text>
+
+  <path class="wm" d="M26 238H44"/>
+  <rect class="k" x="46" y="224" width="140" height="26" rx="3"/>
+  <text class="s" x="56" y="241">ubmark/</text>
+  <text class="s mut" x="200" y="235">四支 C benchmark，Evaluation 用</text>
+  <text class="s mut" x="200" y="248">不用改程式，只要能編出 .vmh 跑起來</text>
+
+  <path class="wm" d="M26 270H44"/>
+  <rect class="k" x="46" y="256" width="140" height="26" rx="3"/>
+  <text class="s" x="56" y="273">vc/</text>
+  <text class="s mut" x="200" y="267">共用元件：測試記憶體、隨機延遲包裝、assert</text>
+  <text class="s mut" x="200" y="280">整個作業都不用動</text>
+
+  <path class="wm" d="M26 302H44"/>
+  <rect class="k" x="46" y="288" width="140" height="26" rx="3"/>
+  <text class="s" x="56" y="305">Testbench.v</text>
+  <text class="s mut" x="200" y="299">把 CPU、指令記憶體、資料記憶體接起來</text>
+  <text class="s mut" x="200" y="312">iverilog 的 top module 就是它</text>
+
+  <path class="wm" d="M26 334H44"/>
+  <rect class="k" x="46" y="320" width="140" height="26" rx="3"/>
+  <text class="s" x="56" y="337">Pattern.v</text>
+  <text class="s mut" x="200" y="331">讀 +exe 的 .vmh、開 .vcd、印 PASSED 與 STATS</text>
+  <text class="s mut" x="200" y="344">num_cycles / num_inst / ipc 都在這裡數</text>
+
+  <path class="wm" d="M26 366H44"/>
+  <rect class="k" x="46" y="352" width="140" height="26" rx="3"/>
+  <text class="s" x="56" y="369">riscv-isa.txt</text>
+  <text class="s mut" x="200" y="363">指令規格書：每道指令的編碼與語意</text>
+  <text class="s mut" x="200" y="376">填控制表時查它，不要憑印象</text>
+
+  <path class="wm" d="M26 396H44"/>
+  <text class="s mut" x="50" y="400">（riscvstall-sim.v 是舊的獨立 testbench，沒有被編進去，別被它誤導）</text>
+</svg>
+</div>
+<figcaption><b>六個綠底的是你會動到的。</b><code>vc/</code>、<code>Testbench.v</code>、<code>Pattern.v</code> 從頭到尾不用改；但 <code>Pattern.v</code> 值得讀一遍，因為終端機上每一行輸出都是它印的。</figcaption>
+</figure>
+
+<h3>從 <code>.S</code> 到 <code>*** PASSED ***</code>：這條鏈由誰負責</h3>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 760 340" role="img" aria-label="工具流程圖：上排是 riscv-xxx.S 經由 riscv32 gcc 產生 elf，再由 objdump 產生 dump，再由 objdump2vmh.py 產生 vmh；中排是 Testbench.v、Pattern.v、vc、imuldiv、riscvstall 五個來源經 iverilog 編成 riscvstall-sim；下排是 vmh 與模擬器一起執行後產生 riscv-xxx-stall.out，內含 PASSED 字樣。三個大括號分別標出 make riscv-xxx.vmh、make riscvstall-sim 與 make check-asm-riscvstall 各涵蓋哪一段。">
+  <text class="hd" x="14" y="20">① 測試程式：組語 → 記憶體映像</text>
+  <rect class="k" x="14" y="30" width="150" height="40" rx="3"/>
+  <text class="s" x="89" y="47" text-anchor="middle">tests/riscv/</text>
+  <text class="s" x="89" y="62" text-anchor="middle">riscv-xxx.S</text>
+  <path class="w" d="M164 50H226" marker-end="url(#ah)"/>
+  <text class="s mut" x="193" y="42" text-anchor="middle">gcc</text>
+  <rect class="k" x="230" y="30" width="126" height="40" rx="3"/>
+  <text class="s" x="293" y="55" text-anchor="middle">riscv-xxx.elf</text>
+  <path class="w" d="M356 50H418" marker-end="url(#ah)"/>
+  <text class="s mut" x="385" y="42" text-anchor="middle">objdump</text>
+  <rect class="k" x="422" y="30" width="126" height="40" rx="3"/>
+  <text class="s" x="485" y="55" text-anchor="middle">riscv-xxx.dump</text>
+  <path class="w" d="M548 50H610" marker-end="url(#ah)"/>
+  <text class="s mut" x="579" y="42" text-anchor="middle">py</text>
+  <rect class="af" x="614" y="30" width="126" height="40" rx="3"/>
+  <text class="s ac" x="677" y="55" text-anchor="middle">riscv-xxx.vmh</text>
+  <text class="s mut" x="230" y="86">objdump2vmh.py：位址除以 4、位元組反序</text>
+
+  <text class="hd" x="14" y="128">② 硬體：五包 Verilog → 一個執行檔</text>
+  <rect class="k" x="14" y="138" width="104" height="34" rx="3"/><text class="s" x="66" y="159" text-anchor="middle">Testbench.v</text>
+  <rect class="k" x="124" y="138" width="90" height="34" rx="3"/><text class="s" x="169" y="159" text-anchor="middle">Pattern.v</text>
+  <rect class="k" x="220" y="138" width="52" height="34" rx="3"/><text class="s" x="246" y="159" text-anchor="middle">vc/</text>
+  <rect class="k" x="278" y="138" width="80" height="34" rx="3"/><text class="s" x="318" y="159" text-anchor="middle">imuldiv/</text>
+  <rect class="k" x="364" y="138" width="92" height="34" rx="3"/><text class="s" x="410" y="159" text-anchor="middle">riscvstall/</text>
+  <path class="w" d="M456 155H520" marker-end="url(#ah)"/>
+  <text class="s mut" x="488" y="147" text-anchor="middle">iverilog</text>
+  <rect class="af" x="524" y="138" width="140" height="34" rx="3"/>
+  <text class="s ac" x="594" y="159" text-anchor="middle">riscvstall-sim</text>
+  <text class="s mut" x="14" y="188">-s Testbench -DRISCV_CORE_RISCVSTALL -DPATTERN_MAX_DELAY=0</text>
+
+  <text class="hd" x="14" y="228">③ 執行</text>
+  <rect class="af" x="14" y="238" width="126" height="36" rx="3"/><text class="s ac" x="77" y="261" text-anchor="middle">riscv-xxx.vmh</text>
+  <rect class="af" x="152" y="238" width="140" height="36" rx="3"/><text class="s ac" x="222" y="261" text-anchor="middle">riscvstall-sim</text>
+  <path class="w" d="M292 256H330" marker-end="url(#ah)"/>
+  <text class="s mut" x="311" y="248" text-anchor="middle">vvp</text>
+  <rect class="k" x="332" y="238" width="180" height="36" rx="3"/>
+  <text class="s" x="422" y="261" text-anchor="middle">riscv-xxx-stall.out</text>
+  <path class="w" d="M512 256H548" marker-end="url(#ah)"/>
+  <rect class="k" x="550" y="238" width="176" height="36" rx="3"/>
+  <text class="s ac" x="638" y="261" text-anchor="middle">*** PASSED ***</text>
+
+  <path class="a" d="M14 96V108H740V96"/>
+  <text class="s ac" x="377" y="122" text-anchor="middle">make riscv-xxx.vmh</text>
+  <path class="a" d="M14 198V210H664V198"/>
+  <text class="s ac" x="339" y="224" text-anchor="middle">make riscvstall-sim</text>
+  <path class="a" d="M14 286V306H726V286"/>
+  <text class="s ac" x="370" y="322" text-anchor="middle">make check-asm-riscvstall（①②③ 一次做完，tests 清單裡的每個測試各跑一次）</text>
+</svg>
+</div>
+<figcaption><b><code>make check-asm-riscvstall</code> 涵蓋全部三段。</b>所以你平常只需要這一個指令；想分段確認是哪裡壞了，才拆成 <code>make riscvstall-sim</code> 跟 <code>make riscv-xxx.vmh</code> 單獨跑。</figcaption>
+</figure>
+
+<div class="note"><b>測試有兩條編譯路線，兩條都能用</b>
+<p><b>（甲）<code>build/Makefile</code> 自己編。</b>它有 <code>%.elf : $(topdir)/tests/riscv/%.S</code>、<code>%.dump : %.elf</code>、<code>%.vmh : %.dump</code> 三條規則（第 90–97 行），產物直接落在 <code>build/</code>。所以對<b>組語測試</b>來說，你只要把 <code>riscv-xxx.vmh</code> 加進 <code>tests</code> 清單，再 <code>make check-asm-riscvstall</code>，就完成了。<br>
+<b>（乙）講義 4.1 節的流程。</b><code>cd $LAB1_ROOT/tests &amp;&amp; mkdir build &amp;&amp; cd build &amp;&amp; ../configure --host=riscv32-unknown-elf &amp;&amp; make &amp;&amp; ../convert</code>，產物落在 <code>tests/build/vmh/</code>。這條路要額外去 <code>tests/riscv/riscv.mk</code> 把對應的 <code>.S</code> 從註解裡放出來。<code>build/Makefile</code> 的 <code>VPATH</code> 同時看 <code>tests/build/vmh</code> 與 <code>ubmark/build/vmh</code>（第 81–82 行），所以這樣做出來的 <code>.vmh</code> 一樣找得到。<br>
+<b>（丙）benchmark 只有一條路。</b><code>bmarks</code> 清單裡的 <code>ubmark-*.vmh</code> 在 <code>build/Makefile</code> 裡<b>沒有</b>任何建置規則，必須走 <code>ubmark/</code> 的 <code>configure → make → ../convert</code>。細節在 <a href="#ch10">第 10 站</a>。</p></div>
+
+<h3>第一次跑：確切的指令與真實輸出</h3>
+
+<ol class="steps">
+<li><b>進 build 目錄，編出模擬器</b>
+<pre><code>% cd $LAB1_ROOT/build
+% make</code></pre>
+<p>第一次會跑一陣子：iverilog 要編兩個模擬器（<code>riscvstall-sim</code> 與 <code>riscvstall-randdelay-sim</code>），gcc 要編 <code>tests</code> 清單裡的每個測試。</p></li>
+
+<li><b>跑全部組語測試（固定 1 週期記憶體）</b>
+<pre><code>% make check-asm-riscvstall</code></pre>
+<p>在還沒改任何東西的原始 handout 上，你會看到九個測試通過；下面是加了講義示範的 <code>lh</code> 之後的實際輸出（十行）：</p>
+<pre><code>  [ PASSED ] riscv-add-stall.out
+  [ PASSED ] riscv-addi-stall.out
+  [ PASSED ] riscv-bne-stall.out
+  [ PASSED ] riscv-blt-stall.out
+  [ PASSED ] riscv-jal-stall.out
+  [ PASSED ] riscv-lui-stall.out
+  [ PASSED ] riscv-lw-stall.out
+  [ PASSED ] riscv-ori-stall.out
+  [ PASSED ] riscv-sw-stall.out
+  [ PASSED ] riscv-lh-stall.out</code></pre>
+<p>這一行行是 Makefile 第 196 行那段 perl 從每個 <code>.out</code> 撈出 <code>*** ... ***</code> 印的，<b>順序就是 <code>tests</code> 清單的順序</b>。</p></li>
+
+<li><b>再跑一次隨機延遲版</b>
+<pre><code>% make check-asm-rand-riscvstall</code></pre>
+<p>輸出格式一樣，檔名多一個 <code>-rand</code>。<b>兩個都過才算過</b>，理由見下一節。</p></li>
+
+<li><b>看一個測試的完整輸出</b>
+<p><code>make</code> 只印摘要；細節在 <code>.out</code> 檔裡。</p>
+<pre><code>% cat riscv-lh-stall.out
+*** PASSED ***
+--------------------------------------------
+ STATS
+--------------------------------------------
+ status     =          1
+ num_cycles =        449
+ num_inst   =        187
+ ipc        = 0.416481
+../Pattern.v:210: $finish called at 4530 (1s)</code></pre>
+<p><code>status = 1</code> 就是通過。<code>ipc</code> 現在只有 0.42——每兩三個週期才退休一道指令，因為 stall 版遇到任何 data hazard 都要停三個週期。Objective 3 的 bypass 就是要把這個數字拉上來。</p></li>
+</ol>
+
+<div class="trap"><b>常見錯誤</b>
+<p><code>./riscvstall-sim</code> 直接執行可能會噴 <code>bad interpreter: .../vvp: no such file or directory</code>。iverilog 產生的是一個帶 shebang 的腳本，shebang 寫的是 iverilog 自己被編譯安裝時設定的 <code>vvp</code> 絕對路徑；如果你的 iverilog 是從別台機器搬過來的（這台就是），那個路徑不存在，重新 <code>make</code> 也一樣。<b>所以一律照 Makefile 的寫法，前面加上 <code>vvp</code></b>：<code>vvp ./riscvstall-sim +exe=riscv-addi.vmh +stats=1</code>。</p></div>
+
+<h3>兩個模擬器的差別</h3>
+
+<p><code>riscvstall-sim</code> 與 <code>riscvstall-randdelay-sim</code> 是<b>同一份 Verilog</b> 編出來的，差別只在編譯時的三個 <code>define</code>（Makefile 第 144–160 行）：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>define</th><th><code>riscvstall-sim</code></th><th><code>riscvstall-randdelay-sim</code></th></tr></thead>
+<tbody>
+<tr><td><code>PATTERN_MAX_DELAY</code></td><td class="num">0</td><td class="num">4</td></tr>
+<tr><td><code>PATTERN_RESET_CYCLES</code></td><td class="num">2</td><td class="num">6</td></tr>
+<tr><td><code>PATTERN_DEFAULT_MAX_CYCLES</code></td><td class="num">100000</td><td class="num">500000</td></tr>
+<tr><td><code>PATTERN_IS_RAND_DELAY</code></td><td class="num">0</td><td class="num">1</td></tr>
+</tbody>
+</table></div>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 260" role="img" aria-label="時空圖比較：上半部是固定一週期記憶體的 lw 指令，F D X M W 依序各佔一個週期；下半部是隨機延遲記憶體，同一條 lw 在 M 階段停留三個週期，後面的 addi 指令也被迫在 X 階段等待，說明 rand 版模擬器會暴露「假設記憶體一定一週期回話」的錯誤。">
+  <text class="hd" x="14" y="18">riscvstall-sim（PATTERN_MAX_DELAY=0，記憶體固定 1 週期回應）</text>
+  <text class="s mut" x="96" y="40">週期</text>
+  <text class="s mut" x="140" y="40" text-anchor="middle">1</text>
+  <text class="s mut" x="176" y="40" text-anchor="middle">2</text>
+  <text class="s mut" x="212" y="40" text-anchor="middle">3</text>
+  <text class="s mut" x="248" y="40" text-anchor="middle">4</text>
+  <text class="s mut" x="284" y="40" text-anchor="middle">5</text>
+  <text class="s mut" x="320" y="40" text-anchor="middle">6</text>
+  <text class="s mut" x="356" y="40" text-anchor="middle">7</text>
+
+  <text x="14" y="63">lw</text>
+  <rect class="pc" x="123" y="46" width="34" height="26"/><text x="140" y="64" text-anchor="middle">F</text>
+  <rect class="pc" x="159" y="46" width="34" height="26"/><text x="176" y="64" text-anchor="middle">D</text>
+  <rect class="pc" x="195" y="46" width="34" height="26"/><text x="212" y="64" text-anchor="middle">X</text>
+  <rect class="pc" x="231" y="46" width="34" height="26"/><text x="248" y="64" text-anchor="middle">M</text>
+  <rect class="pc" x="267" y="46" width="34" height="26"/><text x="284" y="64" text-anchor="middle">W</text>
+
+  <text x="14" y="95">addi</text>
+  <rect class="pc" x="159" y="78" width="34" height="26"/><text x="176" y="96" text-anchor="middle">F</text>
+  <rect class="pc" x="195" y="78" width="34" height="26"/><text x="212" y="96" text-anchor="middle">D</text>
+  <rect class="pc" x="231" y="78" width="34" height="26"/><text x="248" y="96" text-anchor="middle">X</text>
+  <rect class="pc" x="267" y="78" width="34" height="26"/><text x="284" y="96" text-anchor="middle">M</text>
+  <rect class="pc" x="303" y="78" width="34" height="26"/><text x="320" y="96" text-anchor="middle">W</text>
+  <text class="s mut" x="400" y="70">dmem 的 resp 每次都在下一個週期到</text>
+
+  <text class="hd" x="14" y="144">riscvstall-randdelay-sim（PATTERN_MAX_DELAY=4，回應隨機晚 0～4 週期）</text>
+  <text class="s mut" x="96" y="166">週期</text>
+  <text class="s mut" x="140" y="166" text-anchor="middle">1</text>
+  <text class="s mut" x="176" y="166" text-anchor="middle">2</text>
+  <text class="s mut" x="212" y="166" text-anchor="middle">3</text>
+  <text class="s mut" x="248" y="166" text-anchor="middle">4</text>
+  <text class="s mut" x="284" y="166" text-anchor="middle">5</text>
+  <text class="s mut" x="320" y="166" text-anchor="middle">6</text>
+  <text class="s mut" x="356" y="166" text-anchor="middle">7</text>
+
+  <text x="14" y="189">lw</text>
+  <rect class="pc" x="123" y="172" width="34" height="26"/><text x="140" y="190" text-anchor="middle">F</text>
+  <rect class="pc" x="159" y="172" width="34" height="26"/><text x="176" y="190" text-anchor="middle">D</text>
+  <rect class="pc" x="195" y="172" width="34" height="26"/><text x="212" y="190" text-anchor="middle">X</text>
+  <rect class="pc-hold" x="231" y="172" width="34" height="26"/><text class="sq" x="248" y="190" text-anchor="middle">M</text>
+  <rect class="pc-hold" x="267" y="172" width="34" height="26"/><text class="sq" x="284" y="190" text-anchor="middle">M</text>
+  <rect class="pc" x="303" y="172" width="34" height="26"/><text x="320" y="190" text-anchor="middle">M</text>
+  <rect class="pc" x="339" y="172" width="34" height="26"/><text x="356" y="190" text-anchor="middle">W</text>
+
+  <text x="14" y="221">addi</text>
+  <rect class="pc" x="159" y="204" width="34" height="26"/><text x="176" y="222" text-anchor="middle">F</text>
+  <rect class="pc" x="195" y="204" width="34" height="26"/><text x="212" y="222" text-anchor="middle">D</text>
+  <rect class="pc-hold" x="231" y="204" width="34" height="26"/><text class="sq" x="248" y="222" text-anchor="middle">X</text>
+  <rect class="pc-hold" x="267" y="204" width="34" height="26"/><text class="sq" x="284" y="222" text-anchor="middle">X</text>
+  <rect class="pc" x="303" y="204" width="34" height="26"/><text x="320" y="222" text-anchor="middle">X</text>
+  <rect class="pc" x="339" y="204" width="34" height="26"/><text x="356" y="222" text-anchor="middle">M</text>
+
+  <text class="s mut" x="400" y="186">resp 晚兩個週期 → M 靠 val/rdy 原地等</text>
+  <text class="s sq" x="400" y="204">後面的指令也一起被擋住（backpressure）</text>
+  <text class="s wr" x="400" y="222">寫死「1 週期就會回」的邏輯在這裡爆炸</text>
+
+  <text class="s mut" x="14" y="250">橘色 = 這個階段這個週期沒有前進（stall）</text>
+</svg>
+</div>
+<figcaption><b><code>-rand-</code> 版專門抓時序假設錯誤。</b>兩個版本用同一顆 CPU；固定延遲版過、隨機延遲版掛，代表你的邏輯偷偷假設了記憶體的回應時間。到了 Objective 3、4 動 stall 邏輯時，這類錯誤特別容易發生，所以每改完一輪都要兩個都跑。</figcaption>
+</figure>
+
+<ul class="todo" data-title="第 1 站檢查表">
+  <li><label><input type="checkbox" data-k="ch1-root"><span><code>export LAB1_ROOT=$PWD</code> 設好，<code>echo $LAB1_ROOT</code> 指向 lab1/</span></label></li>
+  <li><label><input type="checkbox" data-k="ch1-tools"><span>iverilog、riscv32-unknown-elf-gcc、gtkwave 三個都跑得動</span></label></li>
+  <li><label><input type="checkbox" data-k="ch1-make"><span><code>cd $LAB1_ROOT/build &amp;&amp; make</code> 沒有錯誤，產出 riscvstall-sim 與 riscvstall-randdelay-sim</span></label></li>
+  <li><label><input type="checkbox" data-k="ch1-check"><span><code>make check-asm-riscvstall</code> 全部 <code>[ PASSED ]</code>（未改動時 9 個）</span></label></li>
+  <li><label><input type="checkbox" data-k="ch1-rand"><span><code>make check-asm-rand-riscvstall</code> 也全部 PASSED</span></label></li>
+  <li><label><input type="checkbox" data-k="ch1-out"><span>打開過一個 <code>.out</code> 檔，看懂 status / num_cycles / num_inst / ipc 四個數字</span></label></li>
+  <li><label><input type="checkbox" data-k="ch1-dirs"><span>說得出八個子目錄各自的用途，以及哪六個你會動到</span></label></li>
+  <li><label><input type="checkbox" data-k="ch1-simdiff"><span>知道 <code>-rand-</code> 版與一般版差在 PATTERN_MAX_DELAY，以及為什麼兩個都要跑</span></label></li>
+</ul>
+
+<div class="more"><b>想深入</b>
+<p><a href="../riscv-cpu-course/index.html#ch20">圖解課第 20 章</a>：整條工具鏈的每一步在做什麼——<code>.vmh</code> 的位址為什麼是 word 位址、<code>$readmemh</code> 怎麼把它倒進記憶體陣列、<code>csrw 21, x29</code> 怎麼變成 <code>*** PASSED ***</code>。這一站只講你要打哪些指令，原理全在那一章。<br>
+<a href="../riscv-cpu-course/index.html#ch13">圖解課第 13 章</a>：val/rdy 記憶體介面，解釋 <code>-rand-</code> 版為什麼能讓管線原地等。</p></div>
+</section>
+
+
+<!-- ============================================================ ch2 -->
+<section class="ch" id="ch2" data-part="出發之前" data-nav="工作循環：改→編→測→除錯">
+<p class="eyebrow">第 2 站 · 出發之前</p>
+<h2>工作循環：改 → 編 → 測 → 除錯</h2>
+
+<p>接下來三十幾道指令、三個目錄，你會把同一個循環重複大約三十五次。循環越短越好：<b>一次只加一道指令，加完馬上測</b>。一次貼十列進控制表然後看到 <code>FAILED</code>，你要找的嫌疑犯就有十個。</p>
+
+<h3>一圈長什麼樣子</h3>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 340" role="img" aria-label="工作循環流程圖：改控制表的一列，加測試到 build/Makefile 的 tests 清單，執行 make check-asm-riscvstall，判斷是否 PASSED；通過就再跑 check-asm-rand 然後進入下一道指令；失敗則單獨跑該測試並加上 vcd=1，用 gtkwave 看波形找出錯誤，回到第一步修正。">
+  <rect class="af" x="30" y="24" width="180" height="46" rx="4"/>
+  <text class="s ac" x="120" y="44" text-anchor="middle">① 改一列</text>
+  <text class="s mut" x="120" y="60" text-anchor="middle">CoreCtrl.v 的 casez</text>
+
+  <path class="w" d="M210 47H262" marker-end="url(#ah)"/>
+
+  <rect class="af" x="264" y="24" width="180" height="46" rx="4"/>
+  <text class="s ac" x="354" y="44" text-anchor="middle">② 加一行測試</text>
+  <text class="s mut" x="354" y="60" text-anchor="middle">build/Makefile 的 tests</text>
+
+  <path class="w" d="M444 47H496" marker-end="url(#ah)"/>
+
+  <rect class="k" x="498" y="24" width="212" height="46" rx="4"/>
+  <text class="s" x="604" y="44" text-anchor="middle">③ make check-asm-riscvstall</text>
+  <text class="s mut" x="604" y="60" text-anchor="middle">大約十幾秒</text>
+
+  <path class="w" d="M604 70V100" marker-end="url(#ah)"/>
+
+  <path class="k" d="M604 104L700 140L604 176L508 140Z"/>
+  <text class="s" x="604" y="136" text-anchor="middle">全部</text>
+  <text class="s" x="604" y="152" text-anchor="middle">PASSED？</text>
+
+  <path class="a" d="M700 140H726V218H636" marker-end="url(#aha)"/>
+  <text class="s ac" x="714" y="176" text-anchor="middle">是</text>
+  <rect class="af" x="440" y="196" width="194" height="46" rx="4"/>
+  <text class="s ac" x="537" y="216" text-anchor="middle">④ 再跑 check-asm-rand</text>
+  <text class="s mut" x="537" y="232" text-anchor="middle">兩個都綠才算完成這道指令</text>
+  <path class="a" d="M440 219H120V72" marker-end="url(#aha)"/>
+  <text class="s ac" x="200" y="212">下一道指令</text>
+
+  <path class="x" d="M508 140H310" marker-end="url(#ah)" style="stroke-dasharray:none"/>
+  <text class="s wr" x="408" y="132" text-anchor="middle">否</text>
+
+  <rect class="k" x="106" y="256" width="286" height="52" rx="4"/>
+  <text class="s" x="249" y="276" text-anchor="middle">⑤ 單獨跑那一個測試 + 存波形</text>
+  <text class="s mut" x="249" y="294" text-anchor="middle">vvp ./riscvstall-sim +exe=… +vcd=1</text>
+  <path class="w" d="M310 140V256" marker-end="url(#ah)"/>
+
+  <path class="w" d="M392 282H436" marker-end="url(#ah)"/>
+  <rect class="k" x="438" y="256" width="150" height="52" rx="4"/>
+  <text class="s" x="513" y="276" text-anchor="middle">⑥ gtkwave 看波形</text>
+  <text class="s mut" x="513" y="294" text-anchor="middle">找出哪一欄填錯</text>
+  <path class="a" d="M588 282H700V90H120V72" marker-end="url(#aha)"/>
+  <text class="s ac" x="648" y="274">回 ①</text>
+
+  <text class="s mut" x="14" y="330">一圈的目標時間：三到五分鐘。超過十分鐘就代表你一次改太多了。</text>
+</svg>
+</div>
+<figcaption><b>②「加一行測試」很容易忘。</b>控制表改好但沒把 <code>riscv-xxx.vmh</code> 加進 <code>tests</code>，<code>make</code> 會開開心心地全綠——因為它根本沒跑那個測試。</figcaption>
+</figure>
+
+<h3>測試清單長在哪裡</h3>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 700 320" role="img" aria-label="build/Makefile 第 41 到 55 行的示意圖：tests 變數後面接反斜線，接著十行 .vmh 檔名各自以反斜線結尾，新加入的 riscv-andi.vmh 以強調色標出；右側註明每行結尾必須有反斜線、清單被空行終止，而空行之後的 bmarks 是另一份清單。">
+  <rect class="k" x="14" y="16" width="380" height="252" rx="4"/>
+  <text class="s mut" x="26" y="36">build/Makefile</text>
+
+  <text class="s mut" x="26" y="58">41</text><text class="s" x="58" y="58">tests = \</text>
+  <text class="s mut" x="26" y="76">42</text><text class="s" x="58" y="76">  riscv-add.vmh \</text>
+  <text class="s mut" x="26" y="94">43</text><text class="s" x="58" y="94">  riscv-addi.vmh \</text>
+  <text class="s mut" x="26" y="112">44</text><text class="s" x="58" y="112">  riscv-bne.vmh \</text>
+  <text class="s mut" x="26" y="130">45</text><text class="s mut" x="58" y="130">  … （blt / jal / lui / lw / ori / sw）</text>
+  <text class="s mut" x="26" y="148">51</text><text class="s" x="58" y="148">  riscv-sw.vmh \</text>
+  <text class="s mut" x="26" y="166">52</text><text class="s" x="58" y="166">  riscv-lh.vmh \</text>
+  <rect class="af" x="52" y="174" width="180" height="20" rx="3"/>
+  <text class="s mut" x="26" y="188">53</text><text class="s ac" x="58" y="188">  riscv-andi.vmh \</text>
+  <text class="s mut" x="26" y="212">54</text><text class="s mut" x="58" y="212">（空行）</text>
+  <text class="s mut" x="26" y="236">55</text><text class="s" x="58" y="236">bmarks = \</text>
+  <text class="s mut" x="58" y="254">  ubmark-vvadd.vmh \</text>
+
+  <path class="wm" d="M212 76H300"/>
+  <text class="s wr" x="306" y="68">每一行結尾都要有 \</text>
+  <text class="s mut" x="306" y="86">漏掉 → 清單在那裡斷掉，</text>
+  <text class="s mut" x="306" y="102">後面的測試就默默不跑了</text>
+
+  <path class="a" d="M236 184H300" marker-end="url(#aha)"/>
+  <text class="s ac" x="306" y="176">你新增的那一行</text>
+  <text class="s mut" x="306" y="192">貼在最後一個項目下面</text>
+
+  <path class="wm" d="M150 212H300"/>
+  <text class="s wr" x="306" y="220">空行 = 清單結束</text>
+  <text class="s mut" x="306" y="236">新的行一定要加在空行「之前」</text>
+
+  <text class="s mut" x="14" y="292">bmarks 是另一份清單（C benchmark），和 tests 無關；別把 riscv-*.vmh 加到那裡。</text>
+  <text class="s mut" x="14" y="310">檔名是 .vmh 不是 .S——Makefile 會自己從 tests/riscv/riscv-andi.S 編出來。</text>
+</svg>
+</div>
+<figcaption><b>只要加 <code>.vmh</code> 檔名就夠了。</b><code>build/Makefile</code> 第 90–97 行有 <code>.S → .elf → .dump → .vmh</code> 三條規則，對應的 <code>.S</code> 已經躺在 <code>tests/riscv/</code>；你不用去碰 <code>tests/riscv/riscv.mk</code>，除非你要走講義 4.1 節那條 <code>configure</code> 路線。</figcaption>
+</figure>
+
+<div class="ex">
+<div class="src">build/Makefile · 第 42–53 行（目前的實際內容）</div>
+<pre><code>tests = \
+  riscv-add.vmh \
+  riscv-addi.vmh \
+  riscv-bne.vmh \
+  riscv-blt.vmh \
+  riscv-jal.vmh \
+  riscv-lui.vmh \
+  riscv-lw.vmh \
+  riscv-ori.vmh \
+  riscv-sw.vmh \
+  riscv-lh.vmh \</code></pre>
+</div>
+
+<div class="trap"><b>常見錯誤</b>
+<p>把 <code>riscv-andi.vmh</code> 加進去卻忘了尾端的 <code>\</code>，<code>make</code> 不會報錯，只會安靜地把清單截斷。想確認 Makefile 真的看到了你的測試，用它內建的除錯目標：<code>make debug-tests</code>，它會把 <code>tests</code> 變數的完整內容印出來（Makefile 第 276–277 行）。</p></div>
+
+<h3>單獨跑一個測試、留下波形</h3>
+
+<div class="ex">
+<div class="src mine">示意範例 · 在 $LAB1_ROOT/build 底下</div>
+<pre><code>% make riscvstall-sim                    # 只重編模擬器
+% make riscv-addi.vmh                    # 只把這一個測試做成 vmh
+% vvp ./riscvstall-sim +exe=riscv-addi.vmh +stats=1 +vcd=1
+VCD info: dumpfile riscv-addi.vcd opened for output.
+*** PASSED ***
+--------------------------------------------
+ STATS
+--------------------------------------------
+ status     =          1
+ num_cycles =        285
+ num_inst   =        125
+ ipc        = 0.438596</code></pre>
+</div>
+
+<p>幾件要知道的事：</p>
+
+<ul>
+<li><b><code>.vcd</code> 落在哪裡</b>：<code>Pattern.v</code> 第 140–148 行把 <code>+exe=</code> 給的路徑去掉最後三個字元再接 <code>.vcd</code>。你在 <code>build/</code> 底下寫 <code>+exe=riscv-addi.vmh</code>，波形就是 <code>build/riscv-addi.vcd</code>；寫成 <code>+exe=../tests/build/vmh/riscv-addi.vmh</code>，波形就落在 <code>tests/build/vmh/</code>。<b>跟著 <code>.vmh</code> 走，不是跟著你的工作目錄走。</b></li>
+<li><b>每跑一次就蓋掉上一次</b>。想留下「壞掉的那一版」波形來對照，跑完馬上 <code>mv riscv-addi.vcd riscv-addi-bad.vcd</code>。</li>
+<li><b><code>-rand-</code> 版的波形多一個後綴</b>：<code>riscv-addi-rand.vcd</code>（<code>Pattern.v</code> 第 142 行）。</li>
+<li><b>整批產生波形</b>：<code>make check-asm-riscvstall VCD=1</code>。預設 <code>VCD=0</code>（Makefile 第 124 行），所以平常跑 <code>make check</code> 是不會有 <code>.vcd</code> 的。一次產十個上百 MB 的波形沒必要，除非你在追一個跨測試的共同症狀。</li>
+<li><b>不想等它跑完一萬個週期</b>：加 <code>+max-cycles=2000</code>，超過就直接 <code>*** FAILED *** (timeout)</code> 收工，波形檔也小很多。</li>
+</ul>
+
+<h3>症狀 → 先查哪裡</h3>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 740 300" role="img" aria-label="除錯決策圖：四種常見症狀各自對應第一個嫌疑犯。RTL-ERROR Illegal instruction 對應控制表沒有這一列或 InstMsg 的 define 仍被註解；FAILED status 等於某個行號對應該行號在 .S 檔裡的巨集算錯；FAILED timeout 對應 stall 沒有解除或 PC 跑錯；波形全是 x 對應某個該填值的欄位填了 don't care。">
+  <rect class="k" x="14" y="14" width="200" height="28" rx="3"/><text class="hd" x="114" y="34" text-anchor="middle">你看到的</text>
+  <rect class="k" x="234" y="14" width="230" height="28" rx="3"/><text class="hd" x="349" y="34" text-anchor="middle">第一個嫌疑犯</text>
+  <rect class="af" x="484" y="14" width="242" height="28" rx="3"/><text class="hd ac" x="605" y="34" text-anchor="middle">先做這件事</text>
+
+  <rect class="k" x="14" y="52" width="200" height="54" rx="3" style="stroke:var(--warn)"/>
+  <text class="s wr" x="26" y="72">RTL-ERROR : … :</text>
+  <text class="s wr" x="26" y="88">Illegal instruction!</text>
+  <text class="s mut" x="26" y="102">（連兩次就 $finish）</text>
+  <path class="w" d="M214 79H230" marker-end="url(#ah)"/>
+  <rect class="k" x="234" y="52" width="230" height="54" rx="3"/>
+  <text class="s" x="244" y="72">casez 裡根本沒有這一列，</text>
+  <text class="s" x="244" y="88">或 InstMsg.v 的 `define</text>
+  <text class="s" x="244" y="102">還被註解著 → cs 全是 x</text>
+  <path class="a" d="M464 79H480" marker-end="url(#aha)"/>
+  <rect class="af" x="484" y="52" width="242" height="54" rx="3"/>
+  <text class="s ac" x="494" y="72">grep 那道指令的 RISCV_INST_MSG_</text>
+  <text class="s mut" x="494" y="88">CoreCtrl.v 的 casez 與 InstMsg.v</text>
+  <text class="s mut" x="494" y="102">兩邊都要是「沒被 // 掉」的狀態</text>
+
+  <rect class="k" x="14" y="116" width="200" height="54" rx="3"/>
+  <text class="s" x="26" y="136">*** FAILED ***</text>
+  <text class="s" x="26" y="152">(status =   137)</text>
+  <text class="s mut" x="26" y="166">指令有跑，只是算錯</text>
+  <path class="w" d="M214 143H230" marker-end="url(#ah)"/>
+  <rect class="k" x="234" y="116" width="230" height="54" rx="3"/>
+  <text class="s" x="244" y="136">137 是 .S 檔的行號：</text>
+  <text class="s" x="244" y="152">TEST_CHECK_EQ 把 __LINE__</text>
+  <text class="s" x="244" y="166">存進 x29 才跳 _fail</text>
+  <path class="a" d="M464 143H480" marker-end="url(#aha)"/>
+  <rect class="af" x="484" y="116" width="242" height="54" rx="3"/>
+  <text class="s ac" x="494" y="136">打開 riscv-xxx.S 的第 137 行</text>
+  <text class="s mut" x="494" y="152">看那一行是哪個巨集、測什麼情況</text>
+  <text class="s mut" x="494" y="166">（負數？位移量？SRC0_EQ_DEST？）</text>
+
+  <rect class="k" x="14" y="180" width="200" height="54" rx="3"/>
+  <text class="s" x="26" y="200">*** FAILED ***</text>
+  <text class="s" x="26" y="216">(timeout)</text>
+  <text class="s mut" x="26" y="230">或者一直不結束</text>
+  <path class="w" d="M214 207H230" marker-end="url(#ah)"/>
+  <rect class="k" x="234" y="180" width="230" height="54" rx="3"/>
+  <text class="s" x="244" y="200">stall 放不掉（管線卡死），</text>
+  <text class="s" x="244" y="216">或 PC 跳錯地方在原地繞</text>
+  <text class="s" x="244" y="230">分支／跳躍類最常見</text>
+  <path class="a" d="M464 207H480" marker-end="url(#aha)"/>
+  <rect class="af" x="484" y="180" width="242" height="54" rx="3"/>
+  <text class="s ac" x="494" y="200">+max-cycles=2000 +vcd=1 再跑</text>
+  <text class="s mut" x="494" y="216">波形看 pc_Fhl 是否卡住／來回跳</text>
+  <text class="s mut" x="494" y="230">以及 stall_Dhl 為何一直是 1</text>
+
+  <rect class="k" x="14" y="244" width="200" height="50" rx="3"/>
+  <text class="s" x="26" y="264">波形／結果全是 x</text>
+  <text class="s mut" x="26" y="282">但沒有 Illegal instruction</text>
+  <path class="w" d="M214 269H230" marker-end="url(#ah)"/>
+  <rect class="k" x="234" y="244" width="230" height="50" rx="3"/>
+  <text class="s" x="244" y="264">某一欄填了 _x（don't care）</text>
+  <text class="s" x="244" y="282">但那道指令其實會用到它</text>
+  <path class="a" d="M464 269H480" marker-end="url(#aha)"/>
+  <rect class="af" x="484" y="244" width="242" height="50" rx="3"/>
+  <text class="s ac" x="494" y="264">往回追第一個變成 x 的訊號</text>
+  <text class="s mut" x="494" y="282">對照同類指令那一列，逐欄比</text>
+</svg>
+</div>
+<figcaption><b>四種症狀，四個起手式。</b>特別注意第二列：<code>status</code> 印出來的數字就是 <code>.S</code> 檔的行號，這是這套測試框架最有用的設計——它直接告訴你是「哪一組輸入」算錯了。</figcaption>
+</figure>
+
+<div class="ex">
+<div class="src">tests/riscv/riscv-macros.h · 第 68–71 行</div>
+<pre><code>#define TEST_CHECK_EQ( reg_, value_ )                                   \
+    li    x29, __LINE__;                                                \
+    li    x1, value_;                                                   \
+    bne   reg_, x1, _fail;                                              \</code></pre>
+</div>
+
+<p><code>__LINE__</code> 是 C preprocessor 的行號。<code>TEST_RISCV_END</code> 裡的 <code>_pass</code> 會把 <code>x29</code> 改成 1、<code>_fail</code> 則直接沿用 <code>x29</code>，兩條路最後都執行同一句 <code>csrw 21, x29</code>。所以 <code>status</code> 要嘛是 1（通過），要嘛就是失敗那一行的行號。</p>
+
+<div class="trap"><b>常見錯誤</b>
+<p><code>Illegal instruction!</code> 不一定出現在你剛加的指令上。測試檔裡到處都有 <code>li</code>、<code>nop</code> 這些虛擬指令，組譯器會把它們展開成 <code>addi</code>、<code>lui</code>、<code>ori</code> 等等；只要展開出來的某道指令你還沒填進控制表，整個測試就跑不起來。所以做 Objective 1 的順序建議照 <a href="#ch5">第 5 站</a> 的分類走：先把 register-immediate 那一批補完，後面的測試才有機會跑。</p></div>
+
+<h3>把講義的 Tips 變成習慣</h3>
+
+<p>講義第 8 節列了五條 Tips。翻譯成這個作業裡具體的動作：</p>
+
+<div class="tbl"><table>
+<thead><tr><th>講義的 Tip</th><th>在這個作業裡具體怎麼做</th></tr></thead>
+<tbody>
+<tr><td>Use incremental development</td><td>一次一列。填完 <code>andi</code> 就馬上把 <code>riscv-andi.vmh</code> 加進 <code>tests</code> 跑一次，綠了才動 <code>xori</code>。三十二道指令 = 三十二個綠燈，不是最後一次大爆炸。</td></tr>
+<tr><td>Use gtkwave to debug</td><td>存一個 <code>template.sav</code>（<code>build/</code> 已經有一個）把常看的訊號固定下來：<code>pc_Fhl</code>、<code>ir_Dhl</code>、<code>cs</code>、<code>alu_fn_Xhl</code>、<code>stall_*</code>、<code>rf_wen_Whl</code>。每次開新波形直接套用。</td></tr>
+<tr><td>Take advantage of the unit testing framework</td><td><code>make check-asm-riscvstall</code> 一次跑完整份清單，成本只有十幾秒。不要因為「只改了一列」就只跑那一個測試——回歸（regression）就是這樣被抓到的。</td></tr>
+<tr><td>Sketch the hardware before coding</td><td>填一列之前，先在紙上把那道指令走過 P→F→D→X→M→W：它讀幾個暫存器？operand 1 是立即值還是暫存器？ALU 做什麼？要不要發記憶體請求？寫回的是 ALU 結果還是記憶體回應？答案就是那二十欄。</td></tr>
+<tr><td>Define control-datapath interactions clearly</td><td>不要新增你不確定接到哪裡的控制欄位。講義明說欄位已經齊了，唯一需要新增的是分支用的 <code>*_taken_Xhl</code> 之類的 helper wire。</td></tr>
+</tbody>
+</table></div>
+
+<div class="note"><b>用 git 或至少用備份</b>
+<p>handout 沒有附版本控制。在 <code>$LAB1_ROOT</code> 下 <code>git init</code> 然後每通過一道指令就 commit 一次，是這個作業投資報酬率最高的五分鐘：<a href="#ch0">第 0 站</a>那張拷貝鏈的圖說過，晚發現的 bug 要在三個目錄修三次，有 commit 歷史你至少知道是哪一次改動引進的。記得在 <code>.gitignore</code> 排掉 <code>build/*.vcd</code> 和 <code>build/*.out</code>，而且這個 repo <b>不可以</b> push 到公開的地方。</p></div>
+
+<ul class="todo" data-title="第 2 站檢查表">
+  <li><label><input type="checkbox" data-k="ch2-loop"><span>能背出循環：改一列 → 加測試到 tests → make check-asm-riscvstall → 再跑 rand 版</span></label></li>
+  <li><label><input type="checkbox" data-k="ch2-list"><span>知道 <code>tests</code> 清單在 build/Makefile 第 42 行起，每行要有尾端 <code>\</code>，空行就結束</span></label></li>
+  <li><label><input type="checkbox" data-k="ch2-debugtests"><span>試過 <code>make debug-tests</code>，確認 Makefile 真的看到你加的測試</span></label></li>
+  <li><label><input type="checkbox" data-k="ch2-single"><span>成功用 <code>vvp ./riscvstall-sim +exe=… +stats=1 +vcd=1</code> 跑過單一測試</span></label></li>
+  <li><label><input type="checkbox" data-k="ch2-vcd"><span>知道 <code>.vcd</code> 跟著 <code>+exe=</code> 的路徑放，而且每跑一次就被蓋掉</span></label></li>
+  <li><label><input type="checkbox" data-k="ch2-gtkwave"><span>用 gtkwave 開過一次波形，並存了一份自己的 <code>.sav</code></span></label></li>
+  <li><label><input type="checkbox" data-k="ch2-status"><span>知道 <code>status = N</code> 的 N 就是 <code>.S</code> 檔裡失敗的那一行行號</span></label></li>
+  <li><label><input type="checkbox" data-k="ch2-illegal"><span>知道 <code>Illegal instruction!</code> 代表 <code>cs</code> 全是 x，先去查控制表與 InstMsg 的 <code>define</code></span></label></li>
+  <li><label><input type="checkbox" data-k="ch2-git"><span>已經把 <code>$LAB1_ROOT</code> 納入版本控制或建立了備份習慣</span></label></li>
+</ul>
+
+<div class="more"><b>想深入</b>
+<p><a href="../riscv-cpu-course/index.html#ch20">圖解課第 20 章</a>：測試檔的控制流程、<code>TEST_IMM_OP</code> 展開成哪幾道指令、<code>.vmh</code> 的格式、怎麼自己寫一個新測試。<br>
+<a href="../riscv-cpu-course/index.html#ch21">圖解課第 21 章</a>：除錯方法與速查表——完整的「症狀 → 嫌疑犯」對照、怎麼讀逐週期的管線追蹤、gtkwave 該先加哪些訊號、怎麼從一次錯誤的暫存器寫入往回走到出錯的那一欄。這一站只給你四個起手式，那一章是完整的地圖。</p></div>
+</section>
